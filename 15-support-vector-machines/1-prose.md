@@ -411,15 +411,42 @@ Read the slacks of the soft-SVM solution. A, B, C, D, F, G and H pay nothing. E 
 
 Hard-SVM needed the data to be separable with a margin. Soft-SVM needs no such thing, and it comes with its own guarantee, which we can now prove from tools you already have. Three of them, recalled in a line each:
 
-- A function \(f\) is **\(\rho\)-Lipschitz** if \(|f(\mathbf w) - f(\mathbf u)| \le \rho \|\mathbf w - \mathbf u\|\) for all \(\mathbf w, \mathbf u\) (lesson 12): it cannot change faster than rate \(\rho\).
-- The **Cauchy–Schwarz inequality**, \(|\langle \mathbf a, \mathbf b \rangle| \le \|\mathbf a\| \|\mathbf b\|\) (proved in lesson 9).
-- The **regularized loss minimization guarantee** of lesson 13: if for every example \(z\) the loss \(\ell(\cdot, z)\) is convex and \(\rho\)-Lipschitz, then the rule \(A(S) = \operatorname{argmin}_{\mathbf w} \left( L_S(\mathbf w) + \lambda \|\mathbf w\|^2 \right)\) satisfies, for every vector \(\mathbf u\),
+- A function \(f\) is **\(\rho\)-Lipschitz** if \(|f(\mathbf w) - f(\mathbf u)| \le \rho \|\mathbf w - \mathbf u\|\) for all \(\mathbf w, \mathbf u\) (lesson 12): moving the input a distance \(t\) moves the output by at most \(\rho t\). For example, \(f(w) = 3w\) on the number line is 3-Lipschitz: a step of 0.1 changes it by 0.3.
+- The **Cauchy–Schwarz inequality**, \(|\langle \mathbf a, \mathbf b \rangle| \le \|\mathbf a\| \|\mathbf b\|\) (proved in lesson 9): an inner product is never bigger than the product of the two lengths. For \((4, -1)\) and G’s \((1, 2)\), \(2 \le \sqrt{17}\sqrt{5} \approx 9.2\).
+- The **oracle inequality** for RLM of lesson 13 (the Lipschitz case): if for every example \(z = (\mathbf x, y)\) the loss \(\ell(\cdot, z)\) (the dot is the slot for \(\mathbf w\), with the example held fixed) is convex and \(\rho\)-Lipschitz, then the RLM rule \(A(S) = \operatorname{argmin}_{\mathbf w} \left( L_S(\mathbf w) + \lambda \|\mathbf w\|^2 \right)\) satisfies, for every vector \(\mathbf u\),
 
 \[ \mathop{\mathbb E}_{S \sim \mathcal D^m} \left[ L_{\mathcal D}(A(S)) \right] \le L_{\mathcal D}(\mathbf u) + \lambda \|\mathbf u\|^2 + \frac{2\rho^2}{\lambda m}. \]
 
-That guarantee is an **oracle inequality**: think of \(\mathbf u\) as a good hypothesis an oracle knows about, and the bound says how close the learner gets to it on average. To use it for soft-SVM we need the hinge loss to be convex and Lipschitz.
+Inside out: \(A(S)\) is the weight vector the learner returns on the training sequence \(S\), and \(L_{\mathcal D}(A(S))\) is its true risk, its average loss on fresh examples from \(\mathcal D\). The \(\mathbb E\) with \(S \sim \mathcal D^m\) under it averages that true risk over all the training sequences you might have drawn. On the right, \(\mathbf u\) is any competitor at all: its own true risk, plus the penalty it would pay, plus \(2\rho^2/(\lambda m)\), the most the learner can overfit on average. In plain words: **on average, the regularized learner is almost as good as any fixed weight vector, paying that vector’s penalty plus a term that shrinks with more labels.** With \(\rho = 5\), \(\lambda = 0.0354\) and \(m = 10{,}000\), the last term is \(50/354 \approx 0.141\); the snippet `soft_svm_bound` later in this section computes the whole right side.
 
-Convexity is quick. For a fixed example \((\mathbf x, y)\), the map \(\mathbf w \mapsto 1 - y \langle \mathbf w, \mathbf x \rangle\) is affine, and the hinge loss is the pointwise maximum of it and the constant 0. A maximum of two convex functions is convex: for \(\theta \in [0, 1]\), each of the two functions at \(\theta \mathbf w + (1-\theta) \mathbf u\) is at most \(\theta\) times its value at \(\mathbf w\) plus \((1-\theta)\) times its value at \(\mathbf u\), and each of those is at most the same combination of the maxima.
+Think of \(\mathbf u\) as a good hypothesis that only an oracle knows about: the bound says how close the learner gets to it on average. To use it for soft-SVM we need the hinge loss to be convex and Lipschitz.
+
+Convexity is quick. Recall from lesson 12 that a function is **convex** when, between any two points, its graph lies on or below its chord: for every \(\mathbf w, \mathbf u\) and every mixing weight \(\theta \in [0, 1]\) (lesson 12 called it \(\alpha\); we save \(\alpha\) for later),
+
+\[ f(\theta \mathbf w + (1 - \theta) \mathbf u) \le \theta f(\mathbf w) + (1 - \theta) f(\mathbf u). \]
+
+On the left, \(f\) at the mixed point; on the right, the same mix of the two end values. In plain words: **the value at a blend is at most the blend of the values.** Take E, lifted \((1, 0, 0)\) with label \(-1\), whose hinge loss is \(\max\{0, 1 + b\}\), where \(b\) is the first, bias, weight. At \(\mathbf w = (-\tfrac12, \tfrac12, -\tfrac12)\) it is 0.5, at \(\mathbf u = \mathbf 0\) it is 1, and halfway between, at bias weight \(-\tfrac14\), it is 0.75, exactly the blend \(\tfrac12 \cdot 0.5 + \tfrac12 \cdot 1\): on the sloped part the hinge is a straight line, so the inequality is tight.
+
+Now the argument. For a fixed example \((\mathbf x, y)\), the map \(\mathbf w \mapsto 1 - y \langle \mathbf w, \mathbf x \rangle\) (the arrow \(\mapsto\) reads “sends \(\mathbf w\) to”) is affine, a linear function plus a constant, and the hinge loss is the pointwise maximum of it and the constant 0. A maximum of two convex functions is convex: for \(\theta \in [0, 1]\), each of the two functions at \(\theta \mathbf w + (1-\theta) \mathbf u\) is at most \(\theta\) times its value at \(\mathbf w\) plus \((1-\theta)\) times its value at \(\mathbf u\), and each of those is at most the same combination of the maxima. Here is the inequality tested on random triples, `lhs` and `rhs` being its two sides:
+
+```python
+import random
+
+rng = random.Random(0)
+dot = lambda u, v: sum(a * b for a, b in zip(u, v))
+hinge = lambda w, x, y: max(0, 1 - y * dot(w, x))
+worst = -1.0
+for _ in range(100_000):
+    x, w, u = ([rng.uniform(-2, 2) for _ in "abc"] for _ in "xwu")
+    y, th = rng.choice((1, -1)), rng.random()
+    mix = [th * a + (1 - th) * c for a, c in zip(w, u)]
+    lhs = hinge(mix, x, y)
+    rhs = th * hinge(w, x, y) + (1 - th) * hinge(u, x, y)
+    worst = max(worst, lhs - rhs)
+print(worst <= 1e-12)
+```
+
+It prints `True`: in a hundred thousand tries, the left side never beats the right.
 
 **Claim (the hinge loss is Lipschitz).** For a fixed example \((\mathbf x, y)\) with \(y \in \{\pm 1\}\), the function \(f(\mathbf w) = \max\{0, 1 - y \langle \mathbf w, \mathbf x \rangle\}\) is \(\|\mathbf x\|\)-Lipschitz.
 
@@ -429,9 +456,9 @@ Now take \(a = 1 - y \langle \mathbf w, \mathbf x \rangle\) and \(c = 1 - y \lan
 
 \[ |f(\mathbf w) - f(\mathbf u)| \le |y| \, |\langle \mathbf u - \mathbf w, \mathbf x \rangle| \le \|\mathbf u - \mathbf w\| \, \|\mathbf x\|, \]
 
-using \(|y| = 1\) and Cauchy–Schwarz. \(\blacksquare\)
+using \(|y| = 1\) and Cauchy–Schwarz with \(\mathbf a = \mathbf u - \mathbf w\) and \(\mathbf b = \mathbf x\). \(\blacksquare\)
 
-(Lesson 14 offers a second route: every subgradient of \(f\) has the form \(\alpha \mathbf x\) with \(|\alpha| \le 1\), so its length is at most \(\|\mathbf x\|\), and a convex function whose subgradients are all at most \(\rho\) long is \(\rho\)-Lipschitz.)
+(Lesson 14 offers a second route through **subgradients**, the slopes of tangent planes that stay below a convex function even at a crease: every subgradient of \(f\) has the form \(\alpha \mathbf x\) with \(|\alpha| \le 1\), so its length is at most \(\|\mathbf x\|\), and a convex function whose subgradients are all at most \(\rho\) long is \(\rho\)-Lipschitz.)
 
 The ratio \(|f(\mathbf w) - f(\mathbf u)| / (\|\mathbf x\| \|\mathbf w - \mathbf u\|)\) should never exceed 1, and it should get close to 1 when both \(\mathbf w\) and \(\mathbf u\) sit on the sloped part of the hinge and \(\mathbf w - \mathbf u\) points along \(\mathbf x\):
 
@@ -465,6 +492,8 @@ and the same bound holds for the expected 0-1 true risk \(\mathbb E_S [L_{\mathc
 
 \[ \mathop{\mathbb E}_{S \sim \mathcal D^m} \left[ L_{\mathcal D}^{0-1}(A(S)) \right] \le \mathop{\mathbb E}_{S \sim \mathcal D^m} \left[ L_{\mathcal D}^{\text{hinge}}(A(S)) \right] \le \min_{\mathbf w : \|\mathbf w\| \le B} L_{\mathcal D}^{\text{hinge}}(\mathbf w) + \sqrt{\frac{8 \rho^2 B^2}{m}}. \]
 
+The first display is the RLM oracle inequality you just read, with the hinge loss in it; \(\mathcal X\) is the set of messages such that their length is at most \(\rho\). In the second, the superscripts name the loss: \(L_{\mathcal D}^{0-1}\) is the chance of a wrong label on fresh mail, \(L_{\mathcal D}^{\text{hinge}}\) the average hinge loss on it. \(B\) is a budget on length, and \(\min_{\mathbf w : \|\mathbf w\| \le B}\) is the best hinge risk any weight vector of length at most \(B\) can reach. In plain words: **on average, soft-SVM’s error rate on new mail is at most the best hinge risk within the length budget, plus a term that grows with the radius and the budget and shrinks like one over the square root of the number of labels.** With \(\rho = 5\), \(B = 2\), \(m = 10{,}000\) and a best hinge risk of 0.04: \(\sqrt{8 \cdot 25 \cdot 4/10{,}000} \approx 0.283\), so about 0.323, the number the snippet after the proof prints.
+
 *Proof.* *The first bound.* Soft-SVM is regularized loss minimization with the hinge loss, which we just showed is convex and \(\rho\)-Lipschitz for every example in \(\mathcal X \times \{\pm 1\}\). The guarantee of lesson 13 applies word for word with \(L_{\mathcal D} = L_{\mathcal D}^{\text{hinge}}\).
 
 *From hinge to 0-1.* For every example, the 0-1 loss is at most the hinge loss. Write \(s = y \langle \mathbf w, \mathbf x \rangle\). If \(s \le 0\), the halfspace errs or sits on the boundary, the 0-1 loss is at most 1, and the hinge loss is \(1 - s \ge 1\). If \(s > 0\), the 0-1 loss is 0, and the hinge loss is nonnegative. So \(L_{\mathcal D}^{0-1}(\mathbf w) \le L_{\mathcal D}^{\text{hinge}}(\mathbf w)\) for every \(\mathbf w\), taking expectations over \(\mathcal D\) on both sides of a pointwise inequality, and then over \(S\) as well.
@@ -473,7 +502,7 @@ and the same bound holds for the expected 0-1 true risk \(\mathbb E_S [L_{\mathc
 
 \[ \lambda B^2 = \sqrt{\frac{2\rho^2 B^4}{B^2 m}} = \sqrt{\frac{2 \rho^2 B^2}{m}}, \qquad \frac{2\rho^2}{\lambda m} = \frac{2\rho^2}{m} \sqrt{\frac{B^2 m}{2 \rho^2}} = \sqrt{\frac{4 \rho^4 B^2 m}{2 \rho^2 m^2}} = \sqrt{\frac{2\rho^2 B^2}{m}}. \]
 
-They are equal, which is no accident: this \(\lambda\) is exactly where the increasing term \(\lambda B^2\) and the decreasing term \(2\rho^2/(\lambda m)\) cross, and for a sum \(a\lambda + c/\lambda\) with \(a, c > 0\) the crossing point is the minimum. Their sum is \(2\sqrt{2\rho^2 B^2/m} = \sqrt{8 \rho^2 B^2/m}\). The bound holds for every \(\mathbf u\) in the ball of radius \(B\), so it holds for the best one, which gives the minimum over \(\|\mathbf w\| \le B\). \(\blacksquare\)
+Both lines only move factors in and out of square roots (\(c = \sqrt{c^2}\) for positive \(c\)). They are equal, which is no accident: this \(\lambda\) is exactly where the increasing term \(\lambda B^2\) and the decreasing term \(2\rho^2/(\lambda m)\) cross, and for a sum \(a\lambda + c/\lambda\) with \(a, c > 0\) the crossing point is the minimum. Their sum is \(2\sqrt{2\rho^2 B^2/m} = \sqrt{8 \rho^2 B^2/m}\). The bound holds for every \(\mathbf u\) in the ball of radius \(B\), so it holds for the best one, which gives the minimum over \(\|\mathbf w\| \le B\). \(\blacksquare\)
 
 Two remarks on what this says. First, it is a bound on the *expected* true risk, averaged over the random training sequence, not a high-probability bound like the hard-SVM theorem; Markov’s inequality turns the one into the other, at some cost in the constants. Second, look at what controls it: the radius \(\rho\), the norm budget \(B\) (which plays the part of \(1/\gamma\), since a separator of norm \(B\) at score level 1 has margin \(1/B\)), and, when the mail is not separable, the best hinge risk available within that norm. No \(d\).
 
@@ -530,7 +559,7 @@ Could we get the nice \(\sqrt{\rho^2 B^2/m}\) estimation term with the 0-1 loss 
 
 \[ \ell^{\text{ramp}}(\mathbf w, (\mathbf x, y)) = \min\{1, \ell^{\text{hinge}}(\mathbf w, (\mathbf x, y))\} = \min\{1, \max\{0, 1 - y \langle \mathbf w, \mathbf x \rangle\}\}. \]
 
-As a function of the signed score \(s = y\langle \mathbf w, \mathbf x \rangle\):
+Inside out: the hinge loss, then \(\min\{1, \cdot\}\), which keeps the smaller of the two, so the charge is capped at 1. In plain words: **the ramp loss is the hinge loss, never more than 1.** J under the soft-SVM solution pays hinge 1.5 but ramp only 1. Here are the three losses as functions of the signed score \(s = y\langle \mathbf w, \mathbf x \rangle\), each line one formula:
 
 ```python
 zero_one = lambda s: 1 if s <= 0 else 0
@@ -560,9 +589,11 @@ We work with homogeneous hard-SVM, \(\mathbf w_0 = \operatorname{argmin}_{\mathb
 
 The messages \(\{\mathbf x_i : i \in I\}\) are called the **support vectors**.
 
+Reading it: \(I\) is the set of positions \(i\) such that message \(i\)’s score under \(\mathbf w_0\) is exactly \(\pm 1\), the messages on the edge of the margin. Each \(\alpha_i\) (alpha) is a number, and \(\sum_{i \in I}\) adds the scaled messages over those positions only. In plain words: **the hard-SVM weight vector is built from the messages on the margin and nothing else.** On our lifted messages \(I\) is B, E and G, as the check further down shows.
+
 Since \(\mathbf w_0\) is feasible, \(y_i \langle \mathbf w_0, \mathbf x_i \rangle \ge 1 > 0\) for every \(i\), so \(|\langle \mathbf w_0, \mathbf x_i \rangle| = y_i \langle \mathbf w_0, \mathbf x_i \rangle\). Thus \(I\) is the set of examples whose constraint holds with equality, the ones at distance exactly \(1/\|\mathbf w_0\|\) from the hyperplane, and every other example has \(y_i \langle \mathbf w_0, \mathbf x_i \rangle > 1\).
 
-The standard proof applies a general tool from optimization, the **Fritz John conditions**: if \(\mathbf w^\star\) minimizes a differentiable \(f\) subject to \(g_i(\mathbf w) \le 0\) for differentiable \(g_1, \dots, g_m\), then there is \(\boldsymbol\alpha \in \mathbb R^m\) with \(\nabla f(\mathbf w^\star) + \sum_{i \in I} \alpha_i \nabla g_i(\mathbf w^\star) = \mathbf 0\), where \(I = \{i : g_i(\mathbf w^\star) = 0\}\) is the set of constraints that are tight at the optimum. With \(f(\mathbf w) = \|\mathbf w\|^2\) and \(g_i(\mathbf w) = 1 - y_i \langle \mathbf w, \mathbf x_i \rangle\), the gradients are \(2\mathbf w_0\) and \(-y_i \mathbf x_i\), and solving for \(\mathbf w_0\) gives the theorem. We will not prove the Fritz John conditions here. Instead, here is a direct proof that uses nothing but the geometry of the inner product.
+The standard proof applies a general tool from optimization, the **Fritz John conditions**: if \(\mathbf w^\star\) minimizes a differentiable \(f\) subject to \(g_i(\mathbf w) \le 0\) for differentiable \(g_1, \dots, g_m\), then there is \(\boldsymbol\alpha \in \mathbb R^m\) with \(\nabla f(\mathbf w^\star) + \sum_{i \in I} \alpha_i \nabla g_i(\mathbf w^\star) = \mathbf 0\) (\(\nabla\) is the gradient, the vector of slopes; in words, at the optimum the downhill direction of \(f\) is blocked by a combination of the tight constraints), where \(I = \{i : g_i(\mathbf w^\star) = 0\}\) is the set of constraints that are tight at the optimum. With \(f(\mathbf w) = \|\mathbf w\|^2\) and \(g_i(\mathbf w) = 1 - y_i \langle \mathbf w, \mathbf x_i \rangle\), the gradients are \(2\mathbf w_0\) and \(-y_i \mathbf x_i\), and solving for \(\mathbf w_0\) gives the theorem. We will not prove the Fritz John conditions here. Instead, here is a direct proof that uses nothing but the geometry of the inner product.
 
 *Proof.* Let \(V\) be the span of the support vectors, the set of all linear combinations of \(\{\mathbf x_i : i \in I\}\). Every vector splits uniquely into a part in \(V\) and a part perpendicular to every vector of \(V\) (its orthogonal projection onto \(V\) and the remainder), so write \(\mathbf w_0 = \mathbf p + \mathbf r\) with \(\mathbf p \in V\) and \(\langle \mathbf r, \mathbf x_i \rangle = 0\) for every \(i \in I\). The theorem says exactly that \(\mathbf r = \mathbf 0\). Suppose not; we will build a feasible vector shorter than \(\mathbf w_0\), which is impossible.
 
@@ -576,7 +607,7 @@ For a number \(t\) with \(0 < t \le 1\), consider \(\mathbf w_t = \mathbf w_0 - 
 
 \[ \|\mathbf w_t\|^2 = \|\mathbf w_0\|^2 - 2t \langle \mathbf w_0, \mathbf r \rangle + t^2 \|\mathbf r\|^2. \]
 
-Since \(\mathbf p\) lies in \(V\) and \(\mathbf r\) is perpendicular to every vector of \(V\), \(\langle \mathbf p, \mathbf r \rangle = 0\), so \(\langle \mathbf w_0, \mathbf r \rangle = \langle \mathbf p + \mathbf r, \mathbf r \rangle = \|\mathbf r\|^2\). Hence \(\|\mathbf w_t\|^2 = \|\mathbf w_0\|^2 - (2t - t^2) \|\mathbf r\|^2\), and for \(0 < t \le 1\) we have \(2t - t^2 = t(2 - t) > 0\), so \(\|\mathbf w_t\|^2 < \|\mathbf w_0\|^2\). A feasible vector shorter than the minimizer is a contradiction, so \(\mathbf r = \mathbf 0\) and \(\mathbf w_0 = \mathbf p \in V\). \(\blacksquare\)
+This is the same square-of-a-sum expansion as in the distance proof, with \(\mathbf w_0\) and \(-t\mathbf r\). Since \(\mathbf p\) lies in \(V\) and \(\mathbf r\) is perpendicular to every vector of \(V\), \(\langle \mathbf p, \mathbf r \rangle = 0\), so \(\langle \mathbf w_0, \mathbf r \rangle = \langle \mathbf p + \mathbf r, \mathbf r \rangle = \|\mathbf r\|^2\). Hence \(\|\mathbf w_t\|^2 = \|\mathbf w_0\|^2 - (2t - t^2) \|\mathbf r\|^2\), and for \(0 < t \le 1\) we have \(2t - t^2 = t(2 - t) > 0\), so \(\|\mathbf w_t\|^2 < \|\mathbf w_0\|^2\). A feasible vector shorter than the minimizer is a contradiction, so \(\mathbf r = \mathbf 0\) and \(\mathbf w_0 = \mathbf p \in V\). \(\blacksquare\)
 
 One edge case falls out for free: \(I\) cannot be empty. If it were, \(V = \{\mathbf 0\}\) and the theorem would give \(\mathbf w_0 = \mathbf 0\), which violates every constraint.
 

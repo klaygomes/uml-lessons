@@ -242,35 +242,66 @@ The whole design question is: what should “gain” measure?
 
 ## Measuring a split
 
-Some notation first. For a training sequence \(S\) and an event about an example, write \(\mathbb P_S[\,\cdot\,]\) for its probability when the example is drawn uniformly from \(S\): just the fraction of the examples of \(S\) for which it holds. So \(\mathbb P_S[y = 1]\) is the fraction of junk in \(S\), and \(\mathbb P_S[y = 1 \mid x_i = 1]\) is the fraction of junk among the examples with feature \(i\) present.
+We need a world small enough to do with a pencil. Our users label one message of each of the 16 kinds FLUN, and this time the truth is the auditor’s tree from the picture: junk exactly when the sender is unknown and the message says FREE or has a link. Six of the 16 are junk: the ones with \(U = 1\) and at least one of \(F, L\). Eight of the 16 have an unknown sender, and all six junk messages are among them.
 
-**Gain from training error.** The most direct idea: a split is good if it reduces the training error. A leaf predicts the majority label of the examples that reach it, so if a fraction \(a\) of them are junk, it makes a mistake on a fraction \(\min\{a, 1 - a\}\) of them. Write
+Some notation first. Those counts are fractions of the training sequence: 6 of the 16 messages are junk, a fraction \(6/16 = 0.375\); among the 8 with an unknown sender, 6 are junk, a fraction \(6/8 = 0.75\). For a training sequence \(S\) and an event about an example, write \(\mathbb P_S[\,\cdot\,]\) for its probability when the example is drawn uniformly from \(S\): just the fraction of the examples of \(S\) for which it holds. So \(\mathbb P_S[y = 1]\) is the fraction of junk in \(S\), here 0.375. The vertical bar in \(\mathbb P_S[y = 1 \mid x_i = 1]\) reads “given”: it is the fraction of junk among the examples with feature \(i\) present only, and for \(i = U\) it is 0.75.
 
-\[ C(a) = \min\{a, 1 - a\}. \]
+**Gain from training error.** The most direct idea: a split is good if it reduces the training error. A leaf predicts the majority label of the examples that reach it, so if a fraction \(a\) of them are junk, it is wrong on whichever fraction is the minority. At the root of our tiny world, \(a = 0.375\): the majority is keep, and the leaf is wrong on the six junk messages, a fraction 0.375. Had \(a\) been 0.75, the majority would be junk and the leaf wrong on 0.25. Write this as
+
+\[ C(a) = \min\{a, 1 - a\}, \]
+
+where \(\min\{\cdot\}\) is the smaller of the numbers in the braces. In plain words: **a leaf whose junk fraction is \(a\) mislabels the smaller of the two groups.**
 
 Before the split, the leaf’s training error is \(C(\mathbb P_S[y = 1])\). After splitting on feature \(i\), the examples with \(x_i = 1\) go to one new leaf and those with \(x_i = 0\) to the other, each with its own majority, so the error becomes
 
 \[ \mathbb P_S[x_i = 1]\, C\big(\mathbb P_S[y = 1 \mid x_i = 1]\big) + \mathbb P_S[x_i = 0]\, C\big(\mathbb P_S[y = 1 \mid x_i = 0]\big). \]
 
+Read it from the inside out. Each \(C(\mathbb P_S[y = 1 \mid \dots])\) is the error rate of one new leaf, computed from its own junk fraction. Each is multiplied by \(\mathbb P_S[x_i = \dots]\), the fraction of the examples that land in that leaf, so a leaf that receives few examples counts for little. Adding the two gives the error over the whole of \(S\). In plain words: **after the split, the training error is the error of each new leaf, weighted by how many examples it gets.** Split the root on U: half the messages go each way; the unknown side is 0.75 junk, error \(C(0.75) = 0.25\); the known side has no junk, error 0. The total is \(0.5 \times 0.25 + 0.5 \times 0 = 0.125\), which is 2 mistakes out of 16.
+
 The **gain** is the difference:
 
 \[ \mathrm{Gain}(S, i) = C\big(\mathbb P_S[y = 1]\big) - \Big( \mathbb P_S[x_i = 1]\, C\big(\mathbb P_S[y = 1 \mid x_i = 1]\big) + \mathbb P_S[x_i = 0]\, C\big(\mathbb P_S[y = 1 \mid x_i = 0]\big) \Big). \]
 
+In plain words: **the gain of a feature is how much the training error drops when we split on it.** For U it is \(0.375 - 0.125 = 0.25\). Here are the three pieces in Python, with \(p\) the junk fraction before, \(q\) the fraction with \(U = 1\), and \(p_1\), \(p_0\) the junk fractions on the two sides:
+
+```python
+C = lambda a: min(a, 1 - a)
+p, q, p1, p0 = 6 / 16, 8 / 16, 6 / 8, 0 / 8
+before = C(p)
+after = q * C(p1) + (1 - q) * C(p0)
+print(before, after, before - after)
+```
+
+It prints `0.375 0.125 0.25`.
+
 If no example has \(x_i = 1\), the conditional probability is undefined, but its weight \(\mathbb P_S[x_i = 1]\) is 0, so the term is dropped. Same for \(x_i = 0\).
 
-**Information gain.** Keep the formula and replace \(C\) by the **entropy** of a yes/no outcome with probability \(a\):
+**Information gain.** Keep the formula and replace \(C\) by a measure of how uncertain the label is in a leaf. A leaf where every message is junk, or every message is keep, holds no uncertainty at all; a leaf that is half junk is as uncertain as a fair coin. The standard measure is the **entropy**, counted in bits: 0 for a pure leaf, 1 for the fair coin, and in between otherwise. For a yes/no outcome with probability \(a\),
 
 \[ C(a) = -a \log_2 a - (1 - a) \log_2 (1 - a), \qquad \text{with } 0 \log_2 0 = 0. \]
 
-Entropy measures how uncertain the label is: 0 bits when every example has the same label, 1 bit when it is a fair coin. The gain is then how much uncertainty the split removes. (Changing the base of the logarithm multiplies every gain by the same constant, so it never changes which feature wins. We use base 2.)
+Read it from the inside. \(\log_2 a\) is the base-2 logarithm we met in the code length; for a fraction \(a < 1\) it is negative, so \(-\log_2 a\) is positive, and it is large when \(a\) is small: a rare outcome is a big surprise. Each outcome’s surprise is weighted by how often it happens, and the two are added. The convention \(0 \log_2 0 = 0\) says an outcome that never happens adds nothing. In plain words: **entropy is the average surprise of the label, in bits.** At the root, \(a = 0.375\) gives \(0.375 \times 1.415 + 0.625 \times 0.678 \approx 0.954\) bits: nearly a fair coin. The gain is then how much uncertainty the split removes. (Changing the base of the logarithm multiplies every gain by the same constant, so it never changes which feature wins. We use base 2.)
 
-**Gini index.** Replace \(C\) by
+**Gini index.** Another way to measure how mixed a leaf is: draw two of its examples independently. The first is junk and the second keep with probability \(a(1 - a)\), and the other way round with the same probability. Replace \(C\) by the sum,
 
 \[ C(a) = 2a(1 - a). \]
 
-That is the chance that two examples drawn independently from the leaf have different labels.
+In plain words: **the Gini index is the chance that two examples drawn from the leaf disagree.** At the root it is \(2 \times 0.375 \times 0.625 \approx 0.469\).
 
-Let’s try all three on a world small enough to do with a pencil. Our users label one message of each of the 16 kinds FLUN, and this time the truth is the auditor’s tree from the picture: junk exactly when the sender is unknown and the message says FREE or has a link. Six of the 16 are junk: the ones with \(U = 1\) and at least one of \(F, L\).
+```python
+import math
+
+def H(a):
+    return sum(-p * math.log2(p) for p in (a, 1 - a) if p > 0)
+
+gini = lambda a: 2 * a * (1 - a)
+for a in (0.0, 0.5, 0.375, 0.75):
+    print(a, round(H(a), 3), round(gini(a), 3))
+```
+
+It prints `0.0 0.0 0.0`, `0.5 1.0 0.5`, `0.375 0.954 0.469` and `0.75 0.811 0.375`: both are 0 on a pure leaf and largest on the fair coin. The `if p > 0` is the convention \(0 \log_2 0 = 0\). Put these into the gain snippet in place of `C` and the U split’s information gain is \(0.954 - 0.5 \times 0.811 \approx 0.549\), its Gini gain \(0.469 - 0.5 \times 0.375 \approx 0.281\).
+
+Let’s try all three, on every feature, at the root and one level down.
 
 Before reading on, look at the root. Which feature would you split on, and does training error agree with you?
 
@@ -330,11 +361,13 @@ ID3(S, A)
          with T1 on the yes branch and T2 on the no branch
 ```
 
+A word on the notation. \(A \subseteq [d]\) says \(A\) is some of the feature numbers, the questions still allowed. The arrow \(\leftarrow\) stores a value. “argmax over \(i\) in \(A\)” returns not the largest gain but the feature that achieves it: at the root of the tiny world the information gains of F, L, U, N are 0.049, 0.049, 0.549 and 0, so the argmax is U. The braces \(\{(x, y) \in S : x_j = 1\}\) are the examples of \(S\) such that feature \(j\) is present, the 8 unknown-sender messages when \(j = U\), and \(A \setminus \{j\}\) is \(A\) with \(j\) removed, here \(\{F, L, N\}\).
+
 Three details are worth a moment. First, a feature, once used on a path, is removed from \(A\) for the rest of that path: asking the same question twice would be pointless, since every example below the node has the same answer. Second, if every example reaching a node has \(x_j = 1\), the “no” child gets an empty \(S\), and the first test passes vacuously (every example of an empty set has label 1), so it becomes a leaf 1 that no training example reaches. Third, ties in the argmax and in the majority need a rule; we break argmax ties toward the lowest feature index and majority ties toward junk.
 
 Run ID3 with any of the three gains on the 16 messages and it rebuilds the auditor’s tree exactly: U at the root, then F, then L, 7 nodes. But break the stuck tie at the \(U = 1\) node toward N instead, as an unlucky rule could, and the training-error version wastes its split on N, then has to ask F and L separately on both sides of it. It still ends with empirical risk 0, but with 13 nodes instead of 7. Its description grows from 24 bits to 42, and every extra bit weakens its certificate.
 
-**Runtime.** \(\mathrm{Gain}(S, i)\) needs only four counts (how many examples have each combination of \(x_i\) and \(y\)), so it costs \(O(|S|)\). A node that reaches the argmax with sample \(S_v\) and feature set \(A\) costs \(O(|S_v| \cdot |A|)\) for all the gains, plus \(O(|S_v|)\) to split the sample. The nodes at the same depth receive disjoint parts of \(S\), so one level of the tree costs \(O(md)\) in total. Every level removes a feature, so the depth is at most \(d\), and ID3 runs in \(O(md^2)\) time. For space: every internal node’s sample contains both labels, so it has at least two examples, and the internal nodes at one depth have disjoint samples. So there are at most \(m/2\) internal nodes per level and at most \(md/2\) in total, and storing the tree and the data takes \(O(md)\) space. Predicting a label walks one path, \(O(d)\).
+**Runtime.** Recall from lesson 3 that \(O(\cdot)\) reads “grows at most in proportion to”, and here \(|S|\) is how many examples \(S\) holds. \(\mathrm{Gain}(S, i)\) needs only four counts (how many examples have each combination of \(x_i\) and \(y\)), so it costs \(O(|S|)\). A node that reaches the argmax with sample \(S_v\) and feature set \(A\) costs \(O(|S_v| \cdot |A|)\) for all the gains, plus \(O(|S_v|)\) to split the sample. The nodes at the same depth receive disjoint parts of \(S\), so one level of the tree costs \(O(md)\) in total. Every level removes a feature, so the depth is at most \(d\), and ID3 runs in \(O(md^2)\) time. For space: every internal node’s sample contains both labels, so it has at least two examples, and the internal nodes at one depth have disjoint samples. So there are at most \(m/2\) internal nodes per level and at most \(md/2\) in total, and storing the tree and the data takes \(O(md)\) space. Predicting a label walks one path, \(O(d)\).
 
 That is cheap. What it returns is another matter.
 
@@ -350,11 +383,30 @@ Write \(q = \mathbb P_S[x_i = 1]\), \(p_1 = \mathbb P_S[y = 1 \mid x_i = 1]\) an
 
 \[ p = \mathbb P_S[y = 1] = q\, p_1 + (1 - q)\, p_0. \]
 
-So every gain in this lesson has the same shape,
+Take the stuck node of the tiny world, the 8 unknown-sender messages, and split it on F. Half have FREE, so \(q = 0.5\); all 4 of those are junk, \(p_1 = 1\); 2 of the other 4 are junk, \(p_0 = 0.5\). Then \(0.5 \times 1 + 0.5 \times 0.5 = 0.75\), and indeed 6 of the 8 are junk. In plain words: **the junk fraction of a node is the average of its children’s junk fractions, weighted by their sizes.** So every gain in this lesson has the same shape,
 
 \[ \mathrm{Gain}(S, i) = C\big(q p_1 + (1 - q) p_0\big) - \big( q\, C(p_1) + (1 - q)\, C(p_0) \big), \]
 
-the value of \(C\) at an average minus the average of the values. That is exactly the quantity that **concavity** controls. A function \(C\) on \([0,1]\) is concave if \(C(q a + (1-q) a') \ge q C(a) + (1-q) C(a')\) for all \(a, a', q \in [0,1]\): the chord between two points of its graph lies below the graph. It is **strictly concave** if the inequality is strict whenever \(a \ne a'\) and \(0 < q < 1\).
+the value of \(C\) at an average minus the average of the values. Inside the first \(C\) sits the parent’s junk fraction, 0.75; inside the parentheses, each child’s score weighted by its size. In plain words: **the gain is how much better the parent’s score is than the average score of its children.** For the F split, training error gives \(C(0.75) - (0.5 \times 0 + 0.5 \times 0.5) = 0.25 - 0.25 = 0\), stuck; the entropy gives \(0.811 - 0.5 \times 1 = 0.311\).
+
+```python
+import math
+
+def H(a):
+    return sum(-p * math.log2(p) for p in (a, 1 - a) if p > 0)
+
+C = {"err": lambda a: min(a, 1 - a), "info": H,
+     "gini": lambda a: 2 * a * (1 - a)}
+q, p1, p0 = 4 / 8, 4 / 4, 2 / 4
+p = q * p1 + (1 - q) * p0
+for name, c in C.items():
+    g = c(p) - (q * c(p1) + (1 - q) * c(p0))
+    print(name, p, round(g, 3))
+```
+
+It prints `err 0.75 0.0`, `info 0.75 0.311` and `gini 0.75 0.125`, the F column of the second three lines of the earlier output.
+
+That shape, value at an average minus average of values, is exactly the quantity that **concavity** controls. A function \(C\) on \([0,1]\) (the numbers from 0 to 1, ends included) is concave if \(C(q a + (1-q) a') \ge q C(a) + (1-q) C(a')\) for all \(a, a', q \in [0,1]\): the chord between two points of its graph lies below the graph. With the entropy, \(a = 1\), \(a' = 0.5\) and \(q = 0.5\), the left side is \(H(0.75) = 0.811\) and the right side is \(0.5 \times 0 + 0.5 \times 1 = 0.5\): the curve is above the chord, and the gap 0.311 is the gain we just computed. It is **strictly concave** if the inequality is strict whenever \(a \ne a'\) and \(0 < q < 1\).
 
 [[diagram:gain-curves]]
 
@@ -364,9 +416,9 @@ the value of \(C\) at an average minus the average of the values. That is exactl
 2. All three gains are never negative.
 3. The entropy and the Gini index are strictly concave, so their gains are strictly positive whenever \(0 < q < 1\) and \(p_1 \ne p_0\): whenever the split separates the examples into two groups with different junk fractions. The training-error gain is exactly 0 whenever \(p_1\) and \(p_0\) are on the same side of \(1/2\) (both at most \(1/2\), or both at least \(1/2\)), however different they are.
 
-*Proof.* Part 1. All three functions are symmetric under \(a \mapsto 1 - a\), so it is enough to take \(a \le 1/2\), where \(\min\{a, 1-a\} = a\). For the Gini index, \(1 - a \ge 1/2\), so \(2a(1-a) \ge 2a \cdot \tfrac12 = a\). For the entropy \(H\), we use concavity, proved in part 3: \(H(0) = 0\) and \(H(1/2) = 1\), and \(a = (1 - 2a) \cdot 0 + 2a \cdot \tfrac12\) is a weighted average of 0 and \(1/2\) with weights \(1 - 2a\) and \(2a\). So \(H(a) \ge (1 - 2a) H(0) + 2a H(1/2) = 2a \ge a\).
+*Proof.* Part 1. All three functions are symmetric under \(a \mapsto 1 - a\) (replacing \(a\) by \(1 - a\), swapping the roles of junk and keep, leaves them unchanged), so it is enough to take \(a \le 1/2\), where \(\min\{a, 1-a\} = a\). For the Gini index, \(1 - a \ge 1/2\), so \(2a(1-a) \ge 2a \cdot \tfrac12 = a\). For the entropy \(H\), we use concavity, proved in part 3: \(H(0) = 0\) and \(H(1/2) = 1\), and \(a = (1 - 2a) \cdot 0 + 2a \cdot \tfrac12\) is a weighted average of 0 and \(1/2\) with weights \(1 - 2a\) and \(2a\). So \(H(a) \ge (1 - 2a) H(0) + 2a H(1/2) = 2a \ge a\).
 
-Part 3 first, since part 2 uses it. For a function with a second derivative, a negative second derivative everywhere on \((0, 1)\) makes it strictly concave there. The Gini index \(2a - 2a^2\) has second derivative \(-4\). The entropy has first derivative \(\log_2\frac{1-a}{a}\) and second derivative \(-\frac{1}{a(1-a)\ln 2}\), negative on \((0,1)\); it is also continuous at 0 and 1, so strict concavity extends to \([0,1]\). Then, with \(0 < q < 1\) and \(p_1 \ne p_0\), strict concavity says \(C(q p_1 + (1-q) p_0) > q C(p_1) + (1-q) C(p_0)\), which is exactly “gain \(> 0\)”.
+Part 3 first, since part 2 uses it. The second derivative measures how fast the slope changes; when it is negative the slope keeps falling, so the graph bends downward and every chord lies below it. For a function with a second derivative, a negative second derivative everywhere on \((0, 1)\) makes it strictly concave there. The Gini index \(2a - 2a^2\) has second derivative \(-4\). The entropy has first derivative \(\log_2\frac{1-a}{a}\) and second derivative \(-\frac{1}{a(1-a)\ln 2}\), where \(\ln 2 \approx 0.693\) is the natural logarithm of 2; at \(a = 0.75\) it is \(-1/(0.1875 \times 0.693) \approx -7.7\), and it is negative on all of \((0,1)\), the numbers strictly between 0 and 1; it is also continuous at 0 and 1, so strict concavity extends to \([0,1]\). Then, with \(0 < q < 1\) and \(p_1 \ne p_0\), strict concavity says \(C(q p_1 + (1-q) p_0) > q C(p_1) + (1-q) C(p_0)\), which is exactly “gain \(> 0\)”.
 
 For the training error, \(C(a) = \min\{a, 1-a\}\) is the minimum of two linear functions, and a minimum of linear functions is concave: for each of the two lines \(\ell\), \(\ell(q a + (1-q)a') = q\ell(a) + (1-q)\ell(a') \ge q C(a) + (1-q) C(a')\), so the smaller of the two lines is also at least that. But on \([0, 1/2]\) it is the single line \(C(a) = a\). If \(p_1, p_0 \le 1/2\), then \(p \le 1/2\) too, and \(C(p) = p = q p_1 + (1-q) p_0 = q C(p_1) + (1-q) C(p_0)\): the gain is exactly 0. The case \(p_1, p_0 \ge 1/2\) is the same with the line \(1 - a\).
 
@@ -456,6 +508,21 @@ print(all(split(t) in built for t in grid))
 It prints `7 7` and `True`: seven thresholds producing seven different splits, and every threshold on a fine grid from \(-1\) to 26 produces one of those seven.
 
 Formally, let \(x_1, \dots, x_m\) be the training messages. For each real-valued feature \(i\), sort them so that \(x_{1,i} \le \dots \le x_{m,i}\), and use the conventions \(x_{0,i} = -\infty\) and \(x_{m+1,i} = +\infty\). For each \(j = 0, \dots, m\) with \(x_{j,i} < x_{j+1,i}\), pick a threshold \(\theta_{j,i}\) strictly inside \((x_{j,i}, x_{j+1,i})\), and define the yes/no feature \(\mathbb 1[x_i < \theta_{j,i}]\). That makes at most \(m + 1\) new features per original feature, so at most \(d(m+1)\) in all, about \(dm\). Then run ID3 on them.
+
+The double subscript \(x_{j,i}\) is “feature \(i\) of the \(j\)-th message in sorted order”, \(\pm\infty\) are stand-ins smaller and larger than every value, and \((x_{j,i}, x_{j+1,i})\) is the open gap between two neighbours, endpoints excluded. The condition \(x_{j,i} < x_{j+1,i}\) skips gaps of width zero, which tied values create. In plain words: **sort the training values, and put one threshold in every gap between neighbours that are actually different, including the gap before the first and after the last.** With the eight hours, \(m = 8\) allows up to 9 gaps, but the two 2.0s and the two 9.0s close two of them, leaving 7, as the earlier snippet found. Here is the formal version, sentinels included:
+
+```python
+hours = [23.5, 2.0, 14.25, 9.0, 2.0, 19.75, 9.0, 3.5]
+inf = float("inf")
+x = [-inf] + sorted(hours) + [inf]
+m = len(hours)
+gaps = [(x[j], x[j + 1]) for j in range(m + 1)
+        if x[j] < x[j + 1]]
+print(m + 1, len(gaps))
+print(gaps[0], gaps[2])
+```
+
+It prints `9 7`, then `(-inf, 2.0) (3.5, 9.0)`: the first gap lies below everything, and the third is the one where 4, 7 and 8.99 all live.
 
 **Proposition (thresholds reduce to yes/no features).** For every tree \(T\) whose splitting rules are thresholds \(\mathbb 1[x_i < \theta]\) on the original features, there is a tree \(T'\) over the constructed yes/no features with the same shape, the same number of nodes, and the same label on every training message. In particular, \(L_S(T') = L_S(T)\).
 
@@ -552,7 +619,11 @@ Instead of one tree, grow many and let them vote. A **random forest** is a hypot
 
 To pin down a forest, you choose \(A\) and the distribution of \(\theta\). Here is one common choice. Generate \(\theta\) in two parts. First, draw a new training sequence \(S'\) of size \(m'\) by sampling from \(S\) uniformly **with replacement**: some examples appear several times, others not at all. Second, draw a sequence of feature subsets \(I_1, I_2, \dots\), each a uniformly random set of \(k\) features. Then grow a tree with ID3 on \(S'\), except that at the \(t\)-th split the algorithm may only choose among the features in \(I_t\), picking the one with the highest gain there. Intuitively, if \(k\) is small, this restriction may prevent overfitting: no single tree can chase every coincidence, because at most splits the coincidence’s feature isn’t on offer. And because each tree sees a different resample, their mistakes differ, and the vote can cancel some of them.
 
-How different are the resamples? With \(m' = m\), each draw misses a given example with probability \(1 - 1/m\), so a resample contains a fraction \(1 - (1 - 1/m)^m\) of the distinct examples, which is about \(1 - 1/e\) for large \(m\).
+How different are the resamples? With \(m' = m\), each draw misses a given example with probability \(1 - 1/m\), and it is missed by all \(m\) independent draws with probability \((1 - 1/m)^m\), the miss chance multiplied by itself \(m\) times. So a resample contains a fraction
+
+\[ 1 - (1 - 1/m)^m \approx 1 - 1/e \]
+
+of the distinct examples, where \(e \approx 2.718\) is the base of the natural logarithm and \(\approx\) reads “is about”, the approximation getting better as \(m\) grows. In plain words: **a resample of size \(m\) leaves out about 37% of the examples and repeats others.** With \(m = 1{,}000\), \((0.999)^{1000} \approx 0.368\), so about 632 distinct examples make it in. The snippet draws the resamples and computes the formula side by side.
 
 ```python
 import random

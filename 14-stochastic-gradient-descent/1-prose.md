@@ -496,6 +496,8 @@ It prints `100 0.056 0.5`, then `400 0.024 0.25`, then `2500 0.009 0.1`. The mid
 
 \[ \mathbb E[f(\bar{\mathbf w})] - f(\mathbf w^\star) \le \frac{B^2}{2\eta T} + \frac{\eta \rho^2}{2}. \]
 
+Here \(\mathbb E[f(\bar{\mathbf w})]\) is the risk of the output averaged over all the random draws of a run, and “with probability 1” means the bound on \(\|\mathbf v_t\|\) never fails. In plain words: **averaged over runs, the output sits at most \(B^2/(2\eta T) + \eta\rho^2/2\) above the best point of the ball.** With \(B = 5\), \(\rho = 1\), \(T = 100\) and \(\eta = 0.5\), that is \(0.25 + 0.25 = 0.5\), against the 0.056 measured above; the `certificate` line of the snippet at the end of this section is this formula.
+
 With \(\eta = B/(\rho\sqrt T)\) the right side is \(B\rho/\sqrt T\). So for every \(\varepsilon > 0\), to reach \(\mathbb E[f(\bar{\mathbf w})] - f(\mathbf w^\star) \le \varepsilon\) it suffices to run \(T \ge B^2\rho^2/\varepsilon^2\) steps with that \(\eta\).
 
 The expectation is over the random choices \(\mathbf v_1, \dots, \mathbf v_T\), and we write \(\mathbf v_{1:t}\) for the first \(t\) of them. The point of the proof is to repeat the deterministic argument and see where randomness enters. It enters in exactly one place.
@@ -503,6 +505,8 @@ The expectation is over the random choices \(\mathbf v_1, \dots, \mathbf v_T\), 
 *Proof.* **Step 1, Jensen, now inside an expectation.** For every outcome of the random choices, Jensen’s inequality gives \(f(\bar{\mathbf w}) - f(\mathbf w^\star) \le \frac1T \sum_t (f(\mathbf w^{(t)}) - f(\mathbf w^\star))\). An inequality that holds for every outcome survives taking expectations, so
 
 \[ \mathbb E_{\mathbf v_{1:T}}\left[ f(\bar{\mathbf w}) - f(\mathbf w^\star) \right] \le \mathbb E_{\mathbf v_{1:T}}\left[ \frac1T \sum_{t=1}^T \left( f(\mathbf w^{(t)}) - f(\mathbf w^\star) \right) \right]. \]
+
+The subscript on \(\mathbb E\) names what is random, here all \(T\) choices; otherwise this is Step 1 of gradient descent with an average over runs wrapped around both sides.
 
 **Step 2, the step lemma, for every outcome.** The step lemma holds for *any* sequence of vectors, so it holds for whatever sequence SGD happened to draw. With \(\|\mathbf w^\star\| \le B\) and \(\|\mathbf v_t\| \le \rho\), dividing by \(T\):
 
@@ -517,6 +521,29 @@ Summing over \(t\), dividing by \(T\), and using linearity of expectation then c
 The term at time \(t\) depends only on \(\mathbf v_{1:t}\) (because \(\mathbf w^{(t)}\) is built from \(\mathbf v_{1:t-1}\)), so its expectation over \(\mathbf v_{1:T}\) equals its expectation over \(\mathbf v_{1:t}\). Now use the **law of total expectation**: for random variables \(\alpha, \beta\) and a function \(g\), \(\mathbb E_\alpha[g(\alpha)] = \mathbb E_\beta\left[ \mathbb E_\alpha[g(\alpha) \mid \beta] \right]\). Average first over \(\mathbf v_t\) with the past held fixed, then over the past. Take \(\alpha = \mathbf v_{1:t}\) and \(\beta = \mathbf v_{1:t-1}\):
 
 \[ \mathbb E_{\mathbf v_{1:t}}\left[ \langle \mathbf w^{(t)} - \mathbf w^\star, \mathbf v_t \rangle \right] = \mathbb E_{\mathbf v_{1:t-1}}\left[ \mathbb E\left[ \langle \mathbf w^{(t)} - \mathbf w^\star, \mathbf v_t \rangle \mid \mathbf v_{1:t-1} \right] \right]. \]
+
+In plain words: **averaging the progress over all of the first \(t\) choices is the same as averaging over step \(t\)’s choice with the past fixed, then averaging that over the past.** Take \(t = 2\) in the six-message world with \(\eta = 0.5\) and the hinge loss. The first draw gives one of six iterates \(\mathbf w^{(2)}\), the second draw one of six messages, so there are 36 equally likely pairs. Averaging the progress over all 36 at once, or over the second draw first and then over the first, gives the same number, and that number is at least the expected gap \(\mathbb E[L_{\mathcal D}(\mathbf w^{(2)})] - L_{\mathcal D}(\mathbf w^\star)\), which is what Step 3 claims:
+
+```python
+S = [((0.8, 0.2), 1), ((0.6, 0.6), 1), ((0.9, 0.4), 1),
+     ((0.1, 0.9), -1), ((0.4, 0.8), -1), ((0.7, 0.3), -1)]
+dot = lambda u, v: u[0] * v[0] + u[1] * v[1]
+L_D = lambda w: sum(max(0, 1 - y * dot(w, x)) for x, y in S) / 6
+eta, w_star = 0.5, (15 / 7, -65 / 28)
+
+def v(w, x, y):
+    return (-y * x[0], -y * x[1]) if y * dot(w, x) < 1 else (0, 0)
+
+term = lambda w, g: dot((w[0] - w_star[0], w[1] - w_star[1]), g)
+W2 = [(eta * y * x[0], eta * y * x[1]) for x, y in S]
+flat = sum(term(w, v(w, *z)) for w in W2 for z in S) / 36
+nested = sum(sum(term(w, v(w, *z)) for z in S) / 6
+             for w in W2) / 6
+gap = sum(L_D(w) - L_D(w_star) for w in W2) / 6
+print(round(flat, 4), round(nested, 4), round(gap, 4))
+```
+
+It prints `0.6767 0.6767 0.4892`. (The list `W2` uses that from \(\mathbf 0\) every message is active, so the first step is \(\eta y\mathbf x\).) The next two displays explain why the inequality holds.
 
 Once the past \(\mathbf v_{1:t-1}\) is fixed, \(\mathbf w^{(t)}\) is fixed too, not random any more. The inner product is linear in \(\mathbf v_t\), and expectation is linear, so the fixed vector \(\mathbf w^{(t)} - \mathbf w^\star\) comes out of the inner expectation:
 
@@ -555,13 +582,15 @@ Now the payoff. Every learner so far in this course has worked the same way: col
 
 \[ L_{\mathcal D}(\mathbf w) = \mathbb E_{z \sim \mathcal D}[\ell(\mathbf w, z)]. \]
 
+Here \(z \sim \mathcal D\) reads “\(z\) drawn from \(\mathcal D\)”: a fresh labelled message arrives at random, \(\ell(\mathbf w, z)\) is the loss on it, and \(\mathbb E_{z \sim \mathcal D}\) averages over that draw. In plain words: **the true risk is the expected loss on the next message to arrive.** In the six-message world it is the plain average over six, so the hinge risk of \(\mathbf w = \mathbf 0\) is 1; the `L_D` line of every snippet here is this formula.
+
 We cannot compute \(\nabla L_{\mathcal D}\), because we do not know \(\mathcal D\). But SGD does not need the gradient. It needs a random vector whose conditional expectation is a (sub)gradient, an **unbiased estimate**. And nature hands us one with every fresh message.
 
 **Differentiable losses.** At step \(t\), draw a fresh example \(z \sim \mathcal D\), independent of everything so far, and set \(\mathbf v_t = \nabla \ell(\mathbf w^{(t)}, z)\), the gradient of the loss on that one example with respect to \(\mathbf w\). Given the past, \(\mathbf w^{(t)}\) is fixed and only \(z\) is random, so
 
 \[ \mathbb E[\mathbf v_t \mid \mathbf w^{(t)}] = \mathbb E_{z \sim \mathcal D}\left[ \nabla \ell(\mathbf w^{(t)}, z) \right] = \nabla \mathbb E_{z \sim \mathcal D}\left[ \ell(\mathbf w^{(t)}, z) \right] = \nabla L_{\mathcal D}(\mathbf w^{(t)}). \]
 
-The middle step swaps the gradient and the expectation; that is linearity of the gradient, exact when \(\mathcal D\) has finitely many outcomes, as in our tiny world (for general \(\mathcal D\) it needs mild regularity conditions that hold for the losses in this course). Here it is in our six-message world at \(\mathbf w = (1, -0.5)\): the exact gradient of \(L_{\mathcal D}\), a finite-difference estimate of it, and the average of 200,000 one-message gradients.
+Read the chain left to right: the step’s average given the current iterate, the average of the one-message gradients, the gradient of the average loss, and the gradient of the true risk. In plain words: **on average, the gradient on one fresh message is the gradient of the true risk.** The middle step swaps the gradient and the expectation; that is linearity of the gradient, exact when \(\mathcal D\) has finitely many outcomes, as in our tiny world (for general \(\mathcal D\) it needs mild regularity conditions that hold for the losses in this course). Here it is in our six-message world at \(\mathbf w = (1, -0.5)\): the exact gradient of \(L_{\mathcal D}\), a finite-difference estimate of it, and the average of 200,000 one-message gradients.
 
 ```python
 import math
@@ -596,7 +625,7 @@ Take the expectation of both sides over \(z \sim \mathcal D\), conditioned on \(
 
 \[ L_{\mathcal D}(\mathbf u) - L_{\mathcal D}(\mathbf w^{(t)}) = \mathbb E\left[ \ell(\mathbf u, z) - \ell(\mathbf w^{(t)}, z) \mid \mathbf w^{(t)} \right] \ge \mathbb E\left[ \langle \mathbf u - \mathbf w^{(t)}, \mathbf v_t \rangle \mid \mathbf w^{(t)} \right] = \langle \mathbf u - \mathbf w^{(t)}, \mathbb E[\mathbf v_t \mid \mathbf w^{(t)}] \rangle. \]
 
-The last equality pulls the fixed vector \(\mathbf u - \mathbf w^{(t)}\) out of the expectation, as in the proof. Since this holds for every \(\mathbf u\), the conditional mean \(\mathbb E[\mathbf v_t \mid \mathbf w^{(t)}]\) is a subgradient of \(L_{\mathcal D}\) at \(\mathbf w^{(t)}\). Because the fresh \(z\) is independent of the whole past, conditioning on \(\mathbf w^{(t)}\) or on the whole past \(\mathbf v_{1:t-1}\) gives the same answer, so SGD’s requirement holds.
+The last equality pulls the fixed vector \(\mathbf u - \mathbf w^{(t)}\) out of the expectation, as in the proof. In plain words: **the average of the one-message subgradients supports the true risk, just as each one supports its own loss**; at \(\mathbf w = \mathbf 0\) that average was the \((-0.1833, 0.1333)\) of the hinge snippet. Since this holds for every \(\mathbf u\), the conditional mean \(\mathbb E[\mathbf v_t \mid \mathbf w^{(t)}]\) is a subgradient of \(L_{\mathcal D}\) at \(\mathbf w^{(t)}\). Because the fresh \(z\) is independent of the whole past, conditioning on \(\mathbf w^{(t)}\) or on the whole past \(\mathbf v_{1:t-1}\) gives the same answer, so SGD’s requirement holds.
 
 So SGD for the true risk is just this:
 
@@ -619,6 +648,8 @@ Every step uses a new example, so the number of steps *is* the number of example
 steps (that is, on \(T\) fresh examples) with \(\eta = B/(\rho\sqrt T)\), its output satisfies
 
 \[ \mathbb E[L_{\mathcal D}(\bar{\mathbf w})] \le \min_{\mathbf w \in \mathcal H} L_{\mathcal D}(\mathbf w) + \varepsilon. \]
+
+Here \(\min_{\mathbf w \in \mathcal H} L_{\mathcal D}(\mathbf w)\) is the smallest true risk of any weight vector in the class. In plain words: **on average, \(B^2\rho^2/\varepsilon^2\) fresh messages bring SGD within \(\varepsilon\) of the best weight vector in the class.** In the six-message world with \(B = 5\), \(\rho = 1\) and \(\varepsilon = 0.05\), that is 10,000 messages for an expected hinge risk of at most \(163/336 + 0.05 \approx 0.535\).
 
 *Proof.* \(L_{\mathcal D}\) is an average of convex functions, so it is convex. Each \(\mathbf v_t\) is a subgradient of a \(\rho\)-Lipschitz convex function, so \(\|\mathbf v_t\| \le \rho\) by the Lipschitz lemma. We just showed \(\mathbb E[\mathbf v_t \mid \text{past}] \in \partial L_{\mathcal D}(\mathbf w^{(t)})\). Take \(\mathbf w^\star\) a minimizer of \(L_{\mathcal D}\) over \(\mathcal H\); it has \(\|\mathbf w^\star\| \le B\), and the minimum of \(L_{\mathcal D}\) over the ball \(\{\|\mathbf w\| \le B\}\) can only be smaller, so the SGD guarantee, applied with that ball, bounds the gap to \(\min_{\mathcal H} L_{\mathcal D}\) too. \(\blacksquare\)
 
@@ -725,11 +756,13 @@ The analysis compared SGD with the best \(\mathbf w^\star\) of norm at most \(B\
 1. \(\mathbf w^{(t + \frac12)} = \mathbf w^{(t)} - \eta \mathbf v_t\),
 2. \(\mathbf w^{(t+1)} = \operatorname{argmin}_{\mathbf w \in \mathcal H} \|\mathbf w - \mathbf w^{(t+\frac12)}\|\).
 
-The second part is the **projection** onto \(\mathcal H\): replace the point by the closest point of \(\mathcal H\). For a ball it is just rescaling, \(\mathbf w \mapsto \mathbf w \cdot \min(1, B/\|\mathbf w\|)\). Every iterate is now in \(\mathcal H\), and since \(\mathcal H\) is convex, so is their average. Does the guarantee survive? It does, because projecting never moves you further from any point of the set.
+The half in the superscript marks a halfway point, the ordinary step before any correction. The second part is the **projection** onto \(\mathcal H\): \(\operatorname{argmin}_{\mathbf w \in \mathcal H}\) picks the point of \(\mathcal H\) closest to the halfway point. In plain words: **take the usual step, then pull back to the nearest point of the class.** For a ball it is just rescaling, \(\mathbf w \mapsto \mathbf w \cdot \min(1, B/\|\mathbf w\|)\), where the arrow \(\mapsto\) reads “is sent to”: with \(B = 1\), the point \((3, 4)\) of length 5 is sent to \((0.6, 0.8)\), and \((0.3, 0.4)\) stays put. The `project` line of the check below is this rescaling. Every iterate is now in \(\mathcal H\), and since \(\mathcal H\) is convex, so is their average. Does the guarantee survive? It does, because projecting never moves you further from any point of the set.
 
 **Lemma (projection).** Let \(\mathcal H\) be a closed convex set and let \(\mathbf v = \operatorname{argmin}_{\mathbf x \in \mathcal H} \|\mathbf x - \mathbf w\|^2\) be the projection of \(\mathbf w\) onto \(\mathcal H\). Then for every \(\mathbf u \in \mathcal H\),
 
 \[ \|\mathbf w - \mathbf u\|^2 - \|\mathbf v - \mathbf u\|^2 \ge 0. \]
+
+In plain words: **projecting onto a convex set never moves you further from any point inside it.** With \(\mathbf w = (3, 4)\), its projection \(\mathbf v = (0.6, 0.8)\) onto the unit ball and \(\mathbf u = \mathbf 0\): \(25 - 1 = 24 \ge 0\).
 
 *Proof.* Fix \(\mathbf u \in \mathcal H\). For every \(\alpha \in (0, 1)\), the point \(\mathbf v + \alpha(\mathbf u - \mathbf v)\) lies on the segment between two points of \(\mathcal H\), so it is in \(\mathcal H\) by convexity. Since \(\mathbf v\) is the closest point of \(\mathcal H\) to \(\mathbf w\),
 
@@ -777,19 +810,40 @@ Instead of a fixed \(\eta\), you can shrink the step as you go, \(\eta_t = B/(\r
 
 ### Other averaging
 
-The output need not be the plain average of all iterates. Alternatives include returning \(\mathbf w^{(t)}\) for a random \(t \in [T]\), averaging only the last \(\alpha T\) iterates for some \(\alpha \in (0, 1)\), or a weighted average of the last few. These schemes can converge faster in some situations, notably for the strongly convex functions we turn to now.
+The output need not be the plain average of all iterates. Alternatives include returning \(\mathbf w^{(t)}\) for a random \(t \in [T]\) (one of the steps \(1, \dots, T\)), averaging only the last \(\alpha T\) iterates for some \(\alpha \in (0, 1)\), or a weighted average of the last few. These schemes can converge faster in some situations, notably for the strongly convex functions we turn to now.
 
 ### Strongly convex functions
 
-Recall from lesson 13 that \(f\) is **\(\lambda\)-strongly convex** when, for all \(\mathbf w, \mathbf u\) and \(\alpha \in (0, 1)\),
+Recall from lesson 13 that a strongly convex function sags below each of its chords by at least a fixed multiple of the chord’s squared length. Lesson 13 wrote the constant as \(\sigma\); here we call it \(\lambda\), because below it will be the regularization weight. So \(f\) is **\(\lambda\)-strongly convex** when, for all \(\mathbf w, \mathbf u\) and \(\alpha \in (0, 1)\),
 
-\[ f(\alpha\mathbf w + (1-\alpha)\mathbf u) \le \alpha f(\mathbf w) + (1-\alpha) f(\mathbf u) - \frac\lambda2 \alpha(1-\alpha)\|\mathbf w - \mathbf u\|^2: \]
+\[ f(\alpha\mathbf w + (1-\alpha)\mathbf u) \le \alpha f(\mathbf w) + (1-\alpha) f(\mathbf u) - \frac\lambda2 \alpha(1-\alpha)\|\mathbf w - \mathbf u\|^2. \]
 
-it curves upward at least as much as the bowl \(\frac\lambda2\|\mathbf w\|^2\). That extra curvature buys a much better rate. We need one inequality, which strengthens the subgradient inequality by a quadratic term; proving it is Problem 1.
+The first two terms on the right are the chord, as in plain convexity, and the subtracted term is the guaranteed sag, largest at the chord’s middle, \(\alpha = \frac12\). In plain words: **the graph curves upward at least as much as the bowl \(\frac\lambda2\|\mathbf w\|^2\).** The bowl itself, with \(\lambda = 0.1\) in one dimension, \(w = 1\), \(u = -1\) and \(\alpha = \frac12\): the left side is \(f(0) = 0\), and the right side is \(0.05 - 0.05 \cdot \frac14 \cdot 4 = 0\), so the bowl just meets the requirement. That extra curvature buys a much better rate. We need one inequality, which strengthens the subgradient inequality by a quadratic term; proving it is Problem 1.
 
 **Claim (strong convexity and subgradients).** If \(f\) is \(\lambda\)-strongly convex, then for every \(\mathbf w, \mathbf u\) and \(\mathbf v \in \partial f(\mathbf w)\),
 
 \[ \langle \mathbf w - \mathbf u, \mathbf v \rangle \ge f(\mathbf w) - f(\mathbf u) + \frac\lambda2 \|\mathbf w - \mathbf u\|^2. \]
+
+Rearranged, \(f(\mathbf u) \ge f(\mathbf w) + \langle \mathbf u - \mathbf w, \mathbf v \rangle + \frac\lambda2\|\mathbf w - \mathbf u\|^2\). In plain words: **a strongly convex function rises above each supporting plane by at least \(\frac\lambda2\) times the squared distance.** For the same bowl at \(w = 1\), the subgradient is \(v = 0.1\), and both sides equal \(0.2\) at \(u = -1\). A random check of both inequalities on a bowl with a crease, \(0.05w^2 + |w|\):
+
+```python
+import random
+
+rng, lam = random.Random(0), 0.1
+f = lambda w: lam / 2 * w * w + abs(w)
+sub = lambda w: lam * w + (1 if w > 0 else -1 if w < 0 else 0)
+chord, plane = [], []
+for _ in range(100000):
+    w, u, a = rng.uniform(-3, 3), rng.uniform(-3, 3), rng.random()
+    sag = lam / 2 * a * (1 - a) * (w - u) ** 2
+    mid = f(a * w + (1 - a) * u)
+    chord.append(a * f(w) + (1 - a) * f(u) - sag - mid)
+    plane.append((w - u) * sub(w) - (f(w) - f(u))
+                 - lam / 2 * (w - u) ** 2)
+print(min(chord) > -1e-12, min(plane) > -1e-12)
+```
+
+It prints `True True`.
 
 The algorithm changes in two places: the step size is \(\eta_t = 1/(\lambda t)\), decreasing, and there is a projection onto a closed convex set \(\mathcal H\).
 

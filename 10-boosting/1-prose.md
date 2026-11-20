@@ -286,7 +286,7 @@ The label \(y_i\) is \(+1\) or \(-1\), so the product \(y_i D_i\) is the weight 
 
 [[diagram:sweep]]
 
-The sweep starts with a threshold below everything, where every example is predicted junk and \(F\) is the total weight of the keep examples, and then walks up the sorted list. Here is the check that the sweep and brute force agree on 200 random examples of one feature. The `groupby` handles ties: examples with equal counts must cross the threshold together, which is exactly why \(\Theta_j\) has no threshold between two equal values. The line `F += sum(l * d ...)` is the update \(F_j(\theta') = F_j(\theta) + y_i D_i\), applied to every example in a group of ties at once.
+The sweep starts with a threshold below everything, where every example is predicted junk and \(F\) is the total weight of the keep examples, and then walks up the sorted list. Here the sweep and brute force meet on 200 random examples of one feature. The line `F += ...` is the update \(F_j(\theta') = F_j(\theta) + y_i D_i\), applied by `groupby` to a whole group of equal counts at once, since ties cross the threshold together.
 
 ```python
 import itertools, random
@@ -442,7 +442,7 @@ It prints
 0.071 1.282 0.0 0.0769
 ```
 
-Two things deserve a second look. First, the empirical risk did not go down after round 2: it stayed at 0.2. The vote of the first two stumps happens to say keep for messages 4 to 7, getting 4 and 5 right but now 6 and 7 wrong. The empirical risk of AdaBoost is not guaranteed to fall every round. What *is* guaranteed to fall is a smooth quantity sitting above it, and that is the heart of the proof. Second, look at round 2’s weights: right after the update, messages 4 and 5, the ones round 1 got wrong, carry exactly half the total weight. Coincidence? Problem 1 at the end asks you to prove it never is.
+Two things deserve a second look. First, the empirical risk did not go down after round 2: it stayed at 0.2. The vote of the first two stumps happens to say keep for messages 4 to 7, getting 4 and 5 right but now 6 and 7 wrong. AdaBoost’s empirical risk is not guaranteed to fall every round; what is guaranteed to fall is a smooth quantity sitting above it, the heart of the proof. Second, look at round 2’s weights: right after the update, messages 4 and 5, the ones round 1 got wrong, carry exactly half the total weight. Coincidence? Problem 1 at the end asks you to prove it never is.
 
 [[diagram:reweight]]
 
@@ -630,9 +630,7 @@ What it cannot do is promise an edge that isn’t there. The theorem needs an ed
 
 ## AdaBoost as code
 
-**Cost.** Each round does \(O(m)\) work to compute \(\varepsilon_t\) and update the weights, plus one call to the weak learner. So \(T\) rounds cost \(O(T \cdot (m + c_{WL}))\), where \(c_{WL}\) is the cost of one call. With stumps, presorted once in \(O(dm \log m)\), each call is \(O(dm)\), so training costs \(O(dm \log m + Tdm)\) in total. Space is \(O(dm)\) for the sorted index lists, \(O(m)\) for the weights and \(O(T)\) for the votes and stumps. Predicting a fresh message costs \(O(T)\): evaluate \(T\) stumps and add.
-
-That is the whole computational point. If the weak learner is efficient, as ERM over stumps is, the strong hypothesis is efficient to train too, with only a factor of \(T\) on top.
+**Cost.** Each round does \(O(m)\) work to compute \(\varepsilon_t\) and update the weights, plus one call to the weak learner. So \(T\) rounds cost \(O(T \cdot (m + c_{WL}))\), where \(c_{WL}\) is the cost of one call. With stumps, presorted once in \(O(dm \log m)\), each call is \(O(dm)\), so training costs \(O(dm \log m + Tdm)\) in total. Space is \(O(dm)\) for the sorted index lists, \(O(m)\) for the weights and \(O(T)\) for the votes and stumps. Predicting a fresh message costs \(O(T)\): evaluate \(T\) stumps and add. That is the whole computational point: an efficient weak learner gives an efficient strong one, with only a factor of \(T\) on top.
 
 **Build it yourself (part 2).** Extend part 1:
 

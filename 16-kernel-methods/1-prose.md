@@ -17,7 +17,7 @@ So what? A halfspace adds up evidence; surely it can add up two words. Let’s t
 | C | 1 | 0 | 1 | 0 | 1 | keep |
 | D | 0 | 1 | 0 | 1 | 1 | keep |
 
-Before you read on, try to find weights \(\mathbf w\) and a bias term \(b\) with \(\langle \mathbf w, \mathbf x \rangle + b > 0\) on A and B and \(\le 0\) on C and D. Give winner a big weight and C becomes junk. Give claim a big weight and D does. You will run out of ideas quickly, and for a good reason.
+Recall lesson 9’s halfspace: a weight vector \(\mathbf w\) with one weight per word, a bias term \(b\), and the score \(\langle \mathbf w, \mathbf x \rangle + b\), where the inner product \(\langle \mathbf w, \mathbf x \rangle = \sum_j w_j x_j\) multiplies each weight by its word’s count and adds. The message is called junk when the score is positive. Before you read on, try to find \(\mathbf w\) and \(b\) with \(\langle \mathbf w, \mathbf x \rangle + b > 0\) on A and B and \(\le 0\) on C and D. Give winner a big weight and C becomes junk. Give claim a big weight and D does. You will run out of ideas quickly, and for a good reason.
 
 Add the two junk vectors, and add the two keep vectors:
 
@@ -35,11 +35,11 @@ print([sum(col) for col in zip(*junk)])
 print([sum(col) for col in zip(*keep)])
 ```
 
-It prints `[1, 1, 1, 1, 2]` twice. The two pairs have the same sum. Now suppose some halfspace separated them. Adding its two inequalities on the junk messages gives \(\langle \mathbf w, \mathbf x_A + \mathbf x_B \rangle + 2b > 0\), and adding its two inequalities on the keep messages gives \(\langle \mathbf w, \mathbf x_C + \mathbf x_D \rangle + 2b \le 0\). The left-hand sides are the same number, because \(\mathbf x_A + \mathbf x_B = \mathbf x_C + \mathbf x_D\). A number cannot be both positive and at most zero, so no halfspace on these features separates the four messages. It is not that Soft-SVM is searching badly: the hypothesis class itself cannot express the rule. In the language of lesson 5, the approximation error is the problem, and no number of labels fixes that.
+It prints `[1, 1, 1, 1, 2]` twice. The two pairs have the same sum. Now suppose some halfspace separated them. Adding its two inequalities on the junk messages gives \(\langle \mathbf w, \mathbf x_A + \mathbf x_B \rangle + 2b > 0\), and adding its two inequalities on the keep messages gives \(\langle \mathbf w, \mathbf x_C + \mathbf x_D \rangle + 2b \le 0\). The left-hand sides are the same number, because \(\mathbf x_A + \mathbf x_B = \mathbf x_C + \mathbf x_D\). A number cannot be both positive and at most zero, so no halfspace on these features separates the four messages. It is not that Soft-SVM is searching badly: the hypothesis class itself cannot express the rule. In the language of lesson 5, the approximation error (the error of the best hypothesis in the class) is the problem, and no number of labels fixes that.
 
 Your colleague has the obvious fix. If junk is marked by pairs of words, give the filter pairs of words as features: one new coordinate for every pair, equal to 1 when both words appear. And since next month’s junk might be marked by three words, why not triples too? Then a halfspace over the new coordinates can say “winner and claim” directly.
 
-It is a good idea, and it is the idea of this whole lesson. But count the coordinates first. With a vocabulary of \(n = 20{,}000\) words, the number of products of at most \(k\) words, including the empty product (a constant), is \(\binom{n+k}{k}\):
+It is a good idea, and it is the idea of this whole lesson. But count the coordinates first. With a vocabulary of \(n = 20{,}000\) words, the number of products of at most \(k\) words, including the empty product (a constant), is \(\binom{n+k}{k}\). Read \(\binom{n+k}{k}\) as “\(n + k\) choose \(k\)”, the number of ways to pick \(k\) things out of \(n + k\); a product of at most \(k\) words is \(k\) slots, each filled by a word or left blank, order ignored. So: **the number of word products of size at most \(k\) is \(n + k\) choose \(k\).** With the five words of the table and \(k = 2\), that is \(\binom{7}{2} = 21\): the constant, 5 single words, 5 squares and 10 pairs. The snippet mirrors it with `comb(n + k, k)` and charges 8 bytes per weight:
 
 ```python
 from math import comb
@@ -58,7 +58,7 @@ So here is the bug. The features that would make the junk separable are too many
 
 Let’s start smaller than mail, on the real line, where you can see everything. Take the 21 points \(-10, -9, \dots, 9, 10\), and label a point \(+1\) when \(|x| > 2\) and \(-1\) otherwise. The positive points sit on both sides, the negative ones in the middle. A halfspace on the line is a threshold, “positive to the right of \(t\)” or “positive to the left of \(t\)”, so no halfspace gets this right.
 
-Now send every point \(x\) to the pair \(\psi(x) = (x, x^2)\) in the plane. The points land on a parabola. The middle points, with \(|x| \le 2\), have \(x^2 \le 4\), and the outer ones have \(x^2 \ge 9\). A horizontal line between heights 4 and 9 splits them: take \(\mathbf w = (0, 1)\) and \(b = 5\), and predict \(h(x) = \operatorname{sign}(\langle \mathbf w, \psi(x) \rangle - b)\).
+Now send every point \(x\) to the pair \(\psi(x) = (x, x^2)\) in the plane. The points land on a parabola. The middle points, with \(|x| \le 2\), have \(x^2 \le 4\), and the outer ones have \(x^2 \ge 9\). A horizontal line between heights 4 and 9 splits them: take \(\mathbf w = (0, 1)\) and \(b = 5\), and predict \(h(x) = \operatorname{sign}(\langle \mathbf w, \psi(x) \rangle - b)\). Here \(\operatorname{sign}(s)\) is \(+1\) when \(s > 0\) and \(-1\) otherwise, and \(\langle \mathbf w, \psi(x) \rangle = 0 \cdot x + 1 \cdot x^2\) is just the height \(x^2\). In plain words: **a point is positive when its height on the parabola is above 5.** At \(x = 3\) the height is 9 and the score \(9 - 5 = 4\), positive; at \(x = 2\) the score is \(4 - 5 = -1\), negative. In the snippet, `h` is this formula term by term.
 
 [[diagram:lift]]
 
@@ -81,7 +81,7 @@ print(min(abs(psi(x)[1] - b) for x in xs))
 
 It prints `True` and `1`: every point is labelled correctly, and none sits closer than 1 to the line \(x^2 = 5\). The classifier is linear in the plane and quite nonlinear on the line.
 
-That move has a name. A map \(\psi: \mathcal X \to \mathcal F\) from the domain set into a vector space is an **embedding**, and its range \(\mathcal F\) is the **feature space**. Each coordinate of \(\psi(x)\) is a new feature computed from the message, such as “winner and claim both appear”. The paradigm has four steps.
+That move has a name. A map \(\psi: \mathcal X \to \mathcal F\) (read the arrow as “takes a point of \(\mathcal X\), returns a point of \(\mathcal F\)”) from the domain set, lesson 1’s set of all possible inputs, into a vector space is an **embedding**, and its range \(\mathcal F\) is the **feature space**. Each coordinate of \(\psi(x)\) is a new feature computed from the message, such as “winner and claim both appear”. The paradigm has four steps.
 
 1. Given the domain set \(\mathcal X\) and the task, choose an embedding \(\psi: \mathcal X \to \mathcal F\). Usually \(\mathcal F = \mathbb R^n\) for some \(n\), but we will soon need spaces of infinite dimension too.
 2. Given the training sequence \(S = ((x_1, y_1), \dots, (x_m, y_m))\), form the **image sequence** \(\hat S = ((\psi(x_1), y_1), \dots, (\psi(x_m), y_m))\).
@@ -92,17 +92,63 @@ Does learning in the feature space measure the right thing? Yes, and it is worth
 
 \[ L_{\mathcal D_\psi}(h) = \mathbb P_{(x, y) \sim \mathcal D}\left[ h(\psi(x)) \ne y \right] = L_{\mathcal D}(h \circ \psi), \]
 
-because both sides are the probability of the same event, just described in two spaces. So the true risk of the halfspace in feature space is exactly the true risk of the composed filter on messages. Nothing is lost in translation.
+because both sides are the probability of the same event, just described in two spaces. Read it from the inside out.
+
+- In \(\mathcal D_\psi(A)\), the braces \(\{(x, y) : \dots\}\) collect the pairs such that their image lands in \(A\), so a set of feature-space pairs gets the probability its original pairs had.
+- \((x, y) \sim \mathcal D\) reads “a message and its label drawn from \(\mathcal D\)”, and \(\mathbb P[\dots]\) is the probability of the event in the brackets: embed the message, let \(h\) label it, and get it wrong.
+- \(L_{\mathcal D_\psi}(h)\) is lesson 1’s true risk, scored in feature space; \(h \circ \psi\), “\(h\) after \(\psi\)”, is the filter that embeds first and then applies \(h\), and \(L_{\mathcal D}(h \circ \psi)\) is its true risk on messages.
+
+In plain words: **the halfspace’s error rate in feature space is the filter’s error rate on messages.** Make the 21 points of the line equally likely and lower the line to height 3. Then \(x = \pm 2\), at height 4, are called positive and are wrong, and both sides equal \(2/21\). The snippet builds \(\mathcal D_\psi\) by pushing each probability to its image, then scores both sides:
+
+```python
+from fractions import Fraction
+
+xs = range(-10, 11)
+D = {(x, 1 if abs(x) > 2 else -1): Fraction(1, 21) for x in xs}
+psi = lambda x: (x, x * x)
+h = lambda z: 1 if z[1] - 3 > 0 else -1
+D_psi = {}
+for (x, y), p in D.items():
+    D_psi[(psi(x), y)] = D_psi.get((psi(x), y), 0) + p
+lhs = sum(p for (z, y), p in D_psi.items() if h(z) != y)
+rhs = sum(p for (x, y), p in D.items() if h(psi(x)) != y)
+print(lhs, rhs)
+```
+
+It prints `2/21 2/21`. Nothing is lost in translation.
 
 You have seen one embedding before. In lesson 9, polynomial regression was least squares on \(\psi(x) = (1, x, x^2, \dots, x^k)\): a polynomial of degree \(k\) in \(x\) is a linear function of \(\psi(x)\). The same works with many variables. A polynomial of degree \(k\) from \(\mathbb R^n\) to \(\mathbb R\) is a weighted sum of monomials, products of at most \(k\) of the coordinates:
 
 \[ p(\mathbf x) = \sum_{r=0}^{k} \; \sum_{J \in [n]^r} w_J \prod_{i=1}^{r} x_{J_i}. \]
 
-Give \(\psi(\mathbf x)\) one coordinate for each index tuple \(J\), equal to the monomial \(\prod_i x_{J_i}\), and then \(p(\mathbf x) = \langle \mathbf w, \psi(\mathbf x) \rangle\). Halfspaces over this \(\psi\) are exactly the polynomial threshold rules of degree \(k\), and that includes “junk when winner and claim both appear”.
+Read it from the inside out.
+
+- \([n]\) is the list of positions \(\{1, \dots, n\}\), and \([n]^r\) is the set of all lists \(J = (J_1, \dots, J_r)\) of \(r\) positions, repeats allowed; for \(r = 0\) it holds only the empty list.
+- \(x_{J_i}\) is the coordinate at the \(i\)-th position of \(J\), and the big pi \(\prod_{i=1}^{r}\) multiplies the \(r\) of them; the empty product is 1, the constant term.
+- \(w_J\) is the weight of that monomial, and the two sums add the weighted monomials over every length \(r\) from 0 to \(k\) and every list of that length.
+
+In plain words: **a polynomial of degree \(k\) is a weighted sum of products of at most \(k\) coordinates.** With two words, winner (1) and claim (2), \(k = 2\), weight \(-1\) on the empty list and 1 on each of \((1, 2)\) and \((2, 1)\), you get \(p(\mathbf x) = 2 x_1 x_2 - 1\): 1 on a message with both words, \(-1\) on the other three kinds. The two sums are the two `for` clauses, and `prod` is the big pi:
+
+```python
+from itertools import product
+from math import prod
+
+n, k = 2, 2
+w = {(): -1, (1, 2): 1, (2, 1): 1}
+
+def p(x):
+    return sum(w.get(J, 0) * prod(x[j - 1] for j in J)
+               for r in range(k + 1)
+               for J in product(range(1, n + 1), repeat=r))
+
+print([p(x) for x in [(1, 1), (1, 0), (0, 1), (0, 0)]])
+```
+
+It prints `[1, -1, -1, -1]`. Give \(\psi(\mathbf x)\) one coordinate for each index tuple \(J\), equal to the monomial \(\prod_i x_{J_i}\), and then \(p(\mathbf x) = \langle \mathbf w, \psi(\mathbf x) \rangle\). Halfspaces over this \(\psi\) are exactly the polynomial threshold rules of degree \(k\), and that includes “junk when winner and claim both appear”.
 
 So the plan is sound in principle. In practice it raises two problems, and they are the same two that lesson 15 opened with.
 
-The first is **statistical**. Halfspaces in \(\mathbb R^n\) have VC dimension \(n + 1\) (lesson 9), so a feature space with a trillion coordinates seems to demand on the order of a trillion labels. Lesson 15 already answered this one: a large margin, or equivalently a small norm \(\|\mathbf w\|\), gives a sample complexity that does not depend on the dimension at all. We will put numbers on it near the end of this lesson.
+The first is **statistical**. Halfspaces in \(\mathbb R^n\) have VC dimension \(n + 1\) (lesson 6’s largest number of points a class labels in every possible way, computed for halfspaces in lesson 9), so a feature space with a trillion coordinates seems to demand on the order of a trillion labels. Lesson 15 already answered this one: a large margin, or equivalently a small norm \(\|\mathbf w\| = \sqrt{\sum_j w_j^2}\), the length of the weight vector, gives a sample complexity that does not depend on the dimension at all. We will put numbers on it near the end of this lesson.
 
 The second is **computational**: computing in the feature space is too expensive, and even writing down \(\mathbf w\) can be impossible. That is the bug from the opening, and the rest of this lesson takes it apart.
 
@@ -112,13 +158,15 @@ Before we fight the cost, let’s make sure pairs really do the job. Go back to 
 
 \[ y = +1 \iff (x_1 = 1 \text{ and } x_2 = 1) \text{ or } (x_3 = 1 \text{ and } x_4 = 1). \]
 
+Here \(\iff\) reads “exactly when”, and each bracket asks whether both words of a pair appear: **junk exactly when winner and claim both appear, or verify and password both do.** “winner claim lunch” is junk; “winner verify lunch” is keep. The function `y` in the snippet below is this rule.
+
 Use the degree-2 embedding. Prepend a constant \(x_0 = 1\), and give \(\psi(\mathbf x)\) one coordinate for each ordered pair \(J = (J_1, J_2) \in \{0, 1, \dots, d\}^2\), equal to \(x_{J_1} x_{J_2}\). So the coordinate \((0, 0)\) is the constant 1, the coordinates \((0, j)\) and \((j, 0)\) are \(x_j\), and the coordinate \((1, 2)\) is \(x_1 x_2\), “winner and claim”.
 
 Now write down a weight vector \(\mathbf u\) by hand: put 1 on the four coordinates \((1, 2), (2, 1), (3, 4), (4, 3)\), put \(-1\) on \((0, 0)\), and 0 everywhere else. Then
 
 \[ \langle \mathbf u, \psi(\mathbf x) \rangle = 2 x_1 x_2 + 2 x_3 x_4 - 1. \]
 
-On a junk message at least one product is 1, so the score is at least 1. On a keep message both products are 0, so the score is exactly \(-1\). Every message gets \(y \langle \mathbf u, \psi(\mathbf x) \rangle \ge 1\). That is lesson 9’s rescaled separability condition, with room to spare.
+Each pair product sits in two coordinates, \((1, 2)\) and \((2, 1)\), which is where the 2s come from, and the \(-1\) is the weight on the constant. In plain words: **the score is 1 or 3 when a junk pair is present and \(-1\) otherwise.** For “winner claim lunch”, \(x_1 x_2 = 1\) and \(x_3 x_4 = 0\), so the score is \(2 - 1 = 1\). On a junk message at least one product is 1, so the score is at least 1. On a keep message both products are 0, so the score is exactly \(-1\). Every message gets \(y \langle \mathbf u, \psi(\mathbf x) \rangle \ge 1\): the label times the score is at least 1, so the message is on its correct side with score to spare. That is lesson 9’s rescaled separability condition.
 
 Here is the check over all 56 three-word subject lines from an 8-word vocabulary, building \(\psi\) explicitly:
 
@@ -145,7 +193,7 @@ print(len(msgs), min(y(x) * score(x) for x in msgs))
 print(sum(v * v for v in u.values()), (1 + s) ** k)
 ```
 
-It prints `56 1` and `5 16`. All 56 messages are on the right side with \(y \langle \mathbf u, \psi(\mathbf x) \rangle \ge 1\), and \(\|\mathbf u\|^2 = 5\). Remember the 5. (The 16 will matter later, too.) Notice also what the vector \(\mathbf u\) did not need: weights on the 81 coordinates of this small example, or on the 400 million of a 20,000-word vocabulary. Only five of its coordinates are nonzero. The learner, however, does not know which five, and that is where the cost comes from.
+Here `score` builds \(\langle \mathbf u, \psi(\mathbf x) \rangle\) coordinate by coordinate, and the last line prints \(\|\mathbf u\|^2\), the sum of the squared weights. It prints `56 1` and `5 16`. All 56 messages are on the right side with \(y \langle \mathbf u, \psi(\mathbf x) \rangle \ge 1\), and \(\|\mathbf u\|^2 = 5\). Remember the 5. (The 16 will matter later, too.) Notice also what the vector \(\mathbf u\) did not need: weights on the 81 coordinates of this small example, or on the 400 million of a 20,000-word vocabulary. Only five of its coordinates are nonzero. The learner, however, does not know which five, and that is where the cost comes from.
 
 ## Where the weight vector lives
 
