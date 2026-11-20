@@ -1168,9 +1168,7 @@ Each term is a hinge loss in \(\mathbf w\), hence convex, and it is \(\|\mathbf 
 
 \[ \pi(\mathbf y') = \operatorname*{argmax}_{\mathbf v \in V} \sum_{i=1}^r v_i\, y'_i. \]
 
-In words: to make \(\sum_i v_i y'_i\) as large as possible, give the largest position number to the largest score, the next largest to the next, and so on, which is exactly what sorting does. This is the sorting fact again; proving it is Problem 3. Python checks it on a thousand random score vectors against all 720 permutations of six positions:
-
-Read it from the inside out: \(\mathbf v\) is a candidate assignment of positions \(1, \dots, r\) to the messages, one each; \(\sum_i v_i y'_i\) multiplies each message’s position by its score and adds; the argmax over all \(r!\) permutations in \(V\) picks the best assignment. In plain words: **the order the scores induce is the assignment of positions that makes “position times score” add up to the most.** With scores \((0.3, -1, 2)\), sorting gives positions \((2, 1, 3)\) and the sum \(0.6 - 1 + 6 = 5.6\); every other permutation gives less.
+Read it from the inside out: \(\mathbf v\) is a candidate assignment of positions \(1, \dots, r\) to the messages, one each; \(\sum_i v_i y'_i\) multiplies each message’s position by its score and adds; the argmax over all \(r!\) permutations in \(V\) picks the best assignment. In plain words: **the order the scores induce is the assignment of positions that makes “position times score” add up to the most.** With scores \((0.3, -1, 2)\), sorting gives positions \((2, 1, 3)\) and the sum \(0.6 - 1 + 6 = 5.6\); every other permutation gives less. The reason is that to make the sum as large as possible you give the largest position number to the largest score, the next largest to the next, and so on, which is exactly what sorting does: the sorting fact again, and proving it is Problem 3.
 
 ```python
 import itertools
@@ -1182,7 +1180,7 @@ total = {v: round(sum(a * b for a, b in zip(v, yp)), 2)
 print(max(total, key=total.get), total)
 ```
 
-It prints `(2, 1, 3)` and the sum for each of the six permutations; the largest, `5.6`, belongs to `(2, 1, 3)`.
+It prints `(2, 1, 3)` and the sum for each of the six permutations; the largest, `5.6`, belongs to `(2, 1, 3)`. The next snippet checks the identity on a thousand random score vectors against all 720 permutations of six positions.
 
 ```python
 import itertools
@@ -1205,6 +1203,8 @@ Now the surrogate falls out of the multiclass machinery, with permutations playi
 
 \[ \pi(h_{\mathbf w}(\bar{\mathbf x})) = \operatorname*{argmax}_{\mathbf v \in V} \sum_{i=1}^r v_i \langle \mathbf w, \mathbf x_i \rangle = \operatorname*{argmax}_{\mathbf v \in V} \left\langle \mathbf w, \sum_{i=1}^r v_i \mathbf x_i \right\rangle = \operatorname*{argmax}_{\mathbf v \in V} \langle \mathbf w, \Psi(\bar{\mathbf x}, \mathbf v) \rangle, \]
 
+so the linear ranker is a linear multiclass predictor whose labels are permutations.
+
 Read the chain left to right. The first equality is the sorting identity with \(y'_i = \langle \mathbf w, \mathbf x_i \rangle\). The second moves the sum inside the inner product, which is allowed because the inner product is linear. The third names the vector inside, \(\Psi(\bar{\mathbf x}, \mathbf v) = \sum_i v_i \mathbf x_i\). In plain words: **ranking by a linear score is the same as choosing the permutation \(\mathbf v\) whose feature vector \(\sum_i v_i \mathbf x_i\) scores highest.** With the three messages and \(\mathbf w = (1, -1)\), both sides give positions \((3, 1, 2)\).
 
 ```python
@@ -1222,7 +1222,7 @@ print(pi, best)
 
 It prints `(3, 1, 2) (3, 1, 2)`.
 
-so the linear ranker is a linear multiclass predictor whose labels are permutations. The generalized hinge derivation goes through word for word (write \(\Delta(\mathbf v, \mathbf y)\) for the NDCG loss of the order \(\mathbf v\), since \(\pi(\mathbf v) = \mathbf v\)):
+The generalized hinge derivation goes through word for word (write \(\Delta(\mathbf v, \mathbf y)\) for the NDCG loss of the order \(\mathbf v\), since \(\pi(\mathbf v) = \mathbf v\)):
 
 \[ \begin{aligned} \Delta(h_{\mathbf w}(\bar{\mathbf x}), \mathbf y) &\le \Delta(h_{\mathbf w}(\bar{\mathbf x}), \mathbf y) + \langle \mathbf w, \Psi(\bar{\mathbf x}, \pi(h_{\mathbf w}(\bar{\mathbf x}))) \rangle - \langle \mathbf w, \Psi(\bar{\mathbf x}, \pi(\mathbf y)) \rangle \\ &\le \max_{\mathbf v \in V} \left[ \Delta(\mathbf v, \mathbf y) + \langle \mathbf w, \Psi(\bar{\mathbf x}, \mathbf v) \rangle - \langle \mathbf w, \Psi(\bar{\mathbf x}, \pi(\mathbf y)) \rangle \right] \\ &= \max_{\mathbf v \in V} \left[ \Delta(\mathbf v, \mathbf y) + \sum_{i=1}^r (v_i - \pi(\mathbf y)_i) \langle \mathbf w, \mathbf x_i \rangle \right]. \end{aligned} \]
 
@@ -1255,7 +1255,7 @@ It prints `0.383 5.383 5.383`.
 
 \[ \operatorname*{argmin}_{\mathbf v \in V} \sum_{i=1}^r \left( \alpha_i v_i + \beta_i D(v_i) \right), \qquad \alpha_i = -\mu_i, \quad \beta_i = \frac{y_i}{G(\mathbf y, \mathbf y)}. \]
 
-Read it from the inside out: \(\alpha_i v_i\) rewards putting a high-scoring message (large \(\mu_i\), so very negative \(\alpha_i\)) in a high position; \(\beta_i D(v_i)\) charges for giving a relevant message (large \(y_i\)) a big discount weight, which looks odd until you remember we are now *minimizing* the negative of the loss term; the argmin over \(V\) picks the cheapest assignment. In plain words: **the most violating order is the cheapest assignment of positions, where each message’s cost mixes its predicted score and its true relevance.** For three messages with \(\mu = (2, -2, -1)\) and relevances \((3, 1, 2)\), \(k = 2\): \(\alpha = -\mu = (-2, 2, 1)\), the ideal gain is \(G(\mathbf y, \mathbf y) = 3 + 2/\log_2 3 = 4.26\), and \(\beta = \mathbf y / 4.26 = (0.70, 0.23, 0.47)\). The second snippet below checks on random data that this argmin and the surrogate’s argmax always agree.
+Read it from the inside out: \(\alpha_i v_i\) rewards putting a high-scoring message (large \(\mu_i\), so very negative \(\alpha_i\)) in a high position; \(\beta_i D(v_i)\) charges for giving a relevant message (large \(y_i\)) a big discount weight, because the max hunts for orders with a *large* loss, and a relevant message near the top lowers the loss; the argmin over \(V\) picks the cheapest assignment. In plain words: **the most violating order is the cheapest assignment of positions, where each message’s cost mixes its predicted score and its true relevance.** For three messages with \(\mu = (2, -2, -1)\) and relevances \((3, 1, 2)\), \(k = 2\): \(\alpha = -\mu = (-2, 2, 1)\), the ideal gain is \(G(\mathbf y, \mathbf y) = 3 + 2/\log_2 3 = 4.26\), and \(\beta = \mathbf y / 4.26 = (0.70, 0.23, 0.47)\). The second snippet below checks on random data that this argmin and the surrogate’s argmax always agree.
 
 ```python
 import math
@@ -1338,21 +1338,15 @@ Suppose the inequality were strict for every \(i\). Then, using linearity of \(\
 
 \[ \langle A, B \rangle = \Big\langle A, \sum_i \gamma_i C_i \Big\rangle = \sum_i \gamma_i \langle A, C_i \rangle > \sum_i \gamma_i \langle A, B \rangle = \langle A, B \rangle, \]
 
-Read it left to right: substitute the blend for \(B\); pull the weights out of the inner product (linearity); use the supposed strict inequality \(\langle A, C_i \rangle > \langle A, B \rangle\) on every term, with positive weights; then \(\sum_i \gamma_i = 1\) collapses the right end back to \(\langle A, B \rangle\). In plain words: **a weighted average cannot be strictly larger than every one of its terms, so some permutation in the blend is at least as cheap as the blend.** In the illustration below, \(0.5 \times 17 + 0.3 \times 23 + 0.2 \times 21 = 19.6\), and the cheapest term, 17, is below it.
+a contradiction (the strict inequality survives because every \(\gamma_i > 0\)).
 
-```python
-gamma, costs = [0.5, 0.3, 0.2], [17, 23, 21]
-blend = sum(g * c for g, c in zip(gamma, costs))
-print(round(blend, 2), min(costs), min(costs) <= blend)
-```
+Read it left to right: substitute the blend for \(B\); pull the weights out of the inner product (linearity); use the supposed strict inequality \(\langle A, C_i \rangle > \langle A, B \rangle\) on every term, with positive weights; then \(\sum_i \gamma_i = 1\) collapses the right end back to \(\langle A, B \rangle\). In plain words: **a weighted average cannot be strictly larger than every one of its terms, so some permutation in the blend is at least as cheap as the blend.** The snippet after the proof blends three permutations with weights 0.5, 0.3 and 0.2: \(0.5 \times 17 + 0.3 \times 23 + 0.2 \times 21 = 19.6\), and the cheapest term, 17, is below it.
 
-It prints `19.6 17 True`.
-
-a contradiction (the strict inequality survives because every \(\gamma_i > 0\)). So some \(C_i\) has \(\langle A, C_i \rangle = \langle A, B \rangle\). That \(C_i\) is feasible for the relaxed problem with the optimal value, so it is optimal there. And every permutation matrix \(C\) is feasible for the relaxed problem, so \(\langle A, C_i \rangle = \langle A, B \rangle \le \langle A, C \rangle\): \(C_i\) is optimal for the assignment problem too. \(\blacksquare\)
+So some \(C_i\) has \(\langle A, C_i \rangle = \langle A, B \rangle\). That \(C_i\) is feasible for the relaxed problem with the optimal value, so it is optimal there. And every permutation matrix \(C\) is feasible for the relaxed problem, so \(\langle A, C_i \rangle = \langle A, B \rangle \le \langle A, C \rangle\): \(C_i\) is optimal for the assignment problem too. \(\blacksquare\)
 
 [[diagram:assignment]]
 
-The heart of the proof is that an average is never below its smallest term:
+Here is the blend from the proof, on a random \(4 \times 4\) cost matrix:
 
 ```python
 import itertools
@@ -1472,11 +1466,9 @@ It prints `2 2 1 5 0.667 0.5 0.714 0.571`, then `0.667 0.81 0.3`. At \(\theta = 
 
 How do we train a linear ranker for, say, precision at 5? The measure depends on the scores \(\mathbf y' = h_{\mathbf w}(\bar{\mathbf x})\) only through the yes/no vector they induce,
 
-\[ b(\mathbf y') = (\operatorname{sign}(y'_1 - \theta), \dots, \operatorname{sign}(y'_r - \theta)) \in \{\pm 1\}^r, \]
+\[ b(\mathbf y') = (\operatorname{sign}(y'_1 - \theta), \dots, \operatorname{sign}(y'_r - \theta)) \in \{\pm 1\}^r. \]
 
-and the plan is the same as for NDCG: write \(b\) as an argmax, then let the generalized hinge loss do the rest. For every measure above there is a set \(V \subseteq \{\pm 1\}^r\) such that
-
-Read it from the inside out: \(y'_i - \theta\) is how far message \(i\)’s score sits above the threshold; its sign is \(+1\) (flagged) or \(-1\) (not); the vector lists those answers, an element of \(\{\pm 1\}^r\), the set of all length-\(r\) lists of \(\pm 1\). In plain words: **\(b(\mathbf y')\) is the list of flagged / not flagged decisions that the threshold makes from the scores.** Scores \((0.9, -0.2, 0.3)\) at \(\theta = 0\) give \((+1, -1, +1)\).
+Read \(b\) from the inside out: \(y'_i - \theta\) is how far message \(i\)’s score sits above the threshold; its sign is \(+1\) (flagged) or \(-1\) (not); the vector lists those answers, an element of \(\{\pm 1\}^r\), the set of all length-\(r\) lists of \(\pm 1\). In plain words: **\(b(\mathbf y')\) is the list of flagged / not flagged decisions that the threshold makes from the scores.** Scores \((0.9, -0.2, 0.3)\) at \(\theta = 0\) give \((+1, -1, +1)\).
 
 ```python
 yp, theta = (0.9, -0.2, 0.3), 0
@@ -1484,6 +1476,8 @@ print(tuple(1 if s - theta > 0 else -1 for s in yp))
 ```
 
 It prints `(1, -1, 1)`.
+
+The plan is the same as for NDCG: write \(b\) as an argmax, then let the generalized hinge loss do the rest. For every measure above there is a set \(V \subseteq \{\pm 1\}^r\) such that
 
 \[ b(\mathbf y') = \operatorname*{argmax}_{\mathbf v \in V} \sum_{i=1}^r v_i\, y'_i. \]
 
@@ -1591,7 +1585,7 @@ best = max(obj(v(a, b)) for a in range(len(pos) + 1)
 print(round(brute, 4), round(best, 4))
 ```
 
-It prints `4.7035 4.7035`: 20 groups searched, the same optimum as 256 vectors. (The F₁ loss is \(1 - 2a/(2a + b + c)\), and \(2a + b + c = a + b + P\).)
+It prints `4.7035 4.7035`: 24 groups searched, the same optimum as 256 vectors. (The F₁ loss is \(1 - 2a/(2a + b + c)\), and \(2a + b + c = a + b + P\).)
 
 ## Build it yourself
 
@@ -1651,7 +1645,7 @@ if __name__ == "__main__":
 ```
 
 - `best_halfspace(S)` takes 2-D examples labelled \(\pm 1\), sweeps 360 directions and every threshold as in “Why the middle folder is lost”, and returns the hypothesis with the fewest mistakes.
-- `one_versus_all` and `all_pairs` follow the pseudocode, breaking ties by the smallest folder.
+- `one_versus_all` and `all_pairs` follow the two reductions of “Bolting yes/no filters together”, breaking ties by the smallest folder.
 - `multiclass_sgd` follows MulticlassSGD with \(\mathbf w^{(1)} = \mathbf 0\), sampling uniformly from `S` with `rng.choice`, and returns \(\bar{\mathbf w}\).
 
 Then: run SGD on `MAIL` with the zero-one cost instead of `C`, and compare the margins it leaves between work and junk.
@@ -1676,6 +1670,7 @@ def brute_force(x, w1, w2, q): ...
 def viterbi(x, w1, w2, q): ...
 
 if __name__ == "__main__":
+    assert viterbi(x, w1, w2, 3) == (0, 1, 1, 2, 2)
     assert viterbi(x, w1, w2, 3) == brute_force(x, w1, w2, 3)
     print(viterbi(x, w1, w2, 3))
     rng = random.Random(0)

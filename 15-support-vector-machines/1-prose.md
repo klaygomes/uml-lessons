@@ -2,7 +2,7 @@
 
 ## The filter that grazes
 
-The halfspace filter of lesson 9 has been in production for weeks. Every night the Perceptron retrains it on the new labels, it separates every labelled message perfectly, and operations is happy because the mistake bound tells them in advance how long the nightly job can take. Then the facilities team writes in again, and this time they are confused rather than annoyed.
+Your colleague’s complaint from the end of lesson 14 comes with an example. On that quiet week the labelled mail could be split perfectly by a line, and on separable mail the retraining job takes the shortcut of lesson 9: it runs the Perceptron, which stops at the first line that makes no training mistakes, and operations likes it because the mistake bound says in advance how long the job can take. The example comes from the facilities team, who write in again, confused this time rather than annoyed.
 
 On Monday, “free lunch at the meeting, meeting room 4” arrived in everyone’s inbox, exactly as it should. On Tuesday the same invitation went out with one small edit, “free lunch and free parking at the meeting, meeting room 4”, and the filter sent it to junk. One extra word. The message is obviously still a lunch invitation, and a filter that weighs the evidence should not change its mind over a single “free”.
 
@@ -50,7 +50,7 @@ print([score(w, x) for x in [(1, 0), (2, 2), (2, 3)]])
 
 It prints `[-3, 4, -1] AEEFG`, then `[3.638, 2.183, 2.91, 3.153, 0.728, 0.97, 0.243, 0.485]`, then `[1, 3, 2]`.
 
-Five updates (on A, E twice, F and G) and the result is the score \(4x_1 - x_2 - 3\). The second line is the distance from each message to the line \(4x_1 - x_2 - 3 = 0\), computed as \(|\text{score}| / \|(4, -1)\|\), where the bars \(|\cdot|\) drop the sign and the double bars \(\|(4, -1)\| = \sqrt{4^2 + 1^2} = \sqrt{17}\) give the length of the weight pair; we will prove in a moment that this is the right formula. Look at G, the lunch invitation: 0.243. One extra “free” moves a message one full unit along the \(x_1\) axis, much further than 0.243, and the third line shows what happens. Tuesday’s invitation, \((2, 2)\), scores 3: junk. And it is not alone. Add one “free” to E (“see you tomorrow, free for coffee?”, \((1, 0)\)) or to H (“free pizza and free drinks after the meeting”, \((2, 3)\)) and both become junk too. Three of the four keep messages are one word away from the junk folder.
+Five updates (on A, E twice, F and G) and the result is the score \(4x_1 - x_2 - 3\). The second line is the distance from each message to the line \(4x_1 - x_2 - 3 = 0\), computed as the score without its sign divided by the length of the weight pair, \(\sqrt{4^2 + 1^2} = \sqrt{17}\); the next section names the symbols and proves the formula. Look at G, the lunch invitation: 0.243. One extra “free” moves a message one full unit along the \(x_1\) axis, much further than 0.243, and the third line shows what happens. Tuesday’s invitation, \((2, 2)\), scores 3: junk. And it is not alone. Add one “free” to E (“see you tomorrow, free for coffee?”, \((1, 0)\)) or to H (“free pizza and free drinks after the meeting”, \((2, 3)\)) and both become junk too. Three of the four keep messages are one word away from the junk folder.
 
 [[diagram:graze]]
 
@@ -152,7 +152,7 @@ Now the measure of room. For a training sequence \(S = ((\mathbf x_1, y_1), \dot
 
 Here \([m]\) is the list of positions \(\{1, \dots, m\}\), and \(y_i\) is example \(i\)’s label, \(+1\) or \(-1\). Multiplying the score by the label gives the **signed score**: positive exactly when the score has the label’s sign, that is, when the halfspace gets example \(i\) right. In plain words: **some halfspace gives every training message a positive signed score.** For G under the Perceptron’s line, the score is \(-1\) and the label \(-1\), so the signed score is \(+1\): right. The first snippet’s loop tests exactly this, `y * score(w, x) <= 0`, and stops when no message fails it.
 
-Every such halfspace has **empirical risk** 0 (the fraction of training messages it gets wrong, lesson 1), so every one of them is an ERM hypothesis. The **margin** of a hyperplane with respect to \(S\) is the smallest distance between a training message and the hyperplane. By the claim, for a separating \((\mathbf w, b)\) with \(\|\mathbf w\| = 1\), it is \(\min_i |\langle \mathbf w, \mathbf x_i \rangle + b|\), and since every signed score is positive, that is the same as \(\min_i y_i (\langle \mathbf w, \mathbf x_i \rangle + b)\). The subscript in \(\min_i\) says what varies: compute the expression for each example \(i\) and keep the smallest. In plain words: **the margin is the signed score of the worst-placed message, once \(\mathbf w\) is a unit vector.** The Perceptron’s hyperplane has margin 0.243 on our eight messages, set by G: the smallest entry of the first snippet’s second line, which divides by \(\|\mathbf w\|\) to make the vector unit.
+Every such halfspace has **empirical risk** 0 (the fraction of training messages it gets wrong, lesson 1), so every one of them is a valid output of **ERM**, the learner of lesson 2 that returns a hypothesis with the fewest training mistakes. The **margin** of a hyperplane with respect to \(S\) is the smallest distance between a training message and the hyperplane. By the claim, for a separating \((\mathbf w, b)\) with \(\|\mathbf w\| = 1\), it is \(\min_i |\langle \mathbf w, \mathbf x_i \rangle + b|\), and since every signed score is positive, that is the same as \(\min_i y_i (\langle \mathbf w, \mathbf x_i \rangle + b)\). The subscript in \(\min_i\) says what varies: compute the expression for each example \(i\) and keep the smallest. In plain words: **the margin is the signed score of the worst-placed message, once \(\mathbf w\) is a unit vector.** The Perceptron’s hyperplane has margin 0.243 on our eight messages, set by G: the smallest entry of the first snippet’s second line, which divides by \(\|\mathbf w\|\) to make the vector unit.
 
 Why care about the margin? Because a hyperplane with a large margin still separates the training messages after you perturb each one a little: every message can move by anything less than the margin, in any direction, without crossing. A grazing hyperplane survives almost no perturbation at all. Later in this lesson we will also see that a large margin buys a small true risk, regardless of the dimension. That is the real prize.
 
@@ -287,11 +287,11 @@ The number \(\rho\) is the **radius**: every message lies in the ball of radius 
 
 \[ \sqrt{\frac{4 (\rho / \gamma)^2}{m}} + \sqrt{\frac{2 \log(2/\delta)}{m}}. \]
 
-First the notation. \(S \sim \mathcal D^m\) reads “\(S\) is \(m\) examples drawn independently from \(\mathcal D\)”, and \(\delta\) (delta) is the small chance we allow the training sequence to be unlucky, as in every probably approximately correct guarantee since lesson 2. The **0-1 true risk** is the chance that the returned halfspace mislabels a fresh message from \(\mathcal D\). Inside the first square root sits the difficulty ratio \(\rho/\gamma\), squared, divided by the number of labels; inside the second, \(\log(2/\delta)\), which grows only slowly as you demand more confidence. In plain words: **with high confidence, hard-SVM’s error rate on new mail is at most a difficulty term plus a confidence term, and both shrink like one over the square root of the number of labels.** With \(\rho/\gamma = 10\), \(m = 1000\) and \(\delta = 0.05\): \(\sqrt{400/1000} \approx 0.632\), plus \(\sqrt{2 \log 40 / 1000} \approx 0.086\), about 0.718. The snippet below, `hard_svm_bound`, is the formula term by term.
+First the notation. \(S \sim \mathcal D^m\) reads “\(S\) is \(m\) examples drawn independently from \(\mathcal D\)”, and \(\delta\) (delta) is the small chance we allow the training sequence to be unlucky, as in every probably approximately correct guarantee since lesson 2. The **0-1 true risk** is the chance that the returned halfspace mislabels a fresh message from \(\mathcal D\). Inside the first square root sits the difficulty ratio \(\rho/\gamma\), squared, divided by the number of labels; inside the second, \(\log(2/\delta)\), which grows only slowly as you demand more confidence. In plain words: **with high confidence, hard-SVM’s error rate on new mail is at most a difficulty term plus a confidence term, and both shrink like one over the square root of the number of labels.** With \(\rho/\gamma = 10\), \(m = 1000\) and \(\delta = 0.05\): \(\sqrt{400/1000} \approx 0.632\), plus \(\sqrt{2 \log 40 / 1000} \approx 0.086\), about 0.718, the first line `hard_svm_bound` prints below.
 
 Read it slowly, because it is the heart of the lesson. The dimension \(d\) does not appear anywhere. A filter over fifty thousand words and a filter over two words get the same guarantee, as long as the mail is separable with the same ratio \(\rho/\gamma\). Setting the bound equal to \(\varepsilon\), the number of labels needed grows like \((\rho/\gamma)^2/\varepsilon^2\), with no \(d\). (Here \(\log\) is the natural logarithm, as everywhere in this course.)
 
-The proof needs a tool we have not built yet, the Rademacher complexity of a class, and lesson 26 proves this theorem in full. What we can do now is feel the numbers. Take \(\rho/\gamma = 10\), so the closest message to the best separator is a tenth of the radius away, and \(\delta = 0.05\):
+The proof needs a tool we have not built yet, the Rademacher complexity of a class, and lesson 26 proves this theorem in full. Here is the bound as the label count grows, still with \(\rho/\gamma = 10\) (the closest message a tenth of the radius from the best separator) and \(\delta = 0.05\):
 
 ```python
 import math
@@ -361,28 +361,13 @@ and write \(L_S^{\text{hinge}}((\mathbf w, b))\) for its average over the traini
 
 *Proof.* Fix \((\mathbf w, b)\) and minimize the soft-SVM objective over the slacks alone. The objective is a sum, and each \(\xi_i\) appears in exactly one term and one pair of constraints, so we can minimize each \(\xi_i\) separately. Write \(s_i = y_i (\langle \mathbf w, \mathbf x_i \rangle + b)\). The constraints on \(\xi_i\) are \(\xi_i \ge 0\) and \(\xi_i \ge 1 - s_i\), so \(\xi_i \ge \max\{0, 1 - s_i\}\), and the smallest allowed value is exactly \(\max\{0, 1 - s_i\} = \ell^{\text{hinge}}((\mathbf w, b), (\mathbf x_i, y_i))\). Plugging in the best slacks turns the objective into \(\lambda \|\mathbf w\|^2 + L_S^{\text{hinge}}((\mathbf w, b))\). Minimizing over \((\mathbf w, b, \boldsymbol\xi)\) is the same as first minimizing over \(\boldsymbol\xi\) for each \((\mathbf w, b)\) and then over \((\mathbf w, b)\), so the two problems have the same minimizers in \((\mathbf w, b)\) and the same optimal value. \(\blacksquare\)
 
-Here is the inner minimization done by brute force for four random signed scores, searching \(\xi\) on a grid of step 0.001:
-
-```python
-import random
-
-rng = random.Random(0)
-for _ in range(4):
-    margin = round(rng.uniform(-2, 3), 2)
-    grid = [k / 1000 for k in range(5001)]
-    feasible = [xi for xi in grid if margin >= 1 - xi]
-    print(margin, min(feasible), round(max(0.0, 1 - margin), 2))
-```
-
-It prints `2.22 0.0 0.0`, `1.79 0.0 0.0`, `0.1 0.9 0.9` and `-0.71 1.71 1.71`: the smallest feasible slack is the hinge loss every time.
+The slack snippet above already did this inner minimization: its line `max(Fr(0), 1 - si)` is the hinge loss.
 
 So soft-SVM is **regularized loss minimization** (RLM), the rule of lesson 13: return \(\operatorname{argmin}_{\mathbf w} \left( L_S(\mathbf w) + R(\mathbf w) \right)\), the empirical risk under some loss plus a regularization function \(R\), here the Tikhonov penalty \(R(\mathbf w) = \lambda \|\mathbf w\|^2\) on the norm. It has a bias, in the sense of lesson 1, toward short weight vectors, which is to say toward wide margins. As before, the homogeneous version drops \(b\) (or lifts the messages) and solves
 
 \[ \min_{\mathbf w} \left( \lambda \|\mathbf w\|^2 + L_S^{\text{hinge}}(\mathbf w) \right), \qquad L_S^{\text{hinge}}(\mathbf w) = \frac{1}{m} \sum_{i=1}^m \max\{0, 1 - y_i \langle \mathbf w, \mathbf x_i \rangle\}. \]
 
-This is the same reading as before, with \(b\) folded into \(\mathbf w\): **a penalty on the length of \(\mathbf w\) plus the average hinge loss.** E lifted is \((1, 0, 0)\) with label \(-1\); under \(\mathbf w = (-\tfrac12, \tfrac12, -\tfrac12)\) its signed score is \(\tfrac12\), so it pays \(\tfrac12\). The function `soft_svm_objective` below mirrors the formula term by term.
-
-Let’s run it on the ten messages, lifted, with \(\lambda = 0.1\). The minimizer turns out to be \(\mathbf w = (-\tfrac12, \tfrac12, -\tfrac12)\), the score \((x_1 - x_2 - 1)/2\); the solver behind that claim appears in the duality section. Compare its objective with the hard-SVM separator of the eight messages, which ignores I and J.
+This is the same reading as before, with \(b\) folded into \(\mathbf w\): **a penalty on the length of \(\mathbf w\) plus the average hinge loss.** The function `soft_svm_objective` below mirrors it term by term. Let’s run it on the ten messages, lifted, with \(\lambda = 0.1\). The minimizer turns out to be \(\mathbf w = (-\tfrac12, \tfrac12, -\tfrac12)\), the score \((x_1 - x_2 - 1)/2\); the solver behind that claim appears in the duality section. Compare its objective with the hard-SVM separator of the eight messages, which ignores I and J.
 
 ```python
 S10 = [((5, 2), 1), ((3, 0), 1), ((4, 1), 1), ((4, 0), 1),
@@ -403,7 +388,7 @@ for w in [(-0.5, 0.5, -0.5), (-1, 2 / 3, -1 / 3)]:
 
 It prints `0.475 [0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 2.0, 1.5]` and then `0.5222 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 1.67]`.
 
-Read the slacks of the soft-SVM solution. A, B, C, D, F, G and H pay nothing. E pays 0.5: it is on the right side but inside the margin. I pays 2 and J pays 1.5: both are on the wrong side. Total hinge \(4/10 = 0.4\), plus \(0.1 \times \|\mathbf w\|^2 = 0.1 \times 0.75 = 0.075\), gives 0.475. The old hard-SVM separator has no slack on the eight original messages, but its longer \(\mathbf w\) (\(\|\mathbf w\|^2 = 14/9\)) costs \(0.156\) and its slacks on I and J cost 0.367, for 0.522. Soft-SVM accepts a little violation on E to buy a shorter vector.
+Read the slacks of the soft-SVM solution. A, B, C, D, F, G and H pay nothing. E, lifted \((1, 0, 0)\) with label \(-1\), has signed score \(\tfrac12\) and pays 0.5: it is on the right side but inside the margin. I pays 2 and J pays 1.5: both are on the wrong side. Total hinge \(4/10 = 0.4\), plus \(0.1 \times \|\mathbf w\|^2 = 0.1 \times 0.75 = 0.075\), gives 0.475. The old hard-SVM separator has no slack on the eight original messages, but its longer \(\mathbf w\) (\(\|\mathbf w\|^2 = 14/9\)) costs \(0.156\) and its slacks on I and J cost 0.367, for 0.522. Soft-SVM accepts a little violation on E to buy a shorter vector.
 
 [[diagram:slack]]
 
@@ -421,11 +406,11 @@ Inside out: \(A(S)\) is the weight vector the learner returns on the training se
 
 Think of \(\mathbf u\) as a good hypothesis that only an oracle knows about: the bound says how close the learner gets to it on average. To use it for soft-SVM we need the hinge loss to be convex and Lipschitz.
 
-Convexity is quick. Recall from lesson 12 that a function is **convex** when, between any two points, its graph lies on or below its chord: for every \(\mathbf w, \mathbf u\) and every mixing weight \(\theta \in [0, 1]\) (lesson 12 called it \(\alpha\); we save \(\alpha\) for later),
+Convexity is quick. Recall from lesson 12 that \(f\) is **convex** when **the value at a blend is at most the blend of the values**: for every \(\mathbf w, \mathbf u\) and every mixing weight \(\theta \in [0, 1]\) (lesson 12 called it \(\alpha\); we save \(\alpha\) for later),
 
 \[ f(\theta \mathbf w + (1 - \theta) \mathbf u) \le \theta f(\mathbf w) + (1 - \theta) f(\mathbf u). \]
 
-On the left, \(f\) at the mixed point; on the right, the same mix of the two end values. In plain words: **the value at a blend is at most the blend of the values.** Take E, lifted \((1, 0, 0)\) with label \(-1\), whose hinge loss is \(\max\{0, 1 + b\}\), where \(b\) is the first, bias, weight. At \(\mathbf w = (-\tfrac12, \tfrac12, -\tfrac12)\) it is 0.5, at \(\mathbf u = \mathbf 0\) it is 1, and halfway between, at bias weight \(-\tfrac14\), it is 0.75, exactly the blend \(\tfrac12 \cdot 0.5 + \tfrac12 \cdot 1\): on the sloped part the hinge is a straight line, so the inequality is tight.
+E’s hinge loss is \(\max\{0, 1 + b\}\), with \(b\) the first, bias, weight. It is 0.5 at the soft-SVM solution, 1 at \(\mathbf 0\), and 0.75 halfway between, exactly the blend \(\tfrac12 \cdot 0.5 + \tfrac12 \cdot 1\): on its sloped part the hinge is a straight line.
 
 Now the argument. For a fixed example \((\mathbf x, y)\), the map \(\mathbf w \mapsto 1 - y \langle \mathbf w, \mathbf x \rangle\) (the arrow \(\mapsto\) reads “sends \(\mathbf w\) to”) is affine, a linear function plus a constant, and the hinge loss is the pointwise maximum of it and the constant 0. A maximum of two convex functions is convex: for \(\theta \in [0, 1]\), each of the two functions at \(\theta \mathbf w + (1-\theta) \mathbf u\) is at most \(\theta\) times its value at \(\mathbf w\) plus \((1-\theta)\) times its value at \(\mathbf u\), and each of those is at most the same combination of the maxima. Here is the inequality tested on random triples, `lhs` and `rhs` being its two sides:
 
@@ -457,8 +442,6 @@ Now take \(a = 1 - y \langle \mathbf w, \mathbf x \rangle\) and \(c = 1 - y \lan
 \[ |f(\mathbf w) - f(\mathbf u)| \le |y| \, |\langle \mathbf u - \mathbf w, \mathbf x \rangle| \le \|\mathbf u - \mathbf w\| \, \|\mathbf x\|, \]
 
 using \(|y| = 1\) and Cauchy–Schwarz with \(\mathbf a = \mathbf u - \mathbf w\) and \(\mathbf b = \mathbf x\). \(\blacksquare\)
-
-(Lesson 14 offers a second route through **subgradients**, the slopes of tangent planes that stay below a convex function even at a crease: every subgradient of \(f\) has the form \(\alpha \mathbf x\) with \(|\alpha| \le 1\), so its length is at most \(\|\mathbf x\|\), and a convex function whose subgradients are all at most \(\rho\) long is \(\rho\)-Lipschitz.)
 
 The ratio \(|f(\mathbf w) - f(\mathbf u)| / (\|\mathbf x\| \|\mathbf w - \mathbf u\|)\) should never exceed 1, and it should get close to 1 when both \(\mathbf w\) and \(\mathbf u\) sit on the sloped part of the hinge and \(\mathbf w - \mathbf u\) points along \(\mathbf x\):
 

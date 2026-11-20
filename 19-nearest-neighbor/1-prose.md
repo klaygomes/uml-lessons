@@ -4,7 +4,7 @@
 
 Every filter you have built so far began the same way: before seeing a single label, you fixed a hypothesis class, and the learner searched it. Halfspaces in lesson 9, boosted votes of stumps in lesson 10, decision trees in lesson 18. Each class was a bet about what junk looks like, placed in advance.
 
-This month the bets stopped paying. New kinds of mail keep arriving that match no rule anyone wrote and no hypothesis anyone trained: parcel-delivery notices that are half genuine and half phishing, and supplier invoices that are half real and half fraud. The filters shrug at them. So the team reached for the oldest trick there is. When a new message arrives, find the labelled messages that look most like it, and give it their label. No class, no search, no training. Just “this one looks like those, and those were junk.”
+This month the bets stopped paying. New kinds of mail keep arriving that match no rule anyone wrote and no hypothesis anyone trained: parcel-delivery notices that are half genuine and half phishing, and supplier invoices that are half real and half fraud. The filters shrug at them. So a colleague suggested the oldest trick there is. When a new message arrives, find the labelled messages that look most like it, and give it their label. No class, no search, no training. Just “this one looks like those, and those were junk.”
 
 By now every message in the mail room is described by thirty numbers, which the team calls **scores**, each scaled to lie between 0 and 1. Two of them matter for this story. The **payment score** says how much a message talks about paying (0 for a lunch invitation, near 1 for “settle the attached invoice today”), and the **sender score** says how unfamiliar the sender is (0 for your manager, near 1 for an address nobody has ever written to). The other twenty-eight scores cover everything else the team ever measured: link share, word counts, the hour it was sent, and so on.
 
@@ -25,7 +25,7 @@ That ruler, made general, is a metric. Recall that the **domain** \(\mathcal X\)
 Read it from the inside out.
 
 - \(x_i\) is score number \(i\) of message \(x\), and \(x'_i\) (read “x prime i”) is the same score of the other message \(x'\).
-- \(x_i - x'_i\) is the gap on that one score, and squaring it makes every gap positive.
+- \(x_i - x'_i\) is the gap on that one score, and squaring it turns every gap into a size, whatever its sign.
 - \(\sum_{i=1}^d\) adds those squared gaps for \(i = 1, 2, \dots, d\), one per score.
 - The square root undoes the squaring, so the answer is in score units again.
 - \(\|x - x'\|\), with double bars, is the **norm** of the difference: its length. It is a second name for the same number.

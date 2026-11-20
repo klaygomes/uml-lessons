@@ -96,7 +96,7 @@ The middle column is the risk along the walk; the last column is the straight li
 
 That flatness is the real problem for any search that only looks nearby. Stand at \(-\mathbf w^\circ\). Its signed scores are \(-5, -1, -3, -1, -3, -3, -3, -1, 1, 3\), all at least 1 in absolute value. The double bars \(\|\mathbf x\|\) are the length (Euclidean norm) of a vector, the square root of the sum of its squared entries: for C, \(\|(1, 4, 2)\| = \sqrt{1 + 16 + 4} = \sqrt{21} \approx 4.58\), and no message is longer. Move the weights by any \(\boldsymbol\Delta\) with \(\|\boldsymbol\Delta\| < 1/\sqrt{21} \approx 0.218\). The Cauchy–Schwarz inequality says an inner product is never bigger in size than the product of the two lengths, \(|\langle \mathbf a, \mathbf b \rangle| \le \|\mathbf a\| \|\mathbf b\|\). So each score changes by \(|\langle \boldsymbol\Delta, \mathbf x \rangle| \le \|\boldsymbol\Delta\| \|\mathbf x\| < 1\), so no score changes sign, and the risk stays exactly 0.8. Every nearby point is equally bad. A search that steps to a better neighbour has nowhere to go, even though 0.2 is available elsewhere. The 0-1 loss gives a searcher no sense of direction.
 
-So what would a good landscape look like? The midpoint test above is the right instinct. Let’s make it a definition.
+The midpoint test above is the right instinct for what a good landscape looks like. Let’s make it a definition.
 
 ## Convex sets and convex functions
 
@@ -205,7 +205,7 @@ But \(\mathbf u + \alpha(\mathbf v - \mathbf u) = \alpha \mathbf v + (1 - \alpha
 
 This is the chord inequality again, with the roles of \(\mathbf u\) and \(\mathbf v\) swapped, so nothing new to read. Chain the two: \(f(\mathbf u) \le (1 - \alpha) f(\mathbf u) + \alpha f(\mathbf v)\). Subtract \((1 - \alpha) f(\mathbf u)\) from both sides to get \(\alpha f(\mathbf u) \le \alpha f(\mathbf v)\), and divide by \(\alpha > 0\): \(f(\mathbf u) \le f(\mathbf v)\). Since \(\mathbf v\) was arbitrary, \(f(\mathbf u)\) is a global minimum. \(\square\)
 
-Read that as a promise to a search algorithm. On a convex landscape, the moment you cannot improve locally, you are done globally. There are no false bottoms to get trapped in.
+Read that as a promise to a search algorithm: on a convex landscape, the moment you cannot improve locally, you are done globally.
 
 ## The tangent below the graph
 
@@ -235,33 +235,19 @@ for j in range(3):
     up = [c + h * (k == j) for k, c in enumerate(w)]
     grad.append(round((f(up) - f(w)) / h, 4))
 print(round(f(w), 4), grad)
+u = (-1, 2, -2)
+diff = [a - b for a, b in zip(u, w)]
+tangent = f(w) + dot(grad, diff)
+print(round(f(u), 4), round(tangent, 4), f(u) >= tangent)
 ```
 
-It prints `0.6931 [0.0, -0.3, 0.1]`. The tangent plane at \(\mathbf w\) is the linear function \(\mathbf u \mapsto f(\mathbf w) + \langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle\) (the arrow \(\mapsto\) reads “sends \(\mathbf u\) to”): start at the height \(f(\mathbf w)\) and add, for each weight, its rate times how far \(\mathbf u\) moved in it. For a convex function, that tangent lies below the graph everywhere, not just near \(\mathbf w\).
+Its first line is `0.6931 [0.0, -0.3, 0.1]`; the second line uses the tangent plane, which comes next. The tangent plane at \(\mathbf w\) is the linear function \(\mathbf u \mapsto f(\mathbf w) + \langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle\) (the arrow \(\mapsto\) reads “sends \(\mathbf u\) to”): start at the height \(f(\mathbf w)\) and add, for each weight, its rate times how far \(\mathbf u\) moved in it. For a convex function, that tangent lies below the graph everywhere, not just near \(\mathbf w\).
 
 **Claim (tangent inequality).** If \(f : \mathbb R^d \to \mathbb R\) is convex and differentiable, then for all \(\mathbf w, \mathbf u\),
 
 \[ f(\mathbf u) \ge f(\mathbf w) + \langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle. \]
 
-The left side is the true height at \(\mathbf u\); the right side is the tangent plane at \(\mathbf w\) evaluated at \(\mathbf u\), built from the pieces just walked through. In plain words: **the tangent plane at any point is a floor under the whole graph.** From \(\mathbf w = \mathbf 0\), predict the logistic risk at \(\mathbf u = \mathbf w^\circ = (-1, 2, -2)\): the tangent says \(0.6931 + (0 \cdot (-1) - 0.3 \cdot 2 + 0.1 \cdot (-2)) = -0.1069\), and the real risk is above it (the logistic risk is convex, as a later section proves):
-
-```python
-import math
-
-S = [((3, 0), 1), ((2, 1), 1), ((4, 2), 1), ((1, 0), 1),
-     ((1, 2), -1), ((0, 1), -1), ((2, 3), -1), ((0, 0), -1),
-     ((2, 1), -1), ((1, 2), 1)]
-X, Y = [(1,) + x for x, _ in S], [y for _, y in S]
-dot = lambda u, v: sum(a * b for a, b in zip(u, v))
-f = lambda w: sum(math.log(1 + math.exp(-y * dot(w, x)))
-                  for x, y in zip(X, Y)) / 10
-w, u, g = (0, 0, 0), (-1, 2, -2), (0, -0.3, 0.1)
-diff = [a - b for a, b in zip(u, w)]
-tangent = f(w) + dot(g, diff)
-print(round(f(u), 4), round(tangent, 4), f(u) >= tangent)
-```
-
-It prints `0.5503 -0.1069 True`.
+The left side is the true height at \(\mathbf u\); the right side is the tangent plane at \(\mathbf w\) evaluated at \(\mathbf u\). In plain words: **the tangent plane at any point is a floor under the whole graph.** From \(\mathbf w = \mathbf 0\), predict the logistic risk at \(\mathbf u = \mathbf w^\circ = (-1, 2, -2)\): the tangent says \(0.6931 + (0 \cdot (-1) - 0.3 \cdot 2 + 0.1 \cdot (-2)) = -0.1069\), and the real risk is above it (the logistic risk is convex, as a later section proves). The last three lines of the gradient snippet compute both, and print `0.5503 -0.1069 True`.
 
 *Proof.* For \(\alpha \in (0, 1]\), convexity with the points \(\mathbf u\) and \(\mathbf w\) gives \(f(\mathbf w + \alpha(\mathbf u - \mathbf w)) \le (1 - \alpha) f(\mathbf w) + \alpha f(\mathbf u)\). Subtract \(f(\mathbf w)\) and divide by \(\alpha\):
 
@@ -392,32 +378,7 @@ scores = [5, 1, 3, 1, 3, 3, 3, 1, -1, -3, 0.5]
 print([max(0, 1 - z) for z in scores])
 ```
 
-It prints `[0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 0.5]`. Even the narrow correct score pays 0.5: the hinge loss asks for a margin, not just the right side. It is the maximum of two functions of \(\mathbf w\), the constant 0 and \(1 - y\langle \mathbf w, \mathbf x \rangle\), and both are linear plus a constant, hence convex. By the claim on maxima, the hinge loss is convex in \(\mathbf w\), and by the claim on sums, so is its empirical risk. Compare it with the 0-1 risk on the ten messages: draw 20,000 random pairs of weight vectors and a random \(\alpha\), and count how often each risk breaks the chord inequality.
-
-```python
-import random
-
-S = [((3, 0), 1), ((2, 1), 1), ((4, 2), 1), ((1, 0), 1),
-     ((1, 2), -1), ((0, 1), -1), ((2, 3), -1), ((0, 0), -1),
-     ((2, 1), -1), ((1, 2), 1)]
-X, Y = [(1,) + x for x, _ in S], [y for _, y in S]
-dot = lambda u, v: sum(a * b for a, b in zip(u, v))
-hinge = lambda w: sum(max(0, 1 - y * dot(w, x))
-                      for x, y in zip(X, Y)) / 10
-zero_one = lambda w: sum(y * dot(w, x) <= 0
-                         for x, y in zip(X, Y)) / 10
-rng = random.Random(1)
-bad = {hinge: 0, zero_one: 0}
-for _ in range(20000):
-    u, v = ([rng.uniform(-3, 3) for _ in X[0]] for _ in "uv")
-    a = rng.random()
-    w = [a * p + (1 - a) * q for p, q in zip(u, v)]
-    for f in bad:
-        bad[f] += f(w) > a * f(u) + (1 - a) * f(v) + 1e-12
-print(bad[hinge], bad[zero_one])
-```
-
-It prints `0 7965`. The hinge risk never breaks the chord; the 0-1 risk breaks it in about 40% of random trials. Time to look at the two landscapes yourself.
+It prints `[0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 0.5]`. Even the narrow correct score pays 0.5: the hinge loss asks for a margin, not just the right side. It is the maximum of two functions of \(\mathbf w\), the constant 0 and \(1 - y\langle \mathbf w, \mathbf x \rangle\), and both are linear plus a constant, hence convex. By the claim on maxima, the hinge loss is convex in \(\mathbf w\), and by the claim on sums, so is its empirical risk. Time to look at the two landscapes yourself.
 
 [[lab]]
 
