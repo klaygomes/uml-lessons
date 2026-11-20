@@ -19,25 +19,26 @@ def plan():
     text = (ROOT / "series.md").read_text(encoding="utf-8")
     section = text.split("## Course plan", 1)[1].split("\n## ", 1)[0]
     for line in section.splitlines():
-        m = re.match(r"\| (\d+) \| ([^|]+) \| ([^|]+) \|", line)
+        m = re.match(r"\| (\d+[ab]?) \| ([^|]+) \| ([^|]+) \|", line)
         if m:
-            rows.append((int(m.group(1)), m.group(2).strip(), m.group(3).strip()))
+            rows.append((m.group(1), m.group(2).strip(), m.group(3).strip()))
     return rows
 
 
 def progress():
     found = {}
-    parts = re.split(r"^### (\d+)\. .*$", (ROOT / "TASKS.md").read_text(encoding="utf-8"), flags=re.M)
+    parts = re.split(r"^### (\d+[ab]?)\. .*$", (ROOT / "TASKS.md").read_text(encoding="utf-8"), flags=re.M)
     for n, body in zip(parts[1::2], parts[2::2]):
         steps = {}
         for m in re.finditer(r"^- \[([ x])\] (\d+) (.*)$", body, flags=re.M):
             steps[int(m.group(2))] = (m.group(1) == "x", m.group(3))
-        found[int(n)] = steps
+        found[n] = steps
     return found
 
 
 def state(n, steps):
-    folder = next(iter(sorted(ROOT.glob(f"{n:02d}-*/"))), None)
+    number, part = (n[:-1], n[-1]) if n[-1] in "ab" else (n, "")
+    folder = next(iter(sorted(ROOT.glob(f"{int(number):02d}{part}-*/"))), None)
     done = lambda k: steps.get(k, (False, ""))[0]
     page = folder / "3-page/3-page.html" if folder else None
     prose = folder / "1-prose.md" if folder else None
@@ -55,9 +56,16 @@ def state(n, steps):
 def item(n, title, question, steps):
     key, target = state(n, steps)
     ticked = sum(1 for k in range(1, STEPS + 1) if steps.get(k, (False, ""))[0])
-    href = html.escape(target.relative_to(ROOT).as_posix()) if target else None
-    label = {"ready": "Open the lesson", "page": "Open the page (draft)", "drafted": "Read the draft text"}.get(key)
-    action = f' <a href="{href}">{label}</a>' if href else ""
+    links = []
+    if key in ("ready", "page"):
+        label = "Open the lesson" if key == "ready" else "Open the page (draft)"
+        links.append((target, label))
+    if target:
+        folder = target.parent.parent if target.parent.name == "3-page" else target.parent
+        for name, label in (("1-prose.html", "Lesson text"), ("1-sheet.html", "Teacher's sheet")):
+            if (folder / name).exists():
+                links.append((folder / name, label))
+    action = "".join(f' <a href="{html.escape(path.relative_to(ROOT).as_posix())}">{html.escape(label)}</a>' for path, label in links)
     return (
         f'<li class="is-{key}"><span class="n">{n}</span><div>'
         f"<h2>{html.escape(title)}</h2><p>{html.escape(question)}</p>"

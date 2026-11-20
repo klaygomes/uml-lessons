@@ -10,7 +10,7 @@ First, the newsletters. The company’s design team signs up for a weekly digest
 
 Second, the honest mistakes. People label in a hurry. Somebody marks a “FREE” prize draw as keep because they were scrolling past it with their coffee in the other hand. Nobody is lying; they are just people.
 
-The learner from last lesson doesn’t cope. Its proof leaned on one assumption, **realizability**: some hypothesis in the class agrees with every example. Now no hypothesis does. Not one of the four one-feature hypotheses. Not even the memorizer: the same message turns up once as junk and once as keep, and a hypothesis has to give it one label. A learner written to return a consistent hypothesis, one with no mistakes on the examples, now returns nothing at all. A learner that breaks ties on its own returns something arbitrary.
+The learner from last lesson doesn’t cope. Its proof leaned on one assumption, **realizability**: some hypothesis in the class has true risk 0, so it agrees with every example. Now no hypothesis does. Not one of the four one-feature hypotheses. Not even the memorizer: the same message turns up once as junk and once as keep, and a hypothesis has to give it one label. A learner written to return a consistent hypothesis, one with no mistakes on the examples, now returns nothing at all. A learner that breaks ties on its own returns something arbitrary.
 
 So what *should* a learner return when the labels themselves disagree? And, the harder question, what could you possibly promise about it? This lesson answers both, and along the way it turns lesson 2’s single result into the definition everything after it is built on.
 
@@ -23,7 +23,7 @@ Recall the setting of lesson 2. Messages arrive from a distribution \(\mathcal D
 Lesson 2 proved a guarantee for ERM over a finite class \(\mathcal H\) when realizability holds. Pick a tolerated true risk, say 0.1, and a tolerated chance of failure, say 0.05. Once the number of examples passed a threshold, 44 for lesson 1’s four one-feature hypotheses, the returned hypothesis had true risk at most 0.1 on all but 5% of training sequences. The threshold grows slowly with the size of the class and quickly as the tolerance shrinks; its exact formula comes back in the next section. Call the tolerated true risk \(\varepsilon\) (the Greek letter epsilon) and the tolerated failure chance \(\delta\) (delta). Then the guarantee reads: true risk at most \(\varepsilon\), with probability at least \(1 - \delta\). That is two promises nested inside each other, and their names give the whole theory its title.
 
 - **Approximately correct.** The returned hypothesis is not required to be perfect, only to have true risk at most \(\varepsilon\). The number \(\varepsilon\) is the **accuracy parameter**.
-- **Probably.** Even that is not promised every time, only with probability at least \(1 - \delta\) over the random draw of the training sequence. The number \(\delta\) is the **confidence parameter**.
+- **Probably.** Even that is not promised every time, only with probability at least \(1 - \delta\) over the random draw of the training sequence. The number \(\delta\) is the **confidence parameter**. (Lesson 2 gave that name to \(1 - \delta\), the chance of success. From here on it goes to \(\delta\), the allowed chance of failure. The promise is the same either way, and this lesson always states it in full: with probability at least \(1 - \delta\).)
 
 Probably approximately correct: **PAC**.
 

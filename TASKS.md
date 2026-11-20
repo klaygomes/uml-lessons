@@ -116,7 +116,7 @@ Folder: `01-learning-needs-a-bias/`
 Folder: `02-a-gentle-start/`
 
 - [x] 1 prose and sheet (8,134 words, all Python snippets run by the lead, no book references, 2026-11-20)
-- [ ] 2 gates: PDF self-check by the writer, number scripts and greps done; read-aloud partial and fresh reader not run (CPU rule: ask first); code reflowed to 66 characters and outputs rounded, rechecked by the lead (2026-11-20)
+- [x] 2 gates: clean-context review; book check against the PDF (every definition and equation matches; one prose fix, the slack section's worst world) and sheet resync, 2026-11-20. Read-aloud and fresh reader not run (optional, CPU)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -131,7 +131,7 @@ Folder: `02-a-gentle-start/`
 Folder: `03-a-formal-learning-model/`
 
 - [x] 1 prose and sheet (7,576 words, all Python snippets run by the lead, no book references, 2026-11-20)
-- [ ] 2 gates: PDF self-check by the writer, number scripts and greps done; read-aloud partial and fresh reader not run (CPU rule: ask first); code reflowed to 66 characters and outputs rounded, rechecked by the lead (2026-11-20)
+- [x] 2 gates: clean-context review; book check against the PDF (own Bayes-optimality proof valid; δ vs 1 − δ naming conflict in the book confirmed, prose now says the name moves; realizability recap aligned with lesson 2; key words aligned) and sheet resync, 2026-11-20. Read-aloud and fresh reader not run (optional, CPU)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -161,7 +161,7 @@ Folder: `04-uniform-convergence/`
 Folder: `05-no-free-lunch/`
 
 - [x] 1 prose and sheet (8,233 words, 8 snippets run by the lead, the failing fence is the build-it stub, no book references, 2026-11-20)
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (CPU rule)
+- [x] 2 gates: clean-context review; book check against the PDF (all statements correct; a book slip on p. 61 noted, 8 log(7|H|/6) should be 8 log(7|H|); one prose fix, the act-2 prediction question) and sheet resync, 2026-11-20. Read-aloud and fresh reader not run (optional, CPU)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -216,12 +216,27 @@ Folder: `08-runtime-of-learning/`
 - [ ] 9 concept check: mastery confirmed
 - [ ] 10 end-of-chapter problems done
 
-### 9. Ch. 9 linear predictors (halfspaces, LP, Perceptron, least squares, logistic regression)
+### 9a. Halfspaces and the Perceptron
 
-Folder: `09-linear-predictors/`
+Folder: `09a-halfspaces-perceptron/`
 
-- [x] 1 prose and sheet (about 12,800 words with code, 15 snippets plus 2 build-it stubs run by the lead, no book references, 2026-11-20; long: the sheet lists three sections that could be cut; recheck its assumptions about lessons 4 to 8, which it could not read)
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (CPU rule)
+- [x] 1 prose and sheet (split from lesson 9 on 2026-11-20; original in `_archive/09-linear-predictors`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
+- [ ] 3 review stop: user approved the prose
+- [ ] 4 figures
+- [ ] 5 page
+- [ ] 6 learner judge: ready
+- [ ] 7 verification
+- [ ] 8 delivery: series.md, index.html
+- [ ] 9 concept check: mastery confirmed
+- [ ] 10 end-of-chapter problems done
+
+### 9b. Linear and logistic regression
+
+Folder: `09b-linear-regression/`
+
+- [x] 1 prose and sheet (split from lesson 9 on 2026-11-20; original in `_archive/09-linear-predictors`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -590,16 +605,21 @@ Skipped on purpose to keep writing and save CPU (user, 2026-11-20: "keep writing
 - [ ] Lessons 2 to 19: the user's review stop (step 3) before figures and pages
 - [ ] Lessons 2 to 19: figures (step 4) and pages (step 5), then the impeccable pass and `fit.mjs`
 - [ ] Lessons 2 to 19: learner judges (step 6), ask before running (CPU)
-- [ ] Lesson 3: align key words with lesson 2 (the lesson 3 writer could not see lesson 2's sheet); lesson 3's Bayes-optimality proof is the writer's own, verify it
+- [x] Lesson 3: key words aligned with lesson 2; its own Bayes-optimality proof verified step by step (2026-11-20)
 - [ ] Lesson 6: decide whether to split into 06a/06b (about 10,400 words), and verify the claimed book error in the uniform-convergence proof's Hoeffding constant
 - [ ] Lessons 2 to 19 (and any draft written before 2026-11-20 evening): formula walkthrough pass, every formula read aloud as in lesson 1's risks (the learner's rule above); revision writers, then rerun `_kit/check_prose.py`. Lesson 1 done 2026-11-20; every drafted lesson done or written with the rule (2026-11-20; 13, 17, 20 to 31 were written with it, brief in the session scratchpad as brief-walkthrough.md, a copy of the rule is in docs/writer-brief.md); lessons 5 to 19 next. Writers for 13 and 17, 20 to 25 were told the rule mid-draft
 - [x] Lessons 1 to 31: clean-context reviewer (step 1b, `docs/reviewer-brief.md`), all 31 done 2026-11-20. Lesson 4 done 2026-11-20 (walkthrough 7,479 to 12,396; review: 11 findings fixed incl. a wrong 9% that is 6.6% (float error), verdict ready). Lesson 31 reviewed 2026-11-20 (7 findings fixed incl. a look-back that misdescribed lesson 29, an Occam claim lesson 7 rounds differently; look-back rewritten against lessons 26 to 30; verdict ready). Lesson 30 reviewed 2026-11-20 (12 findings fixed incl. the fresh-batch argument credited to lesson 2 instead of 11, and "15 or more" that is more than 15; recaps checked against lessons 2, 8, 9 and 15; verdict ready). Lesson 29 reviewed 2026-11-20 (12 findings fixed incl. overstated claims about what lesson 28 proved, "four strict steps" that are three; terms aligned with lessons 17 and 28; verdict ready). Lesson 28 reviewed 2026-11-20 (13 findings fixed incl. a false "chaining is beyond this course", McDiarmid never recapped, r used for two things; recaps rewritten in lesson 26's terms; opening picks up lesson 27; verdict ready). Lesson 19 reviewed 2026-11-20 (11 findings fixed incl. a false "exact at η = 1/2" claim and the 0-1 loss used 130 lines before its definition; closing leads into lesson 20; verdict ready). Lesson 16 reviewed 2026-11-20 (5 findings fixed incl. an opening that contradicted lesson 15, vocabulary now 50,000 words with the sheet updated by the lead, and a wrong lesson pointer; verdict ready). Lesson 25 reviewed 2026-11-20 (16 findings fixed incl. an opening that ignored lesson 24's smoothing, ridge rewritten in lesson 13's form with numbers updated, clustering credited to lesson 22; verdict ready). Lesson 17 reviewed 2026-11-20 (19 findings fixed incl. five passages broken by mid-sentence walkthrough insertions, a build-it starter that passed by accident, "20 groups" that are 24; verdict ready; split confirmed at "Ranking the inbox", 17a about 14,000 words, 17b about 9,000, with the reviewer's full list of what each half needs in its report). Lesson 14 reviewed 2026-11-20 (10 findings fixed incl. S reused for an open set, now A, and an unsourced w*; opening picks up lesson 13; verdict ready; split proposal 14a through "Fix the bug" about 11,800 words, 14b from "Variants" about 5,100 needing its own opening and concept check). Lesson 15 reviewed 2026-11-20 (4 findings fixed incl. an opening that contradicted lesson 14 and an underived dual update; cut to 15,953 words; verdict ready; split proposal at "Mail that is almost separable", 15a hard-SVM about 5,500 words, 15b about 10,450). Lesson 12 reviewed 2026-11-20 (19 findings fixed incl. a wrong chord-violation example for the step function and a build-it item that broke its own asserts; verdict ready; split proposal before "Is convexity enough?", 12a about 10,050 words with [[lab]], 12b about 7,050 with [[lab-act2]]). Lesson 13 reviewed 2026-11-20 (10 findings fixed incl. E used before explained, "three pieces" that are four; opening matches lesson 12; verdict ready; split proposal before "Strong convexity", 13a about 6,300 words with [[lab]], 13b about 8,400 with [[lab-act2]]). Lesson 18 reviewed 2026-11-20 (6 findings fixed incl. strict concavity at the endpoints via Rolle; lab numbers reproduced; verdict ready). Lesson 26 reviewed 2026-11-20 (12 findings fixed incl. an opening that did not follow lesson 25, and recaps of the ℓ1 penalty and depth 2 networks aligned with lessons 25 and 20; verdict ready). Lesson 27 reviewed 2026-11-20 (13 findings fixed incl. an "exact" 0.404 that was the whole disc, the filter gives 0.375; features renamed ψ to avoid lesson 26's φ; verdict ready). Lesson 21 reviewed 2026-11-20 (8 findings fixed incl. ℝ^d clashing with d experts, now ℝ^n; opening picks up from lesson 20; verdict ready; split proposal 21a realizable case through the VC comparison about 7,100 words with [[lab]], 21b from "When no hypothesis is perfect" about 10,900 with [[lab-act2]]). Lesson 23 reviewed 2026-11-20 (19 findings fixed incl. a wrong lesson pointer and the missing trace-equals-eigenvalue-sum step; opening aligned with lesson 22; verdict ready; split proposal 23a through "Random projection as code" plus "Fix the bug" about 11,000 words, 23b from "Sparse messages" about 6,500). Lesson 24 reviewed 2026-11-20 (16 findings fixed incl. a wrong table entry, invoice 2/4 should be 1/4; verdict ready; split confirmed before "Another assumption: Gaussian clouds", 24a about 12,800 words, 24b about 5,500 with no bug or lab of its own yet). Lesson 10 done 2026-11-20 (review: 13 findings fixed incl. a VC lower-bound proof that covered only one labelling pattern; verdict ready; split proposal 10a through build-it part 2 before "What the vote can express" about 10,800 words needing its own closing bug, 10b from there about 5,000). Lesson 9 done 2026-11-20 (review: 14 findings fixed incl. Cramer's rule unexplained and an underived logistic second derivative; verdict ready; split proposal 9a up to [[lab-act2]] about 11,500 words, 9b from "A junk score: linear regression" about 7,700, closing sections divided). Lesson 6 done 2026-11-20 (review: 13 findings fixed, 8 repeated walkthroughs merged; verdict ready; split proposal 6a sections 1 to 7 plus the ERM code and "Fix the bug" about 9,700 words, 6b growth function through "Closing the circle" about 7,500). Lesson 7 done 2026-11-20 (review: 11 findings fixed incl. a false "compressed source files are prefix-free"; verdict ready; split proposal 7a through "The formal statements" about 9,100 words, 7b from "Lists by the bit" about 6,700). Lesson 11 done 2026-11-20 (review: 12 findings fixed incl. two overstated claims, verdict ready). Lesson 22 reviewed 2026-11-20 (9 findings fixed incl. a false "no ties" note in the k-means trace, verdict ready). Lesson 8 done 2026-11-20 (review: 17 findings fixed incl. a one-to-one assumption missing from the trapdoor proof, verdict ready). Lesson 5 done 2026-11-20 (review: 9 findings fixed incl. two false claims about the ladder table, verdict ready). Lesson 20 reviewed 2026-11-20 (10 findings fixed, verdict ready). Walkthrough passes done: 19 (9,054 to 12,618 words, 11 snippets; opening aligned with lesson 18), 16 (10,127 to 13,373 words, 8 snippets), 14 (12,600 to 16,835 words, 9 snippets; terms aligned with lessons 12 and 13, sheet updated), 15 (12,659 to 16,543 words, 7 snippets; SGD bound aligned with lesson 14, 2ρ²/(λT), example guarantee 0.0375, sheet updated), 18 (9,672 to 12,387 words, 6 snippets; opening aligned with lesson 17), 12 (13,264 to 17,142 words, 9 snippets), 10 (10,918 to 15,924 words, 11 snippets), 9 (12,775 to 20,382 words, 22 snippets; split candidate), 11 (8,580 to 11,380 words, 7 snippets), 6 (10,439 to 17,275 words, 18 snippets), 7 (9,581 to 15,765 words, 19 snippets), 5 (8,233 to 13,021 words, 11 snippets) and 8 (10,346 to 14,624 words, 15 snippets); their reviews running. Lesson 2 done 2026-11-20 (walkthrough 8,156 to 13,102 words; review: 12 findings fixed, repeats cut to 12,790 words, verdict ready). Lesson 3 done 2026-11-20 (walkthrough pass 7,595 to 11,140 words; review: 6 findings fixed incl. the realizability definition, verdict ready). Lesson 1 done 2026-11-20 (13 findings fixed: 6 used before explained, 3 formulas without walkthrough, 3 proof gaps, 1 formula before intuition; page rebuilt, fit OK)
+- [ ] After all splits land: repoint every "lesson N" reference in other lessons' prose and sheets to Na or Nb (one agent with the split list; `_kit/split_apply.py` folds each split into series.md, TASKS.md and `_archive/`)
 - [ ] Resync every 1-sheet.md with its reviewed 1-prose.md before figures and pages: reviewers edit the prose only, so sheet numbers, story details and assumptions can lag (seen in lessons 16 and 25). One agent per lesson, after the user's review stop
 - [x] Lessons 20 to 31: prose drafts (all 31 lessons drafted 2026-11-20) (12 to 19 drafting) (writers; the brief template is `docs/writer-brief.md`)
 - [x] Commit the series repo and publish it: github.com/klaygomes/uml-lessons, Pages at http://www.estacouveflor.com/uml-lessons/ (user asked, 2026-11-20). Push with the klaygomes gh account (`gh auth switch -u klaygomes`), then switch back to cleiton-loiola
 - [ ] Commit the skill changes in ~/dotfiles (when the user asks)
 
 ## Open items
+
+- Go-ahead 2026-11-20 (user: "great, you can go"), three phases. Phase 1: split lessons 6, 7, 9, 10, 12, 13, 14, 15, 17, 21, 23, 24 into a/b folders (`docs/split-brief.md`); originals move to `_archive/` once both halves check clean, and TASKS/series rows become 6a/6b etc. Wave 1 running: 6, 7, 9, 10, 12, 13. Phase 2: book check plus sheet resync for every lesson (`docs/bookcheck-brief.md`): running 2 to 5, then 8, 11, 16, 18, 19, 20, 22, 25 to 31, then each split half. Phase 3: figures (diagram-design) and labs (iwrzwr studies), lesson by lesson from lesson 2.
+- Math now renders with KaTeX 0.19.1 (user asked for nicer formulas, 2026-11-20): `math.mjs` defaults to KaTeX, CSS and woff2 fonts vendored in `katex/` (MIT, see katex/NOTICE). Pages pass `--css` to link it. Bold or italic that spans math now renders (prose.py protects math first).
+- Every lesson's text and teacher's sheet render to `NN-slug/1-prose.html` and `1-sheet.html` via `python3 -I _kit/read.py` (user asked for sheet links, 2026-11-20); the index links both. Rerun after any prose or sheet edit, then `_kit/index.py`.
 
 - Paused 2026-11-20 by the usage limit, resumed after reset in waves (load rule). Stopped mid-task and resumable by message: walkthrough passes 10 and 11; writers 20 to 27 (20, 22, 24 had partial prose on disk). Resumed first: reviews 2 and 4, walkthroughs 5 to 9. If a later session finds these unfinished, restart each from its brief (scratchpad briefs may be gone: rebuild from docs/writer-brief.md, docs/reviewer-brief.md and the walkthrough rule in the learner's rules).
 

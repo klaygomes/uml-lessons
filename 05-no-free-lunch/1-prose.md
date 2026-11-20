@@ -745,7 +745,7 @@ Theo isn’t convinced by a proof. He wants to see the filter lose, and he wants
 
 In the lab below, the mail room is the eight-feature world, with its points rule hidden from the learner but known to the lab. Each round gives you a label budget, and you choose the rung \(k\) of the ladder, from the constant hypotheses at \(k = 0\) to Theo’s universal filter at \(k = 8\). The lab shows the approximation error of every rung, because it knows the truth. What it doesn’t show is the estimation error: to see that, you train, and watch how the true risk of \(h_S\) scatters from one training sequence to the next. Your goal is the rung whose expected true risk is lowest for the budget, within a hundredth.
 
-Before your first round, predict: with a budget of 50 labels, on which rung will the universal filter’s expected true risk land, compared with the best rung?
+Before your first round, predict: with a budget of 50 labels, how will the universal filter’s expected true risk compare with the best rung’s?
 
 [[lab-act2]]
 

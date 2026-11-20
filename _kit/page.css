@@ -1,8 +1,10 @@
 [hidden] { display: none !important; }
 pre.code { margin: 0; max-width: 100%; color: var(--code-text); background: var(--code-bg); border-radius: var(--radius-sm); padding: var(--space-3) var(--space-4); overflow-x: auto; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--leading-code); }
 .display-math { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: var(--space-1) 0; }
-math { font-family: var(--font-math); font-size: var(--text-math); }
-.display-math math { display: block; font-size: var(--text-math-display); }
+.katex { font-size: var(--text-math); color: var(--ink); }
+.display-math .katex-display { margin: 0; }
+.display-math .katex-display > .katex { font-size: var(--text-math-display); }
+:not(.katex-mathml) > math { font-family: var(--font-math); font-size: var(--text-math); }
 .rule-box { max-width: 100%; }
 table.worked { font-family: var(--font-mono); font-size: var(--text-table); font-variant-numeric: tabular-nums; }
 table.worked td { white-space: nowrap; }
@@ -38,7 +40,8 @@ button.k-toggle[aria-pressed="true"]::before { content: "\2713\00a0"; }
 .k-still-text { display: none; }
 @media (prefers-reduced-motion: reduce) { .k-motion-text { display: none; } .k-still-text { display: inline; } }
 @media (max-width: 520px) { .k-meter { grid-template-columns: 1fr auto; } .k-meter > span:first-child { grid-column: 1 / -1; } .k-meter .bar { grid-column: 1; grid-row: 2; } .k-meter output { grid-column: 2; grid-row: 2; } .k-meter .scale { grid-column: 1; grid-row: 3; } }
-p math, li math { display: inline-block; max-width: 100%; overflow-x: auto; overflow-y: hidden; vertical-align: middle; }
+p .katex, li .katex, td .katex { white-space: nowrap; }
+p .katex-display, li .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
 pre.code .c-keyword { color: var(--code-keyword); font-weight: var(--weight-medium); }
 pre.code .c-string { color: var(--code-string); }
 pre.code .c-number { color: var(--code-number); }

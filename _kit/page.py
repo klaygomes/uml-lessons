@@ -182,7 +182,7 @@ def build(lesson, figures=True, drop_heading=None, append=None, working=None, st
     body = highlight.highlight(body)
     page = fill((here / "shell.html").read_text(encoding="utf-8"), here, body)
     (here / "3-page.src.html").write_text(page, encoding="utf-8")
-    subprocess.run(["node", str(LADDER / "scripts/math.mjs"), str(here / "3-page.src.html"), str(here / "3-page.html")], check=True)
+    subprocess.run(["node", str(LADDER / "scripts/math.mjs"), str(here / "3-page.src.html"), str(here / "3-page.html"), "--css", "../../katex/katex.min.css"], check=True)
     for css in ("tokens.css", "lesson.css"):
         shutil.copyfile(KIT.parent / css, here / css)
     html = (here / "3-page.html").read_text(encoding="utf-8")

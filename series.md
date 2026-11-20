@@ -30,7 +30,8 @@ Every lesson of the course, delivered or not. `_kit/index.py` reads this table f
 | 6 | VC dimension | Which infinite classes are learnable, and how many labels do they need? |
 | 7 | Nonuniform learnability | Can you learn from a class too rich for one sample size, by paying more for complex rules? |
 | 8 | The runtime of learning | When is learning possible in principle but too slow to compute? |
-| 9 | Linear predictors | How do halfspaces, the Perceptron, least squares and logistic regression draw a line through the mail? |
+| 9a | Halfspaces and the Perceptron | How can a filter that weighs every word be learned when its class is infinite, and how many updates can the Perceptron take? |
+| 9b | Linear and logistic regression | How do you find, and prove you found, the best line for a junk score, and how does the same line give a probability of junk? |
 | 10 | Boosting | Can many rules that are barely better than a guess add up to a strong one? |
 | 11 | Model selection | How do you pick among models without fooling yourself with the same data? |
 | 12 | Convex learning | Which learning problems can an optimiser solve reliably, and why convexity is the line? |

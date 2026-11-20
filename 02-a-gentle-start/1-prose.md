@@ -616,7 +616,7 @@ The union bound, step 3, costs a lot when \(m\) is small, because the ovals over
 
 The biggest loss is step 5, which treats every bad hypothesis as if its true risk were exactly \(\varepsilon = 0.2\). The real bad hypotheses are worse than that, wrong at least 25% of the time, so they die faster than the bound assumes. The proof can’t use that, because it doesn’t know \(\mathcal D\).
 
-And the guarantee’s own answer: \(\log(10 / 0.01) / 0.2 = 34.5\), so \(m = 35\) is enough for \(\delta = 0.01\). At 35 examples the bound says 0.0091, safely under 0.01, while the true chance of a misleading sequence is 0.00025. The bound is loose in this world. It has to be, since it must also hold in the worst world: one where a single bad hypothesis has true risk just above \(\varepsilon\). There, step 3 is exact, step 5 is nearly exact, and step 6 is all that remains.
+And the guarantee’s own answer: \(\log(10 / 0.01) / 0.2 = 34.5\), so \(m = 35\) is enough for \(\delta = 0.01\). At 35 examples the bound says 0.0091, safely under 0.01, while the true chance of a misleading sequence is 0.00025. The bound is loose in this world. It has to be, since it must also hold in the worst world: one where almost every hypothesis is bad, each with true risk just above \(\varepsilon\), and each wrong on different messages. There, once \(m\) is large, steps 3, 5 and 7 are nearly exact, and step 6 is what remains.
 
 ## What a label costs
 
