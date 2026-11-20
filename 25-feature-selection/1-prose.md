@@ -685,22 +685,19 @@ if __name__ == "__main__":
 
 Now the third complaint, the length in bytes and the sender volume in millions. Selection asks *which* features; normalization asks *in what units*. A **feature transformation** is a function applied to one feature’s values, such as subtracting the average or taking a logarithm. **Normalization** is a transformation that puts features on comparable scales. As with selection, there are no transformations that are good or bad in general: each one is good or bad for a particular learner and a particular belief about the problem.
 
-Here is the cleanest example of scale changing what a learner can do. Recall ridge regression from lesson 13: least squares plus the price \(\lambda\|\mathbf w\|^2\), the squared length of the weight vector. Its point is to prefer small weights. But “small” depends on units. A feature measured in tiny units needs a huge weight to matter, and ridge will refuse to pay for it.
+Here is the cleanest example of scale changing what a learner can do. Ridge regression prefers small weights. But “small” depends on units. A feature measured in tiny units needs a huge weight to matter, and ridge will refuse to pay for it.
 
 Build a world with two features. Draw the label \(y\) as a fair \(\pm 1\) coin and an independent fair \(\pm1\) coin \(\alpha\). Feature 1 is \(x_1 = y + 0.5\alpha\): it agrees with the label in sign, plus noise of size 0.5. Feature 2 is \(x_2 = 0.0001\,y\): the label itself, measured in very small units. The perfect predictor is \(\mathbf w^\star = (0, 10{,}000)\), since \(10{,}000 \cdot 0.0001\,y = y\), with true risk 0. But its squared length is \(10^8\).
 
-Ridge regression on \(m\) examples, with the rows of \(X\) as the messages, solves
+Recall ridge regression exactly as lesson 13 defined it, with the half square loss:
 
-\[ \operatorname*{argmin}_{\mathbf w} \left( \frac1m \|X\mathbf w - \mathbf y\|^2 + \lambda\|\mathbf w\|^2 \right) = \left( X^\top X + \lambda m I \right)^{-1} X^\top \mathbf y. \]
+\[ \operatorname*{argmin}_{\mathbf w} \left( \lambda\|\mathbf w\|^2 + \frac1m \sum_{i=1}^m \tfrac12\left(\langle \mathbf w, \mathbf x_i \rangle - y_i\right)^2 \right), \qquad \text{solved by} \quad (2\lambda m I + A)\,\mathbf w = \mathbf b. \]
 
-- \(\frac1m\|X\mathbf w - \mathbf y\|^2\) is the average square loss on the training sequence, \(L_S(\mathbf w)\).
-- \(\lambda\|\mathbf w\|^2 = \lambda\sum_j w_j^2\) is the price on squared length.
-- \(X^\top X\) is the \(d \times d\) matrix of inner products between feature columns; \(X^\top \mathbf y\) is the vector of inner products of each column with the labels.
-- \(I\) is the identity matrix, and \((\cdot)^{-1}\) the matrix inverse.
+- The sum is the average half square loss on the training sequence, \(L_S(\mathbf w)\); \(\lambda\|\mathbf w\|^2 = \lambda\sum_j w_j^2\) is the price on squared length.
+- \(A = \sum_i \mathbf x_i\mathbf x_i^\top\) is the \(d \times d\) table of how features light up together, and \(\mathbf b = \sum_i y_i\mathbf x_i\) adds up the messages signed by their labels (lesson 13).
+- \(2\lambda m I\) adds \(2\lambda m\) to every diagonal entry of \(A\), which always makes the system solvable.
 
-In plain words: **ridge regression is least squares with \(\lambda m\) added to every diagonal entry of \(X^\top X\), which pulls the weights towards zero.** The formula comes from setting the gradient \(\frac2m X^\top(X\mathbf w - \mathbf y) + 2\lambda\mathbf w\) to zero and multiplying by \(m/2\); the matrix \(X^\top X + \lambda m I\) is invertible because \(\langle \mathbf w, (X^\top X + \lambda m I)\mathbf w \rangle = \|X\mathbf w\|^2 + \lambda m\|\mathbf w\|^2 > 0\) for \(\mathbf w \ne \mathbf 0\), and the objective is convex, so this zero of the gradient is its minimizer.
-
-Now compare the objective at two points. At \(\mathbf w^\star = (0, 10^4)\), the loss is 0 and the price is \(\lambda \cdot 10^8\). At \(\mathbf w = (1, 0)\), the prediction is \(x_1 = y + 0.5\alpha\), the miss is always \(0.5\alpha\), its square is \(0.25\), and the price is \(\lambda\). So the useless-looking \((1, 0)\) wins whenever \(\lambda \cdot 10^8 > 0.25 + \lambda\), that is, whenever \(\lambda > 0.25/(10^8 - 1) \approx 2.5 \times 10^{-9}\). Lesson 13’s analysis says \(\lambda\) should be at least of order \(1/m\), so this happens unless you have hundreds of millions of examples. With \(\lambda = 10^{-3}\), averaging over the four equally likely values of \((y, \alpha)\):
+In plain words: **least squares with \(2\lambda m\) added to the diagonal, which pulls the weights towards zero.** Now compare the objective at two points. At \(\mathbf w^\star = (0, 10^4)\), the loss is 0 and the price is \(\lambda \cdot 10^8\). At \(\mathbf w = (1, 0)\), the prediction is \(x_1 = y + 0.5\alpha\), the miss is always \(0.5\alpha\), the half square loss is \(\tfrac12 \cdot 0.25 = 0.125\), and the price is \(\lambda\). So the useless-looking \((1, 0)\) wins whenever \(\lambda \cdot 10^8 > 0.125 + \lambda\), that is, whenever \(\lambda > 0.125/(10^8 - 1) \approx 1.25 \times 10^{-9}\). Lesson 13’s analysis wants \(\lambda\) at least \(2\beta/m\), of order \(1/m\), so this happens unless you have hundreds of millions of examples. With \(\lambda = 10^{-3}\), averaging over the four equally likely values of \((y, \alpha)\):
 
 ```python
 from itertools import product
@@ -709,17 +706,17 @@ pts = [(y + 0.5 * a, 1e-4 * y, y)
        for y, a in product([-1, 1], [-1, 1])]
 
 def ridge_objective(w1, w2, lam):
-    fit = sum((w1 * u + w2 * v - y) ** 2 for u, v, y in pts)
+    fit = sum((w1 * u + w2 * v - y) ** 2 / 2 for u, v, y in pts)
     return fit / len(pts) + lam * (w1 ** 2 + w2 ** 2)
 
 lam = 1e-3
 print(ridge_objective(0, 1e4, lam), ridge_objective(1, 0, lam))
-print(f"{0.25 / (1e8 - 1):.3g}")
+print(f"{0.125 / (1e8 - 1):.3g}")
 ```
 
-It prints `100000.0 0.251` and `2.5e-09`. The perfect predictor costs a hundred thousand; the sloppy one costs a quarter.
+It prints `100000.0 0.126` and `1.25e-09`. The perfect predictor costs a hundred thousand; the sloppy one costs an eighth.
 
-Now normalize: divide each feature by the largest absolute value it takes, so both live in \([-1, 1]\). Feature 1 becomes \((y + 0.5\alpha)/1.5\) and feature 2 becomes \(y\) itself. The perfect predictor is now \((0, 1)\), with squared length 1. Here is ridge’s actual answer before and after, computed on the four-point distribution (that is, with \(\frac1m X^\top X\) and \(\frac1m X^\top\mathbf y\) replaced by their expectations, the limit of a long training sequence), together with its true risk:
+Now normalize: divide each feature by the largest absolute value it takes, so both live in \([-1, 1]\). Feature 1 becomes \((y + 0.5\alpha)/1.5\) and feature 2 becomes \(y\) itself. The perfect predictor is now \((0, 1)\), with squared length 1. Here is ridge’s actual answer before and after, computed on the four-point distribution (that is, with \(A/m\) and \(\mathbf b/m\) replaced by their expectations, the limit of a long training sequence, so the system reads \((A/m + 2\lambda I)\mathbf w = \mathbf b/m\)), together with its true risk under the half square loss:
 
 ```python
 from itertools import product
@@ -731,21 +728,21 @@ def ridge_and_risk(scale1, scale2, lam):
     c11, c12 = E(lambda u, v, y: u * u), E(lambda u, v, y: u * v)
     c22 = E(lambda u, v, y: v * v)
     b1, b2 = E(lambda u, v, y: u * y), E(lambda u, v, y: v * y)
-    a, d = c11 + lam, c22 + lam
+    a, d = c11 + 2 * lam, c22 + 2 * lam
     w1 = (d * b1 - c12 * b2) / (a * d - c12 * c12)
     w2 = (a * b2 - c12 * b1) / (a * d - c12 * c12)
-    risk = E(lambda u, v, y: (w1 * u + w2 * v - y) ** 2)
+    risk = E(lambda u, v, y: (w1 * u + w2 * v - y) ** 2 / 2)
     return round(w1, 4), round(w2, 4), f"{risk:.2g}"
 
 print(ridge_and_risk(1, 1, 1e-3))
 print(ridge_and_risk(1.5, 1e-4, 1e-3))
 ```
 
-It prints `(0.7994, 0.0201, '0.2')` and `(0.0059, 0.9951, '4.9e-06')`. Before normalization, ridge leans on the noisy feature and has true risk 0.2. After, it finds the perfect feature, with true risk about five in a million. Same data, same learner, same \(\lambda\): only the units changed.
+It prints `(0.7987, 0.0101, '0.1')` and `(0.0117, 0.9902, '9.5e-06')`. Before normalization, ridge leans on the noisy feature and has true risk 0.1. After, it finds the perfect feature, with true risk about ten in a million. Same data, same learner, same \(\lambda\): only the units changed.
 
 [[diagram:scales]]
 
-There is a second gain, on the guarantee side. Lesson 13’s bounds for regularized loss minimization, and lesson 14’s iteration count for SGD, grow with \(\|\mathbf w^\star\|^2\) times the largest \(\|\mathbf x\|^2\) (for the square loss, the loss is \(\|\mathbf x\|^2\)-smooth, as lesson 12 showed up to a constant). Here normalization takes \(\|\mathbf w^\star\|^2\) from \(10^8\) to 1, while the largest \(\|\mathbf x\|\) stays about the same (about 1.5 before, about 1.4 after). So the same normalization shrinks the estimation error bound and the runtime by a factor of the order of a hundred million.
+There is a second gain, on the guarantee side. Lesson 13’s bounds for regularized loss minimization, and lesson 14’s iteration count for SGD, grow with \(\|\mathbf w^\star\|^2\) times the largest \(\|\mathbf x\|^2\) (the half square loss is \(\|\mathbf x\|^2\)-smooth, which is why lesson 13 took \(\beta = 0.16\) for a word worth 0.4). Here normalization takes \(\|\mathbf w^\star\|^2\) from \(10^8\) to 1, while the largest \(\|\mathbf x\|\) stays about the same (about 1.5 before, about 1.4 after). So the same normalization shrinks the estimation error bound and the runtime by a factor of the order of a hundred million.
 
 ### Clipping: when big values lie
 
@@ -845,13 +842,13 @@ One caution matters for guarantees. A transformation whose constants (\(\bar f\)
 
 ## Feature learning: let the data build the features
 
-Selection keeps some of the given features; transformation reshapes them one at a time. **Feature learning** goes further: it learns a whole map \(\psi\) from messages (or images, or sounds) to feature vectors in \(\mathbb R^k\), so that a simple class, usually linear predictors, works well on top of \(\psi\). You have seen hand-built maps of this kind: lesson 9’s polynomial features and lesson 16’s embeddings. Feature learning automates the construction. And no-free-lunch applies again: a feature learner can only succeed by assuming something about the distribution.
+Selection keeps some of the given features; transformation reshapes them one at a time. **Feature learning** goes further: it learns a whole map \(\psi\) from messages (or images, or sounds) to feature vectors in \(\mathbb R^k\), so that a simple class, usually linear predictors, works well on top of \(\psi\). You have seen hand-built maps of this kind: lesson 9’s polynomial features and lesson 16’s embeddings. Lesson 20’s networks learned one: their hidden neurons, each a halfspace on the raw signals, are features fitted by backpropagation together with the predictor on top, from labels. The methods below build \(\psi\) without labels. And no-free-lunch applies again: a feature learner can only succeed by assuming something about the distribution.
 
 The motivating example is the **bag of words**, which this filter already uses. Given a dictionary of \(k\) words, a message becomes a vector in \(\{0, 1\}^k\) with a 1 in position \(i\) exactly when word \(i\) appears. Linear predictors on this representation work remarkably well for text: each word is a small measurement of the message, and the learner weighs them. But what is a “word” for an image of a face, where the raw pixels make a poor input for a linear predictor? We would like “visual words”, such as “there is an eye in the image”, and we would like the data to tell us what they are. That is **dictionary learning**.
 
-A first naive idea uses clustering (lesson 22). Learn a clustering \(c\) that sends each instance to one of \(k\) clusters, and treat clusters as words: \(\psi(x)\) is the vector in \(\{0,1\}^k\) with a single 1, in position \(c(x)\). What can a linear predictor do on top of this? For any weights \(\mathbf w\), \(\langle \mathbf w, \psi(x) \rangle = \sum_{i=1}^k w_i \mathbb 1[c(x) = i] = w_{c(x)}\): exactly one term survives. So **a linear predictor on cluster indicators gives the same value to every instance in a cluster**, and if the clusters come from \(k\)-means, it is a piecewise constant predictor over the regions nearest each centre.
+A first naive idea uses clustering (lesson 22). Learn a clustering \(c\) that sends each instance to one of \(k\) clusters, and treat clusters as words: \(\psi(x)\) is the vector in \(\{0,1\}^k\) with a single 1, in position \(c(x)\). What can a linear predictor do on top of this? For any weights \(\mathbf w\), \(\langle \mathbf w, \psi(x) \rangle = \sum_{i=1}^k w_i \mathbb 1[c(x) = i] = w_{c(x)}\), where \(\mathbb 1[c(x) = i]\) is 1 when \(x\) is in cluster \(i\) and 0 otherwise: exactly one term survives. So **a linear predictor on cluster indicators gives the same value to every instance in a cluster**, and if the clusters come from lesson 22’s k-means algorithm, which assigns each instance to its nearest centre, it is a piecewise constant predictor over the regions nearest each centre.
 
-Clustering and principal component analysis (lesson 23) are both special cases of one idea. An **auto-encoder** is a pair of functions: an **encoder** \(\psi : \mathbb R^d \to \mathbb R^k\) that turns an instance into a code, and a **decoder** \(\phi : \mathbb R^k \to \mathbb R^d\) that turns the code back into an instance. The pair is learned so that decoding the code gives back something close to what you started with:
+Clustering (lesson 22) and principal component analysis (lesson 23) are both special cases of one idea. An **auto-encoder** is a pair of functions: an **encoder** \(\psi : \mathbb R^d \to \mathbb R^k\) that turns an instance into a code, and a **decoder** \(\phi : \mathbb R^k \to \mathbb R^d\) that turns the code back into an instance. The pair is learned so that decoding the code gives back something close to what you started with:
 
 \[ \sum_{i=1}^m \left\| \mathbf x_i - \phi(\psi(\mathbf x_i)) \right\|^2 \ \ \text{is small.} \]
 
@@ -859,7 +856,7 @@ Clustering and principal component analysis (lesson 23) are both special cases o
 - \(\|\mathbf x_i - \phi(\psi(\mathbf x_i))\|^2\) is the squared distance between an instance and its reconstruction.
 - \(\sum_{i=1}^m\) adds this **reconstruction error** over the \(m\) training instances.
 
-In plain words: **an auto-encoder learns a code from which the instances can be rebuilt.** Without restrictions this is trivial: take \(k = d\) and let both maps be the identity, and the error is 0 while nothing has been learned. So the pair must be restricted. PCA restricts \(k < d\) and makes both maps linear. \(k\)-means allows any \(k\), even \(k > d\), but uses \(k\) centres \(\boldsymbol\mu_1, \dots, \boldsymbol\mu_k\): the encoder returns the indicator vector of the nearest centre, and the decoder \(\phi(\mathbf v) = \sum_i v_i\boldsymbol\mu_i\) returns that centre. Here are six messages described by two numbers (the base-10 logarithm of the length and the number of bangs) and two centres:
+In plain words: **an auto-encoder learns a code from which the instances can be rebuilt.** Without restrictions this is trivial: take \(k = d\) and let both maps be the identity, and the error is 0 while nothing has been learned. So the pair must be restricted. PCA, as lesson 23 set it up, keeps \(k < d\) (lesson 23 called it \(n\)) and makes both maps matrices: a compression matrix \(W\) with \(k\) rows as the encoder and a recovery matrix \(U\) as the decoder, and the best pair is \(U\) with the top \(k\) principal components as orthonormal columns and \(W = U^\top\). The k-means cost of lesson 22 allows any \(k\), even \(k > d\), but uses \(k\) centres \(\boldsymbol\mu_1, \dots, \boldsymbol\mu_k\): the encoder returns the indicator vector of the nearest centre, and the decoder \(\phi(\mathbf v) = \sum_i v_i\boldsymbol\mu_i\) returns that centre. Here are six messages described by two numbers (the base-10 logarithm of the length and the number of bangs) and two centres:
 
 ```python
 xs = [(2.1, 4), (2.4, 5), (2.0, 6), (3.6, 0), (3.9, 1), (3.5, 0)]
@@ -884,7 +881,7 @@ It prints the six codes `[[1, 0], [1, 0], [1, 0], [0, 1], [0, 1], [0, 1]]`, the 
 
 [[diagram:autoencoder]]
 
-What lets \(k\)-means use more centres than dimensions without becoming trivial is that its codes are **sparse**: exactly one nonzero entry. The natural extension allows a few. Fix the centres, now called the **dictionary**, \(\boldsymbol\mu_1, \dots, \boldsymbol\mu_k\), let the decoder be \(\phi(\mathbf v) = \sum_i v_i\boldsymbol\mu_i\), and let the encoder find the best code with at most \(s\) nonzero entries:
+What lets k-means use more centres than dimensions without becoming trivial is that its codes are **sparse**: exactly one nonzero entry. The natural extension allows a few. Fix the centres, now called the **dictionary**, \(\boldsymbol\mu_1, \dots, \boldsymbol\mu_k\), let the decoder be \(\phi(\mathbf v) = \sum_i v_i\boldsymbol\mu_i\), and let the encoder find the best code with at most \(s\) nonzero entries:
 
 \[ \psi(\mathbf x) = \operatorname*{argmin}_{\mathbf v \in \mathbb R^k} \left\| \mathbf x - \phi(\mathbf v) \right\|^2 \ \ \text{subject to} \ \ \|\mathbf v\|_0 \le s. \]
 
@@ -913,7 +910,7 @@ print("s=2", 1, 2, err((0, 1), (0.9, 0.5)))
 
 It prints `s=1 1 0.9 0.25`, `s=1 2 0.5 0.81`, `s=1 3 1.0 0.08` and `s=2 1 2 0.0`: one vector leaves an error of at least 0.08 (using \(\boldsymbol\mu_3\)), two vectors leave none.
 
-With \(s = 1\) and codes restricted to indicator vectors (a single entry equal to 1), this is the \(k\)-means encoder: the best single centre is the nearest one. For larger \(s\) the encoder faces the same hard problem as feature selection, now once per instance (indeed it *is* feature selection, with the dictionary vectors as the columns). So in practice the constraint is replaced by the \(\ell_1\) price, \(\psi(\mathbf x) = \operatorname{argmin}_{\mathbf v}\left(\|\mathbf x - \phi(\mathbf v)\|^2 + \lambda\|\mathbf v\|_1\right)\), which is a LASSO per instance and gives sparse codes for the reason the soft-thresholding proposition explained. Learning the dictionary itself, choosing \(\boldsymbol\mu_1, \dots, \boldsymbol\mu_k\) to make the total reconstruction error small, remains computationally hard, much like \(k\)-means, and in practice it is attacked with heuristic search. Deep neural networks (lesson 20) are where much of the modern work on learned features lives.
+With \(s = 1\) and codes restricted to indicator vectors (a single entry equal to 1), this is the k-means encoder: the best single centre is the nearest one. For larger \(s\) the encoder faces the same hard problem as feature selection, now once per instance (indeed it *is* feature selection, with the dictionary vectors as the columns). So in practice the constraint is replaced by the \(\ell_1\) price, \(\psi(\mathbf x) = \operatorname{argmin}_{\mathbf v}\left(\|\mathbf x - \phi(\mathbf v)\|^2 + \lambda\|\mathbf v\|_1\right)\), which is a LASSO per instance and gives sparse codes for the reason the soft-thresholding proposition explained. Learning the dictionary itself, choosing \(\boldsymbol\mu_1, \dots, \boldsymbol\mu_k\) to make the total reconstruction error small, remains computationally hard, just as minimizing the k-means cost is NP-hard (lesson 22), and in practice it is attacked with heuristics that alternate, like the k-means algorithm: fix the dictionary and find the codes, then fix the codes and refit the dictionary. An auto-encoder whose two maps are lesson 20’s neural networks, trained by SGD on the reconstruction error, is where much of the modern work on learned features lives.
 
 ## The guarantee that selects few features
 
@@ -975,7 +972,7 @@ Before you start, think about three things. Which of the transformations in the 
 
 **“The \(\ell_2\) penalty also selects features, just more gently.”** It shrinks every weight by a factor but never to zero. With a correlation of 0.1 and \(\lambda = 0.15\), the \(\ell_2\) weight is 0.077 and the \(\ell_1\) weight is exactly 0. Only the \(\ell_1\) price has the constant pull towards zero that stops weak features dead.
 
-**“Normalization is cosmetic: the information is the same.”** For a learner with a fixed preference, such as ridge regression’s preference for short weight vectors or a filter class with fixed weights and thresholds, the units decide what the learner can afford. Rescaling one feature took ridge’s true risk from 0.2 to about \(5 \times 10^{-6}\), and clipping took a linear predictor’s risk from 0.96 to 0.
+**“Normalization is cosmetic: the information is the same.”** For a learner with a fixed preference, such as ridge regression’s preference for short weight vectors or a filter class with fixed weights and thresholds, the units decide what the learner can afford. Rescaling one feature took ridge’s true risk from 0.1 to about \(10^{-5}\), and clipping took a linear predictor’s risk from 0.96 to 0.
 
 **“Unit range is the safe default.”** One outlier sets the range, and every ordinary value is squashed next to zero: five lengths from 120 to 5,100 bytes all became 0.0 or 0.01. If the feature has heavy tails, clip it or take its logarithm first.
 
@@ -989,7 +986,7 @@ Before you start, think about three things. Which of the transformations in the 
 4. **Forward greedy selection** adds the feature that helps most next to those chosen. **OMP** does the same for least squares, scoring each candidate by \(\langle \mathbf u_j, \mathbf y \rangle^2/\|\mathbf u_j\|^2\), the alignment of its new part with the labels, in \(O(Tdm)\). The steepest-gradient rule and AdaBoost are greedy selections too. **Backward elimination** removes the least useful feature each round, at a much higher cost.
 5. The **\(\ell_1\) norm** is the convex stand-in for the count. Soft thresholding shows why it gives exact zeros: a weight whose evidence is below \(\lambda\) is set to zero. The **LASSO** is least squares with this price, solvable by coordinate descent.
 6. **Normalization and transformations** change what a learner can afford and even what it can express: ridge and units, clipping and approximation error, and a toolbox (centering, unit range, standardization, clipping, sigmoid, logarithm), each a bet about the problem.
-7. **Feature learning** builds \(\psi\) from data. Auto-encoders minimize reconstruction error under restrictions: PCA (linear, \(k < d\)), \(k\)-means (one-hot codes), sparse coding (at most \(s\) dictionary vectors, or an \(\ell_1\) price).
+7. **Feature learning** builds \(\psi\) from data. Auto-encoders minimize reconstruction error under restrictions: PCA (linear, \(k < d\)), k-means (one-hot codes), sparse coding (at most \(s\) dictionary vectors, or an \(\ell_1\) price).
 8. With a finite class of \(k\)-feature filters, the gap in the uniform-convergence bound grows like \(\sqrt{k \log d / m}\): few features can be certified with 2,000 labels, all 20,002 cannot.
 
 Your filter now reads three words and a log-scaled length, carries a certificate below 0.19, and touches four features per message instead of twenty thousand. Then a colleague from the research team looks at the certificate and frowns. “You counted every filter you *could* have built: every subset of twenty thousand features, every sign, every threshold. Most of those filters behave identically on the mail you actually have. Your bound pays for richness your data never sees.” She is right, and the problem is older than this lesson. Every guarantee so far has measured a class’s richness before seeing any data: its size in lesson 2, its VC dimension in lesson 6, its description length in lesson 7. Those numbers are worst cases over every possible set of messages, and for the mail you actually have, they are often far too pessimistic. Can a class’s richness be measured on the very data in hand? That is the next lesson: Rademacher complexity.

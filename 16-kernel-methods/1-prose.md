@@ -2,7 +2,7 @@
 
 ## The junk that hides in pairs
 
-The filter from lesson 15 has been a quiet success. Every message becomes a vector of word counts, as in lesson 9, the labels are \(+1\) for junk and \(-1\) for keep, and Soft-SVM finds a halfspace with a large margin. It weighs the evidence word by word, it does not care that the vocabulary has twenty thousand words, and the margin bound from lesson 15 told you, before shipping, roughly how many labels it needed.
+The filter from lesson 15 has been a quiet success. Every message becomes a vector of word counts, as in lesson 9, the labels are \(+1\) for junk and \(-1\) for keep, and soft-SVM finds a halfspace with a large margin. It weighs the evidence word by word, it does not care that the vocabulary has twenty thousand words, and the margin bound from lesson 15 told you, before shipping, roughly how many labels it needed.
 
 Then a new kind of junk arrives, and the filter waves almost all of it through.
 
@@ -35,7 +35,7 @@ print([sum(col) for col in zip(*junk)])
 print([sum(col) for col in zip(*keep)])
 ```
 
-It prints `[1, 1, 1, 1, 2]` twice. The two pairs have the same sum. Now suppose some halfspace separated them. Adding its two inequalities on the junk messages gives \(\langle \mathbf w, \mathbf x_A + \mathbf x_B \rangle + 2b > 0\), and adding its two inequalities on the keep messages gives \(\langle \mathbf w, \mathbf x_C + \mathbf x_D \rangle + 2b \le 0\). The left-hand sides are the same number, because \(\mathbf x_A + \mathbf x_B = \mathbf x_C + \mathbf x_D\). A number cannot be both positive and at most zero, so no halfspace on these features separates the four messages. It is not that Soft-SVM is searching badly: the hypothesis class itself cannot express the rule. In the language of lesson 5, the approximation error (the error of the best hypothesis in the class) is the problem, and no number of labels fixes that.
+It prints `[1, 1, 1, 1, 2]` twice. The two pairs have the same sum. Now suppose some halfspace separated them. Adding its two inequalities on the junk messages gives \(\langle \mathbf w, \mathbf x_A + \mathbf x_B \rangle + 2b > 0\), and adding its two inequalities on the keep messages gives \(\langle \mathbf w, \mathbf x_C + \mathbf x_D \rangle + 2b \le 0\). The left-hand sides are the same number, because \(\mathbf x_A + \mathbf x_B = \mathbf x_C + \mathbf x_D\). A number cannot be both positive and at most zero, so no halfspace on these features separates the four messages. It is not that soft-SVM is searching badly: the hypothesis class itself cannot express the rule. In the language of lesson 5, the approximation error (the error of the best hypothesis in the class) is the problem, and no number of labels fixes that.
 
 Your colleague has the obvious fix. If junk is marked by pairs of words, give the filter pairs of words as features: one new coordinate for every pair, equal to 1 when both words appear. And since next month’s junk might be marked by three words, why not triples too? Then a halfspace over the new coordinates can say “winner and claim” directly.
 
@@ -197,9 +197,9 @@ Here `score` builds \(\langle \mathbf u, \psi(\mathbf x) \rangle\) coordinate by
 
 ## Where the weight vector lives
 
-Here is a question that sounds idle and turns out to be the key. When Soft-SVM finishes, where is its weight vector? It lives in the feature space, which may have a trillion dimensions. But is it anywhere in particular?
+Here is a question that sounds idle and turns out to be the key. When soft-SVM finishes, where is its weight vector? It lives in the feature space, which may have a trillion dimensions. But is it anywhere in particular?
 
-Think about the training sequence. The learner only ever sees \(m\) vectors, \(\psi(x_1), \dots, \psi(x_m)\). A direction in feature space that is perpendicular to all of them is invisible to the training data: moving \(\mathbf w\) along it changes no score \(\langle \mathbf w, \psi(x_i) \rangle\). It only makes \(\mathbf w\) longer. And Soft-SVM dislikes long vectors. So you would expect it never to bother with such directions, and to keep \(\mathbf w\) inside the span of the training vectors. That hunch is a theorem.
+Think about the training sequence. The learner only ever sees \(m\) vectors, \(\psi(x_1), \dots, \psi(x_m)\). A direction in feature space that is perpendicular to all of them is invisible to the training data: moving \(\mathbf w\) along it changes no score \(\langle \mathbf w, \psi(x_i) \rangle\). It only makes \(\mathbf w\) longer. And soft-SVM dislikes long vectors. So you would expect it never to bother with such directions, and to keep \(\mathbf w\) inside the span of the training vectors. That hunch is a theorem.
 
 First, the setting. Lesson 15’s learners all minimize something of the form
 
@@ -308,7 +308,7 @@ It is the old objective with each score replaced by its kernel sum and the lengt
 
 \[ \min_{\boldsymbol\alpha \in \mathbb R^m} \; \lambda\, \boldsymbol\alpha^\top G \boldsymbol\alpha + \frac{1}{m} \sum_{i=1}^m \max\{0, 1 - y_i (G\boldsymbol\alpha)_i\}. \]
 
-This can be written as a quadratic program and solved efficiently, and later in this lesson you will build an even simpler solver. Once \(\boldsymbol\alpha\) is learned, predicting the label of a new message also needs only the kernel:
+This can be written as a quadratic program (a quadratic objective under linear constraints) and solved efficiently, and later in this lesson you will build an even simpler solver. Once \(\boldsymbol\alpha\) is learned, predicting the label of a new message also needs only the kernel:
 
 \[ \langle \mathbf w, \psi(x) \rangle = \sum_{j=1}^m \alpha_j \langle \psi(x_j), \psi(x) \rangle = \sum_{j=1}^m \alpha_j K(x_j, x). \]
 
@@ -565,7 +565,7 @@ It prints `-0.9665884814 -0.9665884814` and `True`: the value of \(f\) at 1.7 eq
 
 ## Soft-SVM with kernels, trained by SGD
 
-We could hand the \(\boldsymbol\alpha\) form of Soft-SVM to a quadratic-programming solver. There is a simpler road, and it reuses something you already built. In lesson 15 you solved Soft-SVM in the form
+We could hand the \(\boldsymbol\alpha\) form of soft-SVM to a quadratic-programming solver. There is a simpler road, and it reuses something you already built. In lesson 15 you solved soft-SVM in the form
 
 \[ \min_{\mathbf w} \; \frac{\lambda}{2} \|\mathbf w\|^2 + \frac{1}{m} \sum_{i=1}^m \max\{0, 1 - y_i \langle \mathbf w, \mathbf x_i \rangle\} \]
 
@@ -725,11 +725,17 @@ if __name__ == "__main__":
 
 The kernel trick solved the computational half of the bug. Now the statistical half: is it reasonable to learn in a feature space with hundreds of millions of coordinates from a budget of labels you can afford? Lesson 15 gave the tool, and it transfers to kernels without a change.
 
-Recall it. Let every message satisfy \(\|\psi(x)\| \le \rho\), and let \(A(S)\) be the solution of Soft-SVM, \(\min_{\mathbf w} \lambda \|\mathbf w\|^2 + L^{\text{hinge}}_S(\mathbf w)\), on the image sequence. Then for every vector \(\mathbf u\) in the feature space,
+Recall it. Let every message satisfy \(\|\psi(x)\| \le \rho\), so \(\rho\) is lesson 15’s radius, and let \(A(S)\) be the solution of soft-SVM, \(\min_{\mathbf w} \lambda \|\mathbf w\|^2 + L^{\text{hinge}}_S(\mathbf w)\), on the image sequence. Then for every vector \(\mathbf u\) in the feature space,
 
 \[ \mathop{\mathbb E}_{S \sim \mathcal D^m}\big[ L^{0-1}_{\mathcal D}(A(S)) \big] \le L^{\text{hinge}}_{\mathcal D}(\mathbf u) + \lambda \|\mathbf u\|^2 + \frac{2\rho^2}{\lambda m}. \]
 
-Here \(L^{0-1}_{\mathcal D}\) is the true risk with the 0-1 loss, the probability of a wrong label, and \(L^{\text{hinge}}_{\mathcal D}\) the expected hinge loss. Suppose a separator \(\mathbf u\) with norm \(B\) has \(y \langle \mathbf u, \psi(x) \rangle \ge 1\) on every message. Every hinge loss of \(\mathbf u\) is then \(\max\{0, 1 - y\langle \mathbf u, \psi(x) \rangle\} = 0\), so
+Read it from the inside out.
+
+- \(A(S)\) is the hypothesis soft-SVM returns on the training sequence \(S\), and \(L^{0-1}_{\mathcal D}(A(S))\) is its true risk with the 0-1 loss: the probability it mislabels a fresh message.
+- Under \(\mathbb E\), “the average value of”, \(S \sim \mathcal D^m\) says the training sequence is \(m\) examples drawn i.i.d. from \(\mathcal D\), so the average runs over lucky and unlucky archives alike.
+- On the right, \(L^{\text{hinge}}_{\mathcal D}(\mathbf u)\) is the expected hinge loss of a comparison vector \(\mathbf u\), \(\lambda \|\mathbf u\|^2\) its penalty, and \(\frac{2\rho^2}{\lambda m}\) a price that falls as the number of labels \(m\) grows.
+
+In plain words: **on average, the filter’s error rate is at most any comparison vector’s hinge loss, plus its penalty, plus a term that shrinks with more labels.** Suppose a separator \(\mathbf u\) with norm \(B\) has \(y \langle \mathbf u, \psi(x) \rangle \ge 1\) on every message. Every hinge loss of \(\mathbf u\) is then \(\max\{0, 1 - y\langle \mathbf u, \psi(x) \rangle\} = 0\), so
 
 \[ \mathop{\mathbb E}\big[ L^{0-1}_{\mathcal D}(A(S)) \big] \le \lambda B^2 + \frac{2\rho^2}{\lambda m}. \]
 
@@ -737,9 +743,22 @@ Which \(\lambda\) makes the right side smallest? For positive numbers \(a\) and 
 
 \[ \mathop{\mathbb E}\big[ L^{0-1}_{\mathcal D}(A(S)) \big] \le \sqrt{\frac{8 \rho^2 B^2}{m}}. \]
 
-No dimension anywhere. To guarantee an expected true risk of at most \(\varepsilon\), it is enough that \(m \ge 8\rho^2 B^2/\varepsilon^2\). And both quantities can be read through the kernel: \(\rho^2 = \max_x K(x, x)\), and a separator written as \(\mathbf u = \sum_i \gamma_i \psi(z_i)\) has \(B^2 = \sum_{i,j} \gamma_i \gamma_j K(z_i, z_j)\). As in lesson 9, any separator with margin 1 everywhere is a **certificate**: its norm bounds the labels you need. You never need the best one, just one you can check.
+In plain words: **the expected error shrinks like one over the square root of the number of labels, at a rate set by \(\rho B\).** No dimension anywhere. To guarantee an expected true risk of at most \(\varepsilon\), the error rate you are willing to accept, solve \(\sqrt{8\rho^2B^2/m} \le \varepsilon\) for \(m\): it is enough that \(m \ge 8\rho^2 B^2/\varepsilon^2\). And both quantities can be read through the kernel: \(\rho^2 = \max_x K(x, x)\), the largest squared length \(\|\psi(x)\|^2\) over all messages, and a separator written as \(\mathbf u = \sum_i \gamma_i \psi(z_i)\) has \(B^2 = \sum_{i,j} \gamma_i \gamma_j K(z_i, z_j)\). As in lesson 9, any separator with margin 1 everywhere is a **certificate**: its norm bounds the labels you need. You never need the best one, just one you can check.
 
-Now the mail. For the degree-2 polynomial kernel on three-word subject lines, \(K(x, x) = (1 + 3)^2 = 16\), so \(\rho = 4\); that was the 16 printed earlier. And the hand-built \(\mathbf u\) is a certificate with \(B^2 = 5\). What about degree \(k\)? On 0/1 vectors a word times itself is itself, so the monomial \(x_1 x_2\) appears in every coordinate whose index tuple uses exactly the indices 1 and 2, padded with zeros or repeats. Counting the \(k\)-tuples over \(\{0, 1, 2\}\) that contain both a 1 and a 2 by inclusion and exclusion gives \(c_k = 3^k - 2 \cdot 2^k + 1\). Spread a weight of \(2/c_k\) over those coordinates, the same for \(x_3 x_4\), and put \(-1\) on the all-zero tuple: the score is still \(2x_1x_2 + 2x_3x_4 - 1\), and the squared norm is \(1 + 2 \cdot c_k (2/c_k)^2 = 1 + 8/c_k\). Meanwhile \(\rho^2 = (1 + 3)^k\) grows. The labels needed for \(\varepsilon = 0.2\):
+Now the mail. For the degree-2 polynomial kernel on three-word subject lines, \(K(x, x) = (1 + 3)^2 = 16\), so \(\rho = 4\); that was the 16 printed earlier. And the hand-built \(\mathbf u\) is a certificate with \(B^2 = 5\). Push them through: with \(m = 16{,}000\), the best \(\lambda\) is \(\sqrt{2 \cdot 16/(5 \cdot 16{,}000)} = 0.02\), the two terms \(\lambda B^2\) and \(2\rho^2/(\lambda m)\) are both 0.1, and their sum is the bound 0.2:
+
+```python
+import math
+
+rho, B, m = 4, math.sqrt(5), 16_000
+lam = math.sqrt(2 * rho ** 2 / (B ** 2 * m))
+terms = [lam * B ** 2, 2 * rho ** 2 / (lam * m)]
+print(round(lam, 4), [round(t, 4) for t in terms],
+      round(sum(terms), 4),
+      round(math.sqrt(8 * rho ** 2 * B ** 2 / m), 4))
+```
+
+It prints `0.02 [0.1, 0.1] 0.2 0.2`. What about degree \(k\)? On 0/1 vectors a word times itself is itself, so the monomial \(x_1 x_2\) appears in every coordinate whose index tuple uses exactly the indices 1 and 2, padded with zeros or repeats. Counting the \(k\)-tuples over \(\{0, 1, 2\}\) that contain both a 1 and a 2 by inclusion and exclusion gives \(c_k = 3^k - 2 \cdot 2^k + 1\): all \(3^k\) lists, minus the \(2^k\) that miss 1 and the \(2^k\) that miss 2, plus the all-zeros list, which was taken away twice. For \(k = 2\), \(9 - 8 + 1 = 2\): the lists \((1, 2)\) and \((2, 1)\). The snippet’s `c` is this count. Spread a weight of \(2/c_k\) over those coordinates, the same for \(x_3 x_4\), and put \(-1\) on the all-zero tuple: the score is still \(2x_1x_2 + 2x_3x_4 - 1\), and the squared norm is \(1 + 2 \cdot c_k (2/c_k)^2 = 1 + 8/c_k\). Meanwhile \(\rho^2 = (1 + 3)^k\) grows. The labels needed for \(\varepsilon = 0.2\):
 
 ```python
 import math
@@ -760,7 +779,7 @@ It prints `2 2 2.236 8.944 16000`, `3 12 1.291 10.328 21334` and `4 50 1.077 17.
 
 Two things about these numbers. First, compare them with counting dimensions. Halfspaces over pairs of a 20,000-word vocabulary live in a space of about \(2 \times 10^8\) dimensions, so a guarantee that grows with the VC dimension, like those of lesson 6, needs labels in proportion to that. The margin certificate does not mention the vocabulary at all: 16,000 labels for 1,000 words, 20,000 words or a million. Second, the guarantee is an upper bound in expectation, and a loose one. The filter will usually do far better than 0.2; what the bound gives you is a promise you can make before you train, and lesson 11 taught you to value that.
 
-One honest caveat. The bound is about the exact Soft-SVM solution, and KernelSGD-SoftSVM approximates it, with an optimization error that lesson 14 showed shrinks as the number of steps \(T\) grows. In the lab, \(T\) is large enough for that gap to be small, but it is not part of the certificate.
+One honest caveat. The bound is about the exact soft-SVM solution, and KernelSGD-SoftSVM approximates it, with an optimization error that lesson 14 showed shrinks as the number of steps \(T\) grows. In the lab, \(T\) is large enough for that gap to be small, but it is not part of the certificate.
 
 ## Fix the bug
 
@@ -776,11 +795,11 @@ Before you train, work out each kernel’s label count from the table above, and
 
 **“The kernel trick makes the feature space small.”** The feature space is exactly as large as before, possibly infinite. What shrinks is what you store and compute: \(m\) coefficients and \(m\) training messages instead of a weight vector, and kernel values instead of coordinates. The price moves to \(m\): the Gram matrix has \(m^2\) entries and each prediction touches up to \(m\) training messages.
 
-**“Any similarity function is a kernel.”** Only the positive semidefinite ones. \(\max\{x, x'\}\) looks like a perfectly reasonable similarity and fails on two points. Plug a non-kernel into Soft-SVM and the “norm” \(\boldsymbol\alpha^\top G \boldsymbol\alpha\) can go negative; the objective is then no longer the problem you meant, and every guarantee you derived for it is gone.
+**“Any similarity function is a kernel.”** Only the positive semidefinite ones. \(\max\{x, x'\}\) looks like a perfectly reasonable similarity and fails on two points. Plug a non-kernel into soft-SVM and the “norm” \(\boldsymbol\alpha^\top G \boldsymbol\alpha\) can go negative; the objective is then no longer the problem you meant, and every guarantee you derived for it is gone.
 
 **“A Gaussian kernel can separate anything, so it is the safe default.”** With a small enough \(\sigma\), the Gram matrix of distinct messages is close to the identity and any labelling is separable. That is exactly the memorizer of lesson 1 in a new coat: separable with a norm that grows with the number of messages, so the margin bound needs more labels than there are messages (the first concept-check question asks you to show it). The kernel is prior knowledge, and the wrong prior costs labels.
 
-**“The representer theorem says the solution uses only a few training messages.”** It says the solution is a combination of the training messages, possibly all \(m\) of them. Which coefficients are zero depends on the loss; for Hard-SVM, lesson 15’s support vectors are the ones that remain.
+**“The representer theorem says the solution uses only a few training messages.”** It says the solution is a combination of the training messages, possibly all \(m\) of them. Which coefficients are zero depends on the loss; for hard-SVM, lesson 15’s support vectors are the ones that remain.
 
 ## Recap and the next bug
 

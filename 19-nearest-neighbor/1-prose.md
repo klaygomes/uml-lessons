@@ -262,7 +262,7 @@ The single bars \(|\cdot|\) are the absolute value, the size of a change ignorin
 
 [[diagram:lipschitz]]
 
-Our invoice world’s \(\eta\) is \(2\sqrt 2\)-Lipschitz. Here is why. Inside the clip, the expression \(2x_1 + 2x_2 - 1.5\) changes by \(2(x'_1 - x_1) + 2(x'_2 - x_2)\), and by the Cauchy–Schwarz inequality that is at most \(\|(2, 2)\| \cdot \|x' - x\| = 2\sqrt 2\, \|x' - x\|\) in absolute value. The clip \(t \mapsto \min\{1, \max\{0, t\}\}\) never moves two numbers further apart than they were, so it keeps the bound. The twenty-eight noise scores do not enter \(\eta\) at all, so the same constant works in thirty dimensions. Let’s check by brute force: try many pairs of nearby messages and record the largest ratio of the change in \(\eta\) to the distance.
+Our invoice world’s \(\eta\) is \(2\sqrt 2\)-Lipschitz. Here is why. Inside the clip, the expression \(2x_1 + 2x_2 - 1.5\) changes by \(2(x'_1 - x_1) + 2(x'_2 - x_2)\), and by the Cauchy–Schwarz inequality that is at most \(\|(2, 2)\| \cdot \|x' - x\| = 2\sqrt 2\, \|x' - x\|\) in absolute value. The clip \(t \mapsto \min\{1, \max\{0, t\}\}\) never moves two numbers further apart than they were, so it keeps the bound. The twenty-eight noise scores do not enter \(\eta\) at all, so the same constant works in thirty dimensions. Let’s check by brute force: the ratio we computed for one nudge above, now for many pairs of nearby messages, keeping the largest.
 
 ```python
 import math, random
@@ -282,7 +282,7 @@ print(round(worst, 3), round(2 * math.sqrt(2), 3))
 
 It prints `2.828 2.828`: the worst ratio found is the constant, reached when you step diagonally inside the band where users disagree.
 
-Two more conventions before the proofs. The learner’s output depends on the random training sequence, so we measure it on average: the guarantee will bound \(\mathbb E_{S \sim \mathcal D^m}[L_{\mathcal D}(h_S)]\), the expected true risk of the 1-NN rule over the draw of \(S\). And the setting throughout is \(\mathcal X = [0, 1]^d\), \(\mathcal Y = \{0, 1\}\), the 0-1 loss \(\ell(h, (x, y)) = \mathbb 1[h(x) \neq y]\), and Euclidean distance.
+Two more conventions before the proofs. The learner’s output depends on the random training sequence: a different thousand labelled invoices gives a different 1-NN rule, with a different true risk. So we measure it on average over many draws of the training sequence. Recall that \(S \sim \mathcal D^m\) means the \(m\) examples of \(S\) are drawn independently from \(\mathcal D\). The guarantee will bound \(\mathbb E_{S \sim \mathcal D^m}[L_{\mathcal D}(h_S)]\): **the true risk of the 1-NN rule, averaged over the random training sequence.** The simulation in Step 1 will put it at about 0.152 for a thousand invoices on two scores. And the setting throughout is \(\mathcal X = [0, 1]^d\), \(\mathcal Y = \{0, 1\}\), the 0-1 loss \(\ell(h, (x, y)) = \mathbb 1[h(x) \neq y]\), and Euclidean distance. The **indicator** \(\mathbb 1[\cdot]\) is 1 when the statement inside is true and 0 when it is false, so the 0-1 loss charges 1 for a mistake and 0 otherwise.
 
 The guarantee comes in three steps. Step 1 turns the error of the 1-NN rule into a distance: how far a fresh message is from its nearest neighbour. Step 2 is a counting fact about regions that a random sample misses. Step 3 combines them to bound that distance, and hence the error.
 
@@ -292,7 +292,14 @@ The guarantee comes in three steps. Step 1 turns the error of the 1-NN rule into
 
 \[ \mathbb E_{S \sim \mathcal D^m}[L_{\mathcal D}(h_S)] \le 2\, L_{\mathcal D}(f_{\mathcal D}) + c\, \mathbb E_{S \sim \mathcal D^m,\, x \sim \mathcal D_x}\big[ \|x - x_{\pi_1(x)}\| \big]. \]
 
-Before the proof, read what it says. The 1-NN rule pays twice the Bayes risk, a price we will understand in a moment, plus \(c\) times the average distance from a fresh message to its nearest neighbour. If labelled messages crowd the domain densely, that distance is small, and the second term vanishes.
+Before the proof, read what it says, piece by piece.
+
+- On the left, the average true risk of the 1-NN rule, as just defined.
+- \(2\, L_{\mathcal D}(f_{\mathcal D})\) is twice the Bayes risk, a price we will understand in a moment.
+- \(\|x - x_{\pi_1(x)}\|\) is the distance from a message \(x\) to its nearest neighbour in \(S\).
+- The expectation under it draws both at once: the training sequence \(S\), and a fresh message \(x \sim \mathcal D_x\). So it is the average nearest-neighbour distance, and \(c\) times it is what Lipschitz lets \(\eta\) drift over that distance.
+
+In plain words: **the 1-NN rule’s average risk is at most twice the unavoidable error, plus \(c\) times the average distance to the nearest neighbour.** If labelled messages crowd the domain densely, that distance is small, and the second term vanishes. In the invoice world with a thousand labels on two scores, the average distance comes out near 0.016, so the bound is \(2 \times 0.115 + 2.83 \times 0.016 \approx 0.275\); the simulation after the proof computes both sides.
 
 *Proof.* We go in five steps.
 
@@ -302,7 +309,7 @@ Before the proof, read what it says. The 1-NN rule pays twice the Bayes risk, a 
 
 \[ \mathbb E_S[L_{\mathcal D}(h_S)] = \mathbb E_{x_1, \dots, x_m,\, x}\Big[ \mathbb P_{y \sim \eta(x),\; y' \sim \eta(x')}[\, y \neq y' \,] \Big], \]
 
-where \(y \sim p\) means a label that is 1 with probability \(p\) and 0 otherwise.
+where \(y \sim p\) means a label that is 1 with probability \(p\) and 0 otherwise. Read it from the inside: the inner \(\mathbb P\) flips the two coins for fixed messages and asks how often they disagree; the outer \(\mathbb E\), with subscripts naming what is random, averages that over the messages. In plain words: **the expected risk is the average, over random messages, of the chance that two coins, one biased by \(x\) and one by its nearest neighbour, come up different.**
 
 **Step 1c: two coins that disagree.** Fix two messages \(x, x'\) and write \(p = \eta(x)\), \(q = \eta(x')\). Two independent coins disagree when the first is 0 and the second is 1, or the other way round:
 
@@ -312,19 +319,33 @@ Now the one trick of the proof: write \(q = p - (p - q)\) in the first term and 
 
 \[ q(1 - p) + (1 - q)p = p(1-p) - (p - q)(1 - p) + (1 - p)p + (p - q)p = 2p(1 - p) + (p - q)(2p - 1). \]
 
-The first part, \(2p(1-p)\), is what you would pay if the neighbour’s coin were exactly as biased as yours, \(q = p\). The second part is the penalty for the neighbour being a different message.
+The first part, \(2p(1-p)\), is what you would pay if the neighbour’s coin were exactly as biased as yours, \(q = p\). The second part is the penalty for the neighbour being a different message. In plain words: **two coins disagree with probability \(2p(1-p)\), plus a correction proportional to how different their biases are.** Take the message at (0.6, 0.5), so \(p = 0.7\), and a neighbour with \(q = 0.6\). The left side is \(0.6 \times 0.3 + 0.4 \times 0.7 = 0.46\); the right is \(0.42 + 0.1 \times 0.4 = 0.46\). Flipping the coins agrees:
+
+```python
+import random
+
+p, q = 0.7, 0.6
+differ = q * (1 - p) + (1 - q) * p
+split = 2 * p * (1 - p) + (p - q) * (2 * p - 1)
+rng, n = random.Random(7), 100_000
+flips = sum((rng.random() < p) != (rng.random() < q)
+            for _ in range(n))
+print(round(differ, 2), round(split, 2), round(flips / n, 3))
+```
+
+It prints `0.46 0.46 0.458`.
 
 **Step 1d: Lipschitz bounds the penalty.** Since \(0 \le p \le 1\), we have \(|2p - 1| \le 1\). Since \(\eta\) is c-Lipschitz, \(|p - q| \le c\|x - x'\|\). So the penalty is at most \(|p - q| \cdot |2p - 1| \le c\|x - x'\|\), and
 
 \[ \mathbb P_{y \sim \eta(x),\; y' \sim \eta(x')}[y \neq y'] \le 2\eta(x)(1 - \eta(x)) + c\,\|x - x'\|. \]
 
-Put this into the formula of Step 1b, with \(x' = x_{\pi_1(x)}\), and use linearity of expectation. The first term depends only on \(x\), so its expectation is over \(x \sim \mathcal D_x\) alone:
+For our pair, 0.46 is indeed at most \(0.42 + 0.1\): the penalty 0.04 is below \(|p - q| = 0.1\). Put this into the formula of Step 1b, with \(x' = x_{\pi_1(x)}\), and use linearity of expectation (the average of a sum is the sum of the averages). The first term depends only on \(x\), so its expectation is over \(x \sim \mathcal D_x\) alone:
 
 \[ \mathbb E_S[L_{\mathcal D}(h_S)] \le \mathbb E_x\big[ 2\eta(x)(1 - \eta(x)) \big] + c\, \mathbb E_{S, x}\big[\|x - x_{\pi_1(x)}\|\big]. \]
 
-**Step 1e: compare with the Bayes risk.** For any \(p \in [0, 1]\), \(\min\{p, 1-p\} \ge p(1-p)\), because \(p(1-p) = \min\{p, 1-p\} \cdot \max\{p, 1-p\}\) and the max is at most 1. Taking expectations, \(L_{\mathcal D}(f_{\mathcal D}) = \mathbb E_x[\min\{\eta(x), 1 - \eta(x)\}] \ge \mathbb E_x[\eta(x)(1 - \eta(x))]\), so the first term is at most \(2L_{\mathcal D}(f_{\mathcal D})\). \(\blacksquare\)
+**Step 1e: compare with the Bayes risk.** For any \(p \in [0, 1]\), \(\min\{p, 1-p\} \ge p(1-p)\), because \(p(1-p) = \min\{p, 1-p\} \cdot \max\{p, 1-p\}\) and the max is at most 1. Taking expectations, \(L_{\mathcal D}(f_{\mathcal D}) = \mathbb E_x[\min\{\eta(x), 1 - \eta(x)\}] \ge \mathbb E_x[\eta(x)(1 - \eta(x))]\), so the first term is at most \(2L_{\mathcal D}(f_{\mathcal D})\). At \(p = 0.7\): \(\min\{0.7, 0.3\} = 0.3\), at least \(0.7 \times 0.3 = 0.21\). \(\blacksquare\)
 
-The algebra of Steps 1c to 1e is worth checking on a grid of values for \(p\) and \(q\), since a sign slip there would sink the whole argument.
+The coin snippet checked one pair; the algebra of Steps 1c to 1e is worth checking on a whole grid of values for \(p\) and \(q\), since a sign slip there would sink the whole argument.
 
 ```python
 grid = [i / 100 for i in range(101)]
@@ -341,7 +362,7 @@ print(gap < 1e-12)
 
 It prints `True`: the identity holds on all 10,201 pairs, and both inequalities never fail.
 
-Now let’s see the lemma at work in the invoice world, with the two scores that matter (\(d = 2\)) and \(m = 1{,}000\). The code below follows the proof exactly: it draws the messages, finds the nearest neighbour, and adds up the disagreement probability of Step 1c instead of flipping the coins. The Bayes risk of this world is \(11/96 \approx 0.115\), computed from the band where users disagree.
+Now let’s see the lemma at work in the invoice world, with the two scores that matter (\(d = 2\)) and \(m = 1{,}000\). The code below follows the proof exactly: it draws the messages, finds the nearest neighbour, and adds up the disagreement probability of Step 1c instead of flipping the coins. The Bayes risk of this world is \(11/96 \approx 0.115\), as the grid average showed earlier.
 
 ```python
 import math, random
@@ -374,15 +395,23 @@ The lemma leaves one quantity to control: the expected distance from a fresh mes
 
 \[ \mathbb E_{S \sim \mathcal D^m}\Big[ \sum_{i \,:\, C_i \cap S = \emptyset} \mathbb P[C_i] \Big] \le \frac{r}{me}. \]
 
-Here \(\mathbb P[C_i]\) is the probability \(\mathcal D\) gives to \(C_i\), and \(C_i \cap S = \emptyset\) means that none of the \(m\) points landed in \(C_i\).
+Read it from the inside out.
+
+- \(\mathbb P[C_i]\) is the probability \(\mathcal D\) gives to set \(C_i\): the chance that one random point lands in it.
+- \(C_i \cap S\) (read \(\cap\) as “and also in”) is the points of \(S\) inside \(C_i\), and \(\emptyset\) is the empty set. So \(C_i \cap S = \emptyset\) means that none of the \(m\) points landed in \(C_i\): the set was **missed**.
+- The sum runs over the indices \(i\) such that \(C_i\) was missed, adding their probabilities: the **missed mass**.
+- The outer expectation averages the missed mass over the random draw of \(S\).
+- On the right, \(e \approx 2.718\) is the base of the natural logarithm.
+
+In plain words: **on average, the sets a random sample misses carry at most \(r/(me)\) of the probability.** With 25 sets and 40 points, that is \(25/(40 \times 2.718) \approx 0.23\).
 
 *Proof.* **Linearity.** Write the random sum with an indicator for each set: \(\sum_{i : C_i \cap S = \emptyset} \mathbb P[C_i] = \sum_{i=1}^r \mathbb P[C_i] \cdot \mathbb 1[C_i \cap S = \emptyset]\). The numbers \(\mathbb P[C_i]\) are fixed, so by linearity of expectation the expected sum is \(\sum_{i=1}^r \mathbb P[C_i] \cdot \mathbb P_S[C_i \cap S = \emptyset]\).
 
-**One set at a time.** Fix \(i\). A single point misses \(C_i\) with probability \(1 - \mathbb P[C_i]\). The \(m\) points are independent, so the probability that all of them miss is the product, \((1 - \mathbb P[C_i])^m\). Now use \(1 - a \le e^{-a}\), which holds for every real \(a\) because \(e^{-a}\) is convex and \(1 - a\) is its tangent line at \(a = 0\). Raising both sides (both nonnegative here) to the power \(m\) gives \((1 - \mathbb P[C_i])^m \le e^{-\mathbb P[C_i]\, m}\).
+**One set at a time.** Fix \(i\). A single point misses \(C_i\) with probability \(1 - \mathbb P[C_i]\). The \(m\) points are independent, so the probability that all of them miss is the product, \((1 - \mathbb P[C_i])^m\). Now use \(1 - a \le e^{-a}\), which holds for every real \(a\) because \(e^{-a}\) is convex and \(1 - a\) is its tangent line at \(a = 0\). Raising both sides (both nonnegative here) to the power \(m\) gives \((1 - \mathbb P[C_i])^m \le e^{-\mathbb P[C_i]\, m}\). For a set of probability \(1/40\) and 40 points, the left side is \((39/40)^{40} \approx 0.363\) and the right is \(e^{-1} \approx 0.368\).
 
 **The worst size of a set.** So each term is at most \(a e^{-ma}\) with \(a = \mathbb P[C_i]\). How large can \(a e^{-ma}\) be? Its derivative is \(e^{-ma}(1 - ma)\), positive for \(a < 1/m\) and negative for \(a > 1/m\), so the maximum over \(a \ge 0\) is at \(a = 1/m\), where the value is \(\frac{1}{m} e^{-1} = \frac{1}{me}\). Each of the \(r\) terms is at most \(1/(me)\), and the sum is at most \(r/(me)\). \(\blacksquare\)
 
-The middle step says something you can feel. A set with a lot of probability is almost certainly hit, so it rarely counts as missed. A set with tiny probability can be missed, but it carries almost nothing. The dangerous sets are the ones of size about \(1/m\): likely enough to matter, unlikely enough to be skipped. Here is a test with 25 sets and 40 points: ten sets have exactly that dangerous probability \(1/40\), and fifteen share the rest.
+The middle step says something you can feel. A set with a lot of probability is almost certainly hit, so it rarely counts as missed. A set with tiny probability can be missed, but it carries almost nothing. The dangerous sets are the ones of size about \(1/m\): likely enough to matter, unlikely enough to be skipped. Here is a test with the 25 sets and 40 points from above: ten sets have exactly that dangerous probability \(1/40\), and fifteen share the rest. The code mirrors the lemma: `hit` is the set of indices some point landed in, the inner sum adds the probabilities of the others, and the loop averages over draws of \(S\).
 
 ```python
 import math, random
@@ -405,29 +434,57 @@ It prints `1.0 0.187 0.187`, then `0.23`, then `0.0092 0.0092`. The probabilitie
 
 ## Step 3: how far is the nearest neighbour?
 
-Now the boxes. Pick a whole number \(T\) and let \(\varepsilon = 1/T\). Cut each axis of \([0, 1]^d\) into \(T\) intervals of length \(\varepsilon\), and take all products: for every choice \((\alpha_1, \dots, \alpha_d) \in [T]^d\) there is a box
+Now the boxes. Picture the invoice square cut by a 5 by 5 grid into 25 small squares of side 0.2. The new invoice q3 at (0.70, 0.70) sits in the fourth column and fourth row, the square from 0.6 to 0.8 on both scores, and so does G at (0.65, 0.65): same box, so q3’s nearest neighbour is at most one box diagonal away.
+
+In general, pick a whole number \(T\) and let \(\varepsilon = 1/T\) (the Greek letter epsilon, here a box side). Cut each axis of \([0, 1]^d\) into \(T\) intervals of length \(\varepsilon\), and take all products. Recall that \([T]\) is the list \(1, \dots, T\); so \([T]^d\) is the set of all lists of \(d\) such numbers, and for every choice \(\alpha = (\alpha_1, \dots, \alpha_d) \in [T]^d\) (the Greek letter alpha) there is a box
 
 \[ C_\alpha = \{ x : x_j \in [(\alpha_j - 1)/T,\; \alpha_j/T] \text{ for every } j \}. \]
 
-That makes \(r = T^d\) boxes covering the whole cube. In two dimensions with \(T = 5\), it is a 5 by 5 grid of 25 squares, each of side \(0.2\).
+- \(\alpha_j\) says which of the \(T\) slices to take along score \(j\).
+- \([(\alpha_j - 1)/T,\; \alpha_j/T]\) is that slice: the interval from its left edge to its right edge.
+- The braces collect every message \(x\) such that each score \(x_j\) lies in its slice.
+
+In plain words: **box \(\alpha\) holds the messages whose score \(j\) falls in slice \(\alpha_j\), for every score at once.** For q3 and G, \(\alpha = (4, 4)\), the slice \([0.6, 0.8]\) on both scores.
+
+```python
+import math
+
+T = 5
+for x in [(0.7, 0.7), (0.65, 0.65), (0.15, 0.3)]:
+    alpha = tuple(max(1, math.ceil(t * T)) for t in x)
+    lo = [round((a - 1) / T, 1) for a in alpha]
+    hi = [round(a / T, 1) for a in alpha]
+    print(x, alpha, lo, hi)
+print(T ** 2, round(math.sqrt(2) / T, 3))
+```
+
+It prints `(0.7, 0.7) (4, 4) [0.6, 0.6] [0.8, 0.8]`, the same box for `(0.65, 0.65)`, then `(0.15, 0.3) (1, 2) [0.0, 0.2] [0.2, 0.4]` for q2, and finally `25 0.283`. There are \(r = T^d\) boxes covering the whole cube, 25 here, and the last number is a box diagonal, which we need next.
 
 [[diagram:boxes]]
 
-Two distance facts do all the geometric work. Two points in the same box differ by at most \(\varepsilon\) in each of the \(d\) coordinates, so they are at most \(\sqrt{d \varepsilon^2} = \sqrt d\, \varepsilon\) apart: the diagonal of the box. Any two points of the cube are at most \(\sqrt d\) apart: the diagonal of the cube.
+Two distance facts do all the geometric work. Two points in the same box differ by at most \(\varepsilon\) in each of the \(d\) coordinates, so they are at most \(\sqrt{d \varepsilon^2} = \sqrt d\, \varepsilon\) apart: the diagonal of the box, \(\sqrt 2 \times 0.2 \approx 0.283\) on our grid. Any two points of the cube are at most \(\sqrt d\) apart: the diagonal of the cube, about 1.414 for the square.
 
 **Bounding the distance for a fixed \(S\).** Fix \(S\) and draw a fresh \(x\). If some box containing \(x\) also contains a training message, then that message is within \(\sqrt d\, \varepsilon\) of \(x\), and the nearest neighbour is at least as close. Otherwise every box containing \(x\) was missed by \(S\), so \(x\) lies in the union of the missed boxes, and its nearest neighbour is still within \(\sqrt d\) (nothing in the cube is further). Splitting the expectation over these two cases, and bounding the probability of the first case by 1,
 
 \[ \mathbb E_x\big[\|x - x_{\pi_1(x)}\|\big] \le \sqrt d\, \varepsilon + \sqrt d \cdot \mathbb P_x\Big[ x \in \bigcup_{i : C_i \cap S = \emptyset} C_i \Big] \le \sqrt d\, \varepsilon + \sqrt d \sum_{i : C_i \cap S = \emptyset} \mathbb P[C_i], \]
 
-where the last step is the union bound from lesson 2.
+where the last step is the union bound from lesson 2 (the chance of landing in at least one of several sets is at most the sum of their chances).
+
+- \(\mathbb E_x\) averages over the fresh message alone; \(S\) is held fixed.
+- \(\bigcup_{i : C_i \cap S = \emptyset} C_i\) is the **union** of the missed boxes: every point lying in at least one of them.
+- \(\mathbb P_x[x \in \dots]\) is the chance the fresh message lands there.
+
+In plain words: **the average nearest-neighbour distance is at most one box diagonal, plus a cube diagonal times the missed mass.** On the 5 by 5 grid, if a sample of 40 points happened to miss boxes carrying 0.1 of the probability, the bound would be \(0.283 + 1.414 \times 0.1 \approx 0.42\).
 
 **Averaging over \(S\).** Take the expectation over \(S \sim \mathcal D^m\); the boxes are fixed sets and the training messages are i.i.d. from \(\mathcal D_x\), so the missed-mass lemma applies with \(r = T^d\):
 
 \[ \mathbb E_{S, x}\big[\|x - x_{\pi_1(x)}\|\big] \le \sqrt d \Big( \varepsilon + \frac{T^d}{me} \Big). \]
 
-**Choosing the box size.** Small boxes make \(\varepsilon\) small but there are more of them to miss; big boxes do the opposite. Let \(u = m^{1/(d+1)}\), so that \(u^{d+1} = m\).
+In plain words: **the average nearest-neighbour distance is at most a cube diagonal times the box side plus the average missed mass.** With \(m = 1{,}000\) on the 5 by 5 grid: \(\sqrt 2\,(0.2 + 25/(1000e)) = 1.414 \times 0.209 \approx 0.296\). The distance snippet below computes exactly this as its middle column.
 
-If \(u \ge 2\), choose \(T = \lceil u/2 \rceil\). Then \(T \ge u/2\), so \(\varepsilon = 1/T \le 2/u = 2m^{-1/(d+1)}\). Also \(T \le u/2 + 1 \le u\) (because \(u \ge 2\)), so \(T^d \le u^d = m^{d/(d+1)}\) and \(\frac{T^d}{me} \le \frac{m^{d/(d+1)}}{me} = \frac{1}{e} m^{-1/(d+1)}\). Together,
+**Choosing the box size.** Small boxes make \(\varepsilon\) small but there are more of them to miss; big boxes do the opposite. Let \(u = m^{1/(d+1)}\), the \((d+1)\)-th root of \(m\), so that \(u^{d+1} = m\). For \(m = 1{,}000\) and \(d = 2\), \(u = 10\).
+
+If \(u \ge 2\), choose \(T = \lceil u/2 \rceil\), where \(\lceil \cdot \rceil\) rounds up to a whole number; for \(u = 10\) that is the \(T = 5\) we have been using. Then \(T \ge u/2\), so \(\varepsilon = 1/T \le 2/u = 2m^{-1/(d+1)}\). Also \(T \le u/2 + 1 \le u\) (because \(u \ge 2\)), so \(T^d \le u^d = m^{d/(d+1)}\) and \(\frac{T^d}{me} \le \frac{m^{d/(d+1)}}{me} = \frac{1}{e} m^{-1/(d+1)}\). Together,
 
 \[ \mathbb E_{S, x}\big[\|x - x_{\pi_1(x)}\|\big] \le \sqrt d \Big(2 + \frac1e\Big) m^{-1/(d+1)} \le 4\sqrt d\, m^{-1/(d+1)}. \]
 
@@ -440,6 +497,8 @@ Combining with the first lemma gives the main result.
 \[ \mathbb E_{S \sim \mathcal D^m}[L_{\mathcal D}(h_S)] \le 2\, L_{\mathcal D}(f_{\mathcal D}) + 4c\sqrt d\; m^{-1/(d+1)}. \]
 
 *Proof.* Insert the distance bound into the error-through-distance lemma. \(\blacksquare\)
+
+Every symbol here has been walked through already; the new piece is \(m^{-1/(d+1)}\), one over the \((d+1)\)-th root of \(m\), which shrinks as labels pile up, and slowly when \(d\) is large. In plain words: **the 1-NN rule’s average risk is at most twice the Bayes risk, plus an excess that shrinks like one over the \((d+1)\)-th root of the number of labels.** In the invoice world on two scores with a million labels, \(m^{-1/3} = 0.01\), the excess is \(4 \times 2.83 \times 1.414 \times 0.01 = 0.16\), and the bound is \(0.229 + 0.16 = 0.389\); a snippet below tabulates it.
 
 (The constant 4 is generous: the argument gives \(2 + 1/e \approx 2.37\). We keep 4 because it is round and every later number uses it.)
 

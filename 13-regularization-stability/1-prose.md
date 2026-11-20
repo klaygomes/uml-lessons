@@ -36,18 +36,18 @@ Read it from the inside out.
 - \(\langle \mathbf w, \mathbf x \rangle = \sum_j w_j x_j\) is the inner product from lesson 9: multiply each weight by its word’s coordinate and add. It is the filter’s **score** for the message.
 - \(\langle \mathbf w, \mathbf x \rangle - y\) is the miss: how far the score lands from the label \(+1\) or \(-1\).
 - Squaring makes every miss count positively, and bigger misses count much more; the \(\tfrac12\) halves the result.
-- \(\ell(\mathbf w, z)\) is lesson 3’s notation for “the loss of hypothesis \(\mathbf w\) on example \(z\)”, and the subscript-free \(\ell\) reminds you it is one example at a time.
+- \(\ell(\mathbf w, z)\) is lesson 3’s notation for “the loss of hypothesis \(\mathbf w\) on example \(z\)”, one example at a time.
 
 In plain words: **the loss is half the squared distance between the filter’s score and the message’s label.** A junk message (\(y = 1\)) whose five coordinates are 0.44, 0.36, 0.44, 0.44, 0.36, scored by \(\mathbf w = (0.3, \dots, 0.3)\), gets score \(0.3 \times 2.04 = 0.612\), misses by \(-0.388\), and pays \(\tfrac12 \cdot 0.388^2 \approx 0.0753\).
 
-In this world the true risk has a formula. Expand the square and take expectations term by term. For two different words, \(\mathbb E[x_j x_k] = \mathbb E[f^2] = 0.16\), since the jitters are independent of each other and of \(f\) and have mean 0. For the same word, \(\mathbb E[x_j^2] = 0.16 + 0.04^2 = 0.1616\). And \(\mathbb E[y x_j] = \mathbb E[y f] = 0.4 \cdot (0.8 - 0.2) = 0.24\). Writing \(s = \sum_j w_j\) for the total weight and \(q = \|\mathbf w\|^2\),
+In this world the true risk has a formula. Expand the square and take expectations term by term, where \(\mathbb E[\cdot]\) means “the average value of” over random messages. For two different words, \(\mathbb E[x_j x_k] = \mathbb E[f^2] = 0.16\), since the jitters are independent of each other and of \(f\) and have mean 0. For the same word, \(\mathbb E[x_j^2] = 0.16 + 0.04^2 = 0.1616\). And \(\mathbb E[y x_j] = \mathbb E[y f] = 0.4 \cdot (0.8 - 0.2) = 0.24\). Writing \(s = \sum_j w_j\) for the total weight and \(q = \|\mathbf w\|^2\),
 
 \[ L_{\mathcal D}(\mathbf w) = \tfrac12 \left( 0.16\, s^2 + 0.0016\, q - 0.48\, s + 1 \right). \]
 
 Read it from the inside out.
 
 - \(s = \sum_j w_j\) is the total weight, the sum of the five weights; \(q = \|\mathbf w\|^2 = \sum_j w_j^2\) is the squared length of the weight vector (lesson 9’s Euclidean norm, squared).
-- \(L_{\mathcal D}(\mathbf w)\) is the true risk from lesson 1: the loss averaged over every message that could arrive, each weighted by how often \(\mathcal D\) sends it. Here it is \(\mathbb E_{z \sim \mathcal D}[\ell(\mathbf w, z)]\), where \(\mathbb E\) means “the average value of”, and \(z \sim \mathcal D\) reads “\(z\) drawn from \(\mathcal D\)”.
+- \(L_{\mathcal D}(\mathbf w)\) is the true risk from lesson 1: the loss averaged over every message that could arrive, each weighted by how often \(\mathcal D\) sends it. Here it is \(\mathbb E_{z \sim \mathcal D}[\ell(\mathbf w, z)]\), where \(z \sim \mathcal D\) reads “\(z\) drawn from \(\mathcal D\)”.
 - \(0.16\,s^2\) is the average squared score coming from the shared signal \(f\); \(0.0016\,q\) is the extra squared score coming from the five private jitters; \(-0.48\,s\) is twice the average agreement between score and label, subtracted; and the 1 is the average of \(y^2\).
 - The outer \(\tfrac12\) is the half of the half square loss.
 
@@ -88,7 +88,7 @@ print(round(total / N, 3), round(L_D(w), 3))
 print(round(L_D([0.2994] * 5), 3), round(L_D([0] * 5), 3))
 ```
 
-It prints `0.321 0.32`, then `0.32 0.5`. The simulation agrees with the formula to within its noise. The best weight vector puts 0.2994 on every word, with true risk 0.320, and the all-zero vector, which always scores 0, has true risk 0.5.
+It prints `0.321 0.32`, then `0.32 0.5`. The simulation agrees with the formula to within its noise. The best weight vector puts 0.2994 on every word (with \(c\) on each word, \(s = 5c\) and \(q = 5c^2\), so the bracket is \(4.008c^2 - 2.4c + 1\), lowest at \(c = 2.4/8.016 \approx 0.2994\)), with true risk 0.320, and the all-zero vector, which always scores 0, has true risk 0.5.
 
 Now the nightly retrain. Start with twenty labelled messages, fit by ERM (which is exactly least squares from lesson 9), and each night replace three of the twenty with fresh ones. Before you look at the table, a prediction: how much do you expect the weights to move when 3 of 20 examples change? (The code that produced this table is in the ridge regression section, where it runs two learners side by side on the same messages.)
 
@@ -214,7 +214,7 @@ Multiply by \(m\) and use the same matrices as lesson 9, \(A = \sum_{i=1}^m \mat
 
 \[ (2\lambda m I + A)\,\mathbf w = \mathbf b, \]
 
-where \(I\) is the \(d \times d\) identity matrix.
+where \(I\) is the \(d \times d\) identity matrix. (The matrix \(A\) and the learner \(A(S)\) share a letter; the learner always carries its argument.)
 
 Read the system from the inside out.
 
@@ -307,9 +307,9 @@ That is the fix, demonstrated. Now we need to understand it, because “it worke
 
 Let’s name what went wrong precisely. On night 2, ERM’s weights had an average loss of 0.202 on their own twenty training messages, and 0.632 on fresh messages: they looked three times better on the data they were fitted to than they really were. That difference is what overfitting means. A learner \(A\) **overfits** when the true risk of its output, \(L_{\mathcal D}(A(S))\), is much larger than its empirical risk, \(L_S(A(S))\). Throughout this lesson we look at the average over training sequences, the **overfitting gap**
 
-\[ \mathbb E_{S \sim \mathcal D^m} \left[ L_{\mathcal D}(A(S)) - L_S(A(S)) \right]. \]
+\[ \mathbb E_{S \sim \mathcal D^m} \left[ L_{\mathcal D}(A(S)) - L_S(A(S)) \right], \]
 
-Our guarantees will be about expected risks, not “with probability at least \(1 - \delta\)”. The first problem at the end of this lesson shows how to turn one into the other.
+where \(S \sim \mathcal D^m\) reads “\(S\) is \(m\) examples drawn i.i.d. from \(\mathcal D\)” (lesson 2), and \(\mathbb E_{S \sim \mathcal D^m}\) averages over those draws. Our guarantees will be about expected risks, not “with probability at least \(1 - \delta\)”. The first problem at the end of this lesson shows how to turn one into the other.
 
 Now, what does “a small change of the input” mean? Here is the change the nightly retrain makes, shrunk to its smallest: replace one example. Given a training sequence \(S = (z_1, \dots, z_m)\) and one more example \(z'\), let
 
@@ -323,12 +323,11 @@ And how do we measure the change in the output? Compare the loss of the two hypo
 
 The first hypothesis never saw \(z_i\); the second was trained on it. For a sensible learner this difference is at least 0, since knowing an example should help on that example. But if it is *large*, the learner changes its mind drastically about \(z_i\) depending on whether it has seen it, and that smells like overfitting: a learner that fits each example individually instead of learning the pattern.
 
-Read the three pieces from the inside out.
+Read the pieces from the inside out.
 
 - \(S^{(i)}\): the superscript \((i)\) names which position was replaced; everything else in the sequence is untouched. \(z'\) is one more example drawn from the same \(\mathcal D\).
 - \(A(S^{(i)})\) and \(A(S)\) are the two weight vectors the learner returns on the two sequences.
 - \(\ell(A(S^{(i)}), z_i)\) is the loss of the first on the swapped-out example, and \(\ell(A(S), z_i)\) the loss of the second on the same example; we subtract them.
-- In the overfitting gap, \(\mathbb E_{S \sim \mathcal D^m}\) averages over training sequences, where \(S \sim \mathcal D^m\) reads “\(S\) is \(m\) examples drawn i.i.d. from \(\mathcal D\)” (lesson 2).
 
 In plain words: **the replace-one change is how much worse the learner does on an example once it no longer gets to train on it.** In the three-example world with \(\lambda = 0.05\), replace the keep-labelled \(z_3 = (0.4, -1)\) by \(z' = (0.4, +1)\). Ridge moves from \(w = 0.5128\) to \(w = 1.5385\); on \(z_3\) the loss goes from 0.7262 to 1.3047, a change of 0.5786:
 
@@ -349,22 +348,22 @@ rhs = (change + loss(w, z_new) - loss(w_i, z_new)) / m
 print(round(lhs, 4), round(rhs, 4))
 ```
 
-The first three lines print `0.5128 1.5385`, then `1.3047 0.7262 0.5786`; we will use the last line, `0.0526 0.2735`, a little later.
+It prints `0.5128 1.5385`, then `1.3047 0.7262 0.5786`; we will use its last line, `0.0526 0.2735`, a little later.
 
 [[diagram:replace-one]]
 
 The surprise is that this smell is not just a hint. It is an exact identity.
 
-**Theorem (stable rules do not overfit).** Let \(\mathcal D\) be a distribution, let \(S = (z_1, \dots, z_m) \sim \mathcal D^m\), let \(z' \sim \mathcal D\) be independent of \(S\), and let \(i\) be drawn uniformly from \([m]\), independently of both. Then for every learner \(A\),
+**Theorem (stable rules do not overfit).** Let \(\mathcal D\) be a distribution, let \(S = (z_1, \dots, z_m) \sim \mathcal D^m\), let \(z' \sim \mathcal D\) be independent of \(S\), and let \(i\) be drawn uniformly from \([m] = \{1, \dots, m\}\), independently of both. Then for every learner \(A\),
 
 \[ \mathbb E_{S} \left[ L_{\mathcal D}(A(S)) - L_S(A(S)) \right] = \mathbb E_{(S, z') \sim \mathcal D^{m+1},\; i \sim U(m)} \left[ \ell(A(S^{(i)}), z_i) - \ell(A(S), z_i) \right]. \]
 
-Here \(U(m)\) is the uniform distribution on \([m] = \{1, \dots, m\}\). We assume the learner is deterministic (a randomized learner can be handled by conditioning on its random bits) and that the expectations exist, which holds whenever the loss is bounded.
+We assume the learner is deterministic (a randomized learner can be handled by conditioning on its random bits) and that the expectations exist, which holds whenever the loss is bounded.
 
 Read it from the inside out.
 
 - \((S, z') \sim \mathcal D^{m+1}\): the \(m\) training examples and the extra one are \(m + 1\) independent draws from \(\mathcal D\).
-- \(i \sim U(m)\): the position to replace is chosen uniformly from \([m] = \{1, \dots, m\}\), each with probability \(1/m\).
+- \(i \sim U(m)\): \(U(m)\) is the uniform distribution on \([m]\), so each position is replaced with probability \(1/m\).
 - The expectation on the right averages the replace-one change over all three sources of randomness; the one on the left averages the true risk minus the empirical risk over \(S\) only.
 
 In plain words: **on average, a learner’s true risk exceeds its training fit by exactly as much as its loss on an example grows when that example is swapped out.**
@@ -442,7 +441,7 @@ Read it from the inside out.
 - \(\alpha f(\mathbf w) + (1 - \alpha) f(\mathbf u)\) is the height of the chord, the straight line between the two endpoints on the graph, at the same point.
 - \(\frac\sigma2 \alpha(1 - \alpha)\|\mathbf w - \mathbf u\|^2\) is the required margin: zero at the endpoints, largest in the middle, and growing with the squared distance \(\|\mathbf w - \mathbf u\|^2\).
 
-In plain words: **a strongly convex function sags below each of its chords by at least a fixed multiple of the chord’s squared length.** Take \(f(w) = 0.05\,w^2\), \(u = 0\), \(w = 1\), \(\alpha = 0.5\). The function at the midpoint is \(0.05 \cdot 0.25 = 0.0125\); the chord there is \(0.5 \cdot 0.05 + 0.5 \cdot 0 = 0.025\); with \(\sigma = 0.1\) the margin is \(0.05 \cdot 0.25 \cdot 1 = 0.0125\), and indeed \(0.0125 \le 0.025 - 0.0125\), with equality. The snippet after the lemma checks this, term by term, at random points.
+In plain words: **a strongly convex function sags below each of its chords by at least a fixed multiple of the chord’s squared length.** For the opening parabola \(0.05\,w^2\) on the chord from 0 to 1, with \(\sigma = 0.1\) and \(\alpha = 0.5\), the margin is \(0.05 \cdot 0.25 \cdot 1 = 0.0125\): exactly the sag we measured, so the inequality holds with equality. The snippet after the lemma checks this, term by term, at random points.
 
 [[diagram:strong-convexity]]
 
@@ -539,14 +538,12 @@ Use this for two points \(\mathbf v\) and \(\mathbf u\), add the same penalty to
 
 \[ \lambda \|A(S^{(i)}) - A(S)\|^2 \le \frac{\ell(A(S^{(i)}), z_i) - \ell(A(S), z_i)}{m} + \frac{\ell(A(S), z') - \ell(A(S^{(i)}), z')}{m}. \]
 
-Call this the **stability inequality**. The left side is how far the minimizer moved, squared and weighted by \(\lambda\). The right side is how much the two swapped examples disagree about the two minimizers, divided by \(m\). One example’s worth of disagreement can only move a \(2\lambda\)-strongly convex minimizer a little.
-
-Read it from the inside out.
+Call this the **stability inequality**. Read it from the inside out.
 
 - \(\|A(S^{(i)}) - A(S)\|\) is the distance between the two outputs, how far the weights moved; squared and multiplied by \(\lambda\) on the left.
 - On the right, the first fraction is the replace-one change on \(z_i\), divided by \(m\); the second is the reverse change on \(z'\): how much \(A(S)\), which never trained on \(z'\), loses on it compared with \(A(S^{(i)})\), which did.
 
-In plain words: **\(\lambda\) times the squared movement of the minimizer is at most the two swapped examples’ disagreement, divided by \(m\).** In the three-example world from the replace-one section, the left side is \(0.05 \cdot (1.5385 - 0.5128)^2 \approx 0.0526\) and the right side is \(0.2735\): that was the last line, `0.0526 0.2735`, of that snippet.
+One example’s worth of disagreement can only move a \(2\lambda\)-strongly convex minimizer a little. In plain words: **\(\lambda\) times the squared movement of the minimizer is at most the two swapped examples’ disagreement, divided by \(m\).** In the three-example world from the replace-one section, the left side is \(0.05 \cdot (1.5385 - 0.5128)^2 \approx 0.0526\) and the right side is \(0.2735\): that was the last line, `0.0526 0.2735`, of that snippet.
 
 Let’s check it numerically on ridge regression in the one-word world, where the ridge minimizer is \(w = \sum_i x_i y_i / ((0.16 + 2\lambda)m)\). We print the smallest and largest slack, right side minus left side, over 10,000 random swaps; the inequality says it is never negative.
 
@@ -596,9 +593,9 @@ This holds for every \(S\), \(z'\) and \(i\), not just on average, so it holds i
 
 \[ \mathbb E_{S \sim \mathcal D^m}\left[ L_{\mathcal D}(A(S)) - L_S(A(S)) \right] \le \frac{2\rho^2}{\lambda m}. \]
 
-In plain words: **with a \(\rho\)-Lipschitz loss, the regularized learner overfits, on average, by at most \(2\rho^2/(\lambda m)\).** Each factor reads directly: a steeper loss (\(\rho\)) hurts quadratically, a heavier penalty (\(\lambda\)) and more examples (\(m\)) help in proportion. With \(\rho = 0.4\), \(\lambda = 0.05\), \(m = 20\): \(2 \cdot 0.16/(0.05 \cdot 20) = 0.32\), the number the next snippet prints last.
+In plain words: **with a \(\rho\)-Lipschitz loss, the regularized learner overfits, on average, by at most \(2\rho^2/(\lambda m)\).** Each factor reads directly: a steeper loss (\(\rho\)) hurts quadratically, a heavier penalty (\(\lambda\)) and more examples (\(m\)) help in proportion.
 
-Let’s watch it for the absolute loss \(|w x - y|\) in the one-word world. Its Lipschitz constant is \(|x| = 0.4\), so with \(\lambda = 0.05\) and \(m = 20\) the bound is \(2 \cdot 0.16/(0.05 \cdot 20) = 0.32\). The absolute loss has a kink, so there is no formula for the minimizer; we find it by ternary search, which works on any function of one variable with a single valley.
+Let’s watch it for the absolute loss \(|w x - y|\) in the one-word world. Its Lipschitz constant is \(|x| = 0.4\), so with \(\lambda = 0.05\) and \(m = 20\) the bound is the 0.32 we computed when we defined stability. The absolute loss has a kink, so there is no formula for the minimizer; we find it by ternary search, which works on any function of one variable with a single valley.
 
 ```python
 import random
@@ -635,7 +632,21 @@ The half square loss of our campaign filter is not Lipschitz on all of \(\mathbb
 
 For the half square loss, \(\nabla_{\mathbf w}\ell = (\langle \mathbf w, \mathbf x \rangle - y)\,\mathbf x\), so \(\|\nabla\ell(\mathbf v) - \nabla\ell(\mathbf w)\| = |\langle \mathbf v - \mathbf w, \mathbf x \rangle|\,\|\mathbf x\| \le \|\mathbf x\|^2\|\mathbf v - \mathbf w\|\), by Cauchy–Schwarz. So it is \(\beta\)-smooth with \(\beta = \|\mathbf x\|^2\), and in the campaign world \(\beta = 5 \cdot 0.44^2 = 0.968\) covers every message.
 
-We need one extra assumption: the penalty must be heavy enough compared with the smoothness, \(\beta \le \lambda m / 2\), or equivalently \(\lambda \ge 2\beta/m\). Keep the same notation, \(\Delta = \|A(S^{(i)}) - A(S)\|\), and write \(a = \ell(A(S), z_i)\) and \(b = \ell(A(S^{(i)}), z')\) for the losses of each hypothesis on an example it was trained on.
+For this loss both facts hold with equality. Since \(\|\nabla\ell\|^2 = (\langle \mathbf w, \mathbf x \rangle - y)^2\|\mathbf x\|^2 = 2\|\mathbf x\|^2\,\ell\), **the squared gradient is exactly \(2\beta\) times the loss.** For the opening message, \(\|\mathbf x\|^2 = 0.84\) and the loss at \(\mathbf w = (0.3, \dots, 0.3)\) is 0.0753, so both sides are about 0.1265:
+
+```python
+w, x, y = [0.3] * 5, [0.44, 0.36, 0.44, 0.44, 0.36], 1
+miss = sum(a * b for a, b in zip(w, x)) - y
+beta = sum(v * v for v in x)
+grad = [miss * v for v in x]
+loss = miss ** 2 / 2
+print(round(beta, 4), round(sum(g * g for g in grad), 4),
+      round(2 * beta * loss, 4))
+```
+
+It prints `0.84 0.1265 0.1265`.
+
+We need one extra assumption: the penalty must be heavy enough compared with the smoothness, \(\beta \le \lambda m / 2\), or equivalently \(\lambda \ge 2\beta/m\). The reason: the quadratic ceiling lets the two swapped losses grow by \(\beta\Delta^2/m\) together, and the penalty’s floor \(\lambda\Delta^2\) has to outgrow that with room to spare, as step 2 will show. Keep the same notation, \(\Delta = \|A(S^{(i)}) - A(S)\|\), and write \(a = \ell(A(S), z_i)\) and \(b = \ell(A(S^{(i)}), z')\) for the losses of each hypothesis on an example it was trained on.
 
 *Step 1: each swapped loss changes by little.* By the ceiling applied to \(\ell(\cdot, z_i)\) at \(\mathbf w = A(S)\), then Cauchy–Schwarz, then self-boundedness,
 
@@ -679,7 +690,7 @@ If moreover \(\ell(\mathbf 0, z) \le C\) for every \(z\), then for every \(S\), 
 
 Notice the shape: the stability term is a *fraction* of the expected fit. A filter that fits well is also very stable, which the Lipschitz bound could not say.
 
-Let’s see the bound and the truth side by side, for ridge in the one-word world: \(\beta = 0.16\), \(\lambda = 0.05\) and \(m = 200\), so \(2\beta/m = 0.0016 \le \lambda\).
+Let’s see the bound and the truth side by side, with the same numbers; the condition holds easily, since \(2\beta/m = 0.0016 \le \lambda\).
 
 ```python
 import random

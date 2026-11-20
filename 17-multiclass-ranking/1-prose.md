@@ -2,7 +2,7 @@
 
 ## Four filters that argue
 
-For sixteen lessons the filter has answered one question: junk or keep. Your users have stopped being grateful for that. They want their mail sorted into four **folders**, work, personal, promotions and junk, and they want the inbox itself in order, with the messages that matter at the top of the morning’s list.
+For sixteen lessons the filter has answered one question: junk or keep. Your users are grateful, but that is no longer what they want. They want their mail sorted into four **folders**, work, personal, promotions and junk, and they want the inbox itself in order, with the messages that matter at the top of the morning’s list.
 
 The team did what any sensible team does first. You already own a good learner for yes/no questions, the halfspace of lesson 9, trained with the hinge loss of lesson 15. So they trained four of them. One answers “is this work?”, one “is this personal?”, one “is this a promotion?”, one “is this junk?”. Each was trained on the same labelled messages, relabelled as “this folder” against “everything else”. To file a message, ask all four and pick the folder whose filter says yes.
 
@@ -388,7 +388,7 @@ print(scores, blocks, scores.index(max(scores)))
 
 It prints `[2, 6, -1, -4] [2, 6, -1, -4] 1`: the long inner product with \(\Psi\) and the short inner product with block \(y\) agree for every label, and label 1 (personal, in the code’s 0-based numbering) wins.
 
-**A construction that knows about words.** The multivector map assumes nothing about the problem; every folder gets its own copy of every weight. Here is a \(\Psi\) that builds in prior knowledge about text. Let \(\mathcal X\) be the set of messages, \(\mathcal Y\) a set of topics, and fix a dictionary of \(d\) words. For word \(j\), let \(\mathrm{TF}(j, \mathbf x)\), the **term frequency**, be the number of times word \(j\) appears in message \(\mathbf x\). Let \(\mathrm{DF}(j, y)\), the **document frequency**, be the number of times word \(j\) appears in the training messages that are *not* about topic \(y\): it measures how common the word is in other topics. With \(m\) training messages, set
+**A construction that knows about words.** The multivector map assumes nothing about the problem; every folder gets its own copy of every weight. Here is a \(\Psi\) that builds in prior knowledge about text. Let \(\mathcal X\) be the set of messages, \(\mathcal Y\) a set of topics, and fix a dictionary of \(d\) words. For word \(j\), let \(\mathrm{TF}(j, \mathbf x)\), the **term frequency**, be the number of times word \(j\) appears in message \(\mathbf x\). Let \(\mathrm{DF}(j, y)\), the **document frequency**, be the number of times word \(j\) appears in the training messages that are *not* about topic \(y\): it measures how common the word is in other topics. The entry for word \(j\) should be large when the word appears often in \(\mathbf x\) and rarely outside topic \(y\), which is evidence that \(\mathbf x\) is about \(y\). With \(m\) training messages, set
 
 \[ \Psi_j(\mathbf x, y) = \mathrm{TF}(j, \mathbf x) \log\left( \frac{m}{\mathrm{DF}(j, y)} \right). \]
 
@@ -401,7 +401,7 @@ Read it from the inside out.
 
 In plain words: **entry \(j\) is “how often the word is in this message” times “how rare the word is outside topic \(y\)”.** In the corpus below, “meeting” appears twice in \(\mathbf x\) and once in the six training messages outside work, so its work entry is \(2 \log(6/1) = 3.58\). The snippet after the next paragraph mirrors the formula term by term.
 
-This is called **term-frequency inverse-document-frequency**, or **TF-IDF**. The entry is large when word \(j\) appears often in \(\mathbf x\) and rarely outside topic \(y\), which is evidence that \(\mathbf x\) is about \(y\). Unlike the multivector map, its dimension is the dictionary size, whatever the number of topics. (The formula needs \(\mathrm{DF}(j, y) > 0\); a word that never appears outside topic \(y\) would get an infinite entry, so in practice such words are handled specially. In our example every word appears in at least two topics.)
+This is called **term-frequency inverse-document-frequency**, or **TF-IDF**. Unlike the multivector map, its dimension is the dictionary size, whatever the number of topics. (The formula needs \(\mathrm{DF}(j, y) > 0\); a word that never appears outside topic \(y\) would get an infinite entry, so in practice such words are handled specially. In our example every word appears in at least two topics.)
 
 ```python
 import math
@@ -481,7 +481,7 @@ Read it from the inside out.
 - \(\mathcal Y \setminus \{y_i\}\) is the label set with the correct label removed: “every other folder”.
 - The inequality says the correct folder’s score is strictly larger than that other folder’s score.
 
-In plain words: **for every example, its correct folder must outscore every other folder.** With the twelve messages of the next section and four folders, that is \(12 \times 3 = 36\) inequalities. The weights that make each folder listen to its own word satisfy all three for the first work message (scores 2, 0, 0, 0) but not for the second personal message, where work and personal tie at 1.
+In plain words: **for every example, its correct folder must outscore every other folder.** With the twelve messages of the SGD example below and four folders, that is \(12 \times 3 = 36\) inequalities. The weights that make each folder listen to its own word satisfy all three for the first work message (scores 2, 0, 0, 0) but not for the second personal message, where work and personal tie at 1.
 
 ```python
 k, n = 4, 5
@@ -530,7 +530,7 @@ Read it from the inside out.
 - \(\Delta(y', y)\) adds the cost of choosing that rival.
 - \(\max_{y' \in \mathcal Y}\) keeps the worst rival, and \(y' = y\) itself contributes \(0 + 0 = 0\).
 
-In plain words: **the loss is the worst rival’s cost plus how far that rival outscores the correct label.** For the work message that mentions “prize” twice, the four terms are 0 (work itself), \(0.5 + 0 - 1 = -0.5\) (personal), \(0.5 + 0 - 1 = -0.5\) (promotions) and \(1 + 2 - 1 = 2\) (junk), so \(\ell = 2\).
+In plain words: **the loss is the worst rival’s cost plus how far that rival outscores the correct label.** Take a work message that mentions “meeting” once and “prize” twice, scored 1 for work, 0 for personal and promotions and 2 for junk. The four terms are 0 (work itself), \(0.5 + 0 - 1 = -0.5\) (personal), \(0.5 + 0 - 1 = -0.5\) (promotions) and \(1 + 2 - 1 = 2\) (junk), so \(\ell = 2\).
 
 ```python
 C = [[0, .5, .5, 1], [.5, 0, .5, 1], [.2, .2, 0, .2],
@@ -562,7 +562,7 @@ print(ok)
 
 It prints `[True, True, True]`.
 
-The difference \(\langle \mathbf w, \Psi(\mathbf x, y) \rangle - \langle \mathbf w, \Psi(\mathbf x, y') \rangle\) is the **margin** of \(y\) over \(y'\), the word lesson 15 used for halfspaces. So the loss demands a margin that grows with the cost: work must beat junk by 1, but promotions only has to beat the other folders by 0.2. In that case the bound is tight too: with every margin positive, \(h_{\mathbf w}(\mathbf x) = y\), so \(\Delta(h_{\mathbf w}(\mathbf x), y) = 0 = \ell\).
+The difference \(\langle \mathbf w, \Psi(\mathbf x, y) \rangle - \langle \mathbf w, \Psi(\mathbf x, y') \rangle\) is the **margin** of \(y\) over \(y'\), the word lesson 15 used for halfspaces. So the loss demands a margin that grows with the cost: work must beat junk by 1, but promotions only has to beat the other folders by 0.2. When \(\ell = 0\) the bound is tight too: with every margin positive, \(h_{\mathbf w}(\mathbf x) = y\), so \(\Delta(h_{\mathbf w}(\mathbf x), y) = 0 = \ell\).
 
 [[diagram:hinge-margin]]
 
@@ -696,7 +696,7 @@ Read it from the inside out.
 - \(L_{\mathcal D}(A(S))\) is its true risk, and \(\mathbb E_{S}\) averages that over all the training sequences you might have drawn.
 - \(\mathbf w^*\) is any fixed weight vector you like, chosen before seeing data. \(\lambda\|\mathbf w^*\|^2\) is the price of its length, and \(2\rho^2/(\lambda m)\) is the price of having only \(m\) examples, where \(\rho\) is the Lipschitz constant of the loss.
 
-In plain words: **on average, the regularized learner is as good as any fixed weight vector, up to a length penalty and a sample-size penalty.** With \(L_{\mathcal D}(\mathbf w^*) = 0.05\), \(\|\mathbf w^*\| = 5\), \(\rho = 2\), \(m = 10{,}000\) and \(\lambda = 0.00566\), the right side is \(0.05 + 0.141 + 0.141 = 0.333\).
+In plain words: **on average, the regularized learner is as good as any fixed weight vector, up to a length penalty and a sample-size penalty.** With \(L_{\mathcal D}(\mathbf w^*) = 0.05\), \(\|\mathbf w^*\| = 5\), \(\rho = 2\), \(m = 10{,}000\) and \(\lambda = 0.00566\) (the value the theorem below picks), the right side is \(0.05 + 0.141 + 0.141 = 0.333\).
 
 ```python
 import math
@@ -740,23 +740,9 @@ The right inequality. Apply the oracle inequality with any \(\mathbf u\) with \(
 
 \[ \lambda B^2 = \sqrt{\frac{2\rho^2 B^2}{m}}, \qquad \frac{2\rho^2}{\lambda m} = \frac{2\rho^2}{m} \sqrt{\frac{B^2 m}{2\rho^2}} = \sqrt{\frac{2\rho^2 B^2}{m}}. \]
 
-Read each half by substituting \(\lambda = \sqrt{2\rho^2/(B^2 m)}\). In the first, \(B^2\) moves under the square root as \(B^4\), and one \(B^2\) cancels. In the second, dividing by \(\lambda\) flips the fraction under the root, and \(\frac{2\rho^2}{m}\sqrt{\frac{B^2m}{2\rho^2}} = \sqrt{\frac{4\rho^4 B^2 m}{2\rho^2 m^2}} = \sqrt{\frac{2\rho^2B^2}{m}}\). In plain words: **this choice of \(\lambda\) makes the length penalty and the sample-size penalty equal.** With \(\rho = 2\), \(B = 5\), \(m = 10{,}000\), both are 0.141; the snippet after this proof prints their sum, 0.283, computed both ways.
+Read each half by substituting \(\lambda = \sqrt{2\rho^2/(B^2 m)}\). In the first, \(B^2\) moves under the square root as \(B^4\), and one \(B^2\) cancels. In the second, dividing by \(\lambda\) flips the fraction under the root, and \(\frac{2\rho^2}{m}\sqrt{\frac{B^2m}{2\rho^2}} = \sqrt{\frac{4\rho^4 B^2 m}{2\rho^2 m^2}} = \sqrt{\frac{2\rho^2B^2}{m}}\). In plain words: **this choice of \(\lambda\) makes the length penalty and the sample-size penalty equal.** With \(\rho = 2\), \(B = 5\), \(m = 10{,}000\), both are 0.141, exactly the two middle terms the oracle snippet above printed, and their sum 0.283 is the gap the theorem’s snippet printed. (These numbers fit messages scaled so \(\|\mathbf x\| \le 1\): the multivector map then has \(\|\Psi\| \le 1\), so \(\rho = 2\).)
 
 Their sum is \(2\sqrt{2\rho^2 B^2/m} = \sqrt{8\rho^2 B^2/m}\). The bound holds for every such \(\mathbf u\), so it holds for the minimizing one. \(\blacksquare\)
-
-```python
-import math
-
-rho, B, m, eps = 2, 5, 10_000, 0.1
-lam = math.sqrt(2 * rho**2 / (B**2 * m))
-oracle = lam * B**2 + 2 * rho**2 / (lam * m)
-print(round(lam, 5), round(oracle, 3),
-      round(math.sqrt(8 * rho**2 * B**2 / m), 3))
-print(math.ceil(B**2 * rho**2 / eps**2),
-      round(math.sqrt(B**2 / (rho**2 * 10_000)), 3))
-```
-
-With messages scaled so \(\|\mathbf x\| \le 1\) (so the multivector map has \(\|\Psi\| \le 1\) and \(\rho = 2\)), \(B = 5\) and \(m = 10{,}000\), it prints `0.00566 0.283 0.283`: \(\lambda\), the oracle sum, and the closed form agree. The second line belongs to the next theorem.
 
 Look at what is missing from the bound: the number of labels. The constant depends on \(\rho\) and \(B\), and nothing else. The number of labels can still sneak in, through the size of \(\Psi\) or because with many labels no short \(\mathbf u\) has small hinge loss, but there is no explicit factor of \(k\). Remember this; it is what makes the section on structured output possible.
 
@@ -779,7 +765,9 @@ Read the update for the multivector map. If \(\hat y = y\), then \(\mathbf v_t =
 
 \[ T \ge \frac{B^2 \rho^2}{\varepsilon^2} \quad \text{steps, with} \quad \eta = \sqrt{\frac{B^2}{\rho^2 T}}, \]
 
-Read it from the inside out.
+gives \(\mathbb E\left[ L^\Delta_{\mathcal D}(h_{\bar{\mathbf w}}) \right] \le \mathbb E\left[ L^{\text{g-hinge}}_{\mathcal D}(\bar{\mathbf w}) \right] \le \min_{\|\mathbf u\| \le B} L^{\text{g-hinge}}_{\mathcal D}(\mathbf u) + \varepsilon\).
+
+Read the step count and step size from the inside out.
 
 - \(\varepsilon\) is the accuracy you ask for, as in every lesson: how far above the best hinge risk you allow the result to be.
 - \(T\) is the number of SGD steps, which is also the number of examples SGD reads.
@@ -799,11 +787,9 @@ for eps in (0.1, 0.05):
 
 It prints `0.1 10000 0.025`, then `0.05 40000 0.0125`.
 
-gives \(\mathbb E\left[ L^\Delta_{\mathcal D}(h_{\bar{\mathbf w}}) \right] \le \mathbb E\left[ L^{\text{g-hinge}}_{\mathcal D}(\bar{\mathbf w}) \right] \le \min_{\|\mathbf u\| \le B} L^{\text{g-hinge}}_{\mathcal D}(\mathbf u) + \varepsilon\).
-
 *Proof.* The loss is convex and \(\rho\)-Lipschitz, as in the previous proof, and \(\mathbf v_t\) is a subgradient of \(\ell(\cdot, (\mathbf x, y))\) at \(\mathbf w^{(t)}\) by the rule for maxima. These are exactly the conditions of lesson 14’s guarantee for SGD on convex, Lipschitz, bounded learning problems, which gives the right inequality. The left one is the pointwise bound \(\Delta \le \ell\), taken in expectation, as before. \(\blacksquare\)
 
-With the numbers above and \(\varepsilon = 0.1\), the snippet’s second line printed `10000 0.025`: ten thousand examples and a step of 0.025. SGD sees each example once and stores one vector, which is why it is the workhorse.
+For \(\varepsilon = 0.1\) that was ten thousand examples and a step of 0.025. SGD sees each example once and stores one vector, which is why it is the workhorse.
 
 Here it is on twelve labelled messages, three per folder, with the users’ cost table. Each message has counts of “meeting”, “mom”, “sale” and “prize”, plus a constant 1.
 
@@ -847,7 +833,7 @@ Your users have one more request. Long messages should be shown with the greetin
 
 The third question is already answered: the guarantees for multiclass SVM and SGD have no explicit dependence on \(|\mathcal Y|\), only on \(\rho\) and \(B\). We just need \(\Psi\) to stay bounded. The first two are answered by choosing \(\Psi\) and \(\Delta\) so that the argmax can be computed by dynamic programming.
 
-Set it up. Each line \(t\) is described by \(n\) features (does it start with “Hi”, does it end with a comma, and so on), so a message is a matrix \(\mathbf x \in \mathbb R^{n \times r}\) whose column \(t\) describes line \(t\). The label is \(\mathbf y = (y_1, \dots, y_r)\) with \(y_t \in [q]\). For the cost, take the fraction of lines tagged wrongly, \(\Delta(\mathbf y', \mathbf y) = \frac{1}{r} \sum_{t=1}^r \mathbb 1[y_t \neq y'_t]\). The map \(\Psi\) has \(d = nq + q^2\) entries of two types:
+Set it up. Each line \(t\) is described by \(n\) features (does it start with “Hi”, does it end with a comma, and so on), so a message is a matrix \(\mathbf x \in \mathbb R^{n \times r}\) whose column \(t\) describes line \(t\). The label is \(\mathbf y = (y_1, \dots, y_r)\) with \(y_t \in [q]\). For the cost, take the fraction of lines tagged wrongly, \(\Delta(\mathbf y', \mathbf y) = \frac{1}{r} \sum_{t=1}^r \mathbb 1[y_t \neq y'_t]\). The map \(\Psi\) has \(d = nq + q^2\) entries of two types. A type 1 entry adds up feature \(i\) over the lines tagged \(j\): it can learn that “starts with Hi” suggests a greeting. A type 2 entry counts how often tag \(i\) follows tag \(j\): it can learn that a signature is followed by more signature, never by a greeting. Both are divided by the number of lines, and the weights decide which of them matter:
 
 \[ \Psi_{i,j,1}(\mathbf x, \mathbf y) = \frac{1}{r} \sum_{t=1}^r x_{i,t}\, \mathbb 1[y_t = j], \qquad \Psi_{i,j,2}(\mathbf x, \mathbf y) = \frac{1}{r} \sum_{t=2}^r \mathbb 1[y_t = i]\, \mathbb 1[y_{t-1} = j]. \]
 
@@ -871,8 +857,6 @@ print(type1, pairs.count((1, 1)) / r, pairs.count((2, 1)) / r)
 ```
 
 It prints `[0.2, 0.0, 0.2] 0.2 0.2`.
-
-A type 1 entry adds up feature \(i\) over the lines tagged \(j\): it can learn that “starts with Hi” suggests a greeting. A type 2 entry counts how often tag \(i\) follows tag \(j\): it can learn that a signature is followed by more signature, never by a greeting. The weights decide which of these matter.
 
 The trick is that \(\Psi\) is a sum over positions, each term depending only on the current tag and the previous one. Set \(y_0 = 0\), a start symbol that is not a tag, and define
 
@@ -999,7 +983,7 @@ Training needs the other argmax, the one inside SGD: \(\hat{\mathbf y} = \operat
 
 ## Ranking the inbox
 
-Now the second puzzle. The inbox is not a set of labels; it is an order.
+Now the second puzzle. The inbox is not a set of labels; it is an order. A ranker gives every message of the morning a score, and the order is the scores sorted, highest on top: scores 2, 1 and 6 put message 3 first, then 1, then 2.
 
 **Definition (ranking hypothesis).** Let \(\mathcal X^*\) be the set of finite sequences of messages, of any length. A **ranking hypothesis** takes a sequence \(\bar{\mathbf x} = (\mathbf x_1, \dots, \mathbf x_r)\) and returns a vector \(\mathbf y \in \mathbb R^r\) of scores; sorting the scores gives the order. Write \(\pi(\mathbf y)\) for the **permutation induced by** \(\mathbf y\): \(\pi(\mathbf y)_i\) is the position of \(y_i\) when the entries of \(\mathbf y\) are sorted in increasing order. The top of the list is the message whose score is largest, the one with \(\pi(\mathbf y)_i = r\).
 

@@ -170,7 +170,7 @@ It prints `x^2 0.0`, `softplus 0.0`, `abs 0.0` and `step 0.99`. The first three 
 
 ## Every local minimum is global
 
-Here is the property that makes convexity worth all this. Remember the plateau around \(-\mathbf w^\circ\): every point within distance 0.218 had risk 0.8, nothing nearby was lower, and yet 0.2 existed far away. Let \(B(\mathbf u, r) = \{\mathbf v : \|\mathbf v - \mathbf u\| \le r\}\) be the ball of radius \(r\) around \(\mathbf u\): the set of points \(\mathbf v\) such that the distance \(\|\mathbf v - \mathbf u\|\) from \(\mathbf u\) is at most \(r\). We say \(f(\mathbf u)\) is a **local minimum** of \(f\) at \(\mathbf u\) if there is some \(r > 0\) such that \(f(\mathbf v) \ge f(\mathbf u)\) for every \(\mathbf v \in B(\mathbf u, r)\): nothing nearby is lower. A **global minimum** is lower than or equal to every point, near or far. The point \(-\mathbf w^\circ\) of the worked example is a local minimum of the 0-1 risk, with value 0.8, and it is not global. Sample 10,000 points of the ball of radius 0.2 around it and collect the risks you see:
+Here is the property that makes convexity worth all this. Remember the plateau around \(-\mathbf w^\circ\): nothing nearby was lower, and yet 0.2 existed far away. Let \(B(\mathbf u, r) = \{\mathbf v : \|\mathbf v - \mathbf u\| \le r\}\) be the ball of radius \(r\) around \(\mathbf u\): the set of points \(\mathbf v\) such that the distance \(\|\mathbf v - \mathbf u\|\) from \(\mathbf u\) is at most \(r\). We say \(f(\mathbf u)\) is a **local minimum** of \(f\) at \(\mathbf u\) if there is some \(r > 0\) such that \(f(\mathbf v) \ge f(\mathbf u)\) for every \(\mathbf v \in B(\mathbf u, r)\): nothing nearby is lower. A **global minimum** is lower than or equal to every point, near or far. So \(-\mathbf w^\circ\) is a local minimum of the 0-1 risk, with value 0.8, and not a global one. Sample 10,000 points of the ball of radius 0.2 around it and collect the risks:
 
 ```python
 import math, random
@@ -392,7 +392,7 @@ scores = [5, 1, 3, 1, 3, 3, 3, 1, -1, -3, 0.5]
 print([max(0, 1 - z) for z in scores])
 ```
 
-It prints `[0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 0.5]`. It is the maximum of two functions of \(\mathbf w\), the constant 0 and \(1 - y\langle \mathbf w, \mathbf x \rangle\), and both are linear plus a constant, hence convex. By the claim on maxima, the hinge loss is convex in \(\mathbf w\), and by the claim on sums, so is its empirical risk. Compare it with the 0-1 risk on the ten messages: draw 20,000 random pairs of weight vectors and a random \(\alpha\), and count how often each risk breaks the chord inequality.
+It prints `[0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 0.5]`. Even the narrow correct score pays 0.5: the hinge loss asks for a margin, not just the right side. It is the maximum of two functions of \(\mathbf w\), the constant 0 and \(1 - y\langle \mathbf w, \mathbf x \rangle\), and both are linear plus a constant, hence convex. By the claim on maxima, the hinge loss is convex in \(\mathbf w\), and by the claim on sums, so is its empirical risk. Compare it with the 0-1 risk on the ten messages: draw 20,000 random pairs of weight vectors and a random \(\alpha\), and count how often each risk breaks the chord inequality.
 
 ```python
 import random
@@ -565,7 +565,7 @@ v = w - df(w) / beta
 print(round(f(w) - f(v), 4), round(df(w) ** 2 / (2 * beta), 4))
 ```
 
-It prints `0.2499`, `0.0`, `0.0033` and `1.9297 1.5516`. Line by line: the derivative’s steepest slope on the grid is just under \(\frac14\); the quadratic ceiling is never below the function (the smallest gap is 0, reached when \(v = w\)); \(2\beta f - (f')^2\) stays positive, so softplus is self-bounded on the grid; and one step of size \(1/\beta = 4\) from \(w = 2\) lowers \(f\) by 1.9297, more than the guaranteed 1.5516.
+It prints `0.2499`, `0.0`, `0.0033` and `1.9297 1.5516`: the slope never changes faster than \(\frac14\); the ceiling is never below the function (the gap is 0 only at \(v = w\)); softplus is self-bounded on the grid; and the step from \(w = 2\) beats its guaranteed drop.
 
 As with convexity and Lipschitzness, smoothness passes through a linear function, with a factor.
 
@@ -598,11 +598,11 @@ print(round(ratio, 2), dot(x, x) / 4)
 
 It prints `5.21 5.25`: close to the constant, never past it. The line `grad` is the chain-rule formula \(g'(\cdot)\,y\mathbf x\), with `dg` the slope of \(a \mapsto \log(1 + e^{-a})\).
 
-So, for \(\mathbf x \in \mathbb R^d\) and \(y \in \mathbb R\), the square loss \(f(\mathbf w) = (\langle \mathbf w, \mathbf x \rangle - y)^2\) is \((2\|\mathbf x\|^2)\)-smooth (here \(g(a) = a^2\) and \(b = -y\)), and for \(y \in \{\pm 1\}\) the logistic loss \(f(\mathbf w) = \log(1 + \exp(-y\langle \mathbf w, \mathbf x \rangle))\) is \((\|\mathbf x\|^2/4)\)-smooth (softplus composed with \(\langle \mathbf w, -y\mathbf x \rangle\), and \(\|-y\mathbf x\| = \|\mathbf x\|\)). On message C, with \(\|\mathbf x\|^2 = 21\), that is \(21/4 = 5.25\). The hinge loss is not smooth at all: at signed score 1 it has a kink, where its gradient jumps from \(-y\mathbf x\) to \(\mathbf 0\), and no gradient exists there.
+So, for \(\mathbf x \in \mathbb R^d\) and \(y \in \mathbb R\), the square loss \(f(\mathbf w) = (\langle \mathbf w, \mathbf x \rangle - y)^2\) is \((2\|\mathbf x\|^2)\)-smooth (here \(g(a) = a^2\) and \(b = -y\)), and for \(y \in \{\pm 1\}\) the logistic loss \(f(\mathbf w) = \log(1 + \exp(-y\langle \mathbf w, \mathbf x \rangle))\) is \((\|\mathbf x\|^2/4)\)-smooth (softplus composed with \(\langle \mathbf w, -y\mathbf x \rangle\), and \(\|-y\mathbf x\| = \|\mathbf x\|\)), as the snippet just measured. The hinge loss is not smooth at all: at signed score 1 it has a kink, where its gradient jumps from \(-y\mathbf x\) to \(\mathbf 0\), and no gradient exists there.
 
 ## Convex learning problems
 
-Now we can say what kind of learning problem all this is about. Lesson 3 defined a learning problem by three things: a hypothesis class \(\mathcal H\), a set of examples \(Z\), and a loss function \(\ell : \mathcal H \times Z \to \mathbb R_+\). Until now \(\mathcal H\) was a set of functions from messages to labels. But \(\mathcal H\) can be any set, and for linear learners it is natural to identify each hypothesis with its weight vector. So from here on, \(\mathcal H \subseteq \mathbb R^d\), a hypothesis is written \(\mathbf w\), and the loss is \(\ell(\mathbf w, z)\). For each example \(z\), write \(\ell(\cdot, z)\) for the function \(\mathbf w \mapsto \ell(\mathbf w, z)\).
+Now we can say what kind of learning problem all this is about. Lesson 3 defined a learning problem by three things: a hypothesis class \(\mathcal H\), a set of examples \(Z\), and a loss function \(\ell : \mathcal H \times Z \to \mathbb R_+\), which takes a hypothesis and an example (the \(\times\) pairs them) and returns a nonnegative number (\(\mathbb R_+\)). Until now \(\mathcal H\) was a set of functions from messages to labels. But \(\mathcal H\) can be any set, and for linear learners it is natural to identify each hypothesis with its weight vector. So from here on, \(\mathcal H \subseteq \mathbb R^d\), a hypothesis is written \(\mathbf w\), and the loss is \(\ell(\mathbf w, z)\). For each example \(z\), write \(\ell(\cdot, z)\) for the function \(\mathbf w \mapsto \ell(\mathbf w, z)\).
 
 **Definition (convex learning problem).** A learning problem \((\mathcal H, Z, \ell)\) is **convex** if the hypothesis class \(\mathcal H\) is a convex set and, for every \(z \in Z\), the loss \(\ell(\cdot, z)\) is a convex function.
 
@@ -630,7 +630,7 @@ Under mild conditions, problems of this shape can be solved efficiently by gener
 
 ## Is convexity enough?
 
-So convex problems can be *optimized*. Can they be *learned*? That is a different question: it asks whether the hypothesis ERM returns on \(m\) examples has small true risk, with a number of examples that depends only on \(\varepsilon\) and \(\delta\). As in lesson 3, \(\varepsilon\) is the extra true risk you tolerate above the best in the class, and \(\delta\) the chance you allow of an unlucky training sequence; the true risk \(L_{\mathcal D}(\mathbf w)\) is the average loss on a fresh example drawn from the distribution \(\mathcal D\).
+So convex problems can be *optimized*. Can they be *learned*? That is a different question: it asks whether the hypothesis ERM returns on \(m\) examples has small true risk, with a number of examples that depends only on \(\varepsilon\) and \(\delta\). As in lesson 3, \(\varepsilon\) is the extra true risk you tolerate above the best in the class, and \(\delta\) the chance you allow of an unlucky training sequence; the true risk \(L_{\mathcal D}(\mathbf w)\) is the average loss on a fresh example drawn from the distribution \(\mathcal D\). A problem is **agnostic PAC learnable**, in lesson 3’s words, when some learner meets that \((\varepsilon, \delta)\) promise for every distribution, with no assumption that a perfect hypothesis exists.
 
 You have good reasons to hope so. Lessons 6 and 9 showed that halfspaces in \(d\) dimensions are learnable (perhaps not efficiently). Lesson 4’s discretization trick suggested that any class described by \(d\) numbers is learnable with a number of examples that grows with \(d\). So surely, for a fixed small \(d\), every convex learning problem over \(\mathbb R^d\) is learnable?
 
@@ -640,7 +640,7 @@ No. Not even for \(d = 1\). This does not contradict lesson 6, which is about bi
 
 A **deterministic** algorithm is one whose output is fully determined by its training sequence: the same \(S\) always gives the same \(\hat w\). (A slightly longer argument handles learners that flip coins too.)
 
-*Proof.* Let \(A\) be any deterministic algorithm and suppose, for contradiction, that it is an agnostic PAC learner for this problem. Then there is a function \(m(\cdot, \cdot)\) such that for every distribution \(\mathcal D\) and every \(\varepsilon, \delta\), if \(A\) receives \(m \ge m(\varepsilon, \delta)\) examples drawn i.i.d. from \(\mathcal D\), then with probability at least \(1 - \delta\) it outputs \(\hat w = A(S)\) with
+*Proof.* Let \(A\) be any deterministic algorithm and suppose, for contradiction, that it is an agnostic PAC learner for this problem. Then there is a function \(m(\cdot, \cdot)\) such that for every distribution \(\mathcal D\) and every \(\varepsilon, \delta\), if \(A\) receives \(m \ge m(\varepsilon, \delta)\) examples drawn i.i.d. from \(\mathcal D\) (independently, each from the same \(\mathcal D\)), then with probability at least \(1 - \delta\) it outputs \(\hat w = A(S)\) with
 
 \[ L_{\mathcal D}(\hat w) - \min_w L_{\mathcal D}(w) \le \varepsilon. \]
 
@@ -654,7 +654,7 @@ The numerator \(\log(100/99) \approx 0.01005\) is a small fixed number; dividing
 
 *Step 1: two worlds.* Define two distributions on examples. The first, \(\mathcal D_1\), puts probability \(\mu\) on the example \(z_1 = (1, 0)\) and probability \(1 - \mu\) on \(z_2 = (\mu, -1)\). The second, \(\mathcal D_2\), puts all its probability on \(z_2\). Think of \(z_2\) as the everyday example both worlds share, and \(z_1\) as a rare example that only the first world contains.
 
-*Step 2: both worlds usually show the same training sequence.* Let \(E\) be the event that all \(m\) training examples are \(z_2\). Under \(\mathcal D_2\), \(E\) has probability 1. Under \(\mathcal D_1\), the examples are independent and each is \(z_2\) with probability \(1 - \mu\), so \(\mathbb P[E] = (1 - \mu)^m\). We bound this using the inequality \(1 - x \ge e^{-2x}\), valid for \(x \in [0, 1/2]\). (Proof: the function \(q(x) = \log(1 - x) + 2x\) has \(q(0) = 0\) and \(q(1/2) = 1 - \log 2 > 0\), and it is concave because \(q''(x) = -1/(1 - x)^2 < 0\); a concave function lies above its chord, which here is a segment from 0 up to a positive value, so \(q \ge 0\) on \([0, 1/2]\).) Here \(\mu \le \log(100/99)/2 < 0.006\), so
+*Step 2: both worlds usually show the same training sequence.* Let \(E\) be the event that all \(m\) training examples are \(z_2\). Under \(\mathcal D_2\), \(E\) has probability 1. Under \(\mathcal D_1\), the examples are independent and each is \(z_2\) with probability \(1 - \mu\), so its probability is \(\mathbb P[E] = (1 - \mu)^m\). We bound this using the inequality \(1 - x \ge e^{-2x}\), valid for \(x \in [0, 1/2]\). (Proof: the function \(q(x) = \log(1 - x) + 2x\) has \(q(0) = 0\) and \(q(1/2) = 1 - \log 2 > 0\), and it is concave, the upside-down of convex, because \(q''(x) = -1/(1 - x)^2 < 0\); a concave function lies above its chord, which here is a segment from 0 up to a positive value, so \(q \ge 0\) on \([0, 1/2]\).) Here \(\mu \le \log(100/99)/2 < 0.006\), so
 
 \[ (1 - \mu)^m \ge e^{-2\mu m} = e^{-\log(100/99)} = \frac{99}{100}. \]
 
@@ -664,7 +664,7 @@ So under either distribution, with probability at least 0.99 the learner sees th
 
 *Step 3: the adversary picks the world after seeing \(\hat w\).* There are two cases.
 
-If \(\hat w < -1/(2\mu)\), pick \(\mathcal D_1\). The rare example punishes a large negative weight: \(L_{\mathcal D_1}(\hat w) \ge \mu (\hat w \cdot 1 - 0)^2 = \mu \hat w^2 > \mu \cdot \frac{1}{4\mu^2} = \frac{1}{4\mu}\). Meanwhile the best in the class is no worse than \(w = 0\): \(\min_w L_{\mathcal D_1}(w) \le L_{\mathcal D_1}(0) = \mu \cdot 0 + (1 - \mu)(0 - (-1))^2 = 1 - \mu\). So
+If \(\hat w < -1/(2\mu)\), pick \(\mathcal D_1\). The rare example punishes a large negative weight. Keep only its term of the risk, since the other is a square and cannot be negative: \(L_{\mathcal D_1}(\hat w) \ge \mu (\hat w \cdot 1 - 0)^2 = \mu \hat w^2 > \mu \cdot \frac{1}{4\mu^2} = \frac{1}{4\mu}\). Meanwhile the best in the class is no worse than \(w = 0\): \(\min_w L_{\mathcal D_1}(w) \le L_{\mathcal D_1}(0) = \mu \cdot 0 + (1 - \mu)(0 - (-1))^2 = 1 - \mu\). So
 
 \[ L_{\mathcal D_1}(\hat w) - \min_w L_{\mathcal D_1}(w) \ge \frac{1}{4\mu} - (1 - \mu) > \varepsilon, \]
 
@@ -694,7 +694,7 @@ grid = [-k / (10000 * mu) for k in range(-5000, 25001)]
 print(round(min(max(L1(w) - L1(w1), L2(w)) for w in grid), 2))
 ```
 
-It prints `5.03e-05 0.995`, then `-0.9999 0.9999`, then `4974.2 0.25`, then `0.99`. With 100 examples, the rare example appears with probability \(5 \times 10^{-5}\), and 99.5% of training sequences never show it. In the first world the best weight is about \(-1\), with risk about 1. At the cut, the first world charges an excess of 4,974 and the second charges 0.25, just as the proof said. And the last line is sobering: whatever \(\hat w\) the learner picks, one of the two worlds charges it an excess of at least 0.99, a hundred times the \(\varepsilon\) we asked for. (The formula for the first world’s best weight comes from setting the derivative of the quadratic \(L_{\mathcal D_1}\) to zero.)
+It prints `5.03e-05 0.995`, then `-0.9999 0.9999`, then `4974.2 0.25`, then `0.99`. In the first world the best weight is about \(-1\), with risk about 1 (the formula `w1` sets the derivative of the quadratic \(L_{\mathcal D_1}\) to zero). At the cut, the first world charges an excess of 4,974 and the second 0.25, as the proof said. And the last line is sobering: whatever \(\hat w\) the learner picks, one of the two worlds charges it an excess of at least 0.99, a hundred times the \(\varepsilon\) we asked for.
 
 What went wrong? The hypothesis class is unbounded, so the learner can be asked to choose between \(w \approx -1\) and \(w \approx -1/\mu\), two answers that are astronomically far apart, on the evidence of a sequence that cannot tell them apart. A natural fix is to **bound** the class: fix a scalar \(B\) in advance and require \(\|\mathbf w\| \le B\) for every hypothesis.
 
@@ -702,7 +702,7 @@ What went wrong? The hypothesis class is unbounded, so the learner can be asked 
 
 \[ L_{\mathcal D_1}(\hat w) - \min_w L_{\mathcal D_1}(w) \ge \mu (\hat w / \mu)^2 - L_{\mathcal D_1}(0) \ge \frac{1}{4\mu} - (1 - \mu) > \varepsilon \]
 
-(the same chain as before, with the rare example’s loss now \((\hat w/\mu)^2\));
+(the same chain as before: the rare example’s loss is now \((\hat w \cdot \frac1\mu - 0)^2\), so its term is \(\mu (\hat w/\mu)^2 = \hat w^2/\mu > \frac{1}{4\mu}\) because \(\hat w^2 > \frac14\), and \(L_{\mathcal D_1}(0) = 1 - \mu\) as before);
 
 if \(\hat w \ge -1/2\), pick \(\mathcal D_2\) and get \(L_{\mathcal D_2}(\hat w) - \min_w L_{\mathcal D_2}(w) \ge (-1/2 + 1)^2 - 0 > \varepsilon\), since \(w = -1\) is in the class and has loss 0.
 
@@ -744,7 +744,7 @@ The nonnegativity is there to make the loss self-bounded, \(\|\nabla \ell\|^2 \l
 
 Example: let \(\mathcal X = \{\mathbf x \in \mathbb R^d : \|\mathbf x\| \le \sqrt{\beta/2}\}\), \(\mathcal Y = \mathbb R\), \(\mathcal H = \{\mathbf w : \|\mathbf w\| \le B\}\), and the square loss \(\ell(\mathbf w, (\mathbf x, y)) = (\langle \mathbf w, \mathbf x \rangle - y)^2\). The loss is convex and nonnegative, and \((2\|\mathbf x\|^2)\)-smooth by the claim on smoothness through a linear function, and \(2\|\mathbf x\|^2 \le 2 \cdot \beta/2 = \beta\). So this regression problem is convex-smooth-bounded with parameters \(\beta, B\).
 
-Go back to the counterexamples and see which condition each one breaks. The first had no bound \(B\). The second had \(B = 1\), but the loss on \(z_1 = (1/\mu, 0)\) was neither \(\rho\)-Lipschitz nor \(\beta\)-smooth for any constant fixed in advance, since its slope reached \(2/\mu^2\) and its smoothness constant was \(2/\mu^2\), both growing without limit as \(\mu\) shrinks.
+Go back to the counterexamples. The first had no bound \(B\). The second had \(B = 1\), but on \(z_1 = (1/\mu, 0)\) both the slope and the smoothness constant of the loss reached \(2/\mu^2\), with no limit fixed in advance.
 
 **The promise, proved in the next two lessons.** These two kinds of problems are learnable: convexity, boundedness, and Lipschitzness or smoothness of the loss together are sufficient. Lessons 13 and 14 prove it by giving learners that succeed. To have a number to work with, here is the result lesson 14 proves for the convex-Lipschitz-bounded case, stated now and used in the lab. There is a simple learner (stochastic gradient descent, which looks at each example once) whose output \(\bar{\mathbf w}\) on \(m\) i.i.d. examples satisfies
 
@@ -807,7 +807,7 @@ It prints
 True
 ```
 
-Read it message by message. The eight undisputed messages all have signed score at least 1, so the hinge loss charges them nothing, just like the 0-1 loss. B′ has score \(-1\): one mistake for the 0-1 loss, a charge of 2 for the hinge loss. E′ has score \(-3\), a confident mistake, and the hinge loss charges 4. So the hinge risk is 0.6 where the 0-1 risk is 0.2: always above, and more severe on confident mistakes. Notice too that the hinge loss can be positive on a *correct* prediction, when the signed score is between 0 and 1. It asks for a margin, not just the right side.
+The eight undisputed messages score at least 1 and cost nothing under either loss; B′ and E′ cost 1 each under the 0-1 loss and 2 and 4 under the hinge. So the hinge risk is 0.6 where the 0-1 risk is 0.2: always above, and harsher on confident mistakes.
 
 Does the logistic loss of lesson 9 also qualify? It is convex, but at signed score 0 it equals \(\log 2 \approx 0.693 < 1\), so it is not an upper bound on the 0-1 loss. Rescale it, though, by dividing by \(\log 2\), and it becomes \(\log_2(1 + \exp(-z))\), which equals 1 at \(z = 0\), is decreasing, and is positive everywhere, so it is at least the 0-1 loss for every \(z\). We will call this the **base-2 logistic loss**. It is convex, \((1/\log 2)\)-Lipschitz in the signed score, and \((1/(4\log 2))\)-smooth. The square loss in the form \((1 - z)^2\) is another convex upper bound (for \(z \le 0\) it is at least 1). You will meet all three in the lab.
 
@@ -823,7 +823,7 @@ Only the left side changed, from hinge to 0-1 true risk. That is the deal: a gua
 
 \[ L^{0-1}_{\mathcal D}(A(S)) \le \underbrace{\min_{\mathbf w \in \mathcal H} L^{0-1}_{\mathcal D}(\mathbf w)}_{\text{approximation error}} + \underbrace{\left( \min_{\mathbf w \in \mathcal H} L^{\text{hinge}}_{\mathcal D}(\mathbf w) - \min_{\mathbf w \in \mathcal H} L^{0-1}_{\mathcal D}(\mathbf w) \right)}_{\text{optimization error}} + \underbrace{\varepsilon}_{\text{estimation error}}. \]
 
-Each curly brace underneath (an underbrace) just labels the term above it; the middle term is the best hinge risk minus the best 0-1 risk, and adding the first two gives back the best hinge risk, so nothing changed but the bookkeeping. In plain words: **mistakes are at most the best possible mistakes, plus the price of the surrogate, plus the price of finite data.** So the 0-1 risk of the learned halfspace is bounded by three terms.
+Each underbrace just labels the term above it, and the first two terms add back up to the best hinge risk, so only the bookkeeping changed. In plain words: **mistakes are at most the best possible mistakes, plus the price of the surrogate, plus the price of finite data.**
 
 - **Approximation error**, \(\min_{\mathbf w \in \mathcal H} L^{0-1}_{\mathcal D}(\mathbf w)\): how well the class can do at all on this distribution. You met it in lesson 5.
 - **Estimation error**, \(\varepsilon\): the price of seeing only a training sequence and not \(\mathcal D\). Also lesson 5.
@@ -867,13 +867,13 @@ We need two small facts first.
 
 **Fact 1 (smoothness of an average).** If \(f_i\) is \(\beta_i\)-smooth for \(i = 1, \dots, m\), then \(f = \frac1m \sum_i f_i\) is \(\bar\beta\)-smooth with \(\bar\beta = \frac1m \sum_i \beta_i\). *Proof.* \(\nabla f = \frac1m \sum_i \nabla f_i\), so by the triangle inequality \(\|\nabla f(\mathbf v) - \nabla f(\mathbf w)\| \le \frac1m \sum_i \|\nabla f_i(\mathbf v) - \nabla f_i(\mathbf w)\| \le \frac1m \sum_i \beta_i \|\mathbf v - \mathbf w\|\). \(\square\)
 
-For the base-2 logistic loss, the scalar function \(a \mapsto \log_2(1 + e^{-a})\) has second derivative \(\frac{1}{\log 2} \cdot \frac{1}{(1 + e^{-a})(1 + e^{a})} \le \frac{1}{4 \log 2}\), so by the claim on smoothness through a linear function each example’s loss is \(\|\mathbf x_i\|^2/(4\log 2)\)-smooth, and the empirical risk is \(\beta\)-smooth with \(\beta = \frac{1}{4\log 2} \cdot \frac1m \sum_i \|\mathbf x_i\|^2\).
+For the base-2 logistic loss, the scalar function \(a \mapsto \log_2(1 + e^{-a})\) has second derivative \(\frac{1}{\log 2} \cdot \frac{1}{(1 + e^{-a})(1 + e^{a})} \le \frac{1}{4 \log 2}\), so by the claim on smoothness through a linear function each example’s loss is \(\|\mathbf x_i\|^2/(4\log 2)\)-smooth, and the empirical risk is \(\beta\)-smooth with \(\beta = \frac{1}{4\log 2} \cdot \frac1m \sum_i \|\mathbf x_i\|^2\). In plain words: **the average of the losses is as smooth as the average of their constants.** On the ten messages the squared lengths average 7.4, so \(\beta = 7.4/(4 \log 2) \approx 2.669\), the `beta` line of the run below.
 
 **Fact 2 (a certificate of near-optimality).** If \(f\) is convex and differentiable, then for every \(\mathbf w\) and every \(\mathbf u\) with \(\|\mathbf u\| \le B\),
 
 \[ f(\mathbf w) - f(\mathbf u) \le \|\nabla f(\mathbf w)\| \, (\|\mathbf w\| + B). \]
 
-The left side is how much worse you are than a competitor \(\mathbf u\) in the ball; the right side multiplies the length of the gradient by the farthest you could be from any such competitor, \(\|\mathbf w\| + B\). In plain words: **a short gradient proves you are close to the best in the ball.** In the run below, after 100 steps the gradient has length 0.0059 and the weights length about 1.84, so the certificate is \(0.0059 \times 4.84 \approx 0.0286\); the line `cert = gn * (math.sqrt(dot(w, w)) + 3)` is this right side.
+The left side is how much worse you are than a competitor \(\mathbf u\) in the ball; the right side multiplies the length of the gradient by the farthest you could be from any such competitor, \(\|\mathbf w\| + B\). In plain words: **a short gradient proves you are close to the best in the ball.** In the run below, after 100 steps the gradient has length 0.0059 and the weights length about 1.84, so with \(B = 3\) the certificate is \(0.0059 \times 4.84 \approx 0.0286\); the line `cert = gn * (math.sqrt(dot(w, w)) + 3)` is this right side.
 
 *Proof.* The tangent inequality at \(\mathbf w\) gives \(f(\mathbf u) \ge f(\mathbf w) + \langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle\), so \(f(\mathbf w) - f(\mathbf u) \le \langle \nabla f(\mathbf w), \mathbf w - \mathbf u \rangle \le \|\nabla f(\mathbf w)\| \, \|\mathbf w - \mathbf u\|\) by Cauchy–Schwarz, and \(\|\mathbf w - \mathbf u\| \le \|\mathbf w\| + \|\mathbf u\| \le \|\mathbf w\| + B\). \(\square\)
 
@@ -979,7 +979,7 @@ if __name__ == "__main__":
 ```
 
 1. The losses take the signed score \(z\). `risk(w, S, loss)` prepends the constant 1 to each message. `world_risk` averages over the eight types, weighting each type’s usual label by 0.95 and the flipped label by 0.05.
-2. `smooth_descent` starts at \(\mathbf 0\) and uses step \(1/\beta\) with \(\beta\) from Fact 1. Make it also return the certificate of Fact 2 for \(B = 3\).
+2. `smooth_descent` starts at \(\mathbf 0\) and uses step \(1/\beta\) with \(\beta\) from Fact 1, and returns the final weights. Before returning, print the certificate of Fact 2 for \(B = 3\).
 3. `labels_needed` returns the smallest \(m\) with `certified_bound(...) <= target`, or `None` when the floor is already above the target (no label budget can help then).
 4. Harder: the hinge loss is not smooth, so `smooth_descent` cannot minimize it. Minimize the hinge risk of the lab world over the ball \(\|\mathbf w\| \le B\) anyway: at each step move against a slope vector (for a term with signed score below 1, use \(-y\mathbf x\); otherwise \(\mathbf 0\)), with step \(B/(R\sqrt t)\) at step \(t\), and pull \(\mathbf w\) back onto the ball by rescaling whenever \(\|\mathbf w\| > B\). Keep the best point seen. You should reproduce 0.2238 at \(B = 1.5\) and about 0.1625 for \(B \ge 2.7\). Lesson 14 explains why this works.
 

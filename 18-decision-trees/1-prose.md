@@ -144,7 +144,7 @@ That makes \(d + 3\) options per block. How many bits does a block need? With \(
 
 Here \(\log_2\) is the base-2 logarithm, the power you must raise 2 to: \(\log_2 8 = 3\), and \(\log_2 7 \approx 2.807\). The brackets \(\lceil \cdot \rceil\) are the **ceiling**, rounding up to the next whole number, so \(\lceil 2.807 \rceil = 3\). In plain words: **each block gets just enough bits to name one of the \(d + 3\) options, and a tree with \(n\) nodes is \(n + 1\) blocks.** The auditor’s tree, with \(n = 7\) and \(d = 4\), takes \(8 \times 3 = 24\) bits.
 
-Let’s write down the auditor’s tree. With \(d = 4\) there are 7 options, so blocks have 3 bits. Number the symbols F, L, U, N as 0 to 3, “leaf 1” as 4, “leaf 0” as 5 and “end” as 6. The preorder of the tree is U, then its “yes” subtree (F, leaf 1, L, leaf 1, leaf 0), then its “no” subtree (leaf 0).
+Let’s write those 24 bits down. Number the symbols F, L, U, N as 0 to 3, “leaf 1” as 4, “leaf 0” as 5 and “end” as 6. The preorder of the tree is U, then its “yes” subtree (F, leaf 1, L, leaf 1, leaf 0), then its “no” subtree (leaf 0).
 
 ```python
 import math
@@ -212,7 +212,7 @@ Two words in that statement do a lot of work. “Every” means the bound holds 
 
 The bound performs a tradeoff, and it is the whole story of this lesson in one formula. Bigger trees can fit the training sequence better, so their empirical risk \(L_S(h)\) is smaller, but they pay through \(n\). Smaller trees pay little for size but may fit worse. The prior knowledge we are betting on is that some tree is both small and accurate.
 
-Let’s put numbers in. Our auditors approved \(d = 29\) features, so \(d + 3 = 32\) and each block is exactly 5 bits. Here is the bound for two trees grown on 1,000 labelled messages, with \(\delta = 0.05\): a big tree of 321 nodes that fits every example, and a small one of 7 nodes with empirical risk 0.096. Then the same small tree with 1,500 labels, and the number of labels a 7-node tree needs before its square-root term drops to 0.15.
+Let’s put numbers in, still with 5-bit blocks for the 29 features. Here is the bound for two trees grown on 1,000 labelled messages, with \(\delta = 0.05\): a big tree of 321 nodes that fits every example, and a small one of 7 nodes with empirical risk 0.096. Then the same small tree with 1,500 labels, and the number of labels a 7-node tree needs before its square-root term drops to 0.15.
 
 ```python
 import math
@@ -299,7 +299,7 @@ for a in (0.0, 0.5, 0.375, 0.75):
     print(a, round(H(a), 3), round(gini(a), 3))
 ```
 
-It prints `0.0 0.0 0.0`, `0.5 1.0 0.5`, `0.375 0.954 0.469` and `0.75 0.811 0.375`: both are 0 on a pure leaf and largest on the fair coin. The `if p > 0` is the convention \(0 \log_2 0 = 0\). Put these into the gain snippet in place of `C` and the U split’s information gain is \(0.954 - 0.5 \times 0.811 \approx 0.549\), its Gini gain \(0.469 - 0.5 \times 0.375 \approx 0.281\).
+It prints `0.0 0.0 0.0`, `0.5 1.0 0.5`, `0.375 0.954 0.469` and `0.75 0.811 0.375`: both are 0 on a pure leaf and largest on the fair coin. The `if p > 0` is the convention \(0 \log_2 0 = 0\). Put these into the gain snippet in place of `C` and the U split’s information gain is \(0.954 - 0.5 \times 0.811 \approx 0.549\).
 
 Let’s try all three, on every feature, at the root and one level down.
 
@@ -338,7 +338,7 @@ info [0.311, 0.311, 0.0, 0.0]
 gini [0.125, 0.125, 0.0, 0.0]
 ```
 
-At the root, all three agree: split on U. Training error sees a gain of 0.25, since before the split the majority label is keep and 6 of 16 are wrong, and after it the “unknown sender” side has majority junk with 2 of 8 wrong, while the other side is all keep: \(6/16 - 2/16 = 0.25\). Notice, though, that training error gives F and L a gain of exactly 0, while the other two measures see they are worth something.
+At the root, all three agree: split on U, with the training-error gain of 0.25 we worked out by hand. Notice, though, that training error gives F and L a gain of exactly 0, while the other two measures see they are worth something.
 
 Now the second three lines, at the node reached by \(U = 1\): eight messages, six junk. Here training error is stuck. Every feature has gain 0. Splitting on F sends four messages to an all-junk leaf and four to a leaf that is half junk, so the number of training mistakes stays at 2: none on the FREE side, and two on the other side whichever label its leaf gets. Training error cannot tell F, which matters, from N, which is pure noise. Information gain and the Gini index both see at once that F and L are useful and N is not.
 
@@ -406,7 +406,7 @@ for name, c in C.items():
 
 It prints `err 0.75 0.0`, `info 0.75 0.311` and `gini 0.75 0.125`, the F column of the second three lines of the earlier output.
 
-That shape, value at an average minus average of values, is exactly the quantity that **concavity** controls. A function \(C\) on \([0,1]\) (the numbers from 0 to 1, ends included) is concave if \(C(q a + (1-q) a') \ge q C(a) + (1-q) C(a')\) for all \(a, a', q \in [0,1]\): the chord between two points of its graph lies below the graph. With the entropy, \(a = 1\), \(a' = 0.5\) and \(q = 0.5\), the left side is \(H(0.75) = 0.811\) and the right side is \(0.5 \times 0 + 0.5 \times 1 = 0.5\): the curve is above the chord, and the gap 0.311 is the gain we just computed. It is **strictly concave** if the inequality is strict whenever \(a \ne a'\) and \(0 < q < 1\).
+That shape, value at an average minus average of values, is exactly the quantity that **concavity** controls. A function \(C\) on \([0,1]\) (the numbers from 0 to 1, ends included) is concave if \(C(q a + (1-q) a') \ge q C(a) + (1-q) C(a')\) for all \(a, a', q \in [0,1]\). In plain words: **the chord between any two points of the graph lies on or below the graph.** With the entropy, \(a = 1\), \(a' = 0.5\) and \(q = 0.5\), the left side is \(H(0.75) = 0.811\) and the right side is \(0.5 \times 0 + 0.5 \times 1 = 0.5\): the curve is above the chord, and the gap 0.311 is the gain we just computed. It is **strictly concave** if the inequality is strict whenever \(a \ne a'\) and \(0 < q < 1\).
 
 [[diagram:gain-curves]]
 
@@ -418,7 +418,9 @@ That shape, value at an average minus average of values, is exactly the quantity
 
 *Proof.* Part 1. All three functions are symmetric under \(a \mapsto 1 - a\) (replacing \(a\) by \(1 - a\), swapping the roles of junk and keep, leaves them unchanged), so it is enough to take \(a \le 1/2\), where \(\min\{a, 1-a\} = a\). For the Gini index, \(1 - a \ge 1/2\), so \(2a(1-a) \ge 2a \cdot \tfrac12 = a\). For the entropy \(H\), we use concavity, proved in part 3: \(H(0) = 0\) and \(H(1/2) = 1\), and \(a = (1 - 2a) \cdot 0 + 2a \cdot \tfrac12\) is a weighted average of 0 and \(1/2\) with weights \(1 - 2a\) and \(2a\). So \(H(a) \ge (1 - 2a) H(0) + 2a H(1/2) = 2a \ge a\).
 
-Part 3 first, since part 2 uses it. The second derivative measures how fast the slope changes; when it is negative the slope keeps falling, so the graph bends downward and every chord lies below it. For a function with a second derivative, a negative second derivative everywhere on \((0, 1)\) makes it strictly concave there. The Gini index \(2a - 2a^2\) has second derivative \(-4\). The entropy has first derivative \(\log_2\frac{1-a}{a}\) and second derivative \(-\frac{1}{a(1-a)\ln 2}\), where \(\ln 2 \approx 0.693\) is the natural logarithm of 2; at \(a = 0.75\) it is \(-1/(0.1875 \times 0.693) \approx -7.7\), and it is negative on all of \((0,1)\), the numbers strictly between 0 and 1; it is also continuous at 0 and 1, so strict concavity extends to \([0,1]\). Then, with \(0 < q < 1\) and \(p_1 \ne p_0\), strict concavity says \(C(q p_1 + (1-q) p_0) > q C(p_1) + (1-q) C(p_0)\), which is exactly “gain \(> 0\)”.
+Part 3 first, since part 2 uses it. The second derivative measures how fast the slope changes; when it is negative the slope keeps falling, so the graph bends downward and every chord lies below it. For a function with a second derivative, a negative second derivative everywhere on \((0, 1)\) makes it strictly concave there. The Gini index \(2a - 2a^2\) has second derivative \(-4\). For the entropy, the derivative of \(-a \log_2 a\) is \(-\log_2 a - 1/\ln 2\), where \(\ln 2 \approx 0.693\) is the natural logarithm of 2; adding the mirror term for \(1 - a\), the \(1/\ln 2\)’s cancel and the first derivative is \(\log_2\frac{1-a}{a}\). Differentiating once more gives \(-\frac{1}{a(1-a)\ln 2}\): at \(a = 0.75\) it is \(-1/(0.1875 \times 0.693) \approx -7.7\), and it is negative on all of \((0,1)\), the numbers strictly between 0 and 1.
+
+That covers chords inside \((0,1)\), but our F split has \(p_1 = 1\), an endpoint, so we need one more step. Take \(a < a'\) in \([0,1]\) and let \(\varphi\) (phi) be \(C\) minus the straight line through \((a, C(a))\) and \((a', C(a'))\). Then \(\varphi(a) = \varphi(a') = 0\), \(\varphi\) is continuous, and inside \((a, a')\) its second derivative is that of \(C\), negative. By Rolle’s theorem (a smooth curve that starts and ends at the same height is flat somewhere in between), its slope is 0 at some point \(s\) between \(a\) and \(a'\), and since the slope keeps falling, it is positive before \(s\) and negative after. So \(\varphi\) climbs from 0 and comes back down to 0, and is strictly positive in between: the graph is strictly above the chord at every point strictly between \(a\) and \(a'\). Then, with \(0 < q < 1\) and \(p_1 \ne p_0\), strict concavity says \(C(q p_1 + (1-q) p_0) > q C(p_1) + (1-q) C(p_0)\), which is exactly “gain \(> 0\)”.
 
 For the training error, \(C(a) = \min\{a, 1-a\}\) is the minimum of two linear functions, and a minimum of linear functions is concave: for each of the two lines \(\ell\), \(\ell(q a + (1-q)a') = q\ell(a) + (1-q)\ell(a') \ge q C(a) + (1-q) C(a')\), so the smaller of the two lines is also at least that. But on \([0, 1/2]\) it is the single line \(C(a) = a\). If \(p_1, p_0 \le 1/2\), then \(p \le 1/2\) too, and \(C(p) = p = q p_1 + (1-q) p_0 = q C(p_1) + (1-q) C(p_0)\): the gain is exactly 0. The case \(p_1, p_0 \ge 1/2\) is the same with the line \(1 - a\).
 
@@ -507,9 +509,9 @@ print(all(split(t) in built for t in grid))
 
 It prints `7 7` and `True`: seven thresholds producing seven different splits, and every threshold on a fine grid from \(-1\) to 26 produces one of those seven.
 
-Formally, let \(x_1, \dots, x_m\) be the training messages. For each real-valued feature \(i\), sort them so that \(x_{1,i} \le \dots \le x_{m,i}\), and use the conventions \(x_{0,i} = -\infty\) and \(x_{m+1,i} = +\infty\). For each \(j = 0, \dots, m\) with \(x_{j,i} < x_{j+1,i}\), pick a threshold \(\theta_{j,i}\) strictly inside \((x_{j,i}, x_{j+1,i})\), and define the yes/no feature \(\mathbb 1[x_i < \theta_{j,i}]\). That makes at most \(m + 1\) new features per original feature, so at most \(d(m+1)\) in all, about \(dm\). Then run ID3 on them.
+Formally, let \(x_1, \dots, x_m\) be the training messages. For each real-valued feature \(i\), sort them by that feature and write \(x_{j,i}\) for feature \(i\) of the \(j\)-th message in sorted order, so that \(x_{1,i} \le \dots \le x_{m,i}\). Add the conventions \(x_{0,i} = -\infty\) and \(x_{m+1,i} = +\infty\), stand-ins smaller and larger than every value. For each \(j = 0, \dots, m\) with \(x_{j,i} < x_{j+1,i}\), pick a threshold \(\theta_{j,i}\) strictly inside \((x_{j,i}, x_{j+1,i})\), and define the yes/no feature \(\mathbb 1[x_i < \theta_{j,i}]\). That makes at most \(m + 1\) new features per original feature, so at most \(d(m+1)\) in all, about \(dm\). Then run ID3 on them.
 
-The double subscript \(x_{j,i}\) is “feature \(i\) of the \(j\)-th message in sorted order”, \(\pm\infty\) are stand-ins smaller and larger than every value, and \((x_{j,i}, x_{j+1,i})\) is the open gap between two neighbours, endpoints excluded. The condition \(x_{j,i} < x_{j+1,i}\) skips gaps of width zero, which tied values create. In plain words: **sort the training values, and put one threshold in every gap between neighbours that are actually different, including the gap before the first and after the last.** With the eight hours, \(m = 8\) allows up to 9 gaps, but the two 2.0s and the two 9.0s close two of them, leaving 7, as the earlier snippet found. Here is the formal version, sentinels included:
+Here \((x_{j,i}, x_{j+1,i})\) is the open gap between two neighbours, endpoints excluded. The condition \(x_{j,i} < x_{j+1,i}\) skips gaps of width zero, which tied values create. In plain words: **sort the training values, and put one threshold in every gap between neighbours that are actually different, including the gap before the first and after the last.** With the eight hours, \(m = 8\) allows up to 9 gaps, but the two 2.0s and the two 9.0s close two of them, leaving 7, as the earlier snippet found. Here is the formal version, sentinels included:
 
 ```python
 hours = [23.5, 2.0, 14.25, 9.0, 2.0, 19.75, 9.0, 3.5]
@@ -530,7 +532,7 @@ It prints `9 7`, then `(-inf, 2.0) (3.5, 9.0)`: the first gap lies below everyth
 
 Build \(T'\) by replacing each node’s rule this way and keeping all leaves. A training message answers every question of \(T'\) exactly as it answers the corresponding question of \(T\), so it follows the same path and reaches the same leaf. Same shape, same number of nodes, same label on every training message. \(\blacksquare\)
 
-**Runtime.** Done naively, the reduction is expensive. There are about \(dm\) constructed features, and computing the gain of each costs \(O(m)\), so evaluating every split at one node takes \(O(dm^2)\) operations. A cleverer implementation brings it to \(O(dm \log m)\), using the same idea as the fast search for the best decision stump in lesson 10: sort, then sweep.
+**Runtime.** Done naively, the reduction is expensive. There are about \(dm\) constructed features, and computing the gain of each costs \(O(m)\), so evaluating every split at one node takes \(O(dm^2)\) operations. A cleverer implementation brings it to \(O(dm \log m)\), using the same idea as the fast search for the best decision stump in lesson 10: sort, then sweep. In the pseudocode, \(x_{(t),i}\) is feature \(i\) of the \(t\)-th example after sorting and \(y_{(t)}\) its label.
 
 ```
 BestThreshold(S, i, C)
@@ -549,7 +551,7 @@ BestThreshold(S, i, C)
   return best
 ```
 
-Here \(x_{(t),i}\) is feature \(i\) of the \(t\)-th example after sorting and \(y_{(t)}\) its label; the gain line is the gain formula of “Why the smooth gains are better” with \(q\), \(p_1\), \(p_0\) read off the running counts. Each candidate threshold’s gain comes from running counts in \(O(1)\), so after the \(O(m \log m)\) sort, one sweep is \(O(m)\). Over \(d\) features that is \(O(dm \log m)\) per node, and \(O(m)\) extra space for the sorted order. (The thresholds below everything and above everything put all examples on one side and have gain 0, so the sweep can skip them.)
+The gain line is the gain formula of “Why the smooth gains are better” with \(q\), \(p_1\), \(p_0\) read off the running counts. Each candidate threshold’s gain comes from running counts in \(O(1)\), so after the \(O(m \log m)\) sort, one sweep is \(O(m)\). Over \(d\) features that is \(O(dm \log m)\) per node, and \(O(m)\) extra space for the sorted order. (The thresholds below everything and above everything put all examples on one side and have gain 0, so the sweep can skip them.)
 
 ## Build it yourself
 
