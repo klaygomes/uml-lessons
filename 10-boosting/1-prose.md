@@ -69,7 +69,7 @@ To have something we can follow with a pencil, take just two counts, “free” 
 
 No single stump gets all ten right, because the junk messages sit along a diagonal and a stump can only cut straight across one axis. How well can a stump do? Try “junk if free \(> 0.5\)”. It says junk for messages 4 to 10, so it is wrong on 4 and 5, which are keep. Two mistakes out of ten.
 
-Soon we will need to score a stump not by counting mistakes, but by adding up how much each mistaken example *matters*. So let’s set that up now. Give each of the ten messages a share of one unit of importance: say 0.25 each to messages 4 and 5, and \(1/16 = 0.0625\) each to the other eight, so that the shares add up to \(0.5 + 0.5 = 1\). Then “junk if free \(> 0.5\)”, which is wrong only on 4 and 5, scores \(0.25 + 0.25 = 0.5\) instead of 0.2: the two messages it misses now count for half of everything.
+Soon we will score a stump not by counting mistakes, but by adding up how much each mistaken example *matters*. Give each of the ten messages a share of one unit of importance: say 0.25 each to messages 4 and 5, and \(1/16 = 0.0625\) each to the other eight, so that the shares add up to \(0.5 + 0.5 = 1\). Then “junk if free \(> 0.5\)”, which is wrong only on 4 and 5, scores \(0.25 + 0.25 = 0.5\) instead of 0.2: the two messages it misses now count for half of everything.
 
 A **distribution over the examples** is a vector \(D = (D_1, \dots, D_m)\) with every \(D_i \ge 0\) and \(\sum_i D_i = 1\) (the capital sigma \(\sum\) means “add up”, here over every example \(i\)). As before, \(m\) is the number of examples, and example \(i\) is the pair \((x_i, y_i)\) of a message and its label. We call \(D_i\) the **weight** of example \(i\). The **weighted risk** of a hypothesis is the total weight of the examples it gets wrong:
 \[ L_D(h) = \sum_{i=1}^m D_i\, \mathbb 1[h(x_i) \neq y_i]. \]
@@ -557,7 +557,7 @@ It prints
 0.071 0.5151 0.5151
 ```
 
-Same risks, and each ratio matches the formula to four places. Multiply the three ratios and you get \(Z_3 \approx 0.273\), comfortably above the actual empirical risk of 0.
+Same risks, and each ratio matches the formula to four places. Their product, \(Z_3 \approx 0.273\), sits well above the actual empirical risk of 0.
 
 **Step 5: bound the ratio.** Let \(g(a) = a(1 - a)\). Its derivative is \(1 - 2a \ge 0\) on \([0, \tfrac12]\), so \(g\) is increasing there. Since \(0 < \varepsilon_{t+1} \le \tfrac12 - \gamma \le \tfrac12\),
 \[ 2\sqrt{\varepsilon_{t+1}(1 - \varepsilon_{t+1})} \le 2\sqrt{\left(\tfrac12 - \gamma\right)\left(\tfrac12 + \gamma\right)} = 2\sqrt{\tfrac14 - \gamma^2} = \sqrt{1 - 4\gamma^2}. \]
@@ -764,7 +764,7 @@ for T in (40, 100):
 
 It prints `307 468 523`, then `40 2756` and `100 7990`. Each step of the proof loosens the bound a little, and the shape survives: roughly linear in \(T\).
 
-Now the parity puzzle from the last section, which this proof style explains in one line. Put \(T\) stumps on the line, all with genuine thresholds between \(T + 1\) points. To the left of every threshold, every stump says \(-1\), so the sum is \(-\sum_t w_t\). To the right of every threshold, every stump says \(+1\), so the sum is \(+\sum_t w_t\). The two ends of the line always get opposite signs (or both get \(-1\), if the votes sum to zero). That forbids some labellings. With two stumps and three points \(x_1 < x_2 < x_3\), the labelling \(+, -, +\) needs two sign changes, so both thresholds must sit between the points, and then it needs both ends positive, which is impossible; and three points are not shattered. With an odd number of stumps the two ends of an alternating labelling have opposite signs anyway, which is why the parity of \(T\) decides the exact VC dimension.
+Now the parity puzzle from the last section. Put \(T\) stumps on the line, all with genuine thresholds between \(T + 1\) points. Left of every threshold, every stump says \(-1\) and the score is \(-\sum_t w_t\); right of every threshold it is \(+\sum_t w_t\). So the two ends always get opposite signs (or both \(-1\), if the votes sum to zero). With two stumps and three points \(x_1 < x_2 < x_3\), the labelling \(+, -, +\) needs two sign changes, so both thresholds must sit between the points, and then it needs both ends positive, which is impossible; and three points are not shattered. With an odd number of stumps the two ends of an alternating labelling have opposite signs anyway, which is why the parity of \(T\) decides the exact VC dimension.
 
 ## A promise about fresh mail
 
@@ -841,7 +841,7 @@ Here is one run of AdaBoost with stumps on 20,000 messages from the lab’s mail
 
 Read it column by column. The empirical risk falls fast and then crawls; it even goes up between 80 and 100 rounds, the same wobble as on the ten messages. The bound \(Z_T\) sits above it every time, and falls every time, as the proof promised. The gap climbs steadily. The certified risk, their sum, falls to about 0.175 near 40 rounds and climbs again. In this run, any \(T\) from 23 to 64 certifies a true risk of at most 0.20.
 
-And the fresh error? It keeps falling all the way to 80 rounds. The certificate is conservative: it is a promise that holds for *every* distribution and *every* vote in the class, so it charges you for the class’s size even when, as here, the extra rounds happen not to hurt. The certificate is what you can promise in writing. It is not a prediction of what will happen.
+And the fresh error? It keeps falling all the way to 80 rounds. The certificate holds for *every* distribution and *every* vote in the class, so it charges you for the class’s size even when, as here, the extra rounds happen not to hurt. It is what you can promise in writing, not a prediction.
 
 ## Fix the bug
 
@@ -855,9 +855,9 @@ In the lab you set \(T\), from 1 to 100, and train. You see the empirical risk, 
 
 **“AdaBoost’s empirical risk goes down every round.”** It doesn’t have to. On the ten messages it stayed at 0.2 after round 2, and on the twenty thousand it went up between rounds 80 and 100. What goes down every round is \(Z_t\), the average of \(e^{-y_i f_t(x_i)}\), which sits above the empirical risk.
 
-**“More rounds means a better filter.”** More rounds means a lower empirical risk and a bigger class. The VC dimension of the vote grows roughly linearly with \(T\), and so does the price on fresh mail. In the lab’s run, 100 rounds have a smaller empirical risk than 40, and a certified risk of 0.227 instead of 0.175.
+**“More rounds means a better filter.”** More rounds means a lower empirical risk and a bigger class, whose VC dimension grows roughly linearly with \(T\). In the lab’s run, 100 rounds have a smaller empirical risk than 40, and a certified risk of 0.227 instead of 0.175.
 
-**“A weak learner is a bad learner, so boosting is a trick.”** The weak learner’s promise is precise: an edge of \(\gamma\) on *every* distribution over the examples, not just on the uniform one. That is a strong assumption in disguise, and it is exactly what the proof uses each round. A stump that is right 63% of the time on the original mail but can’t beat a coin once the weights move gives AdaBoost nothing to work with.
+**“A weak learner is a bad learner, so boosting is a trick.”** The weak learner promises an edge of \(\gamma\) on *every* distribution over the examples, not just the uniform one: a strong assumption in disguise, and exactly what the proof uses each round. A stump that is right 63% of the time on the original mail but can’t beat a coin once the weights move gives AdaBoost nothing to work with.
 
 **“The theorem says AdaBoost learns.”** The theorem is about the empirical risk only. It says nothing about fresh mail. That part needs the size of \(L(B, T)\), and the two together make the tradeoff you just navigated.
 

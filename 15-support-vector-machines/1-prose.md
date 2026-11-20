@@ -345,7 +345,7 @@ print([str(k) for k in xi], ok)
 print(obj, round(float(obj), 4))
 ```
 
-It prints `['0', '0', '0', '0', '0', '0', '0', '0', '2', '5/3'] True`, then `19/45 0.4222`. Notice the line that picks each slack: the smallest value obeying both rules is \(\max\{0, 1 - s_i\}\). Hold on to that; it is about to get a name.
+It prints `['0', '0', '0', '0', '0', '0', '0', '0', '2', '5/3'] True`, then `19/45 0.4222`. Notice the line that picks each slack: the smallest value obeying both rules is \(\max\{0, 1 - \text{signed score}\}\), where \(\max\{\cdot, \cdot\}\) keeps the larger of two numbers. Hold on to that; it is about to get a name.
 
 A large \(\lambda\) makes the norm expensive: the learner prefers a short \(\mathbf w\), a wide margin, and pays for it with more violations. A small \(\lambda\) makes violations expensive: the learner fits the examples harder and accepts a narrower margin.
 
@@ -353,7 +353,7 @@ The slack variables are a modelling device, and they disappear on inspection. Re
 
 \[ \ell^{\text{hinge}}((\mathbf w, b), (\mathbf x, y)) = \max\{0, \, 1 - y (\langle \mathbf w, \mathbf x \rangle + b)\}, \]
 
-and write \(L_S^{\text{hinge}}((\mathbf w, b))\) for its average over the training sequence. It is zero for an example with signed score at least 1, and grows linearly as the score falls below 1.
+and write \(L_S^{\text{hinge}}((\mathbf w, b))\) for its average over the training sequence. It is zero for an example with signed score at least 1, and grows linearly as the score falls below 1. Inside out: the signed score, its shortfall below 1, and \(\max\) with 0 so that a comfortable message pays nothing. The superscript “hinge” names the loss; the subscript \(S\), as for the empirical risk, says the average runs over the training messages. In plain words: **the hinge loss charges a message for how far its signed score falls short of 1.** I under the hard-SVM separator: \(\max\{0, 1 - (-1)\} = 2\), its slack from the snippet.
 
 **Claim (slack is hinge loss).** Soft-SVM is the same problem as
 
@@ -376,9 +376,11 @@ for _ in range(4):
 
 It prints `2.22 0.0 0.0`, `1.79 0.0 0.0`, `0.1 0.9 0.9` and `-0.71 1.71 1.71`: the smallest feasible slack is the hinge loss every time.
 
-So soft-SVM is **regularized loss minimization**, the paradigm of lesson 13: minimize the empirical risk under some loss plus a penalty \(\lambda \|\mathbf w\|^2\) on the norm. It has a bias, in the sense of lesson 1, toward short weight vectors, which is to say toward wide margins. As before, the homogeneous version drops \(b\) (or lifts the messages) and solves
+So soft-SVM is **regularized loss minimization** (RLM), the rule of lesson 13: return \(\operatorname{argmin}_{\mathbf w} \left( L_S(\mathbf w) + R(\mathbf w) \right)\), the empirical risk under some loss plus a regularization function \(R\), here the Tikhonov penalty \(R(\mathbf w) = \lambda \|\mathbf w\|^2\) on the norm. It has a bias, in the sense of lesson 1, toward short weight vectors, which is to say toward wide margins. As before, the homogeneous version drops \(b\) (or lifts the messages) and solves
 
 \[ \min_{\mathbf w} \left( \lambda \|\mathbf w\|^2 + L_S^{\text{hinge}}(\mathbf w) \right), \qquad L_S^{\text{hinge}}(\mathbf w) = \frac{1}{m} \sum_{i=1}^m \max\{0, 1 - y_i \langle \mathbf w, \mathbf x_i \rangle\}. \]
+
+This is the same reading as before, with \(b\) folded into \(\mathbf w\): **a penalty on the length of \(\mathbf w\) plus the average hinge loss.** E lifted is \((1, 0, 0)\) with label \(-1\); under \(\mathbf w = (-\tfrac12, \tfrac12, -\tfrac12)\) its signed score is \(\tfrac12\), so it pays \(\tfrac12\). The function `soft_svm_objective` below mirrors the formula term by term.
 
 Let’s run it on the ten messages, lifted, with \(\lambda = 0.1\). The minimizer turns out to be \(\mathbf w = (-\tfrac12, \tfrac12, -\tfrac12)\), the score \((x_1 - x_2 - 1)/2\); the solver behind that claim appears in the duality section. Compare its objective with the hard-SVM separator of the eight messages, which ignores I and J.
 

@@ -434,9 +434,15 @@ SGD(f, η, T):
   return w̄ = (1/T) Σ_{t=1..T} w(t)
 ```
 
-The only requirement is on the conditional expectation: given everything that happened so far (which fixes \(\mathbf w^{(t)}\)), the random direction must, on average, be a subgradient of \(f\) at the current point. Each individual \(\mathbf v_t\) may point quite the wrong way.
+The only requirement is the line with \(\mathbb E\), the conditional expectation. Read it piece by piece:
 
-Where would such a vector come from? In our tiny world the answer is almost embarrassing. The true risk is the average hinge loss over six equally likely messages. Pick one of the six at random, uniformly, and take the subgradient of the hinge loss on that message alone. On average over the pick, that is the average of the six subgradients, which is a subgradient of the true risk. (We prove this properly in a moment.)
+- \(\mathbb E[\cdot]\) is the expected value: the average of a random quantity over its possible outcomes, each weighted by its probability.
+- The bar \(\mid\) reads “given”: average only over the random choice made at step \(t\), with the earlier choices \(\mathbf v_1, \dots, \mathbf v_{t-1}\) held fixed. Fixing them fixes \(\mathbf w^{(t)}\).
+- \(\in \partial f(\mathbf w^{(t)})\) says that average must be one of the subgradients at the current iterate.
+
+In plain words: **averaged over this step’s random choice, with the past held fixed, the step direction must be a subgradient at the current point.** Each individual \(\mathbf v_t\) may point quite the wrong way.
+
+Where would such a vector come from? In our tiny world the answer is almost embarrassing. The true risk is the average hinge loss over six equally likely messages. Pick one of the six at random, uniformly, and take the subgradient of the hinge loss on that message alone. On average over the pick, that is the average of the six subgradients, which is a subgradient of the true risk. You have already seen it happen: at \(\mathbf w = \mathbf 0\), the second line of the hinge snippet printed the average of the six as \((-0.1833, 0.1333)\), the same as the measured slope of the risk. (We prove this properly in a moment.)
 
 Let’s walk it, one message per step, with \(\eta = 0.5\). Each row shows the iterate before the step, the message drawn, its signed score \(y\langle \mathbf w, \mathbf x \rangle\), and the subgradient. Before reading the table: at step 1, from \(\mathbf w = \mathbf 0\), every signed score is 0. Will the first step move the weights, whatever message is drawn?
 
@@ -482,7 +488,7 @@ for T in (100, 400, 2500):
     print(T, round(sum(runs) / 1000 - L_star, 3), eta)
 ```
 
-It prints `100 0.056 0.5`, then `400 0.024 0.25`, then `2500 0.009 0.1`. The middle column is the average gap \(\mathbb E[L_{\mathcal D}(\bar{\mathbf w})] - L_{\mathcal D}(\mathbf w^\star)\). The last column is \(\eta = 5/\sqrt T\), which here, with \(B = 5\) and \(\rho = 1\), is also the gradient-descent bound \(B\rho/\sqrt T\). The noisy walk keeps the same promise as the exact one, on average. Note what each step did: it read one message. Now let’s prove that this is no accident.
+It prints `100 0.056 0.5`, then `400 0.024 0.25`, then `2500 0.009 0.1`. The middle column is the average gap \(\mathbb E[L_{\mathcal D}(\bar{\mathbf w})] - L_{\mathcal D}(\mathbf w^\star)\), where the \(\mathbb E\) averages over the random draws of a whole run and the snippet estimates it by averaging a thousand runs. The last column is \(\eta = 5/\sqrt T\), which here, with \(B = 5\) and \(\rho = 1\), is also the gradient-descent bound \(B\rho/\sqrt T\). The noisy walk keeps the same promise as the exact one, on average. Note what each step did: it read one message. Now let’s prove that this is no accident.
 
 ## The guarantee survives the noise
 
