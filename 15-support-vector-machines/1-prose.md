@@ -287,7 +287,7 @@ The number \(\rho\) is the **radius**: every message lies in the ball of radius 
 
 \[ \sqrt{\frac{4 (\rho / \gamma)^2}{m}} + \sqrt{\frac{2 \log(2/\delta)}{m}}. \]
 
-First the notation. \(S \sim \mathcal D^m\) reads “\(S\) is \(m\) examples drawn independently from \(\mathcal D\)”, and \(\delta\) (delta) is the small chance we allow the training sequence to be unlucky, as in every probably approximately correct guarantee since lesson 3. The **0-1 true risk** is the chance that the returned halfspace mislabels a fresh message from \(\mathcal D\). Inside the first square root sits the difficulty ratio \(\rho/\gamma\), squared, divided by the number of labels; inside the second, \(\log(2/\delta)\), which grows only slowly as you demand more confidence. In plain words: **with high confidence, hard-SVM’s error rate on new mail is at most a difficulty term plus a confidence term, and both shrink like one over the square root of the number of labels.** With \(\rho/\gamma = 10\), \(m = 1000\) and \(\delta = 0.05\): \(\sqrt{400/1000} \approx 0.632\), plus \(\sqrt{2 \log 40 / 1000} \approx 0.086\), about 0.718. The snippet below, `hard_svm_bound`, is the formula term by term.
+First the notation. \(S \sim \mathcal D^m\) reads “\(S\) is \(m\) examples drawn independently from \(\mathcal D\)”, and \(\delta\) (delta) is the small chance we allow the training sequence to be unlucky, as in every probably approximately correct guarantee since lesson 2. The **0-1 true risk** is the chance that the returned halfspace mislabels a fresh message from \(\mathcal D\). Inside the first square root sits the difficulty ratio \(\rho/\gamma\), squared, divided by the number of labels; inside the second, \(\log(2/\delta)\), which grows only slowly as you demand more confidence. In plain words: **with high confidence, hard-SVM’s error rate on new mail is at most a difficulty term plus a confidence term, and both shrink like one over the square root of the number of labels.** With \(\rho/\gamma = 10\), \(m = 1000\) and \(\delta = 0.05\): \(\sqrt{400/1000} \approx 0.632\), plus \(\sqrt{2 \log 40 / 1000} \approx 0.086\), about 0.718. The snippet below, `hard_svm_bound`, is the formula term by term.
 
 Read it slowly, because it is the heart of the lesson. The dimension \(d\) does not appear anywhere. A filter over fifty thousand words and a filter over two words get the same guarantee, as long as the mail is separable with the same ratio \(\rho/\gamma\). Setting the bound equal to \(\varepsilon\), the number of labels needed grows like \((\rho/\gamma)^2/\varepsilon^2\), with no \(d\). (Here \(\log\) is the natural logarithm, as everywhere in this course.)
 
@@ -327,6 +327,25 @@ The hard program demands \(y_i (\langle \mathbf w, \mathbf x_i \rangle + b) \ge 
 \[ \min_{\mathbf w, b, \boldsymbol \xi} \left( \lambda \|\mathbf w\|^2 + \frac{1}{m} \sum_{i=1}^m \xi_i \right) \quad \text{subject to} \quad y_i (\langle \mathbf w, \mathbf x_i \rangle + b) \ge 1 - \xi_i \text{ and } \xi_i \ge 0 \text{ for all } i, \]
 
 and returns \((\mathbf w, b)\).
+
+From the inside out: \(\xi_i\) (xi) is example \(i\)’s slack, and \(\boldsymbol\xi\) in bold is the list of all \(m\) of them. \(\sum_{i=1}^m \xi_i\) adds them up, and \(\frac1m\) turns the total into an average. \(\lambda\) (lambda) multiplies the squared length of \(\mathbf w\). The subscript under \(\min\) says the solver may choose \(\mathbf w\), \(b\) and every slack, and “subject to” lists the rules it must obey: each signed score is at least 1 minus that example’s slack, and no slack is negative. In plain words: **find the halfspace that best trades a short weight vector against a small average shortfall below signed score 1.** Take the hard-SVM separator of the eight messages, \(\mathbf w = (\tfrac23, -\tfrac13)\), \(b = -1\), on all ten. I gets score \(\tfrac23 - \tfrac23 - 1 = -1\), signed score \(-1\), so its slack must be at least \(1 - (-1) = 2\); J gets signed score \(-\tfrac23\), slack at least \(\tfrac53\); the other eight need none. With \(\lambda = 0.1\) the objective is \(0.1 \cdot \tfrac59 + (2 + \tfrac53)/10 = \tfrac{19}{45}\):
+
+```python
+from fractions import Fraction as Fr
+
+S10 = [((5, 2), 1), ((3, 0), 1), ((4, 1), 1), ((4, 0), 1),
+       ((0, 0), -1), ((0, 1), -1), ((1, 2), -1), ((1, 3), -1),
+       ((1, 2), 1), ((3, 1), -1)]
+w, b, lam = (Fr(2, 3), Fr(-1, 3)), Fr(-1), Fr(1, 10)
+s = [y * (w[0] * x[0] + w[1] * x[1] + b) for x, y in S10]
+xi = [max(Fr(0), 1 - si) for si in s]
+ok = all(si >= 1 - k and k >= 0 for si, k in zip(s, xi))
+obj = lam * (w[0] ** 2 + w[1] ** 2) + sum(xi) / len(S10)
+print([str(k) for k in xi], ok)
+print(obj, round(float(obj), 4))
+```
+
+It prints `['0', '0', '0', '0', '0', '0', '0', '0', '2', '5/3'] True`, then `19/45 0.4222`. Notice the line that picks each slack: the smallest value obeying both rules is \(\max\{0, 1 - s_i\}\). Hold on to that; it is about to get a name.
 
 A large \(\lambda\) makes the norm expensive: the learner prefers a short \(\mathbf w\), a wide margin, and pays for it with more violations. A small \(\lambda\) makes violations expensive: the learner fits the examples harder and accepts a narrower margin.
 

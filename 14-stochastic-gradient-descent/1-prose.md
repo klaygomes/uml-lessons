@@ -353,7 +353,29 @@ The hinge loss on one message is the maximum of two affine pieces in \(\mathbf w
 
 \[ \mathbf v = \begin{cases} \mathbf 0 & \text{if } 1 - y\langle \mathbf w, \mathbf x \rangle \le 0, \\ -y\mathbf x & \text{if } 1 - y\langle \mathbf w, \mathbf x \rangle > 0. \end{cases} \]
 
-In words: if the message is already handled with a signed score of at least 1, leave the weights alone; otherwise push the weights towards \(y\mathbf x\). That should look familiar. It is the Perceptron’s update from lesson 9, with a stricter idea of “handled”.
+In plain words: **if the message is already handled with a signed score of at least 1, the subgradient is zero; otherwise it is \(-y\mathbf x\), so a step against it pushes the weights towards \(y\mathbf x\).** That should look familiar. It is the Perceptron’s update from lesson 9, with a stricter idea of “handled”. At \(\mathbf w = \mathbf 0\) every signed score is 0, so junk message B gives \(\mathbf v = -(0.6, 0.6)\); at \(\mathbf w = (5, 0)\), message A has signed score 4 and gives \(\mathbf 0\). The snippet also averages the six subgradients at \(\mathbf 0\) and compares that average with the slope of the hinge risk measured by nudging each weight; keep the second line in mind for “One message per step”:
+
+```python
+S = [((0.8, 0.2), 1), ((0.6, 0.6), 1), ((0.9, 0.4), 1),
+     ((0.1, 0.9), -1), ((0.4, 0.8), -1), ((0.7, 0.3), -1)]
+dot = lambda u, v: u[0] * v[0] + u[1] * v[1]
+L_D = lambda w: sum(max(0, 1 - y * dot(w, x)) for x, y in S) / 6
+
+def v(w, x, y):
+    if 1 - y * dot(w, x) <= 0:
+        return (0.0, 0.0)
+    return (-y * x[0], -y * x[1])
+
+w, h = (0.0, 0.0), 1e-6
+print(v((5.0, 0.0), *S[0]), [v(w, x, y) for x, y in S[:2]])
+mean = [round(sum(v(w, x, y)[j] for x, y in S) / 6, 4)
+        for j in (0, 1)]
+slope = [round((L_D((h, 0)) - L_D(w)) / h, 4),
+         round((L_D((0, h)) - L_D(w)) / h, 4)]
+print(mean, slope)
+```
+
+It prints `(0.0, 0.0) [(-0.8, -0.2), (-0.6, -0.6)]`, then `[-0.1833, 0.1333] [-0.1833, 0.1333]`.
 
 ## Lipschitz means bounded subgradients
 
@@ -361,7 +383,7 @@ The gradient descent corollary needed \(\|\mathbf v_t\| \le \rho\). Here is the 
 
 **Lemma (Lipschitz and subgradients).** Let \(A\) be an open convex set and \(f: A \to \mathbb R\) convex. Then \(f\) is \(\rho\)-Lipschitz over \(A\) if and only if \(\|\mathbf v\| \le \rho\) for every \(\mathbf w \in A\) and every \(\mathbf v \in \partial f(\mathbf w)\).
 
-*Proof.* First, suppose every subgradient has norm at most \(\rho\). Take \(\mathbf w, \mathbf u \in A\) and \(\mathbf v \in \partial f(\mathbf w)\). The subgradient inequality, rearranged, says \(f(\mathbf w) - f(\mathbf u) \le \langle \mathbf v, \mathbf w - \mathbf u \rangle\). The Cauchy-Schwarz inequality of lesson 9 bounds the inner product by \(\|\mathbf v\| \|\mathbf w - \mathbf u\| \le \rho \|\mathbf w - \mathbf u\|\). The same argument with the roles of \(\mathbf w\) and \(\mathbf u\) swapped (using a subgradient at \(\mathbf u\)) gives \(f(\mathbf u) - f(\mathbf w) \le \rho \|\mathbf w - \mathbf u\|\). Together, \(|f(\mathbf w) - f(\mathbf u)| \le \rho\|\mathbf w - \mathbf u\|\).
+*Proof.* First, suppose every subgradient has norm at most \(\rho\). Take \(\mathbf w, \mathbf u \in A\) and \(\mathbf v \in \partial f(\mathbf w)\). The subgradient inequality, rearranged, says \(f(\mathbf w) - f(\mathbf u) \le \langle \mathbf v, \mathbf w - \mathbf u \rangle\). The Cauchy-Schwarz inequality of lesson 9, \(\langle \mathbf a, \mathbf b \rangle \le \|\mathbf a\| \|\mathbf b\|\), bounds the inner product by \(\|\mathbf v\| \|\mathbf w - \mathbf u\| \le \rho \|\mathbf w - \mathbf u\|\). The same argument with the roles of \(\mathbf w\) and \(\mathbf u\) swapped (using a subgradient at \(\mathbf u\)) gives \(f(\mathbf u) - f(\mathbf w) \le \rho \|\mathbf w - \mathbf u\|\). Together, \(|f(\mathbf w) - f(\mathbf u)| \le \rho\|\mathbf w - \mathbf u\|\).
 
 Now suppose \(f\) is \(\rho\)-Lipschitz, and take \(\mathbf w \in A\) and \(\mathbf v \in \partial f(\mathbf w)\) with \(\mathbf v \ne \mathbf 0\) (the zero vector has norm \(0 \le \rho\) anyway). Because \(A\) is open, there is a small radius \(r > 0\) such that \(\mathbf u = \mathbf w + r \mathbf v / \|\mathbf v\|\) is still in \(A\). This \(\mathbf u\) sits at distance \(\|\mathbf u - \mathbf w\| = r\) from \(\mathbf w\), in the direction of \(\mathbf v\), so \(\langle \mathbf u - \mathbf w, \mathbf v \rangle = r \|\mathbf v\|\). The subgradient inequality gives \(f(\mathbf u) - f(\mathbf w) \ge r \|\mathbf v\|\), and Lipschitzness gives \(f(\mathbf u) - f(\mathbf w) \le \rho r\). So \(r \|\mathbf v\| \le \rho r\), and dividing by \(r > 0\), \(\|\mathbf v\| \le \rho\). \(\blacksquare\)
 
@@ -396,7 +418,7 @@ That settles **subgradient descent**: run gradient descent, but at each step use
 
 ## One message per step
 
-We can now minimize the hinge risk by subgradient descent. But look at what one step costs on the real archive. The subgradient of \(L_S(\mathbf w) = \frac1m \sum_i \ell(\mathbf w, z_i)\) is the average of the \(m\) per-message subgradients, so every step reads all two million messages. That is the six-hour solver all over again, one full pass per step.
+We can now minimize the hinge risk by subgradient descent. But look at what one step costs on the real archive. Recall the empirical risk \(L_S(\mathbf w) = \frac1m \sum_i \ell(\mathbf w, z_i)\): the average loss over the \(m\) labelled messages \(z_i = (\mathbf x_i, y_i)\) of the training sequence \(S\). Its subgradient is the average of the \(m\) per-message subgradients, so every step reads all two million messages. That is the six-hour solver all over again, one full pass per step.
 
 Here is the lazy idea from the opening, made precise. What if, instead of the exact subgradient, we stepped along a *random* vector that is only right **on average**?
 

@@ -204,6 +204,8 @@ There is one subtlety left. A hypothesis is a function, and many trees compute t
 
 \[ L_{\mathcal D}(h) \le L_S(h) + \sqrt{\frac{(n + 1)\, b + \log(2/\delta)}{2m}}. \]
 
+This is the MDL bound we just read, with the tree’s bit count \((n + 1) b\) in the place of \(|h|\), so nothing new needs naming. In plain words: **a tree’s true risk is at most its training error plus a penalty paid per node.** With the 29 approved features, \(b = \lceil \log_2 32 \rceil = 5\), so a 7-node tree costs \(8 \times 5 = 40\) bits: the 40 bits of the earlier snippet, which certified 0.248 at 1,000 examples. The `tree_bound` snippet below computes exactly this right-hand side.
+
 *Proof.* Let \(\mathcal H\) be the set of functions computed by decision trees over \(\{0,1\}^d\), described as above by a smallest tree. By the lemma this description language is prefix-free, and it is fixed before any data is seen: it depends only on \(d\). So lesson 7’s MDL bound applies. With probability at least \(1 - \delta\), every \(h \in \mathcal H\) satisfies \(L_{\mathcal D}(h) \le L_S(h) + \sqrt{(|h| + \log(2/\delta))/(2m)}\). Take any tree with \(n\) nodes and let \(h\) be its function. A smallest tree for \(h\) has \(n' \le n\) nodes, so \(|h| = (n' + 1) b \le (n + 1) b\). The square root grows with its numerator, so replacing \(|h|\) by \((n + 1)b\) can only loosen the bound. The bound then holds for every tree simultaneously, on the same event of probability at least \(1 - \delta\). \(\blacksquare\)
 
 Two words in that statement do a lot of work. “Every” means the bound holds for all trees at once, so it still applies to a tree you chose after looking at \(S\), for instance the one your algorithm grew. And \(L_{\mathcal D}\) is the true risk with respect to any distribution, including noisy labels, so nothing here assumes that some tree is perfect.
@@ -230,7 +232,7 @@ It prints `0.898`, `0.244`, `0.217` and `971`. The big tree is perfect on its tr
 
 ## Why not just minimize the bound?
 
-The bound suggests its own learner: search over all trees for the one with the smallest right-hand side. Lesson 7 called this the MDL rule. For trees, it is out of reach. Finding the tree that minimizes this bound is computationally hard: unless \(\mathrm P = \mathrm{NP}\), no algorithm solves it in time polynomial in \(n\), \(d\) and \(m\). We met this situation in lesson 8, where the statistics were fine and the computation was not.
+The bound suggests its own learner: search over all trees for the one with the smallest right-hand side. Lesson 7 called this the MDL rule. For trees, it is out of reach. Finding the tree that minimizes this bound is computationally hard: unless \(\mathrm P = \mathrm{NP}\) (lesson 8’s shorthand for “every problem whose answers are easy to check is also easy to solve”, which almost nobody believes), no algorithm solves it in time polynomial in \(n\), \(d\) and \(m\). We met this situation in lesson 8, where the statistics were fine and the computation was not.
 
 So practical tree learners give up on the optimum and build the tree **greedily**: one node at a time, making the locally best choice at each node and never revisiting it. Such algorithms cannot promise the best tree, but they tend to work reasonably well in practice. And the certificate does not care how the tree was found: since the bound holds for every tree at once, any tree a heuristic produces gets an honest certificate.
 
