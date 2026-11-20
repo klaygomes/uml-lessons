@@ -1020,11 +1020,27 @@ It prints `[(1, 2), (2, 3)] 0.667`.
 
 Here \(\operatorname{sign}(0) = 0\), so a pair the users rated equal counts as a disagreement whenever the scores separate it. This loss sees partial credit: one swap costs one pair.
 
-**Normalized discounted cumulative gain (NDCG).** Users read the top of the list, so mistakes there should cost more. Choose a nondecreasing **discount** \(D: \mathbb N \to \mathbb R_+\) that weights positions, and define the **discounted cumulative gain**
+**Normalized discounted cumulative gain (NDCG).** Users read the top of the list, so mistakes there should cost more. Give every position a weight, a **discount** \(D: \mathbb N \to \mathbb R_+\), nondecreasing because position \(r\) is the top. A typical discount, with a parameter \(k < r\), gives the top position weight 1, each of the next \(k - 1\) positions a little less, and every position below the top \(k\) nothing:
+
+\[ D(i) = \begin{cases} \dfrac{1}{\log_2(r - i + 2)} & \text{if } i \in \{r - k + 1, \dots, r\}, \\ 0 & \text{otherwise.} \end{cases} \]
+
+Read it from the inside out: \(i\) is a position, with \(r\) the top; \(\{r - k + 1, \dots, r\}\) are the top \(k\) positions; inside them the weight is one over \(\log_2(r - i + 2)\), where \(\log_2\) is the logarithm in base 2, so the top gets \(1/\log_2 2 = 1\) and the next \(1/\log_2 3 = 0.63\); below them it is 0. In plain words: **the top position counts fully, each lower position in the top \(k\) a bit less, and everything below the top \(k\) not at all.** For \(r = 6\) and \(k = 3\), positions 1 to 6 get weights 0, 0, 0, 0.5, 0.63, 1. That is how search engines are judged, and it is how your users read their mail.
+
+```python
+import math
+
+r, k = 6, 3
+D = lambda i: 1 / math.log2(r - i + 2) if i > r - k else 0
+print([round(D(i), 2) for i in range(1, r + 1)])
+```
+
+It prints `[0, 0, 0, 0.5, 0.63, 1.0]`.
+
+Take six messages with relevances \(\mathbf y = (5, 1, 4, 0, 3, 2)\) from the users and scores \(\mathbf y' = (0.9, 0.8, 0.1, -0.5, 0.7, 0.2)\) from a ranker, which put them in positions \(\pi(\mathbf y') = (6, 5, 2, 1, 4, 3)\). The **discounted cumulative gain** adds each message’s true relevance, weighted by the discount of the position the ranker gave it:
 
 \[ G(\mathbf y', \mathbf y) = \sum_{i=1}^r D(\pi(\mathbf y')_i)\, y_i. \]
 
-Read it from the inside out: \(\pi(\mathbf y')_i\) is the position the ranker gives message \(i\) (\(r\) is the top); \(D(\cdot)\) turns that position into a weight; \(y_i\) is the message’s true relevance; the sum adds weight times relevance over all messages. In plain words: **the gain adds up the true relevance of every message, weighted by how good a position the ranker put it in.** In the six-message example below (\(k = 3\)), the ranker puts message 1 (relevance 5) on top with weight 1, message 2 (relevance 1) second with weight 0.63 and message 5 (relevance 3) third with weight 0.5, so \(G = 5 + 0.63 + 1.5 = 7.13\).
+Read it from the inside out: \(\pi(\mathbf y')_i\) is the position the ranker gives message \(i\); \(D(\cdot)\) turns that position into a weight; \(y_i\) is the message’s true relevance; the sum adds weight times relevance over all messages. In plain words: **the gain adds up the true relevance of every message, weighted by how good a position the ranker put it in.** With \(k = 3\), the ranker puts message 1 (relevance 5) on top with weight 1, message 2 (relevance 1) second with weight 0.63 and message 5 (relevance 3) third with weight 0.5, so \(G = 5 + 0.63 + 1.5 = 7.13\).
 
 ```python
 import math
@@ -1038,11 +1054,11 @@ print(terms, round(sum(D(p) * yi for p, yi in zip(pos, y)), 2))
 
 It prints `[5.0, 0.63, 0, 0, 1.5, 0] 7.13`.
 
-Read \(y_i\) as message \(i\)’s true relevance; the gain adds the relevances, each weighted by the discount of the position \(\mathbf y'\) put it in. If all relevances are nonnegative, then \(0 \le G(\mathbf y', \mathbf y) \le G(\mathbf y, \mathbf y)\): the first inequality because every term is nonnegative, the second because, for a nondecreasing \(D\), putting the largest relevances in the positions with the largest discounts is the best you can do (a sorting fact you will prove in the problems). So the **NDCG loss**
+If all relevances are nonnegative, then \(0 \le G(\mathbf y', \mathbf y) \le G(\mathbf y, \mathbf y)\): the first inequality because every term is nonnegative, the second because, for a nondecreasing \(D\), putting the largest relevances in the positions with the largest discounts is the best you can do (a sorting fact you will prove in the problems). The perfect order here would put messages 1, 3 and 5 on top, for \(5 + 4 \times 0.63 + 3 \times 0.5 = 9.02\). So the **NDCG loss** is the share of that ideal gain the ranker throws away:
 
-\[ \Delta(\mathbf y', \mathbf y) = 1 - \frac{G(\mathbf y', \mathbf y)}{G(\mathbf y, \mathbf y)} =
+\[ \Delta(\mathbf y', \mathbf y) = 1 - \frac{G(\mathbf y', \mathbf y)}{G(\mathbf y, \mathbf y)} = \frac{1}{G(\mathbf y, \mathbf y)} \sum_{i=1}^r \left( D(\pi(\mathbf y)_i) - D(\pi(\mathbf y')_i) \right) y_i. \]
 
-Read it from the inside out: \(G(\mathbf y, \mathbf y)\) is the gain of the perfect order, the largest possible; the ratio is the share of that ideal the ranker achieved; one minus it is the share lost. The second form writes the same loss as a sum, message by message, of “weight it deserved minus weight it got”, times its relevance. In plain words: **the NDCG loss is the fraction of the ideal gain that the ranker’s order throws away.** Here \(1 - 7.13/9.02 = 0.21\), and the message-by-message sum gives the same 0.21.
+Read it from the inside out: \(G(\mathbf y, \mathbf y)\) is the gain of the perfect order, the largest possible; the ratio is the share of that ideal the ranker achieved; one minus it is the share lost. The second form writes the same loss as a sum, message by message, of “weight it deserved minus weight it got”, times its relevance. In plain words: **the NDCG loss is the fraction of the ideal gain that the ranker’s order throws away.** Here \(1 - 7.13/9.02 = 0.21\), and the message-by-message sum gives the same 0.21. It lies in \([0, 1]\), and it is 0 when \(\pi(\mathbf y') = \pi(\mathbf y)\).
 
 ```python
 import math
@@ -1058,29 +1074,9 @@ print(round(1 - G(got) / G(ideal), 2), round(diff / G(ideal), 2))
 
 It prints `0.21 0.21`.
 
-\frac{1}{G(\mathbf y, \mathbf y)} \sum_{i=1}^r \left( D(\pi(\mathbf y)_i) - D(\pi(\mathbf y')_i) \right) y_i \]
-
-The NDCG loss lies in \([0, 1]\), and it is 0 when \(\pi(\mathbf y') = \pi(\mathbf y)\). A typical discount gives the top position weight 1, each of the next few positions a little less, and every position below the top \(k\) nothing; for six messages and \(k = 3\) the weights from the bottom are 0, 0, 0, 0.5, 0.63, 1. With a parameter \(k < r\), it is
-
-\[ D(i) = \begin{cases} \dfrac{1}{\log_2(r - i + 2)} & \text{if } i \in \{r - k + 1, \dots, r\}, \\ 0 & \text{otherwise.} \end{cases} \]
-
-The top position, \(i = r\), gets \(1/\log_2 2 = 1\), the next \(1/\log_2 3 = 0.63\), and everything below the top \(k\) gets nothing at all. That is how search engines are judged, and it is how your users read their mail.
-
-Read it from the inside out: \(i\) is a position, with \(r\) the top; \(\{r - k + 1, \dots, r\}\) are the top \(k\) positions; inside them the weight is one over \(\log_2(r - i + 2)\), where \(\log_2\) is the logarithm in base 2, and below them it is 0. In plain words: **the top position counts fully, each lower position in the top \(k\) a bit less, and everything below the top \(k\) not at all.** For \(r = 6\) and \(k = 3\), positions 1 to 6 get weights 0, 0, 0, 0.5, 0.63, 1.
-
-```python
-import math
-
-r, k = 6, 3
-D = lambda i: 1 / math.log2(r - i + 2) if i > r - k else 0
-print([round(D(i), 2) for i in range(1, r + 1)])
-```
-
-It prints `[0, 0, 0, 0.5, 0.63, 1.0]`.
-
 [[diagram:ranking-losses]]
 
-Six messages, with relevances \(\mathbf y = (5, 1, 4, 0, 3, 2)\) from the users and scores \(\mathbf y' = (0.9, 0.8, 0.1, -0.5, 0.7, 0.2)\) from a ranker:
+All three pieces in one place, on the same six messages:
 
 ```python
 import math
@@ -1105,7 +1101,7 @@ print(pi(yp), round(kendall(yp, y), 3))
 print(round(ndcg_loss(yp, y, 3), 3))
 ```
 
-It prints `(4, 3, 5, 1, 2)`, then `(6, 5, 2, 1, 4, 3) 0.333`, then `0.21`. The ranker gets the top message right but puts message 2, relevance 1, in second place, where message 3, relevance 4, belonged. Five of the fifteen pairs are out of order. With \(k = 3\) the ideal gain is \(5 + 4/\log_2 3 + 3/2 = 9.02\), the ranker’s is \(5 + 1/\log_2 3 + 3/2 = 7.13\), and the loss is \(1 - 7.13/9.02 = 0.21\).
+It prints `(4, 3, 5, 1, 2)`, then `(6, 5, 2, 1, 4, 3) 0.333`, then `0.21`. The ranker gets the top message right but puts message 2, relevance 1, in second place, where message 3, relevance 4, belonged. Five of the fifteen pairs are out of order, a Kendall tau loss of 1/3, while NDCG, which only looks at the top three, charges 0.21.
 
 ## Linear rankers and their surrogates
 
@@ -1113,7 +1109,7 @@ The natural linear ranker scores each message with the same weight vector:
 
 \[ h_{\mathbf w}((\mathbf x_1, \dots, \mathbf x_r)) = (\langle \mathbf w, \mathbf x_1 \rangle, \dots, \langle \mathbf w, \mathbf x_r \rangle), \]
 
-and the class is \(\mathcal H_W = \{h_{\mathbf w} : \mathbf w \in W\}\). (A feature map in the style of lesson 16 can be applied first; we keep the plain form.) ERM over a training sequence of inboxes \((\bar{\mathbf x}_1, \mathbf y_1), \dots, (\bar{\mathbf x}_m, \mathbf y_m)\), each with its own length \(r_i\), minimizes \(\sum_i \Delta(h_{\mathbf w}(\bar{\mathbf x}_i), \mathbf y_i)\), and for most ranking losses that is computationally hard. So, once more, convex surrogates.
+and the class is \(\mathcal H_W = \{h_{\mathbf w} : \mathbf w \in W\}\). (A feature map in the style of lesson 16 can be applied first; we keep the plain form.)
 
 Read it from the inside out: each message \(\mathbf x_i\) gets its own score \(\langle \mathbf w, \mathbf x_i \rangle\), always with the same \(\mathbf w\), and the ranker returns the list of scores. In plain words: **a linear ranker scores every message with one shared weight vector and sorts by the score.** With \(\mathbf w = (1, -1)\) and three messages \((2, 0)\), \((1, 3)\), \((0, 1)\), the scores are \(2, -2, -1\), so the order from the top is message 1, message 3, message 2.
 
@@ -1126,6 +1122,8 @@ print(scores, order)
 ```
 
 It prints `[2, -2, -1] [1, 3, 2]`.
+
+ERM over a training sequence of inboxes \((\bar{\mathbf x}_1, \mathbf y_1), \dots, (\bar{\mathbf x}_m, \mathbf y_m)\), each with its own length \(r_i\), minimizes \(\sum_i \Delta(h_{\mathbf w}(\bar{\mathbf x}_i), \mathbf y_i)\), and for most ranking losses that is computationally hard. So, once more, convex surrogates.
 
 **A hinge loss for Kendall tau.** Look at one pair \(i < j\) and write \(s = \operatorname{sign}(y_i - y_j)\). When \(s \neq 0\), the scores disagree with the truth exactly when \(s\,(y'_i - y'_j) \le 0\). When \(s = 0\), the indicator \(\mathbb 1[s(y'_i - y'_j) \le 0]\) is 1, which is at least the true term. So in every case
 

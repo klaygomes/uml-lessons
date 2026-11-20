@@ -495,12 +495,11 @@ In the cancelling world with a fourth, pure-noise feature added (as in the build
 
 Greedy methods build the sparse predictor one decision at a time. The third approach changes the problem instead, so that an ordinary convex optimizer returns sparse solutions on its own.
 
-The trouble with the sparsity constraint \(\|\mathbf w\|_0 \le k\) is that it is not convex: the set of vectors with at most one nonzero entry, in the plane, is the union of the two axes, and the midpoint of \((1, 0)\) and \((0, 1)\) is not on it. Lesson 12 taught you that convexity is what makes minimization reliable. So replace the count by the closest convex stand-in, the \(\ell_1\) norm \(\|\mathbf w\|_1 = \sum_i |w_i|\), which you met above. There are two ways to use it, a hard budget and a price:
+The trouble with the sparsity constraint \(\|\mathbf w\|_0 \le k\) is that it is not convex: the set of vectors with at most one nonzero entry, in the plane, is the union of the two axes, and the midpoint of \((1, 0)\) and \((0, 1)\) is not on it. Lesson 12 taught you that convexity is what makes minimization reliable. So replace the count by the closest convex stand-in, the \(\ell_1\) norm \(\|\mathbf w\|_1 = \sum_i |w_i|\), which you met above (1.9 for our five-feature \(\mathbf w\)). There are two ways to use it, a hard budget and a price:
 
 \[ \min_{\mathbf w} \ L_S(\mathbf w) \ \ \text{subject to} \ \ \|\mathbf w\|_1 \le k_1 \qquad\qquad \min_{\mathbf w} \ \left( L_S(\mathbf w) + \lambda\|\mathbf w\|_1 \right). \]
 
 - \(k_1\) is a budget on the total absolute weight; \(\lambda > 0\) is a **regularization parameter**, a price per unit of absolute weight, as in lesson 13’s regularized loss minimization, which used \(\lambda\|\mathbf w\|^2\) instead.
-- \(|w_i|\) is the absolute value of weight \(i\); summing them gives \(\|\mathbf w\|_1\). For \(\mathbf w = (0, 0.7, 0, -1.2, 0)\) it is 1.9.
 - If \(L_S\) is convex, both problems are convex, because \(\|\cdot\|_1\) is a convex function, and can be solved efficiently.
 
 In plain words: **either fit as well as you can while spending at most \(k_1\) of total absolute weight, or fit while paying \(\lambda\) for every unit you spend.** The two are closely related, and one direction is easy to prove.
@@ -509,22 +508,7 @@ In plain words: **either fit as well as you can while spending at most \(k_1\) o
 
 *Proof.* Take any \(\mathbf w\) with \(\|\mathbf w\|_1 \le k_1\). Because \(\mathbf w_\lambda\) minimizes the penalized objective, \(L_S(\mathbf w) + \lambda\|\mathbf w\|_1 \ge L_S(\mathbf w_\lambda) + \lambda k_1\). Rearranged, \(L_S(\mathbf w) \ge L_S(\mathbf w_\lambda) + \lambda(k_1 - \|\mathbf w\|_1) \ge L_S(\mathbf w_\lambda)\), since \(\lambda > 0\) and \(k_1 - \|\mathbf w\|_1 \ge 0\). And \(\mathbf w_\lambda\) itself meets the budget. \(\blacksquare\)
 
-The other direction, that every budget \(k_1\) is matched by some price \(\lambda\), also holds for convex losses, but its proof needs Lagrange duality, which this course does not develop; we use it only as orientation. A one-weight check of the easy direction, by grid search:
-
-```python
-x = [1, -1] * 10
-y = [1 if i % 3 else -1 for i in range(20)]
-m = len(x)
-L_S = lambda w: sum((w * p - q) ** 2 for p, q in zip(x, y)) / m
-grid = [i / 1000 for i in range(-2000, 2001)]
-lam = 0.05
-w_lam = min(grid, key=lambda w: L_S(w) + lam * abs(w))
-k1 = abs(w_lam)
-w_con = min((w for w in grid if abs(w) <= k1), key=L_S)
-print(round(w_lam, 3), round(w_con, 3), round(L_S(w_lam), 4))
-```
-
-It prints `-0.075 -0.075 0.9906`: the penalized minimizer and the budgeted minimizer coincide.
+The other direction, that every budget \(k_1\) is matched by some price \(\lambda\), also holds for convex losses, but its proof needs Lagrange duality, which this course does not develop. So you may think in budgets and compute with prices.
 
 ### Why the \(\ell_1\) price produces zeros
 

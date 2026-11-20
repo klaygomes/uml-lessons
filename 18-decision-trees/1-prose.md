@@ -617,7 +617,7 @@ In the lab you choose the gain measure, a depth limit or none, whether to prune,
 
 The auditors signed. Before we leave trees, though, there is another way to fight overfitting that is worth knowing, partly because it is popular and partly because of what it costs.
 
-Instead of one tree, grow many and let them vote. A **random forest** is a hypothesis built from a collection of decision trees. Each tree is grown by running an algorithm \(A\) on the training sequence \(S\) together with an extra random vector \(\theta\), with a fresh, independent \(\theta\) for every tree. The forest predicts by a majority vote of its trees.
+Instead of one tree, grow many and let them vote. A **random forest** is a hypothesis built from a collection of decision trees. Each tree is grown by running an algorithm \(A\) on the training sequence \(S\) together with an extra random vector \(\theta\), with a fresh, independent \(\theta\) for every tree. (In this section \(A\) is a learning algorithm, not a feature set, and \(\theta\) is the random choices it makes, not a threshold.) The forest predicts by a majority vote of its trees.
 
 To pin down a forest, you choose \(A\) and the distribution of \(\theta\). Here is one common choice. Generate \(\theta\) in two parts. First, draw a new training sequence \(S'\) of size \(m'\) by sampling from \(S\) uniformly **with replacement**: some examples appear several times, others not at all. Second, draw a sequence of feature subsets \(I_1, I_2, \dots\), each a uniformly random set of \(k\) features. Then grow a tree with ID3 on \(S'\), except that at the \(t\)-th split the algorithm may only choose among the features in \(I_t\), picking the one with the highest gain there. Intuitively, if \(k\) is small, this restriction may prevent overfitting: no single tree can chase every coincidence, because at most splits the coincidence’s feature isn’t on offer. And because each tree sees a different resample, their mistakes differ, and the vote can cancel some of them.
 
@@ -638,7 +638,7 @@ for _ in range(trials):
 print(round(seen / trials, 3), round(1 - (1 - 1 / m) ** m, 3))
 ```
 
-It prints `0.633 0.632`: each tree trains on about 63% of the distinct examples, some of them twice.
+It prints `0.633 0.632`: each tree trains on about 63% of the distinct examples, some of them twice. In the pseudocode, \(T\) is the number of trees.
 
 ```
 RandomForest(S, T, m', k)

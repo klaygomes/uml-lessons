@@ -480,7 +480,7 @@ In plain words: **the average nearest-neighbour distance is at most one box diag
 
 \[ \mathbb E_{S, x}\big[\|x - x_{\pi_1(x)}\|\big] \le \sqrt d \Big( \varepsilon + \frac{T^d}{me} \Big). \]
 
-In plain words: **the average nearest-neighbour distance is at most a cube diagonal times the box side plus the average missed mass.** With \(m = 1{,}000\) on the 5 by 5 grid: \(\sqrt 2\,(0.2 + 25/(1000e)) = 1.414 \times 0.209 \approx 0.296\). The distance snippet below computes exactly this as its middle column.
+In plain words: **the average nearest-neighbour distance is at most a cube diagonal times the sum of the box side and the missed-mass bound.** With \(m = 1{,}000\) on the 5 by 5 grid: \(\sqrt 2\,(0.2 + 25/(1000e)) = 1.414 \times 0.209 \approx 0.296\). The distance snippet below computes exactly this as its middle column.
 
 **Choosing the box size.** Small boxes make \(\varepsilon\) small but there are more of them to miss; big boxes do the opposite. Let \(u = m^{1/(d+1)}\), the \((d+1)\)-th root of \(m\), so that \(u^{d+1} = m\). For \(m = 1{,}000\) and \(d = 2\), \(u = 10\).
 
@@ -550,6 +550,8 @@ Why ever consult more than one neighbour? Look back at Step 1c: the 1-NN rule co
 
 \[ \mathbb E_{S \sim \mathcal D^m}[L_{\mathcal D}(h_S)] \le \Big(1 + \sqrt{8/k}\Big) L_{\mathcal D}(f_{\mathcal D}) + \big(6c\sqrt d + k\big)\, m^{-1/(d+1)}. \]
 
+Compare it with the 1-NN guarantee term by term. The factor 2 on the Bayes risk becomes \(1 + \sqrt{8/k}\), which is below 2 for \(k \ge 10\). The excess keeps the shrinking \(m^{-1/(d+1)}\), but its constant grows from \(4c\sqrt d\) to \(6c\sqrt d + k\). In plain words: **voting \(k\) neighbours cuts the multiple of the Bayes risk you pay, and charges an extra \(k\) in the excess for reaching further.** With ten neighbours, two scores and a million labels: \(1.894 \times 0.115 \approx 0.217\), plus \((6 \times 2.83 \times 1.414 + 10) \times 0.01 = 0.34\), about 0.557, worse than the 1-NN rule’s 0.389 at this budget. The certificate snippet in “Fix the bug” evaluates exactly this formula.
+
 The proof follows the same plan with two changes, and you will build it yourself in this lesson’s problems. First, a box is now dangerous not when it is empty but when it holds fewer than \(k\) training messages, and a concentration bound replaces the simple “all \(m\) points miss” computation. Second, the single coin of Step 1c becomes a majority vote of \(k\) coins, and a lemma about majority votes replaces the factor 2.
 
 Here is what the new multiplier on the Bayes risk looks like (with the factor 2 of the 1-NN rule for comparison).
@@ -569,6 +571,8 @@ It prints `1 2`, `10 1.894`, `50 1.4`, `100 1.283` and `1000 1.089`. As \(k\) gr
 Back to the bug. Both guarantees have a second term that shrinks like \(m^{-1/(d+1)}\). How many labels does it take to make the 1-NN term at most some accuracy \(\varepsilon\)? Rearranging \(4c\sqrt d\, m^{-1/(d+1)} \le \varepsilon\) gives \(m^{1/(d+1)} \ge 4c\sqrt d/\varepsilon\), and raising both sides to the power \(d+1\),
 
 \[ m \ge \left( \frac{4c\sqrt d}{\varepsilon} \right)^{d+1}. \]
+
+Here \(\varepsilon\) is no longer a box side but the accuracy you want, and the exponent \(d + 1\) means the bracket is multiplied by itself \(d + 1\) times. In plain words: **the labels needed are a fixed ratio raised to the power of one more than the number of scores.** For \(c = 2\), \(d = 2\) and \(\varepsilon = 0.1\), the bracket is \(8 \times 1.414/0.1 \approx 113\), and \(113^3 \approx 1.4\) million.
 
 The dimension sits in the exponent. Here is that requirement for \(c = 2\) and \(\varepsilon = 0.1\), next to a second column, \((c+1)^d/2\), that we will explain in a moment.
 
@@ -599,13 +603,36 @@ A sceptic should object here. This is an upper bound from a proof that we have j
 
 **Theorem (the curse is real).** Let \(c \ge 1\) be a whole number, and let \(A\) be any learner. For every training sequence size \(m \le (c+1)^d/2\), there is a distribution \(\mathcal D\) over \([0, 1]^d \times \{0, 1\}\) whose conditional probability \(\eta\) is c-Lipschitz and whose Bayes risk is 0, such that \(\mathbb E_{S \sim \mathcal D^m}[L_{\mathcal D}(A(S))] \ge 1/4\), and with probability at least \(1/7\), \(L_{\mathcal D}(A(S)) \ge 1/8\).
 
-*Proof.* **A grid of far-apart points.** Let \(G\) be the grid of points in \([0, 1]^d\) whose coordinates all lie in \(\{0, 1/c, 2/c, \dots, 1\}\). Each coordinate has \(c + 1\) choices, so \(|G| = (c+1)^d\). Two distinct grid points differ in at least one coordinate, by at least \(1/c\), so they are at least \(1/c\) apart.
+*Proof.* **A grid of far-apart points.** Let \(G\) be the grid of points in \([0, 1]^d\) whose coordinates all lie in \(\{0, 1/c, 2/c, \dots, 1\}\). Each coordinate has \(c + 1\) choices, so \(|G| = (c+1)^d\). Two distinct grid points differ in at least one coordinate, by at least \(1/c\), so they are at least \(1/c\) apart. For \(c = 2\) on the invoice square, \(G\) is the nine points with scores in \(\{0, 0.5, 1\}\), at least 0.5 apart.
 
 **On the grid, every labelling is Lipschitz.** Let \(\eta: G \to [0, 1]\) be any function at all. For distinct \(g, g' \in G\), \(|\eta(g) - \eta(g')| \le 1 = c \cdot \frac1c \le c\|g - g'\|\). So every function on the grid, including every labelling \(G \to \{0, 1\}\), is c-Lipschitz.
 
 **Run the No-Free-Lunch argument on the grid.** Lesson 5’s proof of the No-Free-Lunch theorem begins by choosing a set \(C\) of \(2m\) domain points, and builds its hard tasks on \(C\): uniform over \(C\), with labels given by a function \(f_i: C \to \{0, 1\}\). Since \(2m \le (c+1)^d\), we can choose \(C \subseteq G\). Every task in that family has deterministic labels, so its Bayes risk is 0, and its conditional probability on \(C\) is \(\eta = f_i\), which is c-Lipschitz by the previous step. The proof shows that for any learner, one of these tasks gives expected true risk at least \(1/4\), and true risk at least \(1/8\) with probability at least \(1/7\).
 
 **Extending \(\eta\) to the whole cube.** The assumption asks for \(\eta\) on all of \([0, 1]^d\). Since the task puts no probability off \(C\), any extension describes the same task, and one extension is c-Lipschitz: \(\tilde\eta(x) = \min\{1, \min_{g \in C} (f_i(g) + c\|x - g\|)\}\). Each \(f_i(g) + c\|x - g\|\) is c-Lipschitz in \(x\), and taking minima, including with the constant 1, keeps that property. At a point \(g' \in C\), the term \(g = g'\) gives \(f_i(g')\), every other term is at least \(c \cdot \frac1c = 1\), so \(\tilde\eta(g') = f_i(g')\). \(\blacksquare\)
+
+The extension \(\tilde\eta\) (read “eta tilde”) is the one dense formula in that proof. From the inside: \(f_i(g) + c\|x - g\|\) starts at grid point \(g\)’s label and climbs at rate \(c\) as \(x\) moves away; \(\min_{g \in C}\) takes the lowest of these climbs over all grid points; the outer \(\min\{1, \cdot\}\) caps it at 1. In plain words: **near a grid point labelled 0 the probability of junk is low, and it rises at rate \(c\) as you walk away, never above 1.** Here it is on the nine-point grid with random labels:
+
+```python
+import itertools, math, random
+
+c, d = 2, 2
+G = list(itertools.product([i / c for i in range(c + 1)],
+                           repeat=d))
+pairs = itertools.combinations(G, 2)
+print(len(G), min(math.dist(g, h) for g, h in pairs))
+rng = random.Random(8)
+f = {g: rng.randint(0, 1) for g in G}
+def ext(x):
+    return min(1, min(f[g] + c * math.dist(x, g) for g in G))
+print(all(ext(g) == f[g] for g in G))
+pt = lambda: (rng.random(), rng.random())
+ratios = [abs(ext(x) - ext(u)) / math.dist(x, u)
+          for x, u in ((pt(), pt()) for _ in range(5000))]
+print(max(ratios) <= c)
+```
+
+It prints `9 0.5`, `True` and `True`: nine grid points at least \(1/c\) apart, the extension agrees with the labels on the grid, and no random pair changes faster than \(c\) times its distance.
 
 So the second column of the table, \((c+1)^d/2\) with \(c = 2\), is a number of labels with which *no learner whatsoever*, nearest neighbour or otherwise, can be guaranteed to beat a quarter risk on every 2-Lipschitz world. At \(d = 30\) that is about \(10^{14}\) labels. The upper bound and the lower bound disagree enormously in their bases, but they agree on the shape: exponential in \(d\).
 
@@ -659,7 +686,7 @@ KNN-Predict(S, x, k):
 
 For regression, replace the last line by the average of \(\{y_i : i \in N\}\), or by any \(\phi\) of the \(k\) neighbours.
 
-**Cost.** Training is nothing more than storing the training sequence: \(O(md)\) space, and no time beyond copying. Nearest neighbour is a learning-by-memorization rule, and the whole training sequence must be kept. Prediction is where the work is: computing all \(m\) distances costs \(\Theta(md)\), selecting the \(k\) smallest with a heap of size \(k\) costs \(O(m \log k)\), and the vote costs \(O(k)\), so one prediction is \(O(md + m\log k)\) time and \(O(k)\) extra space. For the 1-NN rule it is \(\Theta(md)\). Compare that with a halfspace from lesson 9, which predicts in \(O(d)\) no matter how many examples trained it. Nearest neighbour moves all the cost from training to prediction, and every single prediction pays it.
+**Cost.** Recall from lesson 8 that \(O(\cdot)\) means “at most a constant times” and \(\Theta(\cdot)\) “a constant times, up to and down to”. Training is nothing more than storing the training sequence: \(O(md)\) space, and no time beyond copying. Nearest neighbour is a learning-by-memorization rule, and the whole training sequence must be kept. Prediction is where the work is: computing all \(m\) distances costs \(\Theta(md)\), selecting the \(k\) smallest with a heap of size \(k\) costs \(O(m \log k)\), and the vote costs \(O(k)\), so one prediction is \(O(md + m\log k)\) time and \(O(k)\) extra space. For the 1-NN rule it is \(\Theta(md)\). Compare that with a halfspace from lesson 9, which predicts in \(O(d)\) no matter how many examples trained it. Nearest neighbour moves all the cost from training to prediction, and every single prediction pays it.
 
 **Faster search.** When \(d\) is small, data structures from computational geometry can answer a nearest-neighbour query in time polynomial in \(d\) times \(\log m\), instead of scanning. The catch is space: roughly \(m^{O(d)}\), which is impractical once \(d\) is more than a handful. The way out is to ask for less. An **r-approximate search** is a procedure guaranteed to return a training message within distance at most \(r\) times the distance to the true nearest neighbour. Three popular methods are **kd-trees**, **ball trees** and **locality-sensitive hashing**. A kd-tree, the one you will build below, splits the training messages in half by one score at a time, cycling through the scores, and at query time skips any half that cannot contain anything closer than the best message found so far. In low dimension the skipping saves most of the work. In high dimension, by the curse you just met, almost nothing can be skipped, because almost everything is about equally far.
 
@@ -781,8 +808,24 @@ Once the concept check is done, try these. Hints come one at a time in the chat,
 
 - **Problem 1 (boxes with too few points).** Let \(C_1, \dots, C_r\) be subsets of a domain \(\mathcal X\), and let \(S\) be a sequence of \(m\) points drawn i.i.d. from a distribution \(\mathcal D\) over \(\mathcal X\). Prove that for every \(k \ge 2\),
   \[ \mathbb E_{S \sim \mathcal D^m}\Big[ \sum_{i \,:\, |C_i \cap S| < k} \mathbb P[C_i] \Big] \le \frac{2rk}{m}, \]
-  where \(|C_i \cap S|\) is the number of points of \(S\) that fall in \(C_i\).
-- **Problem 2 (moving a coin’s bias).** Fix \(p, p' \in [0, 1]\) and a label \(y' \in \{0, 1\}\). Show that \(\mathbb P_{y \sim p}[y \neq y'] \le \mathbb P_{y \sim p'}[y \neq y'] + |p - p'|\).
+  where \(|C_i \cap S|\) is the number of points of \(S\) that fall in \(C_i\). In plain words: **on average, the sets holding fewer than \(k\) sample points carry at most \(2rk/m\) of the probability.** With 25 boxes, \(k = 2\) and a thousand points, that is at most 0.1.
+- **Problem 2 (moving a coin’s bias).** Fix \(p, p' \in [0, 1]\) and a label \(y' \in \{0, 1\}\). Show that \(\mathbb P_{y \sim p}[y \neq y'] \le \mathbb P_{y \sim p'}[y \neq y'] + |p - p'|\): changing a coin’s bias by some amount changes its chance of missing a fixed label by at most that amount. For \(p = 0.7\), \(p' = 0.6\) and \(y' = 1\), that reads \(0.3 \le 0.4 + 0.1\).
 - **Problem 3 (the k-NN guarantee).** Prove the k-NN guarantee of this lesson, for \(k \ge 10\). You may use, without proof, the following fact about majority votes: if \(Z_1, \dots, Z_k\) are independent coins with \(\mathbb P[Z_i = 1] = p_i\), \(p = \frac1k\sum_i p_i\) and \(p' = \frac1k \sum_i Z_i\), then
   \[ \mathbb E_{Z_1, \dots, Z_k}\, \mathbb P_{y \sim p}\big[ y \neq \mathbb 1[p' > 1/2] \big] \le \Big(1 + \sqrt{8/k}\Big)\, \mathbb P_{y \sim p}\big[ y \neq \mathbb 1[p > 1/2] \big]. \]
+  Read it from the inside: \(p'\) is the fraction of the \(k\) coins that came up 1, so \(\mathbb 1[p' > 1/2]\) is their majority vote; \(\mathbb 1[p > 1/2]\) is the Bayes choice for a coin of bias \(p\); each \(\mathbb P_{y \sim p}\) is the chance a fresh coin of bias \(p\) disagrees with that choice, and the outer \(\mathbb E\) averages over the \(k\) coins. In plain words: **a majority vote of \(k\) coins misses a fresh coin at most \(1 + \sqrt{8/k}\) times as often as the best fixed answer does.** Eleven coins of bias 0.3:
+
+  ```python
+  import math
+
+  k, p = 11, 0.3
+  pmf = [math.comb(k, j) * p**j * (1 - p)**(k - j)
+         for j in range(k + 1)]
+  p_major = sum(pmf[j] for j in range(k + 1) if j / k > 1 / 2)
+  lhs = p * (1 - p_major) + (1 - p) * p_major
+  rhs = (1 + math.sqrt(8 / k)) * min(p, 1 - p)
+  print(round(p_major, 3), round(lhs, 3), round(rhs, 3))
+  ```
+
+  It prints `0.078 0.331 0.556`: the vote says junk 7.8% of the time and misses a fresh coin 33.1% of the time, under the allowed 55.6% (and close to the best possible 30%).
+
   Use boxes of side \(\varepsilon\) as in Step 3, Problem 1 for the boxes with fewer than \(k\) training messages, and Problem 2 to compare the neighbours’ coins with the coin at \(x\). It is enough to prove the bound when \(m^{1/(d+1)}/2\) is a whole number, so that the box side \(\varepsilon = 2m^{-1/(d+1)}\) divides the cube exactly.

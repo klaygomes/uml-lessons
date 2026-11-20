@@ -723,17 +723,6 @@ We now have every piece. Split the expected true risk into the two quantities a 
 
 Read it from the inside out: each \(\mathbb E_S\) averages over training sequences; the first term on the right is the expected fit, the second the expected overfitting gap; the identity holds because adding and subtracting \(L_S(A(S))\) inside an expectation changes nothing. In plain words: **expected production error equals expected fit plus expected overfitting.** In the one-word world with \(m = 200\) and \(\lambda = 0.1\) (the table later in this section), the fit is 0.3744 and the true risk 0.3759, so the gap is 0.0015.
 
-```python
-L_D = lambda w: (.16 * w * w - .48 * w + 1) / 2
-lam, w_star = .1, 1.5
-fit, gap = .3744, .3759 - .3744
-print(round(fit + gap, 4))
-print(round(L_D(w_star), 4), round(lam * w_star ** 2, 4),
-      round(L_D(w_star) + lam * w_star ** 2, 4))
-```
-
-It prints `0.3759` (fit plus gap), then `0.32 0.225 0.545`, which we need in a moment.
-
 The first term is the **fit term**: how well \(A(S)\) fits the training sequence. The second is the overfitting gap, which equals the stability term by the theorem. We have bounded the stability term, and it shrinks as \(\lambda\) grows. The fit term grows as \(\lambda\) grows. Is that last claim obvious? It is true for every single \(S\), and the proof is short.
 
 **Claim (more penalty, worse fit).** For a fixed \(S\) and \(0 < \lambda_1 < \lambda_2\), let \(\mathbf w_1\) and \(\mathbf w_2\) be the RLM outputs. Then \(\|\mathbf w_1\| \ge \|\mathbf w_2\|\) and \(L_S(\mathbf w_1) \le L_S(\mathbf w_2)\).
@@ -750,7 +739,16 @@ Take expectations. Since \(\mathbf w^*\) is fixed, \(\mathbb E_S[L_S(\mathbf w^*
 
 \[ \mathbb E_S[L_S(A(S))] \le L_{\mathcal D}(\mathbf w^*) + \lambda\|\mathbf w^*\|^2. \]
 
-In plain words: **on average, the regularized learner fits its training sequence at least as well as any fixed vector \(\mathbf w^*\) fits the world, plus that vector’s price.** Here \(\mathbf w^*\) is any vector chosen before seeing data, and \(L_{\mathcal D}(\mathbf w^*)\) its true risk. In the one-word world the best fixed weight is \(w^* = 1.5\), with \(L_{\mathcal D}(1.5) = 0.32\); with \(\lambda = 0.1\) its price is \(0.1 \cdot 2.25 = 0.225\), so the bound promises an expected fit of at most 0.545. The exact expected fit is 0.3744: comfortably below, as the last line of the snippet above shows.
+In plain words: **on average, the regularized learner fits its training sequence at least as well as any fixed vector \(\mathbf w^*\) fits the world, plus that vector’s price.** Here \(\mathbf w^*\) is any vector chosen before seeing data, and \(L_{\mathcal D}(\mathbf w^*)\) its true risk. In the one-word world the best fixed weight is the bottom of the parabola, \(w^* = 0.48/0.32 = 1.5\), with \(L_{\mathcal D}(1.5) = 0.32\); with \(\lambda = 0.1\) its price is \(0.1 \cdot 2.25 = 0.225\), so the bound promises an expected fit of at most 0.545. The exact expected fit is 0.3744: comfortably below.
+
+```python
+L_D = lambda w: (.16 * w * w - .48 * w + 1) / 2
+lam, w_star = .1, 0.48 / 0.32
+print(w_star, round(L_D(w_star), 4), round(lam * w_star ** 2, 4),
+      round(L_D(w_star) + lam * w_star ** 2, 4))
+```
+
+It prints `1.5 0.32 0.225 0.545`.
 
 Add the Lipschitz stability bound and you get the first guarantee of the lesson.
 
@@ -785,9 +783,7 @@ It prints `0.051 0.051`, then `0.05 0.05`: the grid’s best \(\lambda\) and bes
 
 That keeps half of lesson 12’s promise: every convex-Lipschitz-bounded problem, including halfspaces with the hinge loss, is learnable, by RLM, with a proof that never used uniform convergence. (Some convex-Lipschitz-bounded problems lack the uniform convergence property, so this route is genuinely new, not a detour.)
 
-The smooth case gives a multiplicative version. Combine the decomposition, the smooth stability bound and the fit bound:
-
-\[ \mathbb E_S[L_{\mathcal D}(A(S))] \le \left(1 + \frac{24\beta}{\lambda m}\right)\mathbb E_S[L_S(A(S))]. \]
+The smooth case gives a multiplicative version: put the smooth stability bound into the decomposition, then use the fit bound.
 
 **Corollary (oracle inequality, smooth case).** If every loss is convex, \(\beta\)-smooth and nonnegative, and \(\lambda \ge 2\beta/m\), then for every \(\mathbf w^*\),
 
