@@ -4,6 +4,20 @@ Where the course build stands, so work can resume in a new session on any day. B
 
 To resume: read **Session handoff** near the end first (every skill, tool, reference and rule the user gave), then continue from the first unticked box under **Status**. Work skipped on purpose (gates, reviews, judges) is collected under **Deferred (do later)** near the end: check it every session. Read `series.md` first (world, glossary, next bug) and update it last.
 
+## To do next (in order)
+
+Last updated 2026-11-20. Tick here and in **Status** as each lands; commit and push after every step (user: "commit and push as you go").
+
+- [ ] Split lesson 23 (`scratchpad/brief-split-23.md`, regenerate from `docs/split-brief.md` with the split point under Open items), then `python3 -I _kit/split_apply.py 23 ...`
+- [ ] Split lesson 24 the same way (24b needs its own bug and lab)
+- [ ] Repoint "lesson N" references in every prose and sheet to the right half for the split lessons 6, 7, 9, 10, 12, 13, 14, 15, 17, 21, 23, 24 (one agent with the list)
+- [ ] Book check and sheet resync (`docs/bookcheck-brief.md`) for lessons 11, 16, 18, 19, 20, 22, 25, 26, 27, 28, 29, 30, 31
+- [ ] Book check and sheet resync for every split half: 6a, 6b, 7a, 7b, 9a, 9b, 10a, 10b, 12a, 12b, 13a, 13b, 14a, 14b, 15a, 15b, 17a, 17b, 21a, 21b, then 23a, 23b, 24a, 24b
+- [ ] After each edit: `python3 -I _kit/read.py <folder>` then `python3 -I _kit/index.py`, commit, push
+- [ ] Figures (diagram-design) and labs (named iwrzwr studies) lesson by lesson from lesson 2: `2-figures/`, `3-page/`, `build.py`, `fit.mjs`, impeccable pass
+- [ ] Commit the `klay-learning-ladder` skill changes in ~/dotfiles (KaTeX `math.mjs`, `shot.mjs`, `prose.py` fixes, writing rules, index template) when the user says so
+- [ ] Waiting on the user: review of the prose (live index), lesson 1 concept-check answers
+
 ## Source rule
 
 Every claim about the book comes from the PDF, never from memory: `~/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/understanding-machine-learning-theory-algorithms.pdf`. `book/map.md` gives each chapter's PDF pages, sections and exercises; `book/notation.md` gives the notation. Extract a range with `pdftotext -f FIRST -l LAST "<pdf>" -`. For each lesson, spawn parallel agents that each read one section range of the PDF and check the prose against it (step 2 below).
