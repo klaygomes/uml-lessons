@@ -113,8 +113,8 @@ It prints:
 
 ```
 0.0703 0.0015 0.98
-0.0 0.0013 0.0
-0.0 0.0 crash: float division by zero
+0.0 0.0044 0.0
+0.0 0.0 crash: division by zero
 ```
 
 There is the bug, reproduced by hand. “free, click, meeting” has two strong junk words, but “meeting” never appeared in the four junk messages, so \(\hat\theta_{\text{meeting},1} = 0\), the junk producer’s product contains a factor 0, and the filter concludes the message is junk with probability exactly 0. And “winner” never appeared anywhere, so *both* producers give the message probability 0, and Bayes’ rule divides zero by zero.
@@ -235,7 +235,7 @@ for _ in range(runs):
 print(round(eps, 3), misses / runs)
 ```
 
-It prints `0.061 0.007`: the bound promised at most 5% misses, and the simulation saw 0.7%. Hoeffding is honest, and a little pessimistic.
+It prints `0.061 0.0035`: the bound promised at most 5% misses, and the simulation saw 0.35%. Hoeffding is honest, and a little pessimistic.
 
 So for estimating *the frequency of a word*, maximum likelihood is fine: close to the truth with high probability. Keep that in mind. The trouble in Ines’s filter is not that \(\hat\theta\) is far from \(\theta\). It is what happens when a tiny error near 0 gets fed into a logarithm, and we are about to see exactly how.
 
@@ -400,7 +400,7 @@ for th in (0.1, 0.3, 0.5):
     print(th, round(risk(th), 3), round(H, 3), round(D(th), 3))
 ```
 
-It prints `0.1 0.805 0.611 0.194`, `0.3 0.611 0.611 0.0` and `0.5 0.693 0.611 0.082`: in every row the risk is the entropy plus the relative entropy, and the relative entropy vanishes only at the truth.
+It prints `0.1 0.765 0.611 0.154`, `0.3 0.611 0.611 0.0` and `0.5 0.693 0.611 0.082`: in every row the risk is the entropy plus the relative entropy, and the relative entropy vanishes only at the truth.
 
 So the true risk is smallest when \(P_\theta = P\). If the data really has the assumed parametric form, the right parameter brings the risk down to the entropy. If it does not, even the best parameter pays a relative entropy forever, no matter how much data you collect. That is the inductive bias of a generative model, in the sense of lesson 1: the parametric form is a hypothesis class, chosen before seeing any data, and it can miss the truth.
 
@@ -431,7 +431,7 @@ for _ in range(runs):
 print(round(total / runs, 3), 1 / (2 * m))
 ```
 
-It prints `0.05 0.05`.
+It prints `0.051 0.05`: twenty thousand simulated training sequences land on \(1/(2m)\).
 
 **A failing case: a rare word.** Now the yes/no model, for a word that junk messages contain with a small probability \(\theta^\star\). Say “winner” is in one junk message out of 500, so \(\theta^\star = 0.002\), and you have \(m = 200\) junk messages. What is the chance that “winner” appears in none of them? Each message misses it with probability 0.998, independently, so the chance is \(0.998^{200} \approx 0.67\). Two times out of three, maximum likelihood sets \(\hat\theta = 0\).
 
@@ -579,9 +579,10 @@ def D(p, q):
     return (p * math.log(p / q)
             + (1 - p) * math.log((1 - p) / (1 - q)))
 def expected_excess(p, m, a):
-    return sum(math.comb(m, k) * p**k * (1 - p)**(m - k)
-               * D(p, (k + a) / (m + 2 * a))
-               for k in range(m + 1))
+    w = [math.comb(m, k) * p**k * (1 - p)**(m - k)
+         for k in range(m + 1)]
+    return sum(w[k] * D(p, (k + a) / (m + 2 * a))
+               for k in range(m + 1) if w[k] > 0)
 p, m = 0.002, 200
 for a in (0, 1):
     top = m * p * (1 - p) + a * a
@@ -589,7 +590,7 @@ for a in (0, 1):
     print(a, round(expected_excess(p, m, a), 4), round(bound, 4))
 ```
 
-It prints `0 inf inf` and `1 0.0015 0.007`: no pseudo-counts, infinite risk; one pseudo-count each way, an expected excess of 0.0015 nats, safely under the bound of 0.007.
+It prints `0 inf inf` and `1 0.0026 0.007`: no pseudo-counts, infinite risk; one pseudo-count each way, an expected excess of 0.0026 nats, safely under the bound of 0.007.
 
 [[diagram:pseudocounts]]
 
@@ -745,7 +746,7 @@ for x in ({"free", "click", "meeting"}, {"winner", "click"}):
     print(sorted(x), round(p1 / (p1 + p0), 3))
 ```
 
-It prints `['click', 'free', 'meeting'] 0.69` and `['click', 'winner'] 0.758`. The junk-looking message with “meeting” in it is now junk with probability 0.69, a sensible hedge from four examples per pile. “winner, click” no longer crashes: “winner” is equally unknown to both piles, so it cancels out, and “click” tips the balance toward junk.
+It prints `['click', 'free', 'meeting'] 0.556` and `['click', 'winner'] 0.758`. The junk-looking message with “meeting” in it is now junk with probability 0.556: “meeting” is real evidence for keep and “free, click” real evidence for junk, and four examples per pile can only weigh them so finely. That is a hedge, not a certainty. “winner, click” no longer crashes: “winner” is equally unknown to both piles, so it cancels out, and “click” tips the balance toward junk.
 
 **A guarantee for the whole filter.** The pseudo-count theorem speaks about one parameter. The filter has \(2d\) word parameters, and we want all of them to behave at once. Lesson 2’s union bound does it: the probability that at least one of several bad events happens is at most the sum of their probabilities. Suppose your users label \(m\) messages of each kind, and the share of junk \(\mathbb P[Y = 1]\) is known from traffic logs, so only the \(2d\) word frequencies are estimated. Apply part (a) of the theorem to each of them with confidence \(\delta/(2d)\) instead of \(\delta\). Each fails with probability at most \(\delta/(2d)\), so all \(2d\) hold together with probability at least \(1 - \delta\):
 
@@ -845,7 +846,7 @@ It prints:
 600 0 0.0898 inf
 600 0.5 0.0906 0.5004
 600 1 0.0915 0.2512
-400 1 0.112 0.2519
+400 1 0.1125 0.2519
 600 20 0.1211 0.0444
 ```
 
@@ -884,7 +885,7 @@ It predicts junk when \(\mathbb P[Y = 1]\,\mathbb P[X = x \mid Y = 1] > \mathbb 
 - On the left, the prior shares are equal and cancel, and so do the normalizing constants \((2\pi)^{d/2}|\Sigma|^{1/2}\), because \(\Sigma\) is shared.
 - What is left is the log of a ratio of two exponentials, which is the difference of their exponents.
 
-In one sentence: **the evidence for junk is how much closer the message is to the junk centre than to the keep centre, in stretched distance.** For the message \(x = (3, 2)\), sitting on the junk centre, its stretched squared distance to the keep centre is \(4/3\) and to the junk centre 0, so the ratio’s log is \(\frac12 \cdot \frac43 = 0.667\).
+In one sentence: **the evidence for junk is how much closer the message is to the junk centre than to the keep centre, in stretched distance.** For the message \(x = (3, 2)\), sitting on the junk centre, its stretched squared distance to the keep centre is \((2, 1)\Sigma^{-1}(2, 1)^\top = 4\) and to the junk centre 0, so the ratio’s log is \(\frac12 \cdot 4 = 2\): junk is \(e^2 \approx 7.4\) times as likely.
 
 Now expand both quadratic forms. Each is \(x^\top\Sigma^{-1}x - 2\mu_y^\top\Sigma^{-1}x + \mu_y^\top\Sigma^{-1}\mu_y\), where the middle term combines \(x^\top\Sigma^{-1}\mu_y\) and \(\mu_y^\top\Sigma^{-1}x\), which are equal because \(\Sigma\), and hence \(\Sigma^{-1}\), is symmetric. The \(x^\top\Sigma^{-1}x\) terms cancel between the two halves, and the log-likelihood ratio is \(\langle w, x\rangle + b\) with
 
@@ -920,7 +921,7 @@ print(max(abs(log_ratio(x) - (w[0] * x[0] + w[1] * x[1] + b))
           for x in pts) < 1e-9)
 ```
 
-It prints `[2.0, 0.0] -4.0 0.667` and `True`: on 1,024 grid points, the difference of stretched distances and the linear rule agree.
+It prints `[2.0, 0.0] -4.0 2.0` and `True`: on 1,024 grid points, the difference of stretched distances and the linear rule agree.
 
 So a generative assumption has rederived the hypothesis class of lesson 9. The difference is in how the halfspace is chosen. LDA does not search for a good \(w\); it estimates the centres and the covariance, and computes \(w\) and \(b\) from them. The usual estimates are the maximum likelihood ones: each centre is the average of its class, and the shared covariance is the average, over all \(m\) examples, of the outer product of each example’s offset from its own class centre.
 
@@ -950,8 +951,8 @@ def lda_predict(w, b, x): ...
 
 if __name__ == "__main__":
     w, b = lda_train(S)
-    assert [round(v, 6) for v in w] == [4.0, -2.0]
-    assert round(b, 6) == -6.0
+    assert [round(v, 6) for v in w] == [2.0, 0.0]
+    assert round(b, 6) == -4.0
     assert lda_predict(w, b, (3, 2)) == 1
     assert lda_predict(w, b, (1, 1)) == 0
 ```
@@ -1130,7 +1131,7 @@ print(all(b >= a - 1e-9 for a, b in zip(lls, lls[1:])))
 print([round(v, 2) for v in mu], [round(v, 2) for v in c])
 ```
 
-It prints the first log-likelihoods climbing, then `True`, then centres and shares close to the hidden truth (1 and 4, 0.7 and 0.3).
+It prints `[-711.7, -414.6, -396.7, -387.4] -364.0`, the log-likelihood climbing fast and then settling, then `True`, then `[1.18, 3.98] [0.72, 0.28]`: centres and shares close to the hidden truth (1 and 4, 0.7 and 0.3), found without a single label.
 
 **Build it yourself.** In the standard library, for messages in \(\mathbb R^d\):
 
@@ -1151,7 +1152,7 @@ if __name__ == "__main__":
         lls.append(log_likelihood(X, mu, c))
     assert all(b >= a - 1e-12 for a, b in zip(lls, lls[1:]))
     assert [round(v, 2) for v in sorted(c)] == [0.5, 0.5]
-    assert round(lls[-1], 2) == -23.17
+    assert round(lls[-1], 2) == -20.65
 ```
 
 1. Implement `soft_kmeans` (run `iters` EM iterations from the given start, identity covariances) and `log_likelihood` (the mixture log-likelihood with the \((2\pi)^{d/2}\) constant included).

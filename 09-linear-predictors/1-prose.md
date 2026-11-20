@@ -694,15 +694,47 @@ What does lesson 6 say about how many examples we need? Nothing, directly: the V
 
 \[ \operatorname*{argmin}_{\mathbf w} L_S(h_{\mathbf w}) = \operatorname*{argmin}_{\mathbf w} \frac{1}{m} \sum_{i=1}^m (\langle \mathbf w, \mathbf x_i \rangle - y_i)^2. \]
 
-The method: compute the gradient, the vector of partial derivatives, and set it to zero. The partial derivative of one term with respect to \(w_j\) is, by the chain rule, \(2(\langle \mathbf w, \mathbf x_i \rangle - y_i) \, x_{i,j}\), because \(\partial \langle \mathbf w, \mathbf x_i \rangle / \partial w_j = x_{i,j}\). Collecting all \(j\) and averaging over \(i\),
+The new word is \(\operatorname{argmin}\), “the argument that minimizes”. Where \(\min\) returns the smallest value, \(\operatorname{argmin}_{\mathbf w}\) returns the \(\mathbf w\) that achieves it; the subscript says what we are free to choose. The right side just writes \(L_S\) out, with the score \(\langle \mathbf w, \mathbf x_i \rangle\) as the prediction. In plain words: **find the weights whose line has the smallest average squared miss.** With \(\mathbf x = (1, x)\), the guess \(20x\) is \(\mathbf w = (0, 20)\) with risk 53; \((5, 18)\) has risk 76; and \((-2.429, 20.971)\), which we will derive below, beats both:
+
+```python
+xs, ys = [0, 1, 2, 3, 4, 5], [2, 10, 35, 70, 88, 95]
+L = lambda w: sum((w[0] + w[1] * x - y) ** 2
+                  for x, y in zip(xs, ys)) / 6
+cands = [(0, 20), (5, 18), (-2.429, 20.971)]
+print([round(L(w), 2) for w in cands])
+print(min(cands, key=L))
+```
+
+It prints `[53.0, 76.0, 50.25]`, then `(-2.429, 20.971)`: among these three, that is the argmin, and `min(..., key=L)` is Python’s argmin. Trying candidates cannot prove a winner, though; we need a method.
+
+The method: compute the gradient, the vector of partial derivatives, and set it to zero. A **partial derivative** \(\partial L / \partial w_j\) is the rate at which \(L\) changes when you nudge only \(w_j\) and hold the other weights still: at \(\mathbf w = (0, 20)\), nudging the slope up by a tiny amount lowers the risk at about 5.667 times that amount, so \(\partial L_S / \partial w_1 \approx -5.667\). The **gradient** \(\nabla L_S(\mathbf w)\) (the symbol \(\nabla\) is read “nabla” or “grad”) lists all those rates, one per weight; at a lowest point every rate is zero, because no nudge helps. The partial derivative of one term with respect to \(w_j\) is, by the chain rule, \(2(\langle \mathbf w, \mathbf x_i \rangle - y_i) \, x_{i,j}\), because \(\partial \langle \mathbf w, \mathbf x_i \rangle / \partial w_j = x_{i,j}\). Collecting all \(j\) and averaging over \(i\),
 
 \[ \nabla L_S(\mathbf w) = \frac{2}{m} \sum_{i=1}^m (\langle \mathbf w, \mathbf x_i \rangle - y_i) \, \mathbf x_i, \]
 
-and we need to solve \(\nabla L_S(\mathbf w) = \mathbf 0\). Multiply by \(m/2\) and split the sum: \(\sum_i \mathbf x_i \langle \mathbf x_i, \mathbf w \rangle = \sum_i y_i \mathbf x_i\). The vector \(\mathbf x_i \langle \mathbf x_i, \mathbf w \rangle\) is the matrix \(\mathbf x_i \mathbf x_i^\top\) times \(\mathbf w\), because entry \(j\) of both is \(x_{i,j} \sum_k x_{i,k} w_k\). So the condition is the linear system
+and we need to solve \(\nabla L_S(\mathbf w) = \mathbf 0\). Inside out: \(\langle \mathbf w, \mathbf x_i \rangle - y_i\) is the miss on message \(i\); multiplying the vector \(\mathbf x_i\) by it gives a vector pointing along the message, long when the miss is big; the sum adds one such vector per message; and \(\frac2m\) averages and carries the 2 from the square. In plain words: **the gradient is twice the average of each message’s vector weighted by its miss.** At \(\mathbf w = (0, 20)\) the misses are \(-2, 10, 5, -10, -8, 5\); they add to 0, giving the first entry, and weighted by \(x = 0, \dots, 5\) they add to \(-17\), so the second entry is \(\tfrac26 \cdot (-17) \approx -5.667\). Nudging each weight by a millionth and watching the risk confirms the formula:
+
+```python
+xs, ys = [0, 1, 2, 3, 4, 5], [2, 10, 35, 70, 88, 95]
+X = [(1, x) for x in xs]
+dot = lambda u, v: sum(a * b for a, b in zip(u, v))
+L = lambda w: sum((dot(w, x) - y) ** 2
+                  for x, y in zip(X, ys)) / 6
+w, h = (0, 20), 1e-6
+grad = [2 / 6 * sum((dot(w, x) - y) * x[j]
+                    for x, y in zip(X, ys)) for j in (0, 1)]
+nudge = lambda j: [c + h * (k == j) for k, c in enumerate(w)]
+numeric = [(L(nudge(j)) - L(w)) / h for j in (0, 1)]
+print([round(g, 3) for g in grad])
+print([round(g, 3) for g in numeric])
+```
+
+It prints `[0.0, -5.667]` twice: the formula and the nudges agree. Now solve \(\nabla L_S(\mathbf w) = \mathbf 0\). Multiply by \(m/2\) and split the sum: \(\sum_i \mathbf x_i \langle \mathbf x_i, \mathbf w \rangle = \sum_i y_i \mathbf x_i\). One more symbol: the small \(\top\) is the **transpose**, which turns a column into a row, and \(\mathbf x \mathbf x^\top\), a column times a row, is the square table whose entry \((j, k)\) is \(x_j x_k\). For \(\mathbf x = (1, 3)\) it is \(\begin{pmatrix} 1 & 3 \\ 3 & 9 \end{pmatrix}\). The vector \(\mathbf x_i \langle \mathbf x_i, \mathbf w \rangle\) is the matrix \(\mathbf x_i \mathbf x_i^\top\) times \(\mathbf w\), because entry \(j\) of both is \(x_{i,j} \sum_k x_{i,k} w_k\). So the condition is the linear system
 
 \[ A \mathbf w = \mathbf b, \qquad A = \sum_{i=1}^m \mathbf x_i \mathbf x_i^\top, \qquad \mathbf b = \sum_{i=1}^m y_i \mathbf x_i. \]
 
-(This \(\mathbf b\) is a vector of the system, not the bias term; the bias term is inside \(\mathbf w\) now.) In matrix form, if \(X\) is the \(d \times m\) matrix with columns \(\mathbf x_1, \dots, \mathbf x_m\) and \(\mathbf y = (y_1, \dots, y_m)\), then \(A = X X^\top\) and \(\mathbf b = X \mathbf y\). If \(A\) is invertible, the ERM solution is \(\mathbf w = A^{-1} \mathbf b\).
+(This \(\mathbf b\) is a vector of the system, not the bias term; the bias term is inside \(\mathbf w\) now.) In matrix form, if \(X\) is the \(d \times m\) matrix with columns \(\mathbf x_1, \dots, \mathbf x_m\) and \(\mathbf y = (y_1, \dots, y_m)\), then \(A = X X^\top\) and \(\mathbf b = X \mathbf y\). If \(A\) is invertible, the ERM solution is \(\mathbf w = A^{-1} \mathbf b\), where the **inverse** \(A^{-1}\) is the matrix that undoes \(A\), the way dividing undoes multiplying.
+
+Read the system once more as a whole. \(A\) adds up the tables \(\mathbf x_i \mathbf x_i^\top\), one per message; \(\mathbf b\) adds up the message vectors, each scaled by its label; and \(A \mathbf w = \mathbf b\) asks for the weights that match them. In plain words: **the best weights solve one small linear system, built by adding a table and a vector per message.** For our six messages, the tables for \(x = 0, \dots, 5\) add to \(A = \begin{pmatrix} 6 & 15 \\ 15 & 55 \end{pmatrix}\) (six messages, total count 15, total squared count 55), and \(\mathbf b = (300, 1117)\) (total score, and total count times score). The solving snippet below builds both, entry by entry, as these same sums.
 
 But wait: setting a gradient to zero finds a flat point, and flat points can be maxima or saddles. Why is this one a minimum? Because the square loss has a special shape, and we can see it exactly. For any \(\mathbf w\) and any step \(\boldsymbol\Delta\), expand each term:
 
@@ -711,6 +743,8 @@ But wait: setting a gradient to zero finds a flat point, and flat points can be 
 Average over \(i\). The middle terms average to \(\langle \nabla L_S(\mathbf w), \boldsymbol\Delta \rangle\), by the gradient formula above, so
 
 \[ L_S(\mathbf w + \boldsymbol\Delta) = L_S(\mathbf w) + \langle \nabla L_S(\mathbf w), \boldsymbol\Delta \rangle + \frac{1}{m} \sum_{i=1}^m \langle \boldsymbol\Delta, \mathbf x_i \rangle^2. \]
+
+Here \(\boldsymbol\Delta\) (capital delta) is any change to the weights. The first display is just \((a + c)^2 = a^2 + 2ac + c^2\), with \(a\) the old miss and \(c = \langle \boldsymbol\Delta, \mathbf x_i \rangle\) the change in the prediction. In plain words: **the new risk is the old risk, plus the gradient’s inner product with the step, plus the average squared change in prediction.** From \(\mathbf w = (0, 20)\), the step \(\boldsymbol\Delta = (0, 1)\) gives \(53 + (-5.667) + \tfrac{55}{6} \approx 56.5\), and the risk of \((0, 21)\) is indeed 56.5. The snippet below checks the identity on random weights and steps.
 
 The last term is never negative. So if \(\nabla L_S(\mathbf w) = \mathbf 0\), then \(L_S(\mathbf w + \boldsymbol\Delta) \ge L_S(\mathbf w)\) for every \(\boldsymbol\Delta\): every solution of \(A \mathbf w = \mathbf b\) is a global minimizer. Conversely, a minimizer of a differentiable function has zero gradient. So ERM for least squares is *exactly* solving \(A \mathbf w = \mathbf b\). (This exact expansion is a first taste of convexity, the subject of lesson 12.)
 
@@ -754,7 +788,7 @@ print([round(c, 3) for c in w], round(mse, 2))
 print([round(g, 9) + 0 for g in grad])
 ```
 
-It prints `[[6, 15], [15, 55]] [300, 1117] 105`, then `[-2.429, 20.971] 50.25`, then `[0.0, 0.0]`. The fitted line is \(\hat y = -2.429 + 20.971 \, x\): each “free” adds about 21 points of junk score. Its empirical risk is 50.25, and the gradient there is zero, as promised. Here is the fit message by message:
+It prints `[[6, 15], [15, 55]] [300, 1117] 105`, then `[-2.429, 20.971] 50.25`, then `[0.0, 0.0]`. The fitted line is \(\hat y = -2.429 + 20.971 \, x\) (the hat on \(\hat y\) marks a prediction, as opposed to a true score \(y\)): each “free” adds about 21 points of junk score. Its empirical risk is 50.25, and the gradient there is zero, as promised. Here is the fit message by message:
 
 | \(x\) | 0 | 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|---|

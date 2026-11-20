@@ -699,7 +699,8 @@ RandomProjection(n, d, seed):
   W ← n × d matrix, each entry drawn independently from N(0, 1/n)
   output: x ↦ W x
 
-JLDimension(|Q|, ε, δ):           requires the result to give ε ≤ 1/2
+JLDimension(|Q|, ε, δ):
+  requires: 0 < ε ≤ 1/2
   output: ⌈ 6 ln(2|Q|/δ) / ε² ⌉
 ```
 
@@ -1096,14 +1097,17 @@ It prints `2.49e+06 50`: two and a half million rows, fifty times more than the 
 
 ```
 Encode(W, x):
-  output: y ← W x                       (W drawn once, n × d)
+  W is n × d, drawn once
+  output: y ← W x
 
-DecodeSparsest(W, y, s):                 exact under (ε, 2s)-RIP, ε < 1
+DecodeSparsest(W, y, s):
+  exact when W is (ε, 2s)-RIP with ε < 1
   for k = 0, 1, …, s:
     for every set I of k positions:
       if some v supported on I has W v = y: output v
 
-DecodeL1(W, y):                          exact under (ε, 2s)-RIP, ε < 1/(1+√2)
+DecodeL1(W, y):
+  exact when W is (ε, 2s)-RIP with ε < 1/(1+√2)
   solve the linear program
     minimize Σ_i t_i  over v, t ∈ ℝ^d
     subject to W v = y,  −t_i ≤ v_i ≤ t_i  for every i

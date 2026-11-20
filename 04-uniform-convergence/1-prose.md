@@ -309,7 +309,7 @@ Averaging calms a variable down. One loss of \(h_{11}\) has variance 0.21, but t
 
 \[ \operatorname{Var}\Big[\frac{1}{m}\sum_{i=1}^m Z_i\Big] = \frac{\operatorname{Var}[Z_1]}{m}, \qquad \mathbb P\Big[\Big|\frac{1}{m}\sum_{i=1}^m Z_i - \mu\Big| \ge \varepsilon\Big] \le \frac{\operatorname{Var}[Z_1]}{m \varepsilon^2}. \]
 
-Read the first identity from the inside out: \(\sum_{i=1}^m Z_i\) adds the \(m\) variables, \(\frac1m\) makes the sum an average, and \(\operatorname{Var}\) measures how much that average wobbles. In the expansion just before it, \(\sum_{i,j}\) ran over every pair of positions \((i, j)\), \(m^2\) pairs in all, and only the \(m\) pairs with \(i = j\) survived. The second display is Chebyshev applied to the average, with \(a = \varepsilon\) and the shrunken variance. In plain words: **averaging \(m\) independent draws divides the variance by \(m\), so the chance of being \(\varepsilon\) off falls like \(1/m\).**
+Read the first identity from the inside out: \(\sum_{i=1}^m Z_i\) adds the \(m\) variables, \(\frac1m\) makes the sum an average, and \(\operatorname{Var}\) measures how much that average wobbles. The second display is Chebyshev applied to the average, with \(a = \varepsilon\) and the shrunken variance. In plain words: **averaging \(m\) independent draws divides the variance by \(m\), so the chance of being \(\varepsilon\) off falls like \(1/m\).**
 
 ```python
 import random
@@ -325,13 +325,13 @@ It prints `0.00351 0.0035`: the variance of 100,000 simulated weekly averages, a
 
 That bound shrinks like \(1/m\). For one row, fine. For a dashboard, it is the wrong shape, as you’ll see when we add up the rows: we will need a bound that shrinks *exponentially* in \(m\). That is Hoeffding’s inequality, and its engine is a small lemma about one bounded variable.
 
-The lemma looks not at a variable itself but at \(e\), the number 2.718…, raised to a multiple of it. Here is why we want that strange-looking quantity: powers turn a sum into a product, as in \(e^{2 + 3} = e^2 \cdot e^3\), and products of independent variables are easy to take expectations of. Hold that thought. The lemma says that if a variable averages 0 and stays inside a range, the average of \(e\) to a multiple of it cannot be large, and only the width of the range matters. Take the loss of \(h_{11}\) minus its mean 0.3: it is 0.7 with probability 0.3 and −0.3 with probability 0.7, so it averages 0 and lives in a range of width 1. The average of \(e\) to that value is \(0.3\,e^{0.7} + 0.7\,e^{-0.3} \approx 1.1227\), and the lemma caps it at \(e^{1/8} \approx 1.1331\).
+The lemma looks not at a variable itself but at \(e\), the number 2.718…, raised to a multiple of it. Here is why we want that strange-looking quantity: powers turn a sum into a product, as in \(e^{2 + 3} = e^2 \cdot e^3\), and products of independent variables are easy to take expectations of. Hold that thought. Take the loss of \(h_{11}\) minus its mean 0.3: it is 0.7 with probability 0.3 and −0.3 with probability 0.7, so it averages 0 and lives in a range of width 1. The average of \(e\) to that value is \(0.3\,e^{0.7} + 0.7\,e^{-0.3} \approx 1.1227\), and the lemma caps it at \(e^{1/8} \approx 1.1331\).
 
 **Hoeffding’s lemma.** Let \(X\) take values in \([a, b]\) with \(\mathbb E[X] = 0\). Then for every \(\lambda > 0\),
 
 \[ \mathbb E\big[e^{\lambda X}\big] \le e^{\lambda^2 (b - a)^2 / 8}. \]
 
-Read it from the inside out. \(X\) is a centred variable, with mean 0, and \([a, b]\) is the interval it lives in, so \(b - a\) is the width of its range. \(\lambda\) (the Greek letter lambda) is a positive dial that multiplies \(X\); we will tune it later. \(e^{\lambda X}\) is \(e\) raised to the power \(\lambda X\), and \(\mathbb E\) averages it over the outcomes of \(X\). The right side depends only on the dial and the width. In plain words: **for a centred variable, the average of \(e^{\lambda X}\) is capped by a number that knows only \(\lambda\) and the width of the range.** The example above is \(\lambda = 1\), \(a = -0.3\), \(b = 0.7\). The first snippet after the proof computes both sides for five values of \(\lambda\).
+Read it from the inside out. \(X\) is centred, with mean 0, and lives in \([a, b]\), a range of width \(b - a\). \(\lambda\) (the Greek letter lambda) is a positive dial that multiplies \(X\); we will tune it later. \(e^{\lambda X}\) is \(e\) raised to the power \(\lambda X\), and \(\mathbb E\) averages it over the outcomes of \(X\). The right side depends only on the dial and the width. In plain words: **for a centred variable, the average of \(e^{\lambda X}\) is capped by a number that knows only \(\lambda\) and the width of the range.** The example above is \(\lambda = 1\), \(a = -0.3\), \(b = 0.7\).
 
 *Proof.* If \(a = b\), then \(X = 0\) and both sides equal 1, so assume \(a < b\). Since \(X\) has mean 0 and lives in \([a, b]\), we have \(a \le 0 \le b\).
 
@@ -366,7 +366,7 @@ This is the chord evaluated at the mean of \(X\), which is 0. Our centred loss o
 
 (Check the second term: \(p\,e^{-hp} e^{h} = p\,e^{\lambda a + \lambda(b - a)} = p\,e^{\lambda b}\), and \(p = \frac{-a}{b - a}\).) It remains to show \(L(h) \le h^2/8\), because then \(e^{L(h)} \le e^{\lambda^2 (b - a)^2/8}\).
 
-Here \(\log\) is the natural logarithm, the inverse of raising \(e\) to a power, so \(e^{L(h)}\) undoes it. This \(h\) is a plain number, not a hypothesis; the letter is borrowed for the proof only. For our loss, \(p = 0.3\), and at \(h = 1\) we get \(L(1) \approx 0.116\), below \(1/8 = 0.125\). The second snippet after the proof scans \(h^2/8 - L(h)\) across a grid and finds it never negative.
+Here \(\log\) is the natural logarithm, the inverse of raising \(e\) to a power, so \(e^{L(h)}\) undoes it. This \(h\) is a plain number, not a hypothesis; the letter is borrowed for the proof only. For our loss, \(p = 0.3\), and at \(h = 1\) we get \(L(1) \approx 0.116\), below \(1/8 = 0.125\).
 
 *Step 4, three facts about \(L\).* First, \(L(0) = 0 + \log 1 = 0\). Second, with \(q(h) = \frac{p e^h}{1 - p + p e^h}\), the derivative is \(L'(h) = -p + q(h)\), and \(q(0) = p\), so \(L'(0) = 0\). Third, the quotient rule gives \(q'(h) = \frac{p e^h (1 - p + p e^h) - p e^h \cdot p e^h}{(1 - p + p e^h)^2} = \frac{p e^h}{1 - p + p e^h} \cdot \frac{1 - p}{1 - p + p e^h}\), and the two factors are \(q(h)\) and \(1 - q(h)\), so \(q' = q(1 - q)\) and \(L''(h) = q(1 - q)\). Since \(q \in [0, 1]\), and a product \(q(1 - q)\) of two non-negative numbers summing to 1 is at most \(1/4\), we get \(L''(h) \le 1/4\) for every \(h\).
 
@@ -374,7 +374,7 @@ Here \(\log\) is the natural logarithm, the inverse of raising \(e\) to a power,
 
 \[ L(h) = L(0) + L'(0)\,h + \tfrac12 L''(\xi)\,h^2 \le 0 + 0 + \tfrac12 \cdot \tfrac14\, h^2 = \frac{h^2}{8}. \qquad \blacksquare \]
 
-Two checks in Python. The first evaluates both sides of the lemma for a centred 0-1 loss, \(X = \ell - 0.3\), which lives in \([-0.3, 0.7]\), an interval of width 1. The second scans \(h^2/8 - L(h)\) over a grid of \(h\) and \(p\) and reports the smallest value.
+Two checks in Python. The first evaluates both sides of the lemma for the centred loss above at five values of \(\lambda\). The second scans \(h^2/8 - L(h)\) over a grid of \(h\) and \(p\) and reports the smallest value.
 
 ```python
 from math import exp

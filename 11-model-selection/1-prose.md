@@ -100,7 +100,7 @@ Before the formula, the setup: \(\delta \in (0, 1)\) says \(\delta\) is a number
 
 *Proof.* We go in three steps: turn the sample complexity into an accuracy, give each class its own share of the failure probability, and add the shares up.
 
-First, the accuracy one class can promise. Fix \(d\) and a confidence \(\delta_d\), and set \(\varepsilon_d = \sqrt{g(d)\log(1/\delta_d)/m}\). Squaring and rearranging gives \(g(d)\log(1/\delta_d)/\varepsilon_d^2 = m\), so by the assumption \(m^{\mathrm{UC}}_{\mathcal H_d}(\varepsilon_d, \delta_d) \le m\). A training sequence of \(m\) examples is therefore long enough: with probability at least \(1 - \delta_d\), every \(h \in \mathcal H_d\) has \(|L_S(h) - L_{\mathcal D}(h)| \le \varepsilon_d\). Call the complementary event, where some \(h \in \mathcal H_d\) is further off, \(F_d\). So \(\mathbb P[F_d] \le \delta_d\).
+First, the accuracy one class can promise. Fix \(d\) and a confidence \(\delta_d\), and set \(\varepsilon_d = \sqrt{g(d)\log(1/\delta_d)/m}\). This is the turning around from the snippet above, where 1,498 examples bought back \(\varepsilon = 0.1\). Squaring and rearranging gives \(g(d)\log(1/\delta_d)/\varepsilon_d^2 = m\), so by the assumption \(m^{\mathrm{UC}}_{\mathcal H_d}(\varepsilon_d, \delta_d) \le m\). A training sequence of \(m\) examples is therefore long enough: with probability at least \(1 - \delta_d\), every \(h \in \mathcal H_d\) has \(|L_S(h) - L_{\mathcal D}(h)| \le \varepsilon_d\). Call the complementary event, where some \(h \in \mathcal H_d\) is further off, \(F_d\). So \(\mathbb P[F_d] \le \delta_d\).
 
 Second, the shares. We cannot give every class the full \(\delta\), because there are infinitely many classes and the failures could pile up. So we give class \(d\) the share \(\delta_d = w(d)\,\delta\) with weights \(w(d) = \frac{6}{\pi^2 d^2}\). These weights add up to exactly 1, because \(\sum_{d \ge 1} 1/d^2 = \pi^2/6\): the sum \(1 + 1/4 + 1/9 + \dots\) of the reciprocal squares, over every \(d\) from 1 on, is a famous constant, about 1.645. In plain words: **class \(d\) gets a share of the failure budget proportional to \(1/d^2\), and the shares use up exactly \(\delta\).** At \(\delta = 0.05\), class 1 gets 0.0304, class 2 gets 0.0076, class 3 gets 0.0034:
 
@@ -146,11 +146,22 @@ It prints `100 [0.19, 0.58, 0.9, 1.38]` and `1000 [0.06, 0.18, 0.28, 0.44]`. Wit
 
 ## Measuring instead: the hold-out set
 
-Here is the sharper tool, and it is almost embarrassingly simple. To learn the true risk of one hypothesis \(h\), show it messages it has never had any influence on, and count.
+Here is the sharper tool, and it is almost embarrassingly simple. To learn the true risk of one hypothesis \(h\), show it messages it has never had any influence on, and count. Had the team fixed \(h_{11}\) before looking at the test set, its 33 mistakes on 200 messages, 0.165, would have been exactly this kind of count.
 
-**Definition (validation set).** A **validation set** is a sequence \(V = ((x_1, y_1), \dots, (x_{m_v}, y_{m_v}))\) of \(m_v\) fresh examples drawn i.i.d. from \(\mathcal D\), independently of the training sequence \(S\). (Like the training sequence, it is really a sequence, but “validation set” is the name everyone uses.) The **validation risk** of a hypothesis is its empirical risk on \(V\),
+**Definition (validation set).** A **validation set** is a sequence \(V = ((x_1, y_1), \dots, (x_{m_v}, y_{m_v}))\) of \(m_v\) fresh examples drawn i.i.d. from \(\mathcal D\), independently of the training sequence \(S\). (I.i.d., from lesson 1, means independently and identically distributed: every example comes from the same \(\mathcal D\) and no draw influences another. Like the training sequence, \(V\) is really a sequence, but “validation set” is the name everyone uses.) The **validation risk** of a hypothesis is its empirical risk on \(V\),
 
 \[ L_V(h) = \frac{1}{m_v} \sum_{i=1}^{m_v} \ell\big(h, (x_i, y_i)\big). \]
+
+Read it from the inside out. \((x_i, y_i)\) is the \(i\)-th validation example, a message and its label. \(\ell\big(h, (x_i, y_i)\big)\) is the loss from lesson 3, the price \(h\) pays on that example; for the 0-1 loss it is 1 for a mistake and 0 otherwise. \(\sum_{i=1}^{m_v}\) adds the losses for \(i = 1\) up to \(m_v\), and \(\frac{1}{m_v}\) turns the total into an average. The subscript \(v\) in \(m_v\) just marks it as the validation size. In plain words: **the average loss of \(h\) on the held-out examples.** For \(h_{11}\), 33 losses of 1 and 167 of 0 average to 0.165:
+
+```python
+losses = [1] * 33 + [0] * 167
+m_v = len(losses)
+L_V = sum(losses) / m_v
+print(m_v, L_V)
+```
+
+It prints `200 0.165`.
 
 Using \(L_V\) of the learner’s output as the estimate of its true risk is called **validation**. In practice you do not draw \(V\) separately: you take the examples you have, shuffle them, and hold some out before training. Drawing \(S\) and then an independent \(V\) is the same thing as randomly partitioning one i.i.d. pool into two parts, which is why \(V\) is also called a **hold-out set**.
 

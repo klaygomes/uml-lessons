@@ -893,7 +893,9 @@ Write \(u = d \log(2em/d)\). When \(u \ge 4\), we have \(4 \le 2\sqrt u\), so th
 
 \[ m \ge \frac{8 d \log(2em/d)}{(\delta\varepsilon)^2} = \alpha \log m + \alpha \log(2e/d), \qquad \alpha = \frac{8d}{(\delta\varepsilon)^2}. \]
 
-The unknown \(m\) sits on both sides. A small inequality, which we’ll call the **log lemma**, unties it: if \(\alpha \ge 1\) and \(\beta \ge 0\), then \(m \ge 4\alpha \log(2\alpha) + 2\beta\) implies \(m \ge \alpha \log m + \beta\).
+The left inequality is “the bound \(\sqrt{8u/m}/\delta\) is at most \(\varepsilon\)”, squared and solved for \(m\). The right side splits \(\log(2em/d)\) into \(\log m + \log(2e/d)\), and \(\alpha\) (alpha) is just a name for the coefficient. In plain words: **enough labels means \(m\) beats a multiple of its own logarithm plus a constant.** For thresholds at \(\varepsilon = \delta = 0.1\): \(\alpha = 8/0.0001 = 80{,}000\).
+
+The unknown \(m\) sits on both sides. A small inequality, which we’ll call the **log lemma**, unties it: if \(\alpha \ge 1\) and \(\beta \ge 0\), then \(m \ge 4\alpha \log(2\alpha) + 2\beta\) implies \(m \ge \alpha \log m + \beta\). Here \(\beta\) (beta) stands for the constant term. In plain words: **a number at least about \(4\alpha \log \alpha\) outgrows \(\alpha\) times its own log.** With \(\alpha = 2\) and \(\beta = 1\): \(8 \log 4 + 2 \approx 13.1\), and indeed \(13.1 \ge 2 \log 13.1 + 1 \approx 6.1\).
 
 *Proof of the log lemma.* First, for any \(\gamma > 0\), \(x \ge 2\gamma \log \gamma\) implies \(x \ge \gamma \log x\). If \(\gamma \le e\), then \(x - \gamma \log x\) is smallest at \(x = \gamma\), where it equals \(\gamma(1 - \log \gamma) \ge 0\), so the conclusion holds for every \(x > 0\). If \(\gamma > e\), then \(x - \gamma \log x\) increases for \(x > \gamma\), and \(2\gamma\log\gamma > \gamma\); at \(x = 2\gamma \log \gamma\) it equals \(\gamma(\log \gamma - \log(2\log\gamma)) \ge 0\), because \(\gamma \ge 2 \log \gamma\) for every \(\gamma > 0\). Now apply this with \(\gamma = 2\alpha\): \(m \ge 4\alpha \log(2\alpha)\) gives \(m \ge 2\alpha \log m\), that is, \(m/2 \ge \alpha \log m\). Also \(m \ge 2\beta\), that is, \(m/2 \ge \beta\), because \(4\alpha\log(2\alpha) \ge 0\) when \(\alpha \ge 1\). Add the two halves. \(\blacksquare\)
 
@@ -901,9 +903,29 @@ With \(\beta = \alpha \log(2e/d)\) when \(d \le 5\), and \(\beta = 0\) when \(d 
 
 \[ m^{\mathrm{UC}}_{\mathcal H}(\varepsilon, \delta) \le \frac{32 d}{(\delta\varepsilon)^2} \log\left( \frac{16 d}{(\delta\varepsilon)^2} \right) + \frac{16 d}{(\delta\varepsilon)^2} \max\left\{ \log\frac{2e}{d},\, 0 \right\}. \]
 
+This is the log lemma’s \(4\alpha \log(2\alpha) + 2\beta\) written out: \(4\alpha = 32d/(\delta\varepsilon)^2\), \(2\alpha = 16d/(\delta\varepsilon)^2\), and \(\max\{\cdot, 0\}\) keeps \(\log(2e/d)\) when it is positive and replaces it by 0 otherwise. In plain words: **a class of VC dimension \(d\) gets uniform convergence from about \(d \log(d/(\delta\varepsilon)^2)/(\delta\varepsilon)^2\) labels, times a constant.** For thresholds at \(\varepsilon = \delta = 0.1\):
+
+```python
+from math import e, log, sqrt
+
+d, eps, delta = 1, 0.1, 0.1
+
+def bound(m):
+    u = d * log(2 * e * m / d)
+    return (4 + 2 * sqrt(u)) / (delta * sqrt(2 * m))
+
+alpha = 8 * d / (delta * eps) ** 2
+beta = alpha * max(log(2 * e / d), 0)
+m = 4 * alpha * log(2 * alpha) + 2 * beta
+print(round(bound(200), 4), round(alpha), round(beta))
+print(round(m), m >= alpha * log(m) + beta, round(bound(m), 4))
+```
+
+It prints `4.6441 80000 135452`, then `4105441 True 0.0427`. The first line is the Sauer-based bound at 200 labels, then \(\alpha\) and \(\beta\). The second is the guaranteed sample size, about 4.1 million, the log lemma’s condition holding there, and the bound at that size, 0.043, safely under \(\varepsilon = 0.1\).
+
 Two loose ends. Such an \(m\) is far larger than \(d\), so \(2m \ge d\) holds. And \(m/d \ge 32 \log 16 > 88\), so \(2em/d > 478\), \(\log(2em/d) > 6\), and \(u \ge 4\) holds too. So every class of finite VC dimension has the uniform convergence property, which is \(6 \Rightarrow 1\), and the circle of equivalences is closed. \(\blacksquare\)
 
-How good is this bound in practice? For thresholds we know the growth function exactly, \(\tau(2m) = 2m + 1\), so let’s ask the theorem directly for the smallest \(m\) that brings its bound under \(\varepsilon = 0.1\) at \(\delta = 0.1\):
+How good is this bound in practice? For thresholds we know the growth function exactly, \(\tau(2m) = 2m + 1\), so let’s ask the theorem directly for the smallest \(m\) that brings its bound under \(\varepsilon = 0.1\) at \(\delta = 0.1\). The function `theorem_bound` is the theorem’s right-hand side, the same formula as the 200-label snippet earlier:
 
 ```python
 from math import log, sqrt
@@ -1016,6 +1038,8 @@ The VC dimension sorts these before any arithmetic. Unions of intervals have inf
 **Claim (intervals, tightest-interval learner).** Assume realizability by an interval \([a^\star, b^\star]\) and no single score carrying probability. The tightest-interval learner, given \(m \ge 2\log(2/\delta)/\varepsilon\) examples, has \(L_{\mathcal D}(h_S) \le \varepsilon\) with probability at least \(1 - \delta\).
 
 *Proof.* The learner returns \([x_{\min}, x_{\max}]\), the smallest and largest junk scores in \(S\), or the empty interval if there are none. Every junk score lies in \([a^\star, b^\star]\), so the learned interval sits inside the true one, and the learner errs only on true junk it leaves out: \(L_{\mathcal D}(h_S) = \mathcal D([a^\star, x_{\min})) + \mathcal D((x_{\max}, b^\star])\), or \(\mathcal D([a^\star, b^\star])\) if there are no junk examples. If \(\mathcal D([a^\star, b^\star]) \le \varepsilon\), every outcome has risk at most \(\varepsilon\). Otherwise, choose a strip \([a^\star, \ell]\) at the left end of the true interval and a strip \([r, b^\star]\) at its right end, each with probability exactly \(\varepsilon/2\); they do not overlap, since together they hold \(\varepsilon\) and the interval holds more. If some example lands in the left strip, then \(x_{\min} \le \ell\) and the left error is at most \(\varepsilon/2\); the same holds on the right. So failure needs an empty strip. Each strip is empty with probability \((1 - \varepsilon/2)^m \le e^{-\varepsilon m/2}\), and the union bound gives \(\mathbb P[L_{\mathcal D}(h_S) > \varepsilon] \le 2e^{-\varepsilon m/2} \le \delta\) once \(m \ge 2\log(2/\delta)/\varepsilon\). \(\blacksquare\)
+
+Two pieces of the proof deserve a slow reading. In the risk formula, \(\mathcal D(\cdot)\) applied to a strip is the share of mail whose score lands there, \([a^\star, x_{\min})\) is the true junk below the lowest junk example (the round bracket leaving \(x_{\min}\) itself out), and \((x_{\max}, b^\star]\) the true junk above the highest; their sum is the junk the learner keeps. The sample size \(2\log(2/\delta)/\varepsilon\) is the threshold formula with \(\varepsilon\) halved, because each strip now gets only half the tolerance. In plain words: **the tightest interval errs only at its two ends, and twice the threshold budget makes both ends small.** At \(\varepsilon = \delta = 0.05\): \(2 \times 3.69/0.05 \approx 147.6\), so 148. In the snippet below, `m_itv` is this formula and `tightest_risk` is the risk formula, with uniform scores so that each \(\mathcal D\) of a strip is its width:
 
 ```python
 from math import ceil, log

@@ -148,7 +148,7 @@ for eps in (0.5 - gamma, 0.01):
 
 It prints `0.125 0.4167` (the team’s edge, and the target \(\tfrac12 - \tfrac1{12}\) we will meet in the next section), then `0.375 16.0` and `0.01 599.6`. Weak learning needs fewer examples, but only by a constant factor. Now put \(\varepsilon = \tfrac12 - \gamma\) into the bound. If \(d = \infty\), no finite number of examples suffices even for that modest accuracy, so a class with infinite VC dimension is not \(\gamma\)-weak learnable either. If we ignore computation, weak learning is characterized by the VC dimension, exactly like strong learning.
 
-The hope lies elsewhere. Maybe there is a weak learner that is *fast*, for a class where every strong learner is slow. A natural recipe is to pick a simple **base class** \(B\), such as decision stumps, and run ERM over \(B\) as the weak learner. That works for \(\mathcal H\) if two things hold:
+The hope lies elsewhere. Maybe there is a weak learner that is *fast*, for a class where every strong learner is slow. A natural recipe is to pick a simple **base class** \(B\), such as decision stumps, and run ERM over \(B\) as the weak learner. (Recall from lesson 2 that ERM, empirical risk minimization, returns a hypothesis with the smallest empirical risk; \(\mathrm{ERM}_B\), with the subscript, searches only the class \(B\), and \(\mathrm{ERM}_B(S)\) is the hypothesis it returns on the training sequence \(S\). With weights, it minimizes the weighted risk instead.) That works for \(\mathcal H\) if two things hold:
 
 - \(\mathrm{ERM}_B\) can be computed efficiently, and
 - for every training sequence labelled by some hypothesis in \(\mathcal H\), every \(\mathrm{ERM}_B\) hypothesis has risk at most \(\tfrac12 - \gamma\).
@@ -157,9 +157,24 @@ Notice that \(B\) and \(\mathcal H\) are different classes. The weak learner ret
 
 ## A weak learner for three-piece rules
 
-Leave the mail room for a moment and put messages on a line, \(\mathcal X = \mathbb R\). A **three-piece hypothesis** cuts the line at two points \(\theta_1 < \theta_2\) and alternates labels:
+Leave the mail room for a moment and put messages on a line, \(\mathcal X = \mathbb R\), so a message is a single number, say its “free” count. Picture the rule “junk if the count is below 2 or above 5, keep from 2 to 5”: two cuts, three pieces, and the label flips at each cut. A count of 1 is junk, 3.5 is keep, 6 is junk. A **three-piece hypothesis** cuts the line at two points \(\theta_1 < \theta_2\) and alternates labels:
 \[ h_{\theta_1, \theta_2, b}(x) = \begin{cases} +b & \text{if } x < \theta_1 \text{ or } x > \theta_2, \\ -b & \text{if } \theta_1 \le x \le \theta_2. \end{cases} \]
-Let \(\mathcal H\) be the class of all three-piece hypotheses, and let the base class be the stumps on the line, \(B = \{x \mapsto b \cdot \operatorname{sign}(x - \theta) : \theta \in \mathbb R,\ b \in \{\pm 1\}\}\). A stump can’t express a three-piece rule. Yet:
+Reading the two rows: outside the interval from \(\theta_1\) to \(\theta_2\) the label is \(b\); inside it, cuts included, the label is \(-b\). In plain words: **one label on the two outer pieces, the other label on the middle piece.** The example above is \(\theta_1 = 2\), \(\theta_2 = 5\), \(b = +1\):
+
+```python
+from fractions import Fraction as Fr
+
+def three_piece(t1, t2, b):
+    return lambda x: -b if t1 <= x <= t2 else b
+
+h = three_piece(2, 5, 1)
+print([h(x) for x in (1, 2, 3.5, 5, 6)])
+print(Fr(1, 3) + Fr(1, 24) + Fr(1, 24), Fr(1, 2) - Fr(1, 12))
+```
+
+It prints `[1, -1, -1, -1, 1]`: the cuts themselves belong to the middle piece. (The second line, `5/12 5/12`, is the arithmetic at the end of the proof below.)
+
+Let \(\mathcal H\) be the class of all three-piece hypotheses, and let the base class be the stumps on the line, \(B = \{x \mapsto b \cdot \operatorname{sign}(x - \theta) : \theta \in \mathbb R,\ b \in \{\pm 1\}\}\). The arrow \(x \mapsto \dots\) reads “the function that sends \(x\) to \(\dots\)”, so \(B\) is the set of all functions \(b \cdot \operatorname{sign}(x - \theta)\), one per threshold and direction: the stumps of the last section with only one feature. A stump can’t express a three-piece rule. Yet:
 
 **Claim.** \(\mathrm{ERM}_B\) is a \(\gamma\)-weak learner for \(\mathcal H\) with \(\gamma = 1/12\).
 
