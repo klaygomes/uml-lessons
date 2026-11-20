@@ -4,7 +4,7 @@
 
 The letter from the compliance office is polite and completely firm. From next quarter, every filtering decision must be explainable to an auditor. Not “the system is accurate on average”, but this message, on this day, went to the junk folder because of these reasons, written so that a person can read them, check them, and object to them.
 
-You open the filter you have spent the last several lessons building and try to write the explanation for one message. It went to junk because its score was positive. Its score was positive because the weight vector, applied to the message’s word counts, summed to 0.12. And the weight vector has a few thousand entries: 0.31 on “free”, minus 0.07 on “meeting”, 0.004 on “Tuesday”, minus 0.0009 on “regards”, and so on, for every word in the vocabulary. Each entry nudges the score a little. None of them is a reason anybody can read. The auditor looks at your printout of four thousand numbers and asks the obvious question: “So why was it junk?”
+You open the filter you have spent the last several lessons building and try to write the explanation for one message. It went to junk because its junk score beat the scores of the other three folders by 0.12. Each score is one block of the weight vector applied to the message’s word counts, and each block has a few thousand entries: 0.31 on “free”, minus 0.07 on “meeting”, 0.004 on “Tuesday”, minus 0.0009 on “regards”, and so on, for every word in the vocabulary. Each entry nudges a score a little. None of them is a reason anybody can read. The auditor looks at your printout of four blocks of numbers and asks the obvious question: “So why was it junk?”
 
 You can’t answer. The filter is accurate, it comes with a certificate, and it is unreadable. That is the bug of this lesson.
 
@@ -12,7 +12,7 @@ What would a readable filter look like? Probably like what you would write yours
 
 ## A tree is a stack of readable rules
 
-Let’s go back to the four features of lesson 1, written as four bits FLUN: F, the subject says “FREE”; L, the message has a link; U, the sender is unknown; N, it was sent at night. Labels are back to 1 for junk and 0 for keep, after the \(\pm 1\) of the last few lessons.
+Let’s go back to the four features of lesson 1, written as four bits FLUN: F, the subject says “FREE”; L, the message has a link; U, the sender is unknown; N, it was sent at night. Labels are back to 1 for junk and 0 for keep, after the \(\pm 1\) and the folders of the last few lessons.
 
 Here is a tree an auditor would be happy with.
 
@@ -29,7 +29,7 @@ The beauty of this object is that every leaf is a readable rule. Read the path f
 
 That is exactly the explanation compliance asked for. For any message, the auditor can follow its path and read off the reasons, one question at a time.
 
-Let’s make it formal. We take the domain to be \(\mathcal X = \{0, 1\}^d\): every message is a vector of \(d\) yes/no features, and \(x_i\) is feature \(i\).
+Let’s make it formal. We take the domain to be \(\mathcal X = \{0, 1\}^d\): every message is a vector of \(d\) yes/no features, and \(x_i\) is feature \(i\). As in lesson 1, \(\mathcal X\) is the set of all messages and \(\mathcal Y\) the set of labels. The braces \(\{0, 1\}\) hold the two possible answers to one question, and the exponent \(d\) means “\(d\) answers in a row”, so \(\{0,1\}^d\) is the set of all strings of \(d\) bits. With FLUN, \(d = 4\) and there are \(2^4 = 16\) possible messages; 1110 is the message with F, L and U present and N absent, so \(x_3 = 1\) says its sender is unknown. And \([d]\) is shorthand for the feature numbers \(\{1, \dots, d\}\).
 
 **Definition (decision tree).** A **decision tree** over \(\{0,1\}^d\) is a finite rooted binary tree in which every internal node is labelled by a feature index \(i \in [d]\) and has exactly two children, a “yes” child and a “no” child, and every leaf is labelled by a value in \(\mathcal Y = \{0, 1\}\). The hypothesis \(h: \mathcal X \to \{0, 1\}\) it defines works like this: start at the root; at an internal node labelled \(i\), go to the “yes” child if \(x_i = 1\) and to the “no” child if \(x_i = 0\); when you reach a leaf, return its label. The test at a node, \(\mathbb 1[x_i = 1]\), is called its **splitting rule**. The **size** of a tree is its number of nodes, \(n\), counting both internal nodes and leaves, and its **depth** is the largest number of internal nodes on a root-to-leaf path.
 

@@ -59,7 +59,7 @@ loss = 1 if z <= 0 else 0
 print(score, z, loss)
 ```
 
-It prints `1 -1 1`: the inner product, the signed score, the loss. The empirical risk \(L^{0-1}_S(\mathbf w)\) is, as in every lesson since lesson 2, the average of this loss over the training sequence \(S\), the fraction of mistakes; the function `risk01` in the next snippet is exactly that average. No weight vector can do better than 0.2 here: B and B′ are the same message with opposite labels, so every halfspace gets one of them wrong, and the same goes for E and E′. Lesson 9’s halfspace \(\mathbf w^\circ = (-1, 2, -2)\) reaches that floor, with exactly those two mistakes.
+It prints `1 -1 1`: the inner product, the signed score, the loss. The empirical risk \(L^{0-1}_S(\mathbf w)\) is, as in every lesson since lesson 1, the average of this loss over the training sequence \(S\), the fraction of mistakes; the function `risk01` in the next snippet is exactly that average. No weight vector can do better than 0.2 here: B and B′ are the same message with opposite labels, so every halfspace gets one of them wrong, and the same goes for E and E′. Lesson 9’s halfspace \(\mathbf w^\circ = (-1, 2, -2)\) reaches that floor, with exactly those two mistakes.
 
 Now picture the empirical risk as a landscape over the weights. Take \(\mathbf w^\circ\) and its mirror image \(-\mathbf w^\circ\), and walk in a straight line from one to the other. Before you read the numbers: \(L^{0-1}_S(-\mathbf w^\circ) = 0.8\), since flipping every weight flips every prediction. Halfway along the line you are at \(\mathbf w = \mathbf 0\). What is the risk there, and how does it compare with the average of 0.2 and 0.8?
 
@@ -521,18 +521,7 @@ The first two terms on the right are the tangent plane at \(\mathbf w\); the thi
 
 \[ f(\mathbf v) - f(\mathbf w) = h(1) - h(0) = \int_0^1 \langle \nabla f(\mathbf w + t(\mathbf v - \mathbf w)), \mathbf v - \mathbf w \rangle \, dt. \]
 
-The integral sign \(\int_0^1 \dots \, dt\) adds up the quantity inside over every \(t\) from 0 to 1, in infinitely thin slices of width \(dt\). In plain words: **the total change along the segment is the sum of all the small changes along the way.** For \(f(x) = x^2\) from \(w = 1\) to \(v = 3\), the slope along the way is \(h'(t) = 2(1 + 2t) \cdot 2\), and adding it up over 100,000 thin slices gives back \(9 - 1 = 8\):
-
-```python
-f = lambda x: x * x
-df = lambda x: 2 * x
-w, v, n = 1, 3, 100000
-h1 = lambda t: df(w + t * (v - w)) * (v - w)
-area = sum(h1((k + 0.5) / n) for k in range(n)) / n
-print(f(v) - f(w), round(area, 6))
-```
-
-It prints `8 8.0`. Add and subtract \(\nabla f(\mathbf w)\) inside the inner product:
+The integral sign \(\int_0^1 \dots \, dt\) adds up the quantity inside over every \(t\) from 0 to 1, in infinitely thin slices of width \(dt\). In plain words: **the total change along the segment is the sum of all the small changes along the way.** For \(f(x) = x^2\) from \(w = 1\) to \(v = 3\), the slope along the way is \(h'(t) = 2(1 + 2t) \cdot 2 = 4 + 8t\), and adding it up from 0 to 1 gives \(4 + 4 = 8 = 9 - 1\). Add and subtract \(\nabla f(\mathbf w)\) inside the inner product:
 
 \[ f(\mathbf v) - f(\mathbf w) = \langle \nabla f(\mathbf w), \mathbf v - \mathbf w \rangle + \int_0^1 \langle \nabla f(\mathbf w + t(\mathbf v - \mathbf w)) - \nabla f(\mathbf w), \mathbf v - \mathbf w \rangle \, dt. \]
 
@@ -542,23 +531,25 @@ Put this next to the tangent inequality. When \(f\) is convex and \(\beta\)-smoo
 
 \[ 0 \le f(\mathbf v) - f(\mathbf w) - \langle \nabla f(\mathbf w), \mathbf v - \mathbf w \rangle \le \frac{\beta}{2}\|\mathbf v - \mathbf w\|^2. \]
 
+The middle is the height of the graph above its tangent: for softplus at \(w = 0\), \(v = 2\), it is \(2.1269 - 1.6931 = 0.4338\), between 0 and the bowl’s 0.5.
+
 [[diagram:sandwich]]
 
 The ceiling says something practical about stepping downhill. Choose \(\mathbf v = \mathbf w - \frac{1}{\beta}\nabla f(\mathbf w)\), a step against the gradient of length \(\|\nabla f(\mathbf w)\|/\beta\). Then \(\mathbf v - \mathbf w = -\frac1\beta \nabla f(\mathbf w)\), and the quadratic upper bound becomes
 
 \[ f(\mathbf v) \le f(\mathbf w) - \frac1\beta \|\nabla f(\mathbf w)\|^2 + \frac{\beta}{2} \cdot \frac{1}{\beta^2} \|\nabla f(\mathbf w)\|^2 = f(\mathbf w) - \frac{1}{2\beta}\|\nabla f(\mathbf w)\|^2. \]
 
-Rearranged: \(\frac{1}{2\beta}\|\nabla f(\mathbf w)\|^2 \le f(\mathbf w) - f(\mathbf v)\). One step of size \(1/\beta\) is *guaranteed* to lower \(f\) by at least \(\|\nabla f(\mathbf w)\|^2/(2\beta)\). If, in addition, \(f(\mathbf v) \ge 0\) for all \(\mathbf v\), the right side is at most \(f(\mathbf w)\), and we get
+Each term is the quadratic upper bound with \(\mathbf v - \mathbf w\) replaced by the step: the inner product of the gradient with \(-\frac1\beta \nabla f(\mathbf w)\) is \(-\frac1\beta\) times the squared length \(\|\nabla f(\mathbf w)\|^2\), and the bowl term shrinks to half that size. Rearranged: \(\frac{1}{2\beta}\|\nabla f(\mathbf w)\|^2 \le f(\mathbf w) - f(\mathbf v)\). In plain words: **one step of size \(1/\beta\) against the gradient is *guaranteed* to lower \(f\) by at least \(\|\nabla f(\mathbf w)\|^2/(2\beta)\).** For softplus at \(w = 2\), the slope is 0.8808, so the guarantee is \(0.8808^2 / (2 \cdot \frac14) = 1.5516\); the last line of the snippet below takes the step and finds an actual drop of 1.9297. If, in addition, \(f(\mathbf v) \ge 0\) for all \(\mathbf v\), the right side is at most \(f(\mathbf w)\), and we get
 
 \[ \|\nabla f(\mathbf w)\|^2 \le 2\beta f(\mathbf w). \]
 
-A function with this property is called **self-bounded**: where its value is small, its gradient must be small too. Lessons 13 and 14 lean on it.
+A function with this property is called **self-bounded**. The left side is the squared steepness, the right side \(2\beta\) times the height. In plain words: **where its value is small, its gradient must be small too.** For \(x^2\) (2-smooth) at \(w = 3\): \(6^2 = 36\) and \(2 \cdot 2 \cdot 9 = 36\), equality, as the next paragraph explains; the third line of the snippet below checks \(2\beta f - (f')^2 \ge 0\) for softplus. Lessons 13 and 14 lean on it.
 
 Examples. \(f(x) = x^2\) has \(f'(x) = 2x\), which is 2-Lipschitz, so \(x^2\) is 2-smooth. For this particular function the quadratic upper bound and the self-bounded inequality both hold with equality: \(v^2 = w^2 + 2w(v - w) + (v - w)^2\) and \((2w)^2 = 2 \cdot 2 \cdot w^2\). Softplus has \(f'(x) = 1/(1 + \exp(-x))\) and
 
 \[ |f''(x)| = \frac{\exp(-x)}{(1 + \exp(-x))^2} = \frac{1}{(1 + \exp(-x))(1 + \exp(x))} \le \frac14, \]
 
-because the product \((1 + e^{-x})(1 + e^{x}) = 2 + e^x + e^{-x} \ge 4\) (the sum \(e^x + e^{-x}\) is at least 2, by the inequality between arithmetic and geometric means). So \(f'\) is \(\frac14\)-Lipschitz, softplus is \(\frac14\)-smooth, and since it is nonnegative it is self-bounded too.
+where the bars are an absolute value and the middle step multiplies top and bottom by \(e^{x}\). At \(x = 0\) it is \(1/(2 \cdot 2) = 1/4\), the largest value, because the product \((1 + e^{-x})(1 + e^{x}) = 2 + e^x + e^{-x} \ge 4\) (the sum \(e^x + e^{-x}\) is at least 2, by the inequality between arithmetic and geometric means). So \(f'\) is \(\frac14\)-Lipschitz, softplus is \(\frac14\)-smooth, and since it is nonnegative it is self-bounded too.
 
 ```python
 import math
@@ -588,9 +579,9 @@ As with convexity and Lipschitzness, smoothness passes through a linear function
 
 \[ \|\nabla f(\mathbf v) - \nabla f(\mathbf w)\| = |g'(\langle \mathbf v, \mathbf x \rangle + b) - g'(\langle \mathbf w, \mathbf x \rangle + b)| \, \|\mathbf x\| \le \beta \, |\langle \mathbf v - \mathbf w, \mathbf x \rangle| \, \|\mathbf x\| \le \beta \|\mathbf x\|^2 \|\mathbf v - \mathbf w\|, \]
 
-using the smoothness of \(g\) (its derivative is \(\beta\)-Lipschitz) and then Cauchy–Schwarz. The same two ingredients also give the quadratic upper bound for \(f\) directly: apply \(g\)’s scalar bound with the step \(\langle \mathbf v - \mathbf w, \mathbf x \rangle\), then bound \(\langle \mathbf v - \mathbf w, \mathbf x \rangle^2 \le \|\mathbf v - \mathbf w\|^2 \|\mathbf x\|^2\). \(\square\)
+using the chain-rule formula for both gradients (they share the factor \(\mathbf x\), whose length comes out), the smoothness of \(g\) (its derivative is \(\beta\)-Lipschitz) and then Cauchy–Schwarz. The same two ingredients also give the quadratic upper bound for \(f\) directly: apply \(g\)’s scalar bound with the step \(\langle \mathbf v - \mathbf w, \mathbf x \rangle\), then bound \(\langle \mathbf v - \mathbf w, \mathbf x \rangle^2 \le \|\mathbf v - \mathbf w\|^2 \|\mathbf x\|^2\). \(\square\)
 
-So, for \(\mathbf x \in \mathbb R^d\) and \(y \in \mathbb R\), the square loss \(f(\mathbf w) = (\langle \mathbf w, \mathbf x \rangle - y)^2\) is \((2\|\mathbf x\|^2)\)-smooth (here \(g(a) = a^2\) and \(b = -y\)), and for \(y \in \{\pm 1\}\) the logistic loss \(f(\mathbf w) = \log(1 + \exp(-y\langle \mathbf w, \mathbf x \rangle))\) is \((\|\mathbf x\|^2/4)\)-smooth (softplus composed with \(\langle \mathbf w, -y\mathbf x \rangle\), and \(\|-y\mathbf x\| = \|\mathbf x\|\)). The hinge loss is not smooth at all: at signed score 1 it has a kink, where its gradient jumps from \(-y\mathbf x\) to \(\mathbf 0\), and no gradient exists there.
+So, for \(\mathbf x \in \mathbb R^d\) and \(y \in \mathbb R\), the square loss \(f(\mathbf w) = (\langle \mathbf w, \mathbf x \rangle - y)^2\) is \((2\|\mathbf x\|^2)\)-smooth (here \(g(a) = a^2\) and \(b = -y\)), and for \(y \in \{\pm 1\}\) the logistic loss \(f(\mathbf w) = \log(1 + \exp(-y\langle \mathbf w, \mathbf x \rangle))\) is \((\|\mathbf x\|^2/4)\)-smooth (softplus composed with \(\langle \mathbf w, -y\mathbf x \rangle\), and \(\|-y\mathbf x\| = \|\mathbf x\|\)). On message C, with \(\|\mathbf x\|^2 = 21\), that is \(21/4 = 5.25\). The hinge loss is not smooth at all: at signed score 1 it has a kink, where its gradient jumps from \(-y\mathbf x\) to \(\mathbf 0\), and no gradient exists there.
 
 ## Convex learning problems
 
@@ -602,13 +593,27 @@ Linear regression with the square loss is one. Its hypotheses \(\mathbf x \mapst
 
 **Lemma (ERM is a convex optimization problem).** If \(\ell\) is a convex loss and \(\mathcal H\) is a convex set, then the ERM problem over \(\mathcal H\), minimizing the empirical risk over \(\mathcal H\), is a convex optimization problem: minimizing a convex function over a convex set.
 
-*Proof.* The ERM rule is \(\mathrm{ERM}_{\mathcal H}(S) = \operatorname{argmin}_{\mathbf w \in \mathcal H} L_S(\mathbf w)\). For a training sequence \(S = (z_1, \dots, z_m)\), \(L_S(\mathbf w) = \frac1m \sum_{i=1}^m \ell(\mathbf w, z_i)\) is a sum of convex functions with nonnegative weights \(1/m\), so it is convex by the claim on sums. The constraint \(\mathbf w \in \mathcal H\) is membership in a convex set. \(\square\)
+*Proof.* Recall from lesson 2 that ERM returns a hypothesis with the smallest empirical risk. In symbols, \(\mathrm{ERM}_{\mathcal H}(S) = \operatorname{argmin}_{\mathbf w \in \mathcal H} L_S(\mathbf w)\): \(\min\) would give the smallest value of \(L_S\) over \(\mathcal H\), while \(\operatorname{argmin}\) gives the argument, the weight vector \(\mathbf w\) that achieves it. In plain words: **ERM picks the weights in the class with the lowest training score.** Among four candidate weight vectors with the 0-1 loss on the ten messages, it picks \(\mathbf w^\circ\):
+
+```python
+S = [((3, 0), 1), ((2, 1), 1), ((4, 2), 1), ((1, 0), 1),
+     ((1, 2), -1), ((0, 1), -1), ((2, 3), -1), ((0, 0), -1),
+     ((2, 1), -1), ((1, 2), 1)]
+X, Y = [(1,) + x for x, _ in S], [y for _, y in S]
+dot = lambda u, v: sum(a * b for a, b in zip(u, v))
+L_S = lambda w: sum(y * dot(w, x) <= 0
+                    for x, y in zip(X, Y)) / len(S)
+H = [(1, -2, 2), (0, 0, 0), (-1, 1, 0), (-1, 2, -2)]
+print([L_S(w) for w in H], min(H, key=L_S))
+```
+
+It prints `[0.8, 1.0, 0.5, 0.2] (-1, 2, -2)`: `min(H, key=L_S)` is the argmin. For a training sequence \(S = (z_1, \dots, z_m)\), \(L_S(\mathbf w) = \frac1m \sum_{i=1}^m \ell(\mathbf w, z_i)\) is a sum of convex functions with nonnegative weights \(1/m\), so it is convex by the claim on sums. The constraint \(\mathbf w \in \mathcal H\) is membership in a convex set. \(\square\)
 
 Under mild conditions, problems of this shape can be solved efficiently by generic optimization algorithms, and lesson 14 presents a very simple one. Combined with the local-minimum claim, this is why a convex ERM problem is not a search through \(10^{42}\) labellings: any point you cannot improve locally is already the answer.
 
 ## Is convexity enough?
 
-So convex problems can be *optimized*. Can they be *learned*? That is a different question: it asks whether the hypothesis ERM returns on \(m\) examples has small true risk, with a number of examples that depends only on \(\varepsilon\) and \(\delta\).
+So convex problems can be *optimized*. Can they be *learned*? That is a different question: it asks whether the hypothesis ERM returns on \(m\) examples has small true risk, with a number of examples that depends only on \(\varepsilon\) and \(\delta\). As in lesson 3, \(\varepsilon\) is the extra true risk you tolerate above the best in the class, and \(\delta\) the chance you allow of an unlucky training sequence; the true risk \(L_{\mathcal D}(\mathbf w)\) is the average loss on a fresh example drawn from the distribution \(\mathcal D\).
 
 You have good reasons to hope so. Lessons 6 and 9 showed that halfspaces in \(d\) dimensions are learnable (perhaps not efficiently). Lesson 4’s discretization trick suggested that any class described by \(d\) numbers is learnable with a number of examples that grows with \(d\). So surely, for a fixed small \(d\), every convex learning problem over \(\mathbb R^d\) is learnable?
 
@@ -622,15 +627,21 @@ A **deterministic** algorithm is one whose output is fully determined by its tra
 
 \[ L_{\mathcal D}(\hat w) - \min_w L_{\mathcal D}(w) \le \varepsilon. \]
 
+Here \(\hat w\) (“w hat”) is the learner’s output, \(L_{\mathcal D}(\hat w)\) its true risk, and \(\min_w L_{\mathcal D}(w)\) the smallest true risk any weight achieves, the best in the class. In plain words: **the learner’s true risk is within \(\varepsilon\) of the best possible.** If the best weight had risk 1 and the learner’s had 1.004, the gap 0.004 would pass the \(\varepsilon = 1/100\) we are about to choose.
+
 Choose \(\varepsilon = 1/100\) and \(\delta = 1/2\), take any \(m \ge m(\varepsilon, \delta)\), and set
 
 \[ \mu = \frac{\log(100/99)}{2m}. \]
+
+The numerator \(\log(100/99) \approx 0.01005\) is a small fixed number; dividing by \(2m\) makes \(\mu\) shrink as the training sequence grows. In plain words: **\(\mu\) is a probability chosen so small that \(m\) draws will almost never see an event of that probability.** With \(m = 100\), \(\mu \approx 5.03 \times 10^{-5}\), the first number the snippet after the proof prints, from the line `mu = math.log(100 / 99) / (2 * m)`.
 
 *Step 1: two worlds.* Define two distributions on examples. The first, \(\mathcal D_1\), puts probability \(\mu\) on the example \(z_1 = (1, 0)\) and probability \(1 - \mu\) on \(z_2 = (\mu, -1)\). The second, \(\mathcal D_2\), puts all its probability on \(z_2\). Think of \(z_2\) as the everyday example both worlds share, and \(z_1\) as a rare example that only the first world contains.
 
 *Step 2: both worlds usually show the same training sequence.* Let \(E\) be the event that all \(m\) training examples are \(z_2\). Under \(\mathcal D_2\), \(E\) has probability 1. Under \(\mathcal D_1\), the examples are independent and each is \(z_2\) with probability \(1 - \mu\), so \(\mathbb P[E] = (1 - \mu)^m\). We bound this using the inequality \(1 - x \ge e^{-2x}\), valid for \(x \in [0, 1/2]\). (Proof: the function \(q(x) = \log(1 - x) + 2x\) has \(q(0) = 0\) and \(q(1/2) = 1 - \log 2 > 0\), and it is concave because \(q''(x) = -1/(1 - x)^2 < 0\); a concave function lies above its chord, which here is a segment from 0 up to a positive value, so \(q \ge 0\) on \([0, 1/2]\).) Here \(\mu \le \log(100/99)/2 < 0.006\), so
 
 \[ (1 - \mu)^m \ge e^{-2\mu m} = e^{-\log(100/99)} = \frac{99}{100}. \]
+
+The left side multiplies the chance \(1 - \mu\) of a single everyday draw by itself \(m\) times, once per independent example. The first step applies \(1 - x \ge e^{-2x}\) to each factor; the second substitutes \(2\mu m = \log(100/99)\); the third uses that \(e\) to the power \(-\log t\) is \(1/t\). In plain words: **all \(m\) draws are the everyday example with probability at least 99%.** With \(m = 100\) the snippet’s `(1 - mu) ** m` gives 0.995, above 0.99.
 
 So under either distribution, with probability at least 0.99 the learner sees the sequence \(S_2 = (z_2, \dots, z_2)\). Because \(A\) is deterministic, on \(S_2\) it outputs one fixed number; call it \(\hat w\). The learner cannot tell which world it is in.
 
@@ -640,7 +651,7 @@ If \(\hat w < -1/(2\mu)\), pick \(\mathcal D_1\). The rare example punishes a la
 
 \[ L_{\mathcal D_1}(\hat w) - \min_w L_{\mathcal D_1}(w) \ge \frac{1}{4\mu} - (1 - \mu) > \varepsilon, \]
 
-since \(\mu < 0.006\) makes \(1/(4\mu) > 41\).
+since \(\mu < 0.006\) makes \(1/(4\mu) > 41\). (The display only chains the two bounds just found: the learner’s risk minus the best is at least \(1/(4\mu)\) minus \(1 - \mu\).)
 
 If \(\hat w \ge -1/(2\mu)\), pick \(\mathcal D_2\). Then \(\mu \hat w \ge -1/2\), so \(L_{\mathcal D_2}(\hat w) = (\mu \hat w + 1)^2 \ge (1/2)^2 = 1/4\), while \(w = -1/\mu\) gets loss 0, so \(\min_w L_{\mathcal D_2}(w) = 0\). The excess is at least \(1/4 > \varepsilon\).
 
@@ -672,7 +683,9 @@ What went wrong? The hypothesis class is unbounded, so the learner can be asked 
 
 **Boundedness and convexity together are still not enough.** Keep the square loss, but now let \(\mathcal H = \{w : |w| \le 1\} \subset \mathbb R\), which is convex and bounded. Run the same argument with the two examples \(z_1 = (1/\mu, 0)\) and \(z_2 = (1, -1)\), again with \(\mathcal D_1\) putting mass \(\mu\) on \(z_1\) and \(\mathcal D_2\) all its mass on \(z_2\). Step 2 is unchanged. In step 3: if the learner returns \(\hat w < -1/2\), pick \(\mathcal D_1\) and get
 
-\[ L_{\mathcal D_1}(\hat w) - \min_w L_{\mathcal D_1}(w) \ge \mu (\hat w / \mu)^2 - L_{\mathcal D_1}(0) \ge \frac{1}{4\mu} - (1 - \mu) > \varepsilon; \]
+\[ L_{\mathcal D_1}(\hat w) - \min_w L_{\mathcal D_1}(w) \ge \mu (\hat w / \mu)^2 - L_{\mathcal D_1}(0) \ge \frac{1}{4\mu} - (1 - \mu) > \varepsilon \]
+
+(the same chain as before, with the rare example’s loss now \((\hat w/\mu)^2\));
 
 if \(\hat w \ge -1/2\), pick \(\mathcal D_2\) and get \(L_{\mathcal D_2}(\hat w) - \min_w L_{\mathcal D_2}(w) \ge (-1/2 + 1)^2 - 0 > \varepsilon\), since \(w = -1\) is in the class and has loss 0.
 
@@ -720,7 +733,23 @@ Go back to the counterexamples and see which condition each one breaks. The firs
 
 \[ \mathbb E_S \left[ L_{\mathcal D}(\bar{\mathbf w}) \right] \le \min_{\mathbf w \in \mathcal H} L_{\mathcal D}(\mathbf w) + \frac{\rho B}{\sqrt m}. \]
 
-Equivalently, \(m \ge \rho^2 B^2 / \varepsilon^2\) examples bring the expected excess risk down to \(\varepsilon\). Note two things. The bound does not mention \(d\) at all; the number of words can be as large as you like. And the guarantee is about the expectation over training sequences, not “with probability at least \(1 - \delta\)”; lesson 13 has tools for the second form.
+- \(\bar{\mathbf w}\) (“w bar”) is the learner’s output; \(L_{\mathcal D}(\bar{\mathbf w})\) its true risk.
+- \(\mathbb E_S[\cdot]\) is the expectation over the training sequence: the average of the bracket over all the training sequences \(S\) you might have drawn, each weighted by its probability.
+- \(\min_{\mathbf w \in \mathcal H} L_{\mathcal D}(\mathbf w)\) is the best true risk in the class, and \(\rho B / \sqrt m\) is the extra charge, which grows with the steepness \(\rho\) and the radius \(B\) and shrinks like one over the square root of the number of examples.
+
+In plain words: **on average over training sequences, the learner is within \(\rho B/\sqrt m\) of the best in the class.** With the ten messages’ \(\rho = R = \sqrt{21}\), \(B = 1.5\) and \(m = 3{,}000\) labels, the extra charge is \(4.58 \cdot 1.5 / 54.8 \approx 0.1255\). Equivalently, solving \(\rho B / \sqrt m \le \varepsilon\) for \(m\), \(m \ge \rho^2 B^2 / \varepsilon^2\) examples bring the expected excess risk down to \(\varepsilon\); for \(\varepsilon = 0.05\) that is 18,900:
+
+```python
+import math
+
+rho, B, m = math.sqrt(21), 1.5, 3000
+gap = rho * B / math.sqrt(m)
+print(round(gap, 4))
+eps = 0.05
+print(math.ceil(rho ** 2 * B ** 2 / eps ** 2))
+```
+
+It prints `0.1255` and `18900`. Note two things. The bound does not mention \(d\) at all; the number of words can be as large as you like. And the guarantee is about the expectation over training sequences, not “with probability at least \(1 - \delta\)”; lesson 13 has tools for the second form.
 
 ## Surrogate loss functions
 
@@ -769,15 +798,15 @@ Does the logistic loss of lesson 9 also qualify? It is convex, but at signed sco
 
 \[ L^{\text{hinge}}_{\mathcal D}(A(S)) \le \min_{\mathbf w \in \mathcal H} L^{\text{hinge}}_{\mathcal D}(\mathbf w) + \varepsilon, \]
 
-where \(L^{\text{hinge}}_{\mathcal D}(\mathbf w) = \mathbb E_{(\mathbf x, y) \sim \mathcal D}[\ell^{\text{hinge}}(\mathbf w, (\mathbf x, y))]\). Because the hinge loss is at least the 0-1 loss on every example, its expectation is at least the 0-1 expectation for every \(\mathbf w\) (expectation preserves pointwise inequalities). So the left side is at least \(L^{0-1}_{\mathcal D}(A(S))\), and
+where \(L^{\text{hinge}}_{\mathcal D}(\mathbf w) = \mathbb E_{(\mathbf x, y) \sim \mathcal D}[\ell^{\text{hinge}}(\mathbf w, (\mathbf x, y))]\) is the hinge true risk: \((\mathbf x, y) \sim \mathcal D\) reads “a fresh example drawn from \(\mathcal D\)”, and \(\mathbb E\) averages its hinge loss over those draws. If \(\mathcal D\) simply picked one of the ten messages uniformly at random, this expectation would be the plain average of the ten hinge losses, 0.6 for \(\mathbf w^\circ\), the number the previous snippet printed. The requirement, in plain words: **the learner’s hinge true risk is within \(\varepsilon\) of the best hinge true risk in the class.** Because the hinge loss is at least the 0-1 loss on every example, its expectation is at least the 0-1 expectation for every \(\mathbf w\) (expectation preserves pointwise inequalities). So the left side is at least \(L^{0-1}_{\mathcal D}(A(S))\), and
 
 \[ L^{0-1}_{\mathcal D}(A(S)) \le \min_{\mathbf w \in \mathcal H} L^{\text{hinge}}_{\mathcal D}(\mathbf w) + \varepsilon. \]
 
-That is the deal: a guarantee on mistakes, paid for in hinge loss. To see what it costs, add and subtract the best 0-1 risk in the class:
+Only the left side changed, from hinge to 0-1 true risk. That is the deal: a guarantee on mistakes, paid for in hinge loss. To see what it costs, add and subtract the best 0-1 risk in the class:
 
 \[ L^{0-1}_{\mathcal D}(A(S)) \le \underbrace{\min_{\mathbf w \in \mathcal H} L^{0-1}_{\mathcal D}(\mathbf w)}_{\text{approximation error}} + \underbrace{\left( \min_{\mathbf w \in \mathcal H} L^{\text{hinge}}_{\mathcal D}(\mathbf w) - \min_{\mathbf w \in \mathcal H} L^{0-1}_{\mathcal D}(\mathbf w) \right)}_{\text{optimization error}} + \underbrace{\varepsilon}_{\text{estimation error}}. \]
 
-So the 0-1 risk of the learned halfspace is bounded by three terms.
+Each curly brace underneath (an underbrace) just labels the term above it; the middle term is the best hinge risk minus the best 0-1 risk, and adding the first two gives back the best hinge risk, so nothing changed but the bookkeeping. In plain words: **mistakes are at most the best possible mistakes, plus the price of the surrogate, plus the price of finite data.** So the 0-1 risk of the learned halfspace is bounded by three terms.
 
 - **Approximation error**, \(\min_{\mathbf w \in \mathcal H} L^{0-1}_{\mathcal D}(\mathbf w)\): how well the class can do at all on this distribution. You met it in lesson 5.
 - **Estimation error**, \(\varepsilon\): the price of seeing only a training sequence and not \(\mathcal D\). Also lesson 5.
@@ -809,7 +838,7 @@ print(round(est, 4), round(Lh + est, 3))
 print(math.ceil((R * B / (0.36 - Lh)) ** 2))
 ```
 
-It prints `1.5 0.05 0.2238`, then `0.1255 0.349`, then `2546`. The vector sits on the edge of the ball, its 0-1 risk is the best possible 0.05, and its hinge risk is 0.2238. So the optimization error is \(0.2238 - 0.05 = 0.1738\). With 3,000 labels the estimation term is \(RB/\sqrt m = 0.1255\), and the certified bound on the expected 0-1 risk of the learned filter is 0.349. To certify 0.36 with \(B = 1.5\) you need at least 2,546 labels.
+It prints `1.5 0.05 0.2238`, then `0.1255 0.349`, then `2546`. The vector sits on the edge of the ball, its 0-1 risk is the best possible 0.05, and its hinge risk is 0.2238. So the optimization error is \(0.2238 - 0.05 = 0.1738\). With 3,000 labels the estimation term is \(RB/\sqrt m = 0.1255\), and the certified bound on the expected 0-1 risk of the learned filter is \(0.05 + 0.1738 + 0.1255 = 0.349\), the three underbraced terms in order. To certify 0.36 with \(B = 1.5\) you need at least 2,546 labels.
 
 Is 0.349 a disappointing number, when the best halfspace makes only 5% mistakes? It is a *bound*, and a loose one, just like lesson 9’s mistake bound that promised 142 updates when the Perceptron used 3. The actual filter will usually do far better, and the lab shows you that. What the bound buys is a promise you can write down before you train, with no NP-hard search anywhere in sight.
 
@@ -826,6 +855,8 @@ For the base-2 logistic loss, the scalar function \(a \mapsto \log_2(1 + e^{-a})
 **Fact 2 (a certificate of near-optimality).** If \(f\) is convex and differentiable, then for every \(\mathbf w\) and every \(\mathbf u\) with \(\|\mathbf u\| \le B\),
 
 \[ f(\mathbf w) - f(\mathbf u) \le \|\nabla f(\mathbf w)\| \, (\|\mathbf w\| + B). \]
+
+The left side is how much worse you are than a competitor \(\mathbf u\) in the ball; the right side multiplies the length of the gradient by the farthest you could be from any such competitor, \(\|\mathbf w\| + B\). In plain words: **a short gradient proves you are close to the best in the ball.** In the run below, after 100 steps the gradient has length 0.0059 and the weights length about 1.84, so the certificate is \(0.0059 \times 4.84 \approx 0.0286\); the line `cert = gn * (math.sqrt(dot(w, w)) + 3)` is this right side.
 
 *Proof.* The tangent inequality at \(\mathbf w\) gives \(f(\mathbf u) \ge f(\mathbf w) + \langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle\), so \(f(\mathbf w) - f(\mathbf u) \le \langle \nabla f(\mathbf w), \mathbf w - \mathbf u \rangle \le \|\nabla f(\mathbf w)\| \, \|\mathbf w - \mathbf u\|\) by Cauchy–Schwarz, and \(\|\mathbf w - \mathbf u\| \le \|\mathbf w\| + \|\mathbf u\| \le \|\mathbf w\| + B\). \(\square\)
 

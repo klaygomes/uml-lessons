@@ -2,11 +2,9 @@
 
 ## The spammers are watching
 
-For twenty lessons the filter has lived a sheltered life. Every guarantee you proved began the same way: the messages arrive at random from some fixed distribution \(\mathcal D\), each one drawn independently of the others, and the learner gets a whole training sequence \(S \sim \mathcal D^m\) before it has to say anything. Under that promise you learned to count how many labels buy how much accuracy, from finite classes in lesson 2 to neural networks in lesson 20.
+Lesson 20 ended with the triangle filter, certificate and all, losing ground the very next morning. Look closer at what the spammers do now. They no longer send a big batch of junk and wait. They send one message, see whether it got through, and then decide what to send next. If “FREE” in the subject gets caught, the next message says “F.R.E.E”. If the filter lets a message with a link through, the next hundred all have links. Every decision the filter makes is information for them, and they use it straight away.
 
-This week the promise broke. The spammers have noticed the filter. They no longer send a big batch of junk and wait. They send one message, see whether it got through, and then decide what to send next. If “FREE” in the subject gets caught, the next message says “F.R.E.E”. If the filter lets a message with a link through, the next hundred all have links. Every decision the filter makes is information for them, and they use it straight away.
-
-Your monitoring shows the damage. The filter is retrained every night on the day’s labelled mail, and every morning it starts losing again, because whatever it learned overnight is exactly what the spammers stop doing. There is no distribution here. The mail today depends on what the filter did yesterday, and on what it did five minutes ago. Not one of the guarantees from lessons 2 to 20 applies, because each of them assumed that the examples are drawn independently from one fixed \(\mathcal D\), and an opponent who reacts to you is about as far from that as anything can be.
+Your monitoring shows the damage. The filter is retrained every night on the day’s labelled mail, and every morning it starts losing again, because whatever it learned overnight is exactly what the spammers stop doing. The mail today depends on what the filter did yesterday, and on what it did five minutes ago. Every guarantee from lessons 2 to 20 began with one promise: the messages are drawn independently from one fixed distribution \(\mathcal D\), and the learner gets a whole training sequence \(S \sim \mathcal D^m\) before it has to say anything. An opponent who reacts to you is about as far from that promise as anything can be, so not one of those guarantees applies.
 
 So what can a learner promise when the mail is chosen by someone who reads its decisions? It sounds hopeless. It is not, and this lesson is about what you can still prove.
 
@@ -171,9 +169,7 @@ print(M)
 
 It prints `1100 1 0 2`, `0010 1 0 1`, four rows with no mistake and one survivor, and then `2`. The line `2 * sum(...) >= len(V)` is the vote: junk when at least half of the survivors say junk, so a tie goes to junk.
 
-Now the general rule, again in words before symbols. The prediction is the label with more votes among the survivors. If that prediction is wrong, the survivors that voted for it all leave, and they were at least half. So every mistake at least halves the version space, while the truth never leaves. Starting from \(|\mathcal H|\), you can only halve about \(\log_2 |\mathcal H|\) times before you are down to one.
-
-The prediction rule, written out, is
+That is the idea from above at work: every mistake at least halves the version space while the truth stays, and starting from \(|\mathcal H|\) you can halve only about \(\log_2 |\mathcal H|\) times before you are down to one. The prediction rule, written out, is
 
 \[ p_t = \operatorname*{argmax}_{r \in \{0, 1\}} \left| \{ h \in V_t : h(x_t) = r \} \right| \quad (\text{ties go to } 1). \]
 
@@ -385,7 +381,7 @@ where the maximum runs over messages \(x\) on which both parts are nonempty, and
 
 In plain words: **the deepest tree puts at its root the message that splits the class into two parts that are both as rich as possible, and is one deeper than the poorer part.** For \(\mathcal H_1\) and root 1100, both parts have two hypotheses and dimension 1, so the formula gives \(1 + 1 = 2\). The `ldim` function above is this lemma, word for word: `splits` lists \((V^{(0)}, V^{(1)})\) for every message, `if all(s)` keeps those where both are nonempty, and `1 + min(map(ldim, s))` is the bracket. (It also returns 0 when no message splits the class and \(-1\) for the empty class, a convention that makes the next section’s comparisons work.)
 
-*Proof.* Both directions are the two paragraphs before the lemma. If a tree of depth \(d \ge 1\) is shattered by \(V\), with root \(x\), its two subtrees of depth \(d - 1\) are shattered by \(V^{(0)}\) and \(V^{(1)}\), so both parts are nonempty and the bracket for that \(x\) is at least \(d\). Conversely, if the bracket for some \(x\) equals \(d\), hanging two shattered trees of depth \(d - 1\) under the root \(x\) gives a shattered tree of depth \(d\). \(\blacksquare\)
+*Proof.* The paragraph before the lemma, in both directions: a shattered tree of depth \(d \ge 1\) with root \(x\) makes the bracket for \(x\) at least \(d\), and a bracket equal to \(d\) for some \(x\) builds a shattered tree of depth \(d\) under the root \(x\). \(\blacksquare\)
 
 One more fact we will use: a subset can only lose dimension. If \(V' \subseteq V\), every tree shattered by \(V'\) is shattered by \(V\), so \(\mathrm{Ldim}(V') \le \mathrm{Ldim}(V)\).
 
@@ -587,7 +583,7 @@ The update is the heart of it:
 \[ \tilde w_i^{(t+1)} = \tilde w_i^{(t)} e^{-\eta v_{t,i}}, \qquad \mathbf w^{(t)} = \frac{\tilde{\mathbf w}^{(t)}}{Z_t}, \quad Z_t = \sum_{i=1}^d \tilde w_i^{(t)}. \]
 
 - \(\tilde w_i^{(t)}\) (“w tilde”) is expert \(i\)’s raw trust before round \(t\); it starts at 1.
-- \(e^{-\eta v_{t,i}}\) is the shrink factor: 1 when the cost is 0, and \(e^{-\eta} \approx 1 - \eta\) when the cost is 1. The number \(\eta > 0\) is the **step size**, as in lessons 14 and 15, and it sets how hard one bad round is punished.
+- \(e^{-\eta v_{t,i}}\) is the shrink factor: 1 when the cost is 0, and \(e^{-\eta} \approx 1 - \eta\) when the cost is 1. The number \(\eta > 0\) is the **step size**, as in lessons 14 and 15, and it sets how hard one bad round is punished. The pseudocode sets it to \(\sqrt{2 \log(d)/T}\), with \(\log\) the natural logarithm, as everywhere in this course.
 - \(Z_t\) is the total raw trust, and dividing by it turns the raw trusts into weights that add up to 1: \(\mathbf w^{(t)}\) is a probability distribution.
 
 In plain words: **multiply each expert’s trust by \(e^{-\eta}\) raised to its cost, then rescale so the trusts add up to one.** With two experts, \(\eta = 0.5\), and a first round where expert 1 costs 1 and expert 2 costs 0: the raw trusts become \(e^{-0.5} \approx 0.607\) and 1, so the weights become \(0.607/1.607 \approx 0.38\) and \(1/1.607 \approx 0.62\).
@@ -623,7 +619,6 @@ It prints `1012.0 1000.0 12.0 96.0`. The learner’s expected cost is 1,012, the
 
 - The first sum is the learner’s total expected cost over \(T\) rounds.
 - \(\sum_t v_{t,i}\) is expert \(i\)’s total cost, and \(\min_{i \in [d]}\) picks the cheapest expert in hindsight.
-- \(\log\) is the natural logarithm, as everywhere in this course.
 
 In plain words: **over any \(T\) rounds, Weighted-Majority pays at most \(\sqrt{2 \log(d)\, T}\) more than the best expert, whatever the adversary does.** With ten experts and 2,000 rounds, \(\sqrt{2 \cdot 2.303 \cdot 2000} \approx 96\), so at most about 4.8% of the rounds, and that fraction keeps shrinking like \(1/\sqrt T\).
 
@@ -645,7 +640,7 @@ Here \(\log\) is increasing, so a bigger inside gives a bigger log; and \(\sum_i
 
 \[ \log \frac{Z_{t+1}}{Z_t} \le -\eta \langle \mathbf w^{(t)}, \mathbf v_t \rangle + \frac{\eta^2}{2} \sum_i w_i^{(t)} v_{t,i}^2 \le -\eta \langle \mathbf w^{(t)}, \mathbf v_t \rangle + \frac{\eta^2}{2}. \]
 
-The first inequality expands \(-b\) into its two parts, the first being \(\eta\) times the learner’s expected cost. The second uses \(v_{t,i}^2 \le 1\) and weights that add up to 1. In words: **every round, the total trust shrinks (in log terms) by at least \(\eta\) times what the learner paid, minus a small \(\eta^2/2\).**
+The first inequality expands \(-b\) into its two parts, the first being \(\eta\) times the learner’s expected cost. The second uses \(v_{t,i}^2 \le 1\) and weights that add up to 1. In words: **every round, the total trust shrinks (in log terms) by at least \(\eta\) times what the learner paid, minus a small \(\eta^2/2\).** On round 1 of the hostile run (\(\eta \approx 0.048\), the learner pays 0.5), the true shrink and the three bounds of Steps 2 and 3 read \(-0.023705 \le -0.023696 \le -0.023417 \le -0.022841\).
 
 ```python
 from math import exp, log
@@ -825,7 +820,7 @@ How many experts is that? One for each set of at most \(L = \mathrm{Ldim}(\mathc
 - The sum counts all the sets of size \(0, 1, \dots, L\).
 - The inequality is the polynomial bound from Sauer’s lemma in lesson 6, with \(T\) in place of \(m\) and \(L\) in place of \(d\).
 
-In plain words: **the number of experts grows only polynomially in \(T\), like \(T^L\), not exponentially.** For the rogue sender, \(L = 1\), and over \(T = 10{,}000\) rounds there are \(1 + 10{,}000 = 10{,}001\) experts, below \(e \cdot 10{,}000 \approx 27{,}183\). So \(\log d \le L \log(eT/L) \le L \log(eT)\), and Weighted-Majority over these experts, plus the lemma applied to the best hypothesis, gives the regret bound \(\sqrt{2 L \log(eT)\, T}\).
+In plain words: **the number of experts grows only polynomially in \(T\), like \(T^L\), not exponentially.** For the rogue sender, \(L = 1\), and over \(T = 10{,}000\) rounds there are \(1 + 10{,}000 = 10{,}001\) experts, below \(e \cdot 10{,}000 \approx 27{,}183\). So \(\log d \le L \log(eT/L) \le L \log(eT)\). Now run Weighted-Majority over these experts. For any \(h \in \mathcal H\), the lemma gives an expert that copies \(h\) on the messages that arrived, so the best expert made at most as many mistakes as \(h\), and a regret bound against the best expert is a regret bound against \(h\): \(\sqrt{2 L \log(eT)\, T}\).
 
 ```python
 from math import comb, e, log, sqrt
@@ -846,15 +841,15 @@ It prints `10001 27183`, then `429.2 0.0429` (the regret bound with the exact ex
 
 Moreover, no learner can guarantee an expected regret smaller than a constant times \(\sqrt{\mathrm{Ldim}(\mathcal H)\, T}\).
 
-In plain words: **with a coin, every class of finite Littlestone dimension can be learned online against any sequence, with regret growing like \(\sqrt T\); and that is the best possible rate.** The upper bound is the two constructions above: the finite one, and the Littlestone experts (when \(\mathrm{Ldim} = 0\), the class has a single behaviour and the bound is 0). We prove the upper bound only; the matching lower bound is a research result we state without proof. So the Littlestone dimension decides learnability online in both settings, realizable and not, just as the VC dimension did for the batch world in lesson 6.
+In plain words: **with a coin, every class of finite Littlestone dimension can be learned online against any sequence, with regret growing like \(\sqrt T\); and that is the best possible rate.** For the rogue sender, \(\log |\mathcal H| = \infty\), so the minimum picks \(1 \cdot \log(e \cdot 10{,}000) \approx 10.2\), and over 10,000 rounds the bound is the 451.9 printed above. The upper bound is the two constructions above: the finite one, and the Littlestone experts (when \(\mathrm{Ldim} = 0\), the class has a single behaviour and the bound is 0). We prove the upper bound only; the matching lower bound is a research result we state without proof. So the Littlestone dimension decides learnability online in both settings, realizable and not, just as the VC dimension did for the batch world in lesson 6.
 
 ## Online convex optimization
 
 Weighted-Majority needs a list of experts, which for big classes is a big list. In lessons 12 and 14 you met a different way to make learning tractable: convex losses, minimized by stepping against a subgradient. Does that survive an adversary? Yes, almost word for word.
 
-The setting first, in words. The learner holds a weight vector. On each round, it commits to its vector, the adversary reveals an example, and the learner pays the loss of its vector on that example. The loss must be convex in the vector, as in lesson 12, and the set of allowed vectors must be convex. The adversary picks the examples, adapting to everything the learner did.
+The setting in words: each round, the learner commits to a weight vector, the adversary (adapting to everything so far) reveals an example, and the learner pays a loss that is convex in the vector, as in lesson 12, over a convex set of allowed vectors.
 
-**Online convex optimization.** A hypothesis class \(\mathcal H \subseteq \mathbb R^d\) that is a convex set, a domain \(Z\) of examples, and a loss \(\ell : \mathcal H \times Z \to \mathbb R\) with \(\ell(\cdot, z)\) convex for every \(z\). For \(t = 1, \dots, T\): the learner announces \(\mathbf w^{(t)} \in \mathcal H\), the environment answers with \(z_t \in Z\), and the learner pays \(\ell(\mathbf w^{(t)}, z_t)\).
+**Online convex optimization.** A hypothesis class \(\mathcal H \subseteq \mathbb R^n\) that is a convex set (we write \(n\) for the number of coordinates, since \(d\) already counts experts), a domain \(Z\) of examples, and a loss \(\ell : \mathcal H \times Z \to \mathbb R\) with \(\ell(\cdot, z)\) convex for every \(z\). For \(t = 1, \dots, T\): the learner announces \(\mathbf w^{(t)} \in \mathcal H\), the environment answers with \(z_t \in Z\), and the learner pays \(\ell(\mathbf w^{(t)}, z_t)\).
 
 Regret is measured against any fixed vector \(\mathbf w^\star\):
 
@@ -865,7 +860,7 @@ Regret is measured against any fixed vector \(\mathbf w^\star\):
 
 In plain words: **the regret is how much more loss the learner paid than the best single weight vector it could have used throughout.** For example, if over 100 rounds the learner pays 60 and the best fixed vector would have paid 52, the regret against it is 8.
 
-The learner is **Online Gradient Descent**: lesson 14’s gradient descent with projection, run on the losses as they arrive.
+The learner is **Online Gradient Descent**: lesson 14’s gradient descent with projection, run on the losses as they arrive. Recall from lesson 14 that a **subgradient** \(\mathbf v\) of a convex \(f\) at \(\mathbf w\) is the slope of a supporting plane: \(f(\mathbf u) \ge f(\mathbf w) + \langle \mathbf u - \mathbf w, \mathbf v \rangle\) for every \(\mathbf u\); that \(f\) is **\(\rho\)-Lipschitz** exactly when every subgradient has norm at most \(\rho\); and the **projection lemma**: projecting onto a convex set never increases the distance to any point of the set.
 
 ```
 OnlineGradientDescent(η):
@@ -878,7 +873,7 @@ OnlineGradientDescent(η):
     w^(t+1) ← the point of H closest to w^(t+½)
 ```
 
-The half step moves against the subgradient, and the projection pulls the vector back into \(\mathcal H\) if it stepped outside. Recall from lesson 14 that a **subgradient** \(\mathbf v\) of a convex \(f\) at \(\mathbf w\) is the slope of a supporting plane: \(f(\mathbf u) \ge f(\mathbf w) + \langle \mathbf u - \mathbf w, \mathbf v \rangle\) for every \(\mathbf u\); that \(f\) is **\(\rho\)-Lipschitz** exactly when every subgradient has norm at most \(\rho\); and the **projection lemma**: projecting onto a convex set never increases the distance to any point of the set.
+The half step moves against the subgradient, and the projection pulls the vector back into \(\mathcal H\) if it stepped outside.
 
 [[diagram:ogd]]
 
@@ -963,7 +958,7 @@ Not with a mistake bound in general. In two or more dimensions, halfspaces conta
 
 So we need to assume more about the sequence, and lessons 9 and 15 tell us what: a **margin**. If some \(\mathbf w^\star\) scores every message with \(y_t \langle \mathbf w^\star, \mathbf x_t \rangle \ge 1\), the messages sit at distance at least \(1/\|\mathbf w^\star\|\) from its boundary, and an adversary cannot binary-search ever closer to it.
 
-The tool is the one lesson 12 introduced for exactly this purpose, a **convex surrogate loss**. The 0-1 loss, \(\mathbb 1[y\langle \mathbf w, \mathbf x \rangle \le 0]\) (1 on a mistake, 0 otherwise; \(\mathbb 1[\cdot]\) is 1 when the statement inside is true), is not convex. The **hinge loss** \(\max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\}\) is convex and is never below the 0-1 loss. Online, we may even pick a different surrogate on each round, because the analysis is worst case and never averages over rounds. So we use
+The tool is the one lesson 12 introduced for exactly this purpose, a **convex surrogate loss**. The 0-1 loss, \(\mathbb 1[y\langle \mathbf w, \mathbf x \rangle \le 0]\) (1 on a mistake, 0 otherwise), is not convex. The **hinge loss** \(\max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\}\) is convex and is never below the 0-1 loss. Online, we may even pick a different surrogate on each round, after seeing the learner’s current vector, because Online Gradient Descent’s bound holds for every sequence of convex losses, however they were chosen. So we use
 
 \[ f_t(\mathbf w) = \begin{cases} \max\{0, 1 - y_t \langle \mathbf w, \mathbf x_t \rangle\} & \text{if } y_t \langle \mathbf w^{(t)}, \mathbf x_t \rangle \le 0, \\ 0 & \text{otherwise.} \end{cases} \]
 
@@ -972,7 +967,7 @@ The tool is the one lesson 12 introduced for exactly this purpose, a **convex su
 
 In plain words: **charge the hinge loss on the rounds where the filter got the message wrong, and nothing on the rounds where it got it right.** Both cases are convex. And on a mistake round, \(f_t(\mathbf w^{(t)}) \ge 1 - y_t\langle \mathbf w^{(t)}, \mathbf x_t \rangle \ge 1\), while on other rounds \(f_t(\mathbf w^{(t)}) = 0\), so \(f_t(\mathbf w^{(t)})\) is always at least the 0-1 loss of the learner. For example, if \(\mathbf w^{(t)}\) gives a junk message the score \(-0.4\), the round is a mistake and \(f_t(\mathbf w^{(t)}) = 1.4 \ge 1\).
 
-Now run Online Gradient Descent on \(f_1, f_2, \dots\) with \(\mathcal H = \mathbb R^d\) (no projection needed). On a correct round, \(f_t\) is zero and \(\mathbf v_t = \mathbf 0\). On a mistake round, the hinge part \(1 - y_t\langle \mathbf w, \mathbf x_t \rangle\) is at least 1 at \(\mathbf w^{(t)}\), so the max is taken by the linear piece, whose gradient is \(-y_t \mathbf x_t\). So the update is
+Now run Online Gradient Descent on \(f_1, f_2, \dots\) with \(\mathcal H = \mathbb R^n\) (no projection needed). On a correct round, \(f_t\) is zero and \(\mathbf v_t = \mathbf 0\). On a mistake round, the hinge part \(1 - y_t\langle \mathbf w, \mathbf x_t \rangle\) is at least 1 at \(\mathbf w^{(t)}\), so the max is taken by the linear piece, whose gradient is \(-y_t \mathbf x_t\). So the update is
 
 \[ \mathbf w^{(t+1)} = \begin{cases} \mathbf w^{(t)} + \eta\, y_t \mathbf x_t & \text{if } y_t \langle \mathbf w^{(t)}, \mathbf x_t \rangle \le 0, \\ \mathbf w^{(t)} & \text{otherwise,} \end{cases} \]
 
@@ -1006,6 +1001,8 @@ for eta in (1.0, 0.01):
 ```
 
 It prints `1.0 19 -2` and `0.01 19 -2`: on the same 200 messages, \(\eta = 1\) and \(\eta = 0.01\) update on the same 19 rounds and make identical predictions, and the `assert` confirms on every round that the score equals the vote over past mistakes.
+
+How many mistakes can the adversary force? The idea first: with a margin, the analysis of Online Gradient Descent caps them at \((R\|\mathbf w^\star\|)^2\); without one, every message on which \(\mathbf w^\star\) falls short of the margin adds its hinge loss to the bill.
 
 **Theorem (the online Perceptron’s mistake bound).** Run the Perceptron on any sequence \((\mathbf x_1, y_1), \dots, (\mathbf x_T, y_T)\), let \(R = \max_t \|\mathbf x_t\|\), and let \(\mathcal M\) be the rounds on which it updates. Then for every \(\mathbf w^\star\),
 
@@ -1147,7 +1144,7 @@ Perceptron:
               if y⟨w, x⟩ ≤ 0: w ← w + y x
 ```
 
-**Consistent** and **Halving** keep the version space: \(O(|\mathcal H|)\) space, and \(O(|\mathcal H|)\) hypothesis evaluations per round, so \(O(T|\mathcal H|)\) in total. For lesson 1’s ten one-feature hypotheses that is nothing; for halfspaces it is impossible, since the class is infinite. **SOA** needs the Littlestone dimension of two classes per round. Through the root split recursion, that is a search over a game tree whose size can grow exponentially with \(|\mathcal H|\) and the number of messages; SOA is optimal in mistakes and can be hopeless in time. **Weighted-Majority** stores \(d\) weights and spends \(O(d)\) time per round (plus \(d\) hypothesis evaluations when the experts are hypotheses); with the Littlestone experts, \(d\) is about \(T^L\) and each expert runs SOA, so that construction proves learnability but is not a practical filter. **Online Gradient Descent** and the **Perceptron** keep one vector: \(O(n)\) space and \(O(n)\) time per round (\(O(s)\) for a message with \(s\) nonzero word counts), plus the projection, which for a ball of radius \(B\) is a rescaling in \(O(n)\). These last two are the ones a real mail system can afford at millions of messages a day.
+**Consistent** and **Halving** keep the version space: \(O(|\mathcal H|)\) space, and \(O(|\mathcal H|)\) hypothesis evaluations per round, so \(O(T|\mathcal H|)\) in total. For lesson 1’s ten one-feature hypotheses that is nothing; for halfspaces it is impossible, since the class is infinite. **SOA** needs the Littlestone dimension of two classes per round, a game-tree search that can grow exponentially with \(|\mathcal H|\) and the number of messages. **Weighted-Majority** stores \(d\) weights and spends \(O(d)\) time per round (plus \(d\) hypothesis evaluations when the experts are hypotheses); with the Littlestone experts, \(d\) is about \(T^L\) and each expert runs SOA, so that construction proves learnability but is not a practical filter. **Online Gradient Descent** and the **Perceptron** keep one vector: \(O(n)\) space and \(O(n)\) time per round (\(O(s)\) for a message with \(s\) nonzero word counts), plus the projection, which for a ball of radius \(B\) is a rescaling in \(O(n)\). These last two are the ones a real mail system can afford at millions of messages a day.
 
 **Build it yourself.** Using only the Python standard library:
 

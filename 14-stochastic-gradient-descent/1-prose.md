@@ -12,7 +12,7 @@ This lesson says yes, and proves it. The tool is **stochastic gradient descent**
 
 ## Walking downhill
 
-Let’s shrink the world so we can see every number. Pretend there are only six kinds of messages, each arriving equally often. Each is described by two scores built from word counts: \(x_1\), how strongly it talks about “free”, and \(x_2\), how strongly it talks about “meeting”. The counts are scaled so that every message has length \(\|\mathbf x\| \le 1\). As in lesson 9, labels are \(+1\) for junk and \(-1\) for keep.
+Let’s shrink the world so we can see every number. Pretend there are only six kinds of messages, each arriving equally often. Each is described by two scores built from word counts: \(x_1\), how strongly it talks about “free”, and \(x_2\), how strongly it talks about “meeting”. The counts are scaled so that every message has length \(\|\mathbf x\| \le 1\), where the double bars, as in lesson 9, give a vector’s length, \(\|\mathbf x\| = \sqrt{x_1^2 + x_2^2}\) (message A below has length \(\sqrt{0.68} \approx 0.82\)). As in lesson 9, labels are \(+1\) for junk and \(-1\) for keep.
 
 | message | gist | \(x_1\) | \(x_2\) | label \(y\) |
 |---|---|---|---|---|
@@ -23,33 +23,113 @@ Let’s shrink the world so we can see every number. Pretend there are only six 
 | E | free coffee at the meeting | 0.4 | 0.8 | keep, \(-1\) |
 | F | the newsletter: free webinar this week | 0.7 | 0.3 | keep, \(-1\) |
 
-We will learn a homogeneous halfspace with weight vector \(\mathbf w = (w_1, w_2)\), and for this first walk we use the logistic loss of lesson 9, \(\ell(\mathbf w, (\mathbf x, y)) = \log(1 + e^{-y \langle \mathbf w, \mathbf x \rangle})\), because it is smooth everywhere. With the six messages equally likely, the true risk is simply the average loss over the six:
+We will learn a homogeneous halfspace with weight vector \(\mathbf w = (w_1, w_2)\). Recall the pieces from lessons 9 and 12. The inner product \(\langle \mathbf w, \mathbf x \rangle = w_1 x_1 + w_2 x_2\) is the filter’s score for a message, positive meaning junk, and multiplying it by the label gives the **signed score** \(y\langle \mathbf w, \mathbf x \rangle\), positive exactly when the filter is right. For this first walk we turn the signed score into a penalty with the logistic loss of lesson 9, \(\ell(\mathbf w, (\mathbf x, y)) = \log(1 + e^{-y \langle \mathbf w, \mathbf x \rangle})\). Here \(e \approx 2.718\) is Euler’s number and \(\log\) is the natural logarithm: the penalty is large for a very negative signed score, exactly \(\log 2 \approx 0.693\) at a signed score of 0, and near 0 for a large positive one. We use it because it is smooth everywhere. With the six messages equally likely, the true risk, the expected loss on the next message to arrive, is simply the average loss over the six:
 
 \[ f(\mathbf w) = L_{\mathcal D}(\mathbf w) = \frac16 \sum_{i=1}^6 \log\left(1 + e^{-y_i \langle \mathbf w, \mathbf x_i \rangle}\right). \]
 
+Read it from the inside out. This is the one place we read every symbol slowly; later formulas reuse them.
+
+- \(\mathbf x_i\) and \(y_i\) are message \(i\)’s scores and label, for \(i = 1\) (A) up to \(i = 6\) (F): the subscript says which message.
+- \(\log(1 + e^{-y_i\langle \mathbf w, \mathbf x_i \rangle})\) is the logistic loss of \(\mathbf w\) on message \(i\).
+- \(\sum_{i=1}^6\) adds that loss up for \(i = 1, 2, \dots, 6\), and \(\frac16\) turns the total into an average.
+- \(f\) is short for \(L_{\mathcal D}\), the true risk; the subscript \(\mathcal D\) names the distribution of messages, here each kind with probability \(\frac16\).
+
+In plain words: **the risk of a weight vector is its average logistic loss over the six kinds of message.** At \(\mathbf w = \mathbf 0\) every signed score is 0 and every loss is \(\log 2\), so \(f(\mathbf 0) = 0.693\). At \(\mathbf w = (1, -1)\), message A gets signed score \(0.8 - 0.2 = 0.6\) and loss \(\log(1 + e^{-0.6}) = 0.437\), and averaging all six gives 0.567:
+
+```python
+import math
+
+S = [((0.8, 0.2), 1), ((0.6, 0.6), 1), ((0.9, 0.4), 1),
+     ((0.1, 0.9), -1), ((0.4, 0.8), -1), ((0.7, 0.3), -1)]
+dot = lambda u, v: u[0] * v[0] + u[1] * v[1]
+loss = lambda w, x, y: math.log(1 + math.exp(-y * dot(w, x)))
+f = lambda w: sum(loss(w, x, y) for x, y in S) / 6
+w = (1.0, -1.0)
+print([round(loss(w, x, y), 3) for x, y in S])
+print(round(f((0.0, 0.0)), 3), round(f(w), 3))
+```
+
+It prints `[0.437, 0.693, 0.474, 0.371, 0.513, 0.913]`, then `0.693 0.567`. The newsletter F, a keep message full of “free”, costs the most.
+
 Think of \(f\) as a landscape over the plane of weight vectors: every point \(\mathbf w\) has a height \(f(\mathbf w)\), and we are looking for the lowest point. We cannot see the whole landscape at once. What we can compute cheaply, at the point where we stand, is the slope.
 
-The **gradient** of a differentiable function \(f: \mathbb R^d \to \mathbb R\) at \(\mathbf w\) is the vector of its partial derivatives,
+Slope in which direction, though? On a landscape over a plane you can ask two simple questions. If I nudge only \(w_1\) a little, how fast does the height change? And if I nudge only \(w_2\)? At \(\mathbf w = \mathbf 0\), nudging \(w_1\) up by 0.001 lowers \(f\) by about 0.000092, a rate of \(-0.092\) per unit, and nudging \(w_2\) up raises it at a rate of \(0.067\). Those rates, side by side, are the slope we will use. Formally, the **gradient** of a differentiable function \(f: \mathbb R^d \to \mathbb R\) at \(\mathbf w\) is the vector of its partial derivatives,
 
 \[ \nabla f(\mathbf w) = \left( \frac{\partial f(\mathbf w)}{\partial w_1}, \dots, \frac{\partial f(\mathbf w)}{\partial w_d} \right). \]
 
-It points in the direction in which \(f\) increases fastest. So to go down, step the other way. **Gradient descent** starts at \(\mathbf w^{(1)} = \mathbf 0\) and repeats one update:
+- \(f: \mathbb R^d \to \mathbb R\) says \(f\) takes a list of \(d\) real numbers (a weight vector; here \(d = 2\)) and returns one real number. Differentiable means it has no creases, so the rates exist.
+- \(\frac{\partial f(\mathbf w)}{\partial w_j}\), the partial derivative, is the rate at which \(f\) changes when only the coordinate \(w_j\) moves; the curly \(\partial\) marks “partial”.
+- \(\nabla\), read “grad”, stacks the \(d\) rates into one vector, and the dots stand for the coordinates in between.
 
-\[ \mathbf w^{(t+1)} = \mathbf w^{(t)} - \eta \nabla f(\mathbf w^{(t)}), \]
+In plain words: **the gradient lists, for each weight, how fast the risk rises when you nudge that weight alone.** The nudge itself, in code:
 
-where \(\eta > 0\) is the **step size** (you will also hear it called the learning rate). Each \(\mathbf w^{(t)}\) is an **iterate**. After \(T\) steps the algorithm outputs the **average** of the iterates,
+```python
+import math
+
+S = [((0.8, 0.2), 1), ((0.6, 0.6), 1), ((0.9, 0.4), 1),
+     ((0.1, 0.9), -1), ((0.4, 0.8), -1), ((0.7, 0.3), -1)]
+dot = lambda u, v: u[0] * v[0] + u[1] * v[1]
+f = lambda w: sum(math.log(1 + math.exp(-y * dot(w, x)))
+                  for x, y in S) / 6
+h, w = 1e-6, (0.0, 0.0)
+partials = [(f((w[0] + h, w[1])) - f(w)) / h,
+            (f((w[0], w[1] + h)) - f(w)) / h]
+print([round(p, 3) for p in partials])
+```
+
+It prints `[-0.092, 0.067]`. The gradient points in the direction in which \(f\) increases fastest. So to go down, step the other way, and make the step proportional to the slope: on steep ground a long step, on flat ground a short one. A fixed number \(\eta > 0\) (the Greek letter eta), the **step size**, sets the proportion; you will also hear it called the learning rate. **Gradient descent** starts at \(\mathbf w^{(1)} = \mathbf 0\) and repeats one update:
+
+\[ \mathbf w^{(t+1)} = \mathbf w^{(t)} - \eta \nabla f(\mathbf w^{(t)}). \]
+
+The superscript \((t)\) is a step counter, not a power: \(\mathbf w^{(t)}\) is where you stand before step \(t\), and each \(\mathbf w^{(t)}\) is called an **iterate**. The gradient is taken where you stand, \(\eta\) times it is the step, and the minus sign sends it downhill. In plain words: **the next weight vector is the current one moved against the slope, by step size times slope.** With \(\eta = 0.5\), the first step goes from \((0, 0)\) to \((0, 0) - 0.5 \cdot (-0.092, 0.067) = (0.046, -0.0335)\).
+
+After \(T\) steps the algorithm outputs the **average** of the iterates,
 
 \[ \bar{\mathbf w} = \frac{1}{T} \sum_{t=1}^T \mathbf w^{(t)}. \]
 
+The sum adds the iterates \(\mathbf w^{(1)}\) up to \(\mathbf w^{(T)}\), coordinate by coordinate, \(\frac1T\) divides by how many there are, and the bar over \(\mathbf w\) is the usual mark for an average. In plain words: **the output is the average position of the walk, not where it ended.** Two steps, with the gradients of the table below, and the average of the three iterates:
+
+```python
+grads = [(-0.092, 0.067), (-0.089, 0.067)]
+eta, ws = 0.5, [(0.0, 0.0)]
+for g in grads:
+    w = ws[-1]
+    ws.append((w[0] - eta * g[0], w[1] - eta * g[1]))
+w_bar = tuple(sum(w[j] for w in ws) / len(ws) for j in (0, 1))
+print(ws)
+print([round(c, 4) for c in w_bar])
+```
+
+It prints `[(0.0, 0.0), (0.046, -0.0335), (0.0905, -0.067)]`, then `[0.0455, -0.0335]` (the table rounds the third iterate to 0.090).
+
 Why the average and not the last iterate? Returning \(\mathbf w^{(T)}\), or the best iterate, are both reasonable, but the average is what makes the clean proofs below work, especially once the steps become noisy. Hold on to that.
 
-There is a second way to see the update, and it explains *why* the gradient is the right direction. Near \(\mathbf w^{(t)}\), a differentiable \(f\) is well approximated by its first-order Taylor approximation, \(f(\mathbf w) \approx f(\mathbf w^{(t)}) + \langle \mathbf w - \mathbf w^{(t)}, \nabla f(\mathbf w^{(t)}) \rangle\), a tilted plane. Minimizing the plane alone is hopeless, since it goes down forever. But the approximation is only trustworthy near \(\mathbf w^{(t)}\), so let’s minimize the plane plus a penalty for wandering off:
+There is a second way to see the update, and it explains *why* the gradient is the right direction. Near \(\mathbf w^{(t)}\), a differentiable \(f\) is well approximated by its first-order Taylor approximation, \(f(\mathbf w) \approx f(\mathbf w^{(t)}) + \langle \mathbf w - \mathbf w^{(t)}, \nabla f(\mathbf w^{(t)}) \rangle\), a tilted plane: today’s height, plus each rate in the gradient times how far you moved along that coordinate. Minimizing the plane alone is hopeless, since it goes down forever. But the approximation is only trustworthy near \(\mathbf w^{(t)}\), so let’s minimize the plane plus a penalty for wandering off:
 
 \[ \mathbf w^{(t+1)} = \operatorname*{argmin}_{\mathbf w} \; \frac12 \|\mathbf w - \mathbf w^{(t)}\|^2 + \eta \left( f(\mathbf w^{(t)}) + \langle \mathbf w - \mathbf w^{(t)}, \nabla f(\mathbf w^{(t)}) \rangle \right). \]
 
-The objective is a quadratic in \(\mathbf w\). Its gradient with respect to \(\mathbf w\) is \((\mathbf w - \mathbf w^{(t)}) + \eta \nabla f(\mathbf w^{(t)})\), and setting that to zero gives exactly \(\mathbf w = \mathbf w^{(t)} - \eta \nabla f(\mathbf w^{(t)})\). So \(\eta\) is a dial between “trust the slope” and “stay where you are”.
+- \(\operatorname{argmin}_{\mathbf w}\) means “the \(\mathbf w\) at which what follows is smallest”: the place, not the smallest value itself.
+- \(\frac12\|\mathbf w - \mathbf w^{(t)}\|^2\) is half the squared distance from where you stand, the penalty for wandering.
+- The bracket is the tilted plane, and \(\eta\) weighs it against the penalty.
 
-Now walk. The gradient of the logistic loss on one message is \(-y \mathbf x / (1 + e^{y \langle \mathbf w, \mathbf x \rangle})\), and \(\nabla f\) is the average of the six. Take \(\eta = 0.5\). Before you look at the table, guess: will the first step move \(w_1\) up or down, and \(w_2\)?
+In plain words: **the next iterate is the point that best trades going down the plane against staying close.** The objective is a quadratic in \(\mathbf w\). Its gradient with respect to \(\mathbf w\) is \((\mathbf w - \mathbf w^{(t)}) + \eta \nabla f(\mathbf w^{(t)})\), and setting that to zero gives exactly \(\mathbf w = \mathbf w^{(t)} - \eta \nabla f(\mathbf w^{(t)})\). So \(\eta\) is a dial between “trust the slope” and “stay where you are”. A brute-force search over a grid of 160,801 points around the origin agrees with the update’s first step:
+
+```python
+import itertools
+
+w_t, g, eta = (0.0, 0.0), (-0.092, 0.067), 0.5
+def objective(w):
+    d = (w[0] - w_t[0], w[1] - w_t[1])
+    plane = 0.693 + d[0] * g[0] + d[1] * g[1]
+    return 0.5 * (d[0] ** 2 + d[1] ** 2) + eta * plane
+grid = [k / 2000 for k in range(-200, 201)]
+best = min(itertools.product(grid, grid), key=objective)
+print(best, (w_t[0] - eta * g[0], w_t[1] - eta * g[1]))
+```
+
+It prints `(0.046, -0.0335) (0.046, -0.0335)`.
+
+Now walk. The gradient of the logistic loss on one message is \(-y \mathbf x / (1 + e^{y \langle \mathbf w, \mathbf x \rangle})\): the vector \(-y\mathbf x\), shrunk by a factor between 0 and 1 that gets smaller as the signed score grows (at \(\mathbf w = \mathbf 0\) the factor is \(\frac12\)). The gradient \(\nabla f\) is the average of the six, and the `grad` line of the snippet below is exactly this formula. Take \(\eta = 0.5\). Before you look at the table, guess: will the first step move \(w_1\) up or down, and \(w_2\)?
 
 | \(t\) | \(\mathbf w^{(t)}\) | \(\nabla f(\mathbf w^{(t)})\) | \(f(\mathbf w^{(t)})\) |
 |---|---|---|---|
@@ -65,7 +145,7 @@ The gradient’s first coordinate is negative, so \(w_1\) goes up: “free” be
 
 [[diagram:descent]]
 
-How close does the average get to the bottom? Let’s run it for longer. The lowest value of \(f\), which we write \(f(\mathbf w^\star)\), can be found by running gradient descent for a very long time, and the snippet does just that. For reasons the next section explains, we set \(\eta = 5/\sqrt T\) when we run for \(T\) steps.
+How close does the average get to the bottom? Let’s run it for longer. The star marks the best weight vector, \(\mathbf w^\star\), so the lowest value of \(f\) is \(f(\mathbf w^\star)\); it can be found by running gradient descent for a very long time, and the snippet does just that. For reasons the next section explains, we set \(\eta = 5/\sqrt T\) when we run for \(T\) steps.
 
 ```python
 import math
@@ -101,11 +181,13 @@ Before the proof, play with the walk yourself. In the lab below you set \(\eta\)
 
 You will have seen two failures in the lab. With a tiny step size the walk crawls and never gets anywhere in \(T\) steps. With a huge one it overshoots, zigzags across the valley, and the average lands somewhere off to the side. A good \(\eta\) sits in between, and the right value depends on \(T\). Let’s find it by proving a bound.
 
-We need three facts from lesson 12. A function \(f\) is **convex** when \(f(\alpha \mathbf u + (1-\alpha)\mathbf w) \le \alpha f(\mathbf u) + (1-\alpha) f(\mathbf w)\) for all \(\mathbf u, \mathbf w\) and \(\alpha \in [0, 1]\). A differentiable convex function lies above each of its tangent planes:
+We need three facts from lesson 12. A function \(f\) is **convex** when \(f(\alpha \mathbf u + (1-\alpha)\mathbf w) \le \alpha f(\mathbf u) + (1-\alpha) f(\mathbf w)\) for all \(\mathbf u, \mathbf w\) and \(\alpha \in [0, 1]\): between any two points the graph sits on or below the straight chord joining them, and \(\alpha\), a number from 0 to 1, says where along the chord you are. A differentiable convex function lies above each of its tangent planes, the **tangent inequality**:
 
 \[ f(\mathbf u) \ge f(\mathbf w) + \langle \mathbf u - \mathbf w, \nabla f(\mathbf w) \rangle \quad \text{for all } \mathbf u, \mathbf w. \]
 
-And \(f\) is **\(\rho\)-Lipschitz** when \(|f(\mathbf u) - f(\mathbf w)| \le \rho \|\mathbf u - \mathbf w\|\) for all \(\mathbf u, \mathbf w\): its slope is never steeper than \(\rho\).
+The right side is the tilted plane from the last section, built at \(\mathbf w\) and evaluated at \(\mathbf u\). In plain words: **a convex function never dips below any of its tangent planes.** At \(\mathbf w = \mathbf 0\) the plane predicts \(0.693 + \langle (1, -1), (-0.092, 0.067) \rangle = 0.534\) for \(\mathbf u = (1, -1)\), and the true height there is 0.567, above it.
+
+And \(f\) is **\(\rho\)-Lipschitz** when \(|f(\mathbf u) - f(\mathbf w)| \le \rho \|\mathbf u - \mathbf w\|\) for all \(\mathbf u, \mathbf w\). The single bars are absolute value, so the left side is how far apart two heights are; \(\rho\) (rho) caps that at \(\rho\) times the distance between the points. Its slope is never steeper than \(\rho\).
 
 Fix any vector \(\mathbf w^\star\) (think of it as the minimizer, though the argument works for every \(\mathbf w^\star\)) and let \(B \ge \|\mathbf w^\star\|\). We want to bound \(f(\bar{\mathbf w}) - f(\mathbf w^\star)\).
 
@@ -113,9 +195,31 @@ Fix any vector \(\mathbf w^\star\) (think of it as the minimizer, though the arg
 
 \[ f(\bar{\mathbf w}) - f(\mathbf w^\star) \le \frac1T \sum_{t=1}^T \left( f(\mathbf w^{(t)}) - f(\mathbf w^\star) \right). \]
 
-**Step 2: from function values to inner products.** The tangent-plane inequality at \(\mathbf w^{(t)}\), with \(\mathbf u = \mathbf w^\star\), rearranges to
+Each term of the sum is how far one iterate sits above the bottom, and \(\frac1T\) averages them. In plain words: **the average point is no further above the bottom than the iterates are on average.** For the three iterates computed above, \(f(\bar{\mathbf w}) = 0.68680\) and the average height is \(0.68684\). This snippet checks the tangent inequality and Jensen on those numbers:
+
+```python
+import math
+
+S = [((0.8, 0.2), 1), ((0.6, 0.6), 1), ((0.9, 0.4), 1),
+     ((0.1, 0.9), -1), ((0.4, 0.8), -1), ((0.7, 0.3), -1)]
+dot = lambda u, v: u[0] * v[0] + u[1] * v[1]
+f = lambda w: sum(math.log(1 + math.exp(-y * dot(w, x)))
+                  for x, y in S) / 6
+w, g, u = (0.0, 0.0), (-0.092, 0.067), (1.0, -1.0)
+plane = f(w) + dot((u[0] - w[0], u[1] - w[1]), g)
+print(round(f(u), 3), ">=", round(plane, 3))
+ws = [(0.0, 0.0), (0.046, -0.0335), (0.0905, -0.067)]
+w_bar = tuple(sum(v[j] for v in ws) / 3 for j in (0, 1))
+print(f"{f(w_bar):.5f} <= {sum(map(f, ws)) / 3:.5f}")
+```
+
+It prints `0.567 >= 0.534`, then `0.68680 <= 0.68684`. The landscape is nearly flat there, so Jensen wins by a hair.
+
+**Step 2: from function values to inner products.** The tangent inequality at \(\mathbf w^{(t)}\), with \(\mathbf u = \mathbf w^\star\), rearranges to
 
 \[ f(\mathbf w^{(t)}) - f(\mathbf w^\star) \le \langle \mathbf w^{(t)} - \mathbf w^\star, \nabla f(\mathbf w^{(t)}) \rangle. \]
+
+In plain words: **an iterate’s height above the target is at most its slope measured along the arrow from the target to the iterate.**
 
 Combining the two steps,
 

@@ -295,23 +295,7 @@ after = y * dot(w_next, x)
 print(before, after, after - before, dot(x, x))
 ```
 
-It prints `-4 2 6 6`. The next snippet repeats the check with random weights, messages and labels, to show it is not a coincidence of our numbers:
-
-```python
-import random
-
-rng = random.Random(0)
-for _ in range(5):
-    w = [rng.uniform(-3, 3) for _ in range(3)]
-    x = [rng.uniform(-3, 3) for _ in range(3)]
-    y = rng.choice((1, -1))
-    dot = lambda u, v: sum(a * b for a, b in zip(u, v))
-    w_next = [wj + y * xj for wj, xj in zip(w, x)]
-    gain = y * dot(w_next, x) - y * dot(w, x)
-    print(round(gain, 6), round(dot(x, x), 6))
-```
-
-Each line prints the same number twice (the first is `2.422288 2.422288`): the gain in signed score equals \(\|\mathbf x\|^2\), for random weights, random messages and random labels.
+It prints `-4 2 6 6`.
 
 Now run the whole thing on our eight messages, with the constant 1 appended, always picking the first mistake in the table’s order:
 
@@ -734,7 +718,7 @@ It prints `[0.0, -5.667]` twice: the formula and the nudges agree. Now solve \(\
 
 (This \(\mathbf b\) is a vector of the system, not the bias term; the bias term is inside \(\mathbf w\) now.) If \(A\) is invertible, the ERM solution is \(\mathbf w = A^{-1} \mathbf b\), where the **inverse** \(A^{-1}\) is the matrix that undoes \(A\), the way dividing undoes multiplying.
 
-Read the system once more as a whole. \(A\) adds up the tables \(\mathbf x_i \mathbf x_i^\top\), one per message; \(\mathbf b\) adds up the message vectors, each scaled by its label; and \(A \mathbf w = \mathbf b\) asks for the weights that match them. In plain words: **the best weights solve one small linear system, built by adding a table and a vector per message.** For our six messages, the tables for \(x = 0, \dots, 5\) add to \(A = \begin{pmatrix} 6 & 15 \\ 15 & 55 \end{pmatrix}\) (six messages, total count 15, total squared count 55), and \(\mathbf b = (300, 1117)\) (total score, and total count times score). The solving snippet below builds both, entry by entry, as these same sums.
+In plain words: **the best weights solve one small linear system, built by adding a table and a vector per message.** For our six messages, the tables for \(x = 0, \dots, 5\) add to \(A = \begin{pmatrix} 6 & 15 \\ 15 & 55 \end{pmatrix}\) (six messages, total count 15, total squared count 55), and \(\mathbf b = (300, 1117)\) (total score, and total count times score). The solving snippet below builds both, entry by entry, as these same sums.
 
 But wait: setting a gradient to zero finds a flat point, and flat points can be maxima or saddles. Why is this one a minimum? Because the square loss has a special shape, and we can see it exactly. For any \(\mathbf w\) and any step \(\boldsymbol\Delta\), expand each term:
 
@@ -886,7 +870,7 @@ print(psi(x, 1), psi(x, 3), round(sum(terms), 3))
 
 It prints `[1, 3] [1, 3, 9, 27] 60.484`.
 
-A polynomial in \(x\) is a *linear* function of \(\psi(x)\). So turn each example \((x_i, y_i)\) into \((\psi(x_i), y_i)\) and run least squares on the new vectors; the weights it returns are the coefficients. Learning reduces to a problem we have already solved.
+So turn each example \((x_i, y_i)\) into \((\psi(x_i), y_i)\) and run least squares on the new vectors; the weights it returns are the coefficients. Learning reduces to a problem we have already solved.
 
 ```python
 xs, ys = [0, 1, 2, 3, 4, 5], [2, 10, 35, 70, 88, 95]
@@ -938,7 +922,7 @@ It prints `-3 20.086 21.086 0.047`, `0 1.0 2.0 0.5`, `1 0.368 1.368 0.731` and `
 
 This reads exactly like \(HS_d\), with the logistic function in place of the sign: **score the message, then squash the score into a probability.**
 
-So the logistic hypothesis and the halfspace with the same \(\mathbf w\) agree whenever \(|\langle \mathbf w, \mathbf x \rangle|\) is large. They differ near the boundary: there the halfspace still answers a flat \(\pm 1\), while the logistic hypothesis admits it is unsure and gives a probability just above or just below one half.
+The logistic hypothesis and the halfspace with the same \(\mathbf w\) agree whenever \(|\langle \mathbf w, \mathbf x \rangle|\) is large. They differ near the boundary: there the halfspace still answers a flat \(\pm 1\), while the logistic hypothesis admits it is unsure and gives a probability just above or just below one half.
 
 [[diagram:logistic]]
 
@@ -946,7 +930,7 @@ Now the loss. If the label is \(y = +1\), we want \(h_{\mathbf w}(\mathbf x)\) t
 
 \[ 1 - h_{\mathbf w}(\mathbf x) = 1 - \frac{1}{1 + \exp(-\langle \mathbf w, \mathbf x \rangle)} = \frac{\exp(-\langle \mathbf w, \mathbf x \rangle)}{1 + \exp(-\langle \mathbf w, \mathbf x \rangle)} = \frac{1}{1 + \exp(\langle \mathbf w, \mathbf x \rangle)}, \]
 
-where the last step multiplies top and bottom by \(\exp(\langle \mathbf w, \mathbf x \rangle)\). The first step writes \(1\) as \((1 + \exp(-\langle \mathbf w, \mathbf x \rangle))\) over itself and subtracts the tops. In plain words: **the probability of keep is the logistic function of the negated score.** For message B, score 1, the probability of junk is 0.731 and of keep \(1/(1 + e^1) = 1/3.718 \approx 0.269\), and the two add to 1; the `assert` in the next snippet checks this identity at six scores. Look at the two cases side by side: the probability the hypothesis gives to the *true* label is \(1 / (1 + \exp(-y \langle \mathbf w, \mathbf x \rangle))\) for both \(y = +1\) and \(y = -1\). One formula, thanks to \(\pm 1\) labels once more. A sensible loss should grow as that probability falls, that is, as \(1 + \exp(-y \langle \mathbf w, \mathbf x \rangle)\) grows. The **logistic loss** takes its logarithm (natural log, an increasing function, so the order is kept):
+where the last step multiplies top and bottom by \(\exp(\langle \mathbf w, \mathbf x \rangle)\). The first step writes \(1\) as \((1 + \exp(-\langle \mathbf w, \mathbf x \rangle))\) over itself and subtracts the tops. In plain words: **the probability of keep is the logistic function of the negated score.** For message B, score 1, the probability of junk is 0.731 and of keep \(1/(1 + e^1) = 1/3.718 \approx 0.269\), and the two add to 1; the `assert` in the next snippet checks this identity at six scores. Look at the two cases side by side: the probability the hypothesis gives to the *true* label is \(1 / (1 + \exp(-y \langle \mathbf w, \mathbf x \rangle))\) for both \(y = +1\) and \(y = -1\). One formula, thanks to \(\pm 1\) labels once more. A sensible loss should grow as that probability falls, that is, as \(1 + \exp(-y \langle \mathbf w, \mathbf x \rangle)\) grows. The **logistic loss** takes its logarithm (an increasing function, so the order is kept):
 
 \[ \ell(h_{\mathbf w}, (\mathbf x, y)) = \log \left( 1 + \exp(-y \langle \mathbf w, \mathbf x \rangle) \right). \]
 
@@ -986,7 +970,7 @@ It prints `1.313 1.681 True`. One pair of points is an example, not a proof; her
 
 \[ g''(z) = \varphi_{\text{sig}}(z) \, \varphi_{\text{sig}}(-z) > 0. \]
 
-In plain words: **the slope of the loss always increases, by the product of the two class probabilities.** At \(z = 1\) that is \(0.731 \cdot 0.269 \approx 0.197\), and nudging the slope by a thousandth agrees:
+In plain words: **the slope of the loss always increases, by the product of the two class probabilities.** At \(z = 1\) that is \(0.731 \cdot 0.269 \approx 0.197\), and measuring the change of slope over steps of a thousandth agrees:
 
 ```python
 import math
@@ -1000,9 +984,7 @@ print(round(numeric, 3), round(sigma(z) * sigma(-z), 3))
 
 It prints `0.197 0.197`. A function of one variable whose second derivative is never negative is convex. Each term of the risk is \(g\) applied to \(z_i(\mathbf w) = y_i \langle \mathbf w, \mathbf x_i \rangle\), which is linear in \(\mathbf w\), so \(z_i(\theta \mathbf u + (1 - \theta) \mathbf v) = \theta z_i(\mathbf u) + (1 - \theta) z_i(\mathbf v)\), and convexity of \(g\) carries straight over to the term. An average of convex functions is convex. Lesson 12 develops this properly, and lesson 14 gives a simple algorithm for minimizing such functions.
 
-There is also a statistical reading. Suppose the labels really were drawn with \(\mathbb P[y = +1 \mid \mathbf x] = \varphi_{\text{sig}}(\langle \mathbf w, \mathbf x \rangle)\). By the identity above, the probability of the observed label is \(\varphi_{\text{sig}}(y \langle \mathbf w, \mathbf x \rangle)\) in both cases, so the probability of the whole training sequence, with its examples independent, is \(\prod_i \varphi_{\text{sig}}(y_i \langle \mathbf w, \mathbf x_i \rangle)\). Its negative logarithm is \(\sum_i \log(1 + \exp(-y_i \langle \mathbf w, \mathbf x_i \rangle))\), which is \(m\) times the logistic risk. So minimizing the logistic risk is the same as choosing the \(\mathbf w\) under which the data is most likely, the **maximum likelihood** approach that lesson 24 studies.
-
-The notation there needs reading. \(\mathbb P[y = +1 \mid \mathbf x]\) is the probability that the label is junk, where the bar \(\mid\) reads “given”: given that the message is \(\mathbf x\). The capital pi \(\prod_i\) is like \(\sum_i\) but multiplies instead of adds, one factor per example, because the chance of several independent events all happening is the product of their chances. And the negative logarithm turns the product into a sum, since \(\log(ab) = \log a + \log b\). In plain words: **the most likely weights and the lowest logistic risk are the same weights.** With \(\mathbf w = (-1, 2, -2)\) on the eight messages, the probabilities of the true labels multiply to about 0.3195, minus its log is 1.1408, and eight times the average logistic loss is 1.1408 too:
+There is also a statistical reading. Suppose the labels really were drawn by the logistic model: a message \(\mathbf x\) is junk with probability \(\mathbb P[y = +1 \mid \mathbf x] = \varphi_{\text{sig}}(\langle \mathbf w, \mathbf x \rangle)\), where the bar \(\mid\) reads “given”, given that the message is \(\mathbf x\). By the identity above, the probability of the observed label is \(\varphi_{\text{sig}}(y \langle \mathbf w, \mathbf x \rangle)\) in both cases. The examples are independent, and the chance of several independent events all happening is the product of their chances, so the probability of the whole training sequence is \(\prod_i \varphi_{\text{sig}}(y_i \langle \mathbf w, \mathbf x_i \rangle)\), where the capital pi \(\prod_i\) is like \(\sum_i\) but multiplies, one factor per example. Its negative logarithm, since \(\log(ab) = \log a + \log b\) turns the product into a sum, is \(\sum_i \log(1 + \exp(-y_i \langle \mathbf w, \mathbf x_i \rangle))\), which is \(m\) times the logistic risk. So minimizing the logistic risk is the same as choosing the \(\mathbf w\) under which the data is most likely, the **maximum likelihood** approach that lesson 24 studies. In plain words: **the most likely weights and the lowest logistic risk are the same weights.** With \(\mathbf w = (-1, 2, -2)\) on the eight messages, the probabilities of the true labels multiply to about 0.3195, minus its log is 1.1408, and eight times the average logistic loss is 1.1408 too:
 
 ```python
 import math
@@ -1021,7 +1003,7 @@ print(round(len(S) * risk, 4))
 
 It prints `[0.993, 0.731, 0.953, 0.731, 0.953, 0.953, 0.953, 0.731]`, then `0.3195 1.1408`, then `1.1408`.
 
-Let’s fit it. Your users have now labelled two more messages, and they disagree with themselves: a second “free trial, book a meeting” (\(x = (2, 1)\)) was marked keep, and a second “free lunch at the meeting” (\(x = (1, 2)\)) was marked junk. No halfspace can be consistent with that. As a preview of lesson 14, minimize the logistic risk by plain **gradient descent**: start at \(\mathbf w = \mathbf 0\) and repeatedly step against the gradient, which by the chain rule is \(\frac1m \sum_i -y_i \mathbf x_i \, \varphi_{\text{sig}}(-y_i \langle \mathbf w, \mathbf x_i \rangle)\). Read it inside out: \(\varphi_{\text{sig}}(-y_i \langle \mathbf w, \mathbf x_i \rangle)\) is the probability the current weights give to the *wrong* label, so it is large on badly handled messages; it scales the vector \(-y_i \mathbf x_i\), the message pointed against its label; and the sum and \(\frac1m\) average over messages. In plain words: **each message pulls the weights towards its own label, harder the more the weights currently doubt it.** At \(\mathbf w = \mathbf 0\) every wrong-label probability is one half, so junk message A contributes \(-\tfrac12 (1, 3, 0)\) before averaging, and stepping against the gradient moves the weights towards A by \(\tfrac{1}{2m}\) of its vector: a softened Perceptron update. In the code, `g` is this gradient and the step size is 1.
+Let’s fit it. Your users have now labelled two more messages, and they disagree with themselves: a second “free trial, book a meeting” (\(x = (2, 1)\)) was marked keep, and a second “free lunch at the meeting” (\(x = (1, 2)\)) was marked junk. No halfspace can be consistent with that. As a preview of lesson 14, minimize the logistic risk by plain **gradient descent**: start at \(\mathbf w = \mathbf 0\) and repeatedly step against the gradient, which by \(g'\) above and the chain rule (the slope of \(z_i\) in \(w_j\) is \(y_i x_{i,j}\)) is \(\frac1m \sum_i -y_i \mathbf x_i \, \varphi_{\text{sig}}(-y_i \langle \mathbf w, \mathbf x_i \rangle)\). Read it inside out: \(\varphi_{\text{sig}}(-y_i \langle \mathbf w, \mathbf x_i \rangle)\) is the probability the current weights give to the *wrong* label, so it is large on badly handled messages; it scales the vector \(-y_i \mathbf x_i\), the message pointed against its label; and the sum and \(\frac1m\) average over messages. In plain words: **each message pulls the weights towards its own label, harder the more the weights currently doubt it.** At \(\mathbf w = \mathbf 0\) every wrong-label probability is one half, so junk message A contributes \(-\tfrac12 (1, 3, 0)\) before averaging, and stepping against the gradient moves the weights towards A by \(\tfrac{1}{2m}\) of its vector: a softened Perceptron update. In the code, `g` is this gradient and the step size is 1.
 
 ```python
 import math
@@ -1071,7 +1053,7 @@ LogisticRegression(S, steps, η):
   return h(x) = φ_sig(⟨w, x⟩)
 ```
 
-**LeastSquares** spends \(O(md^2)\) time building \(A\) (each outer product has \(d^2\) entries) and \(O(md)\) building \(\mathbf b\), then \(O(d^3)\) solving the \(d \times d\) system by Gaussian elimination, or computing \(A^+\) from an eigendecomposition. Total \(O(md^2 + d^3)\) time and \(O(d^2)\) space, independent of \(m\) once \(A\) is built: you can stream the examples.
+**LeastSquares** spends \(O(md^2)\) time building \(A\) (each table \(\mathbf x_i \mathbf x_i^\top\) has \(d^2\) entries) and \(O(md)\) building \(\mathbf b\), then \(O(d^3)\) solving the \(d \times d\) system by Gaussian elimination, or computing \(A^+\) from an eigendecomposition. Total \(O(md^2 + d^3)\) time and \(O(d^2)\) space, independent of \(m\) once \(A\) is built: you can stream the examples.
 
 **PolynomialRegression** adds \(O(mn)\) to compute the features, then runs least squares in dimension \(n + 1\): \(O(mn^2 + n^3)\).
 

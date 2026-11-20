@@ -912,7 +912,28 @@ What lets \(k\)-means use more centres than dimensions without becoming trivial 
 - \(\phi(\mathbf v)\) is the instance the code describes; \(\|\mathbf x - \phi(\mathbf v)\|^2\) is how far it is from \(\mathbf x\).
 - \(\|\mathbf v\|_0 \le s\) allows at most \(s\) dictionary vectors in the description.
 
-In plain words: **describe each instance as well as you can using at most \(s\) dictionary vectors.** With \(s = 1\) and codes restricted to indicator vectors (a single entry equal to 1), this is the \(k\)-means encoder: the best single centre is the nearest one. For larger \(s\) the encoder faces the same hard problem as feature selection, now once per instance (indeed it *is* feature selection, with the dictionary vectors as the columns). So in practice the constraint is replaced by the \(\ell_1\) price, \(\psi(\mathbf x) = \operatorname{argmin}_{\mathbf v}\left(\|\mathbf x - \phi(\mathbf v)\|^2 + \lambda\|\mathbf v\|_1\right)\), which is a LASSO per instance and gives sparse codes for the reason the soft-thresholding proposition explained. Learning the dictionary itself, choosing \(\boldsymbol\mu_1, \dots, \boldsymbol\mu_k\) to make the total reconstruction error small, remains computationally hard, much like \(k\)-means, and in practice it is attacked with heuristic search. Deep neural networks (lesson 20) are where much of the modern work on learned features lives.
+In plain words: **describe each instance as well as you can using at most \(s\) dictionary vectors.** Take a dictionary of three vectors in the plane, \(\boldsymbol\mu_1 = (1, 0)\), \(\boldsymbol\mu_2 = (0, 1)\), \(\boldsymbol\mu_3 = (0.7, 0.7)\), and an instance \(\mathbf x = (0.9, 0.5)\). With \(s = 1\), the best code uses one vector with its best coefficient \(\langle \mathbf x, \boldsymbol\mu_i \rangle/\|\boldsymbol\mu_i\|^2\); with \(s = 2\), the first two vectors rebuild \(\mathbf x\) exactly:
+
+```python
+mus = [(1.0, 0.0), (0.0, 1.0), (0.7, 0.7)]
+x = (0.9, 0.5)
+dot = lambda a, b: sum(p * q for p, q in zip(a, b))
+
+def err(pair, coeffs):
+    rec = [sum(c * mus[i][k] for c, i in zip(coeffs, pair))
+           for k in range(2)]
+    return dot([p - q for p, q in zip(x, rec)],
+               [p - q for p, q in zip(x, rec)])
+
+for i in range(3):
+    c = dot(x, mus[i]) / dot(mus[i], mus[i])
+    print("s=1", i + 1, round(c, 4), round(err((i,), (c,)), 4))
+print("s=2", 1, 2, err((0, 1), (0.9, 0.5)))
+```
+
+It prints `s=1 1 0.9 0.25`, `s=1 2 0.5 0.81`, `s=1 3 1.0 0.08` and `s=2 1 2 0.0`: one vector leaves an error of at least 0.08 (using \(\boldsymbol\mu_3\)), two vectors leave none.
+
+With \(s = 1\) and codes restricted to indicator vectors (a single entry equal to 1), this is the \(k\)-means encoder: the best single centre is the nearest one. For larger \(s\) the encoder faces the same hard problem as feature selection, now once per instance (indeed it *is* feature selection, with the dictionary vectors as the columns). So in practice the constraint is replaced by the \(\ell_1\) price, \(\psi(\mathbf x) = \operatorname{argmin}_{\mathbf v}\left(\|\mathbf x - \phi(\mathbf v)\|^2 + \lambda\|\mathbf v\|_1\right)\), which is a LASSO per instance and gives sparse codes for the reason the soft-thresholding proposition explained. Learning the dictionary itself, choosing \(\boldsymbol\mu_1, \dots, \boldsymbol\mu_k\) to make the total reconstruction error small, remains computationally hard, much like \(k\)-means, and in practice it is attacked with heuristic search. Deep neural networks (lesson 20) are where much of the modern work on learned features lives.
 
 ## The guarantee that selects few features
 

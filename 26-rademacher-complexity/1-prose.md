@@ -20,7 +20,8 @@ Let’s put numbers in. Lesson 6’s bound says that with probability at least \
 from math import e, log, sqrt
 
 d, m, delta = 50_000, 50_000, 0.05
-vc = (4 + 2 * sqrt(d * log(2 * e * m / d))) / (delta * sqrt(2 * m))
+top = 4 + 2 * sqrt(d * log(2 * e * m / d))
+vc = top / (delta * sqrt(2 * m))
 bits = 32 * d
 mdl = sqrt((bits + log(2 / delta)) / (2 * m))
 print(round(vc, 1), round(mdl, 2))

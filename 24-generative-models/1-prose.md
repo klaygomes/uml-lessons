@@ -146,10 +146,9 @@ Some values of \(\theta\) make what you actually saw much more plausible than ot
 
 \[ P_\theta[x] = \theta^{x} (1 - \theta)^{1 - x}. \]
 
-- \(x\) is one observation: 1 if the word is in the message, 0 if not.
-- \(\theta \in [0, 1]\) is the parameter, the probability of a 1. The symbol \(\in\) reads “is a member of”, and \([0, 1]\) is the set of numbers from 0 to 1, ends included.
+- \(x\) is one observation: 1 if the word is in the message, 0 if not. The right side is Ines’s exponent trick for a single word.
+- \(\theta \in [0, 1]\) is the parameter: \(\in\) reads “is a member of”, and \([0, 1]\) is the set of numbers from 0 to 1, ends included.
 - The subscript in \(P_\theta\) says which parameter the probability is computed under: the same \(x\) gets different probabilities under different \(\theta\).
-- The exponent trick is the one from Ines’s recipe: for \(x = 1\) the right side is \(\theta\), for \(x = 0\) it is \(1 - \theta\).
 
 In one sentence: **under parameter \(\theta\), a 1 has probability \(\theta\) and a 0 has probability \(1 - \theta\).** This distribution is called the **Bernoulli distribution** with parameter \(\theta\). With \(\theta = 0.75\), \(P_\theta[1] = 0.75\) and \(P_\theta[0] = 0.25\).
 
@@ -220,9 +219,8 @@ Unbiased says the estimate is right on average; it does not say how far one esti
 
 \[ |\hat\theta - \theta| \le \sqrt{\frac{\log(2/\delta)}{2m}}. \]
 
-- \(|\hat\theta - \theta|\) is the distance between the estimate and the truth; the vertical bars around a number mean its absolute value.
-- \(\delta\) is the confidence parameter of lesson 3: the probability we allow for an unlucky training sequence.
-- Inside the root, \(\log(2/\delta)\) grows only slowly as you demand more confidence, and the \(2m\) in the denominator shrinks the bound as you add examples.
+- \(|\hat\theta - \theta|\) is the distance between the estimate and the truth (the bars mean absolute value), and \(\delta\) is the probability we allow for an unlucky training sequence.
+- Inside the root, \(\log(2/\delta)\) grows only slowly as you demand more confidence, and the \(2m\) shrinks the bound as you add examples.
 
 In one sentence: **with probability at least \(1 - \delta\), the counted fraction is within \(\sqrt{\log(2/\delta)/(2m)}\) of the true one.** With \(m = 500\) messages and \(\delta = 0.05\), that is \(\sqrt{\log 40/1000} \approx 0.061\).
 
@@ -249,8 +247,7 @@ The fix is to use the **density** instead. A density \(p\) is a nonnegative func
 
 \[ L(S; \theta) = \log \prod_{i=1}^{m} P_\theta(x_i) = \sum_{i=1}^{m} \log P_\theta(x_i). \]
 
-- \(P_\theta(x_i)\) is the density of the model with parameter \(\theta\) at the observed value \(x_i\).
-- The product is the joint density of an independent sample, and the log turns it into a sum.
+- \(P_\theta(x_i)\) is the model’s density at the observed value \(x_i\); the product is the density of the whole independent sample, and the log turns it into a sum.
 
 In one sentence: **the log-likelihood of measured data adds up the log of the model’s density at each observed value.** The maximum likelihood estimator is again a maximizer of \(L(S; \theta)\). To keep notation light, from here on we write \(\mathbb P[X = x]\), or \(P_\theta[x]\), for both the probability of \(x\) (yes/no data) and the density at \(x\) (measured data).
 
@@ -279,10 +276,7 @@ In one sentence: **a Gaussian explains the data well when the points are close t
 
 \[ \hat\mu = \frac1m \sum_{i=1}^{m} x_i, \qquad \hat\sigma = \sqrt{\frac1m \sum_{i=1}^{m} (x_i - \hat\mu)^2}. \]
 
-- \(\hat\mu\) is the plain average of the observations.
-- \(\hat\sigma^2\) is the average of the squared distances from that average; \(\hat\sigma\) is its square root.
-
-In one sentence: **fit the bell’s centre at the average and its width at the typical distance from the average.** For the five scores, \(\hat\mu = 15/5 = 3.0\) and \(\hat\sigma^2 = 2.62/5 = 0.524\), so \(\hat\sigma \approx 0.724\).
+Here \(\hat\mu\) is the plain average, and \(\hat\sigma^2\) the average squared distance from it. In one sentence: **fit the bell’s centre at the average and its width at the typical distance from the average.** For the five scores, \(\hat\mu = 15/5 = 3.0\) and \(\hat\sigma^2 = 2.62/5 = 0.524\), so \(\hat\sigma \approx 0.724\).
 
 *Proof.* Two steps: first the centre for any fixed width, then the width.
 
@@ -339,9 +333,7 @@ Since the empirical risk with this loss is \(\frac1m\sum_i(-\log P_\theta[x_i]) 
 
 \[ \operatorname*{argmin}_{\theta} \sum_{i=1}^{m} \left(-\log P_\theta[x_i]\right) = \operatorname*{argmax}_{\theta} \sum_{i=1}^{m} \log P_\theta[x_i]. \]
 
-- \(\operatorname*{argmin}\) is the set of parameters where the left sum is smallest, just as \(\operatorname*{argmax}\) is where the right sum is largest.
-- The left sum is \(m\) times the empirical risk with the log loss; the right sum is the log-likelihood.
-- A sum and its negative are smallest and largest at the same places.
+- \(\operatorname*{argmin}\) is where the left sum, \(m\) times the empirical risk, is smallest; \(\operatorname*{argmax}\) is where the right sum, the log-likelihood, is largest. One is the negative of the other.
 
 In one sentence: **the maximum likelihood estimator is exactly ERM with the log loss.** For “prize”, the empirical risk at \(\theta = 0.75\) is \(2.249/4 = 0.562\), and no other \(\theta\) does better. You met one instance of this in lesson 9: logistic regression is maximum likelihood for a model of the label given the message.
 
@@ -551,8 +543,7 @@ Step 2. Fix \(p = \theta^\star\) and look at the true risk as a function of the 
 
 \[ f'(q) = -\frac{p}{q} + \frac{1-p}{1-q} = \frac{q - p}{q(1-q)}, \qquad f''(q) = \frac{p}{q^2} + \frac{1-p}{(1-q)^2} \ge 0. \]
 
-- \(f'(q)\) is the slope of the true risk as the parameter moves; over a common denominator, the numerator \(-p(1 - q) + (1 - p)q\) simplifies to \(q - p\).
-- \(f''(q)\), the second derivative, is a sum of nonnegative terms.
+- Over a common denominator, the numerator of \(f'(q)\), \(-p(1 - q) + (1 - p)q\), simplifies to \(q - p\); \(f''(q)\) is a sum of nonnegative terms.
 
 In one sentence: **the true risk slopes toward the truth, and it curves upward everywhere.** A function whose second derivative is nonnegative is convex, and lesson 12 showed that a differentiable convex function lies above each of its tangent lines: \(f(p) \ge f(q) + f'(q)(p - q)\). (If \(p\) is 0 or 1, \(f\) is still defined there by continuity and the same holds.) Rearranged,
 
@@ -564,11 +555,11 @@ Step 3. With pseudo-counts, \(q = \hat\theta\) lies in the interval from \(a = \
 
 \[ \Delta(\hat\theta) \le \frac{(\hat\theta - \theta^\star)^2 (m + 2\alpha)^2}{\alpha(m + \alpha)}. \]
 
-Now average over \(S\). The expected squared distance splits into variance plus squared bias: writing \(\hat\theta - \theta^\star = (\hat\theta - \mathbb E\hat\theta) + (\mathbb E\hat\theta - \theta^\star)\) and squaring, the cross term has expectation 0 because \(\mathbb E[\hat\theta - \mathbb E\hat\theta] = 0\). The variance of \(\hat\theta = (k + \alpha)/(m + 2\alpha)\) is \(\operatorname{Var}[k]/(m + 2\alpha)^2 = m\theta^\star(1 - \theta^\star)/(m + 2\alpha)^2\), since \(k\) is a sum of \(m\) independent coins, each of variance \(\theta^\star(1 - \theta^\star)\). The squared bias is \(\alpha^2(1 - 2\theta^\star)^2/(m + 2\alpha)^2 \le \alpha^2/(m + 2\alpha)^2\). So
+Now average over \(S\). The expected squared distance splits into variance plus squared bias: writing \(\hat\theta - \theta^\star = (\hat\theta - \mathbb E\hat\theta) + (\mathbb E\hat\theta - \theta^\star)\) and squaring, the cross term has expectation 0 because \(\mathbb E[\hat\theta - \mathbb E\hat\theta] = 0\). The variance of \(\hat\theta = (k + \alpha)/(m + 2\alpha)\) is \(\operatorname{Var}[k]/(m + 2\alpha)^2 = m\theta^\star(1 - \theta^\star)/(m + 2\alpha)^2\), since \(k\) is a sum of \(m\) independent coins, variances of independent draws add (lesson 4), and each coin has variance \(\mathbb E[x^2] - (\theta^\star)^2 = \theta^\star - (\theta^\star)^2 = \theta^\star(1 - \theta^\star)\), because \(x^2 = x\) for a 0 or 1. The squared bias is \(\alpha^2(1 - 2\theta^\star)^2/(m + 2\alpha)^2 \le \alpha^2/(m + 2\alpha)^2\). So
 
 \[ \mathbb E_S\left[(\hat\theta - \theta^\star)^2\right] \le \frac{m\theta^\star(1-\theta^\star) + \alpha^2}{(m + 2\alpha)^2}, \]
 
-and multiplying by \((m + 2\alpha)^2/(\alpha(m + \alpha))\) gives the first bound in (b). The second uses \(\theta^\star(1 - \theta^\star) \le 1/4\). \(\blacksquare\)
+and multiplying by \((m + 2\alpha)^2/(\alpha(m + \alpha))\) gives the first bound in (b). (For “winner”, the expected squared distance is at most \(1.399/202^2 \approx 0.000034\).) The second uses \(\theta^\star(1 - \theta^\star) \le 1/4\). \(\blacksquare\)
 
 *Proof of (c).* With \(\alpha = 0\), \(\hat\theta = 0\) whenever all \(m\) observations are 0, which has probability \((1 - \theta^\star)^m\), positive because \(\theta^\star < 1\). On that event the excess risk is infinite, as computed for “winner”, because \(\theta^\star > 0\). An expectation that puts positive probability on \(+\infty\) is \(+\infty\). \(\blacksquare\)
 
@@ -645,11 +636,11 @@ where \(I(a, b) = \int_0^1 \theta^a(1 - \theta)^b\,d\theta\). The denominator is
 
 So we need \(I(a, b)\) for whole numbers \(a, b \ge 0\). **Claim:** \(I(a, b) = \dfrac{a!\,b!}{(a + b + 1)!}\), where \(n! = 1 \cdot 2 \cdots n\) and \(0! = 1\). For instance \(I(0, 0) = 1\), the area of the unit square, and \(I(1, 1) = \int_0^1 \theta(1-\theta)\,d\theta = 1/6\), which the formula gives as \(1 \cdot 1/3! = 1/6\).
 
-Integration by parts, with \(u = (1 - \theta)^b\) and \(dv = \theta^a d\theta\), so \(v = \theta^{a+1}/(a + 1)\), gives for \(b \ge 1\):
+Integration by parts is the product rule for derivatives, integrated: \(\int_0^1 u\,dv = [uv]_0^1 - \int_0^1 v\,du\), where \([uv]_0^1\) is \(uv\) at 1 minus \(uv\) at 0. With \(u = (1 - \theta)^b\) and \(dv = \theta^a d\theta\), so \(v = \theta^{a+1}/(a + 1)\), gives for \(b \ge 1\):
 
 \[ I(a, b) = \left[\frac{\theta^{a+1}}{a+1}(1-\theta)^b\right]_0^1 + \frac{b}{a + 1}\int_0^1 \theta^{a+1}(1-\theta)^{b-1}\,d\theta = \frac{b}{a+1}\,I(a + 1, b - 1). \]
 
-The bracket is 0 at both ends (at 1 because of \((1-\theta)^b\) with \(b \ge 1\), at 0 because of \(\theta^{a+1}\)). **Each step moves one power from \(1 - \theta\) to \(\theta\), at the price of the factor \(b/(a + 1)\).** Repeat \(b\) times: \(I(a, b) = \frac{b}{a+1}\cdot\frac{b-1}{a+2}\cdots\frac{1}{a+b}\,I(a + b, 0) = \frac{a!\,b!}{(a+b)!}\cdot\frac{1}{a+b+1}\), since \(I(a+b, 0) = 1/(a + b + 1)\). That proves the claim.
+The bracket is 0 at both ends (at 1 because of \((1-\theta)^b\) with \(b \ge 1\), at 0 because of \(\theta^{a+1}\)). **Each step moves one power from \(1 - \theta\) to \(\theta\), at the price of the factor \(b/(a + 1)\).** For instance \(I(1, 1) = \frac12 I(2, 0) = \frac12 \cdot \frac13 = \frac16\). Repeat \(b\) times: \(I(a, b) = \frac{b}{a+1}\cdot\frac{b-1}{a+2}\cdots\frac{1}{a+b}\,I(a + b, 0)\). The numerators multiply to \(b!\), the denominators \((a+1)(a+2)\cdots(a+b)\) to \((a+b)!/a!\), and \(I(a+b, 0) = \int_0^1 \theta^{a+b}d\theta = 1/(a + b + 1)\), so \(I(a, b) = \frac{a!\,b!}{(a+b)!}\cdot\frac{1}{a+b+1}\). That proves the claim.
 
 Finally, \(\dfrac{I(k+1, m-k)}{I(k, m-k)} = \dfrac{(k+1)!\,(m-k)!}{(m+2)!}\cdot\dfrac{(m+1)!}{k!\,(m-k)!} = \dfrac{k+1}{m+2}\). \(\blacksquare\)
 
@@ -698,10 +689,9 @@ Now we can rebuild Ines’s filter on solid ground. Messages are vectors \(x = (
 
 \[ h_{\mathrm{Bayes}}(x) = \operatorname*{argmax}_{y \in \{0, 1\}} \mathbb P[Y = y \mid X = x]. \]
 
-- \(X\) and \(Y\) are the random message and label of a fresh example; \(\mathbb P[Y = y \mid X = x]\) is the probability that the label is \(y\) given that the message is \(x\).
-- \(\operatorname*{argmax}_{y \in \{0,1\}}\) picks whichever of the two labels gives the larger value.
+- \(X\) and \(Y\) are the random message and label of a fresh example, and \(\operatorname*{argmax}_{y \in \{0,1\}}\) picks whichever label gives the larger probability.
 
-In one sentence: **label each message with whichever label is more probable for it.** This is the predictor of lesson 3, whose true risk is the smallest possible.
+In one sentence: **label each message with whichever label is more probable for it**, the predictor of lesson 3 recalled at the start. For “free, click”, that probability was 0.98 for junk, so it says junk.
 
 Why not estimate \(\mathbb P[Y = 1 \mid X = x]\) directly, one number per message? Count them. With \(d\) yes/no words there are \(2^d\) possible messages, so \(2^d\) numbers to estimate. Ines’s seven words already mean 128 numbers; a dictionary of 200 words means \(2^{200} \approx 1.6 \times 10^{60}\). Most messages would never appear in any training sequence, and the number of examples needed would grow exponentially with the number of words.
 
@@ -709,10 +699,9 @@ The **naive Bayes** assumption cuts this down with one bold simplification, the 
 
 \[ \mathbb P[X = x \mid Y = y] = \prod_{j=1}^{d} \mathbb P[X_j = x_j \mid Y = y]. \]
 
-- \(X_j\) is the random yes/no feature for word \(j\), and \(\mathbb P[X_j = x_j \mid Y = y]\) is the chance that a message of kind \(y\) has the value \(x_j\) for word \(j\): \(\theta_{j,y}\) if \(x_j = 1\), and \(1 - \theta_{j,y}\) if \(x_j = 0\).
-- The product over \(j\) is valid exactly because of the assumption: independent events multiply.
+- \(X_j\) is the random yes/no feature for word \(j\), and each factor is \(\theta_{j,y}\) or \(1 - \theta_{j,y}\), as in Ines’s recipe; the assumption is exactly what allows the product.
 
-In one sentence: **within each kind of message, the probability of the whole message is the product of the probabilities of its words, one by one.** This is Ines’s recipe from the start of the lesson; “free, click” under junk gave \(9/64\).
+In one sentence: **within each kind of message, the probability of the whole message is the product of the probabilities of its words, one by one.** “free, click” under junk gave \(9/64\).
 
 [[diagram:naive-bayes]]
 
@@ -720,10 +709,7 @@ The assumption is called naive because it is usually false: “claim” and “p
 
 \[ h_{\mathrm{Bayes}}(x) = \operatorname*{argmax}_{y \in \{0,1\}} \mathbb P[Y = y]\,\mathbb P[X = x \mid Y = y] = \operatorname*{argmax}_{y \in \{0,1\}} \mathbb P[Y = y]\prod_{j=1}^{d}\mathbb P[X_j = x_j \mid Y = y]. \]
 
-- The first equality is Bayes’ rule with the shared denominator removed: the numerators are compared directly.
-- The second plugs in the naive Bayes assumption.
-
-In one sentence: **pick the label whose prior share times the product of its word probabilities is larger.** For “free, click” with Ines’s numbers: \(0.5 \cdot 0.1406 = 0.0703\) against \(0.0015\), junk.
+The first equality is Bayes’ rule without its shared denominator; the second plugs in the naive Bayes assumption. In one sentence: **pick the label whose prior share times the product of its word probabilities is larger.** For “free, click” with Ines’s numbers: \(0.5 \cdot 0.1406 = 0.0703\) against \(0.0015\), junk.
 
 Now count parameters: one prior share \(\mathbb P[Y = 1]\), plus \(\theta_{j,y}\) for \(d\) words and 2 labels. That is \(2d + 1\), instead of \(2^d\). For 200 words, 401 numbers. The generative assumption has done what an inductive bias always does: it bought a small number of parameters with a strong belief about the world.
 
@@ -892,7 +878,7 @@ It predicts junk when \(\mathbb P[Y = 1]\,\mathbb P[X = x \mid Y = 1] > \mathbb 
 
 In one sentence: **the evidence for junk is how much closer the message is to the junk centre than to the keep centre, in stretched distance.** For the message \(x = (3, 2)\), sitting on the junk centre, its stretched squared distance to the keep centre is \((2, 1)\Sigma^{-1}(2, 1)^\top = 4\) and to the junk centre 0, so the ratio’s log is \(\frac12 \cdot 4 = 2\): junk is \(e^2 \approx 7.4\) times as likely.
 
-Now expand both quadratic forms. Each is \(x^\top\Sigma^{-1}x - 2\mu_y^\top\Sigma^{-1}x + \mu_y^\top\Sigma^{-1}\mu_y\), where the middle term combines \(x^\top\Sigma^{-1}\mu_y\) and \(\mu_y^\top\Sigma^{-1}x\), which are equal because \(\Sigma\), and hence \(\Sigma^{-1}\), is symmetric. The \(x^\top\Sigma^{-1}x\) terms cancel between the two halves, and the log-likelihood ratio is \(\langle w, x\rangle + b\) with
+Now expand both stretched distances. Each is \(x^\top\Sigma^{-1}x - 2\mu_y^\top\Sigma^{-1}x + \mu_y^\top\Sigma^{-1}\mu_y\), where the middle term combines \(x^\top\Sigma^{-1}\mu_y\) and \(\mu_y^\top\Sigma^{-1}x\), which are equal because \(\Sigma\), and hence \(\Sigma^{-1}\), is symmetric. The \(x^\top\Sigma^{-1}x\) terms cancel between the two halves, and the log-likelihood ratio is \(\langle w, x\rangle + b\) with
 
 \[ w = \Sigma^{-1}(\mu_1 - \mu_0), \qquad b = \frac12\left(\mu_0^\top\Sigma^{-1}\mu_0 - \mu_1^\top\Sigma^{-1}\mu_1\right). \]
 
@@ -930,13 +916,13 @@ print(max(abs(log_ratio(x) - (w[0] * x[0] + w[1] * x[1] + b))
 
 It prints `[2.0, 0.0] -4.0 2.0` and `True`: on 1,024 grid points, the difference of stretched distances and the linear rule agree.
 
-So a generative assumption has rederived the hypothesis class of lesson 9. The difference is in how the halfspace is chosen. LDA does not search for a good \(w\); it estimates the centres and the covariance, and computes \(w\) and \(b\) from them. The usual estimates are the maximum likelihood ones: each centre is the average of its class, and the shared covariance is the average, over all \(m\) examples, of the outer product of each example’s offset from its own class centre.
+So a generative assumption has rederived the hypothesis class of lesson 9. The difference is in how the halfspace is chosen. LDA does not search for a good \(w\); it estimates the centres and the covariance, and computes \(w\) and \(b\) from them. The usual estimates are the maximum likelihood ones: each centre is the average of its class, and the shared covariance is the average, over all \(m\) examples, of the outer product of each example’s offset \(v = x_i - \mu_{y_i}\) from its own class centre. The outer product \(vv^\top\) is the \(d \times d\) matrix with entry \(v_j v_k\) in row \(j\), column \(k\), as in lesson 23; for the offset \((1, 0)\) it is \(\begin{pmatrix}1 & 0\\ 0 & 0\end{pmatrix}\).
 
 ```
 LDATrain(S):
   for y in {0, 1}:
     μ[y] ← average of the x_i with y_i = y
-  Σ ← (1/m) Σ_i (x_i − μ[y_i]) (x_i − μ[y_i])ᵀ
+  Σ ← (1/m) · sum over i of (x_i − μ[y_i])(x_i − μ[y_i])ᵀ
   w ← solve Σ w = μ[1] − μ[0]
   b ← ½ (μ[0]ᵀ Σ⁻¹ μ[0] − μ[1]ᵀ Σ⁻¹ μ[1])
   return (w, b)
@@ -977,8 +963,7 @@ A model with a latent variable tells the production story in two steps. First, c
 \[ \mathbb P[X = x] = \sum_{y=1}^{k}\mathbb P[Y = y]\,\mathbb P[X = x \mid Y = y] = \sum_{y=1}^{k} c_y\,\frac{1}{(2\pi)^{d/2}|\Sigma_y|^{1/2}}\exp\left(-\frac12(x - \mu_y)^\top\Sigma_y^{-1}(x - \mu_y)\right). \]
 
 - \(Y\) is the latent kind and \(c_y = \mathbb P[Y = y]\) its share; the \(c_y\) are nonnegative and add up to 1.
-- The first equality is the law of total probability: a message arises by some kind, so add the chances over the kinds.
-- Each term is a kind’s share times its Gaussian cloud, the density from the previous section with its own centre and covariance.
+- The first equality is the law of total probability: a message arises by some kind, so add the chances over the kinds. Each term is then a share times a Gaussian cloud of the previous section.
 
 In one sentence: **a mixture of Gaussians is a weighted sum of bells, one per hidden kind.** At \(x = 1\), with \(c = (0.7, 0.3)\), centres 1 and 4 and width 1: \(0.7 \cdot 0.399 + 0.3 \cdot 0.0044 \approx 0.281\).
 
@@ -989,7 +974,7 @@ Let \(\theta\) collect all the parameters (the shares, centres and covariances).
 - \(\mathbb P_\theta[X = x_i, Y = y]\) is the joint probability that the kind is \(y\) and the message is \(x_i\): \(c_y\) times the \(y\)-th bell at \(x_i\).
 - The outer sum adds one log per example; the inner sum, inside the log, adds over the kinds.
 
-In one sentence: **the log-likelihood adds, over messages, the log of the total chance of each message over all the kinds that might have produced it.** Maximum likelihood wants the \(\theta\) that maximizes it.
+In one sentence: **the log-likelihood adds, over messages, the log of the total chance of each message over all the kinds that might have produced it.** For the single message \(x = 1\) in the mixture above, \(L = \log 0.281 \approx -1.27\). Maximum likelihood wants the \(\theta\) that maximizes it.
 
 The sum inside the logarithm is the trouble. Without it, the log of each joint probability would split into simple pieces, and maximizing would be as easy as for LDA: if we knew each message’s kind, we would just average each kind’s messages. With it, there is no closed form, and in many cases the optimization is computationally hard. The **Expectation-Maximization** algorithm, **EM**, due to Dempster, Laird and Rubin, is an iterative way to search for a maximum. It may stop at a local maximum rather than the global one, but it often works well in practice.
 
@@ -1014,7 +999,7 @@ In one sentence: **guess the hidden kinds from the parameters, then refit the pa
 
 ## Why EM never goes downhill
 
-An iterative algorithm with no guarantee is a hope. EM comes with one: the log-likelihood never decreases. The proof is short once we see EM as climbing a different function, one coordinate at a time.
+An iterative algorithm with no guarantee is a hope. EM comes with one: the log-likelihood never decreases. The proof is short once we see EM as climbing a different function, one coordinate at a time. The plan: build a function \(G\) of the beliefs and the parameters that is never above the log-likelihood, touches it whenever the beliefs are the E step’s, and goes up at every step. Then the log-likelihood, which \(G\) touches after every E step, must go up too.
 
 Define, with the convention \(0 \log 0 = 0\),
 
@@ -1190,7 +1175,7 @@ if __name__ == "__main__":
 
 ## What people get wrong
 
-**“A probability of 0 is just a very small probability.”** In a product it is not small, it is a veto: one factor of 0 wipes out every other word’s evidence, and in a log it is minus infinity. The rare-word theorem shows that with \(m \le \log 2/(2\theta^\star)\) examples, maximum likelihood produces such a veto with probability at least one half, and its true risk is then infinite.
+**“A probability of 0 is just a very small probability.”** In a product it is not small, it is a veto: one factor of 0 wipes out every other word’s evidence, and in a log it is minus infinity. For a rare word, maximum likelihood produces such a veto with probability at least one half, and its true risk is then infinite.
 
 **“Smoothing is a hack that makes the numbers look nicer.”** Add-\(\alpha\) is regularized maximum likelihood, and add-one is exactly the predictive probability of a Bayesian with a uniform prior. It comes with a theorem: finite expected excess risk for every word, at the cost of a bias of at most \(\alpha/(m + 2\alpha)\).
 
@@ -1198,9 +1183,9 @@ if __name__ == "__main__":
 
 **“Naive Bayes assumes the words are independent.”** It assumes they are independent *given the label*. “free” and “prize” are strongly correlated across all mail, simply because both are common in junk; the assumption is only that, within junk, one does not make the other more likely. That assumption is still usually false, and naive Bayes works anyway surprisingly often, because a classifier only needs the right side of the comparison, not the right probabilities.
 
-**“EM finds the maximum likelihood estimate.”** It never decreases the likelihood, which is all the theorem says. It can stop at a local maximum, and a bad start (two identical centres, for instance) can keep it there forever.
+**“EM finds the maximum likelihood estimate.”** The theorem only says it never goes downhill. It can stop at a local maximum, and a bad start (two identical centres, for instance) can keep it there forever.
 
-**“Maximum likelihood is a different principle from ERM.”** It is ERM with the log loss. Everything you know about ERM applies, including that it overfits when the class is too rich for the data, and that a regularizer helps.
+**“Maximum likelihood is a different principle from ERM.”** It is ERM with the log loss, so it overfits when the class is too rich for the data, and a regularizer helps.
 
 ## Recap and the next bug
 

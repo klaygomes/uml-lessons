@@ -27,7 +27,7 @@ Let’s look at the actual messages. As in lesson 9, a message is a vector of wo
 | G | free lunch at the meeting, meeting room 4 | 1 | 2 | keep, \(-1\) |
 | H | free pizza after the meeting; meeting notes; next meeting Friday | 1 | 3 | keep, \(-1\) |
 
-The Perceptron of lesson 9 appends a constant 1 to every message, so its weights are \((b, w_1, w_2)\) with the bias term first, starts from zeros, and adds \(y_i \mathbf x_i\) for the first message it gets wrong until there is none. Before you run it, a question: the four keep messages all sit near the origin, and the junk messages are far out along the “free” axis. Would you expect the line it returns to leave a lot of room on both sides?
+The Perceptron of lesson 9 appends a constant 1 to every message, so its weights are \((b, w_1, w_2)\) with the bias term first, starts from zeros, and adds \(y_i \mathbf x_i\) (the bold \(\mathbf x_i\) is message \(i\)’s whole vector \((1, x_1, x_2)\), and multiplying by its label \(y_i\) flips it for keep messages) for the first message it gets wrong until there is none. Before you run it, a question: the four keep messages all sit near the origin, and the junk messages are far out along the “free” axis. Would you expect the line it returns to leave a lot of room on both sides?
 
 ```python
 S = [((5, 2), 1), ((3, 0), 1), ((4, 1), 1), ((4, 0), 1),
@@ -50,7 +50,7 @@ print([score(w, x) for x in [(1, 0), (2, 2), (2, 3)]])
 
 It prints `[-3, 4, -1] AEEFG`, then `[3.638, 2.183, 2.91, 3.153, 0.728, 0.97, 0.243, 0.485]`, then `[1, 3, 2]`.
 
-Five updates (on A, E twice, F and G) and the result is the score \(4x_1 - x_2 - 3\). The second line is the distance from each message to the line \(4x_1 - x_2 - 3 = 0\), computed as \(|\text{score}| / \|(4, -1)\|\); we will prove in a moment that this is the right formula. Look at G, the lunch invitation: 0.243. One extra “free” moves a message one full unit along the \(x_1\) axis, much further than 0.243, and the third line shows what happens. Tuesday’s invitation, \((2, 2)\), scores 3: junk. And it is not alone. Add one “free” to E (“see you tomorrow, free for coffee?”, \((1, 0)\)) or to H (“free pizza and free drinks after the meeting”, \((2, 3)\)) and both become junk too. Three of the four keep messages are one word away from the junk folder.
+Five updates (on A, E twice, F and G) and the result is the score \(4x_1 - x_2 - 3\). The second line is the distance from each message to the line \(4x_1 - x_2 - 3 = 0\), computed as \(|\text{score}| / \|(4, -1)\|\), where the bars \(|\cdot|\) drop the sign and the double bars \(\|(4, -1)\| = \sqrt{4^2 + 1^2} = \sqrt{17}\) give the length of the weight pair; we will prove in a moment that this is the right formula. Look at G, the lunch invitation: 0.243. One extra “free” moves a message one full unit along the \(x_1\) axis, much further than 0.243, and the third line shows what happens. Tuesday’s invitation, \((2, 2)\), scores 3: junk. And it is not alone. Add one “free” to E (“see you tomorrow, free for coffee?”, \((1, 0)\)) or to H (“free pizza and free drinks after the meeting”, \((2, 3)\)) and both become junk too. Three of the four keep messages are one word away from the junk folder.
 
 [[diagram:graze]]
 
@@ -58,11 +58,50 @@ The fix is not to stop using halfspaces. It is to stop accepting just *any* cons
 
 ## The distance to a hyperplane
 
-A halfspace is named by a pair \((\mathbf w, b)\): it labels \(\mathbf x\) with \(\operatorname{sign}(\langle \mathbf w, \mathbf x \rangle + b)\), and its boundary is the hyperplane \(\{\mathbf v : \langle \mathbf w, \mathbf v \rangle + b = 0\}\). Multiplying \(\mathbf w\) and \(b\) by the same positive number changes neither the labels nor the hyperplane, so we are free to scale; the convenient scale is \(\|\mathbf w\| = 1\).
+First, the notation we will use for the whole lesson, read once on the Perceptron’s line. That line weighs “free” by 4, “meeting” by \(-1\), adds \(-3\), and calls the message junk when the total is positive. A halfspace is named by a pair \((\mathbf w, b)\): it labels \(\mathbf x\) with \(\operatorname{sign}(\langle \mathbf w, \mathbf x \rangle + b)\), and its boundary is the hyperplane \(\{\mathbf v : \langle \mathbf w, \mathbf v \rangle + b = 0\}\).
+
+- \(\mathbf w = (w_1, \dots, w_d)\) is the weight vector, one weight per word, and \(b\) is the bias term, a number added at the end. Here \(\mathbf w = (4, -1)\) and \(b = -3\).
+- \(\langle \mathbf w, \mathbf x \rangle = w_1 x_1 + \dots + w_d x_d\) is the inner product of lesson 9: multiply matching coordinates and add.
+- \(\langle \mathbf w, \mathbf x \rangle + b\) is the **score**; \(\operatorname{sign}\) turns a positive score into \(+1\) (junk) and a negative one into \(-1\) (keep).
+- In \(\{\mathbf v : \dots\}\) the braces collect points and the colon reads “such that”: the set of points \(\mathbf v\) whose score is exactly 0. That set is the line you have been looking at.
+- \(\|\mathbf w\| = \sqrt{w_1^2 + \dots + w_d^2}\) is the length of \(\mathbf w\).
+
+In plain words: **a halfspace scores a message by weighing its counts and adding a constant, and labels it by the sign of the score; the hyperplane is where the score is zero.** For G, \((1, 2)\): \(\langle \mathbf w, \mathbf x \rangle = 4 - 2 = 2\), the score is \(2 - 3 = -1\), the sign says keep, and \(\|\mathbf w\| = \sqrt{17} \approx 4.123\).
+
+```python
+import math
+
+w, b, x = (4, -1), -3, (1, 2)
+inner = w[0] * x[0] + w[1] * x[1]
+score = inner + b
+sign = 1 if score > 0 else -1
+norm = math.sqrt(w[0] ** 2 + w[1] ** 2)
+w10, b10 = (40, -10), -30
+score10 = w10[0] * x[0] + w10[1] * x[1] + b10
+print(inner, score, sign, round(norm, 3), score10)
+```
+
+It prints `2 -1 -1 4.123 -10`. The last number is the score of G under \((40, -10)\) and \(-30\), the same pair times 10: ten times bigger, same sign. Multiplying \(\mathbf w\) and \(b\) by the same positive number changes neither the labels nor the hyperplane, so we are free to scale; the convenient scale is \(\|\mathbf w\| = 1\), a **unit** vector.
 
 The **distance** between a point \(\mathbf x\) and the hyperplane is the length of the shortest gap between \(\mathbf x\) and a point on it:
 
 \[ \operatorname{dist}(\mathbf x, (\mathbf w, b)) = \min \{ \|\mathbf x - \mathbf v\| \; : \; \langle \mathbf w, \mathbf v \rangle + b = 0 \}. \]
+
+From the inside out: \(\mathbf x - \mathbf v\) is the arrow from a point \(\mathbf v\) to the message, and \(\|\mathbf x - \mathbf v\|\) is its length. The colon restricts \(\mathbf v\) to the hyperplane. The braces collect one length per such point, and \(\min\) picks the smallest. In plain words: **the distance is how far the message is from the nearest point of the line.** For G and the Perceptron’s line, the points of the line are \((v_1, 4v_1 - 3)\); try them all on a fine grid and keep the shortest gap:
+
+```python
+import math
+
+w, b, x = (4, -1), -3, (1, 2)
+score = lambda v: w[0] * v[0] + w[1] * v[1] + b
+line = [(t / 1000, 4 * t / 1000 - 3) for t in range(-5000, 5001)]
+on_line = all(abs(score(v)) < 1e-9 for v in line)
+dist = min(math.dist(x, v) for v in line)
+norm = math.sqrt(w[0] ** 2 + w[1] ** 2)
+print(on_line, round(dist, 4), round(abs(score(x)) / norm, 4))
+```
+
+It prints `True 0.2425 0.2425`: every grid point is on the line, the nearest is 0.2425 away, and \(|\text{score}|/\|\mathbf w\| = 1/\sqrt{17}\) gives the same number. The claim says this is no accident.
 
 **Claim (distance to a hyperplane).** If \(\|\mathbf w\| = 1\), the distance between \(\mathbf x\) and the hyperplane of \((\mathbf w, b)\) is \(|\langle \mathbf w, \mathbf x \rangle + b|\).
 
@@ -72,13 +111,13 @@ First, a point on the hyperplane at exactly that distance. Let \(s = \langle \ma
 
 \[ \langle \mathbf w, \mathbf v \rangle + b = \langle \mathbf w, \mathbf x \rangle - s \|\mathbf w\|^2 + b = \langle \mathbf w, \mathbf x \rangle + b - s = 0, \]
 
-using linearity of the inner product and \(\|\mathbf w\|^2 = 1\). Its distance from \(\mathbf x\) is \(\|\mathbf x - \mathbf v\| = \|s \mathbf w\| = |s| \, \|\mathbf w\| = |s|\). So the distance is at most \(|s|\).
+using linearity of the inner product (\(\langle \mathbf w, \mathbf x - s\mathbf w \rangle = \langle \mathbf w, \mathbf x \rangle - s\langle \mathbf w, \mathbf w \rangle\)) and \(\langle \mathbf w, \mathbf w \rangle = \|\mathbf w\|^2 = 1\). In words: stepping back from \(\mathbf x\) by its own score along the unit \(\mathbf w\) lowers the score by exactly that much, to 0. Its distance from \(\mathbf x\) is \(\|\mathbf x - \mathbf v\| = \|s \mathbf w\| = |s| \, \|\mathbf w\| = |s|\). So the distance is at most \(|s|\).
 
 Second, no point of the hyperplane is closer. Take any \(\mathbf u\) with \(\langle \mathbf w, \mathbf u \rangle + b = 0\). Write \(\mathbf x - \mathbf u = (\mathbf x - \mathbf v) + (\mathbf v - \mathbf u)\) and expand the square:
 
 \[ \|\mathbf x - \mathbf u\|^2 = \|\mathbf x - \mathbf v\|^2 + \|\mathbf v - \mathbf u\|^2 + 2 \langle \mathbf x - \mathbf v, \mathbf v - \mathbf u \rangle \ge \|\mathbf x - \mathbf v\|^2 + 2 \langle \mathbf x - \mathbf v, \mathbf v - \mathbf u \rangle. \]
 
-The inequality drops the nonnegative term \(\|\mathbf v - \mathbf u\|^2\). Now the cross term vanishes: \(\mathbf x - \mathbf v = s \mathbf w\), so \(\langle \mathbf x - \mathbf v, \mathbf v - \mathbf u \rangle = s \langle \mathbf w, \mathbf v - \mathbf u \rangle = s (\langle \mathbf w, \mathbf v \rangle - \langle \mathbf w, \mathbf u \rangle) = s(-b - (-b)) = 0\), because both \(\mathbf v\) and \(\mathbf u\) lie on the hyperplane. So \(\|\mathbf x - \mathbf u\| \ge \|\mathbf x - \mathbf v\| = |s|\) for every \(\mathbf u\) on the hyperplane, and the minimum is exactly \(|s|\). \(\blacksquare\)
+This is the square of a sum of two arrows, \(\|\mathbf a + \mathbf c\|^2 = \|\mathbf a\|^2 + \|\mathbf c\|^2 + 2\langle \mathbf a, \mathbf c \rangle\), the vector form of \((a + c)^2\). The inequality drops the nonnegative term \(\|\mathbf v - \mathbf u\|^2\). Now the cross term vanishes: \(\mathbf x - \mathbf v = s \mathbf w\), so \(\langle \mathbf x - \mathbf v, \mathbf v - \mathbf u \rangle = s \langle \mathbf w, \mathbf v - \mathbf u \rangle = s (\langle \mathbf w, \mathbf v \rangle - \langle \mathbf w, \mathbf u \rangle) = s(-b - (-b)) = 0\), because both \(\mathbf v\) and \(\mathbf u\) lie on the hyperplane. So \(\|\mathbf x - \mathbf u\| \ge \|\mathbf x - \mathbf v\| = |s|\) for every \(\mathbf u\) on the hyperplane, and the minimum is exactly \(|s|\). \(\blacksquare\)
 
 [[diagram:distance]]
 

@@ -2,16 +2,16 @@
 
 ## Fifty thousand counts per message
 
-The mail room upgraded its parser on Monday, and by Wednesday everything was slow.
+The data team’s new parser went live on Monday, and by Wednesday everything was slow.
 
-The new parser is thorough. Instead of a few hand-made scores, it now describes each message by how many times every word of the company’s vocabulary appears in it. The vocabulary has 50,000 words, so every message arrives as a list of 50,000 numbers: a 3 under “free”, a 1 under “prize”, a 2 under “winner”, and zeros almost everywhere else. Each of those numbers is a **word count**, and the list as a whole is a vector \(x \in \mathbb R^d\) with \(d = 50{,}000\).
+The new parser is thorough. Instead of the two scores the desks used to cluster on, it describes each message by how many times every word of the company’s vocabulary appears in it. The vocabulary has 50,000 words, so every message arrives as a list of 50,000 numbers: a 3 under “free”, a 1 under “prize”, a 2 under “winner”, and zeros almost everywhere else. Each of those numbers is a **word count**, and the list as a whole is a vector \(x \in \mathbb R^d\) with \(d = 50{,}000\).
 
-You can feel the cost everywhere. Remember lesson 19: the nearest-neighbour filter compares a new message with every stored one, and each comparison of two vectors with \(d\) entries costs \(d\) subtractions and \(d\) multiplications. With \(d = 50{,}000\), comparing one new message against an archive of 200,000 stored ones is ten billion multiplications. The archive itself, stored as plain 4-byte numbers, needs 200,000 times 50,000 times 4 bytes, which is 40 gigabytes. And lesson 19 also warned you that more dimensions can make a filter worse, not better: the curse of dimensionality says the labels you need can grow exponentially with the number of features.
+You saw k-means crawl at the end of lesson 22, and the cost is everywhere. Remember lesson 19: the nearest-neighbour filter compares a new message with every stored one, and each comparison of two vectors with \(d\) entries costs \(d\) subtractions and \(d\) multiplications. With \(d = 50{,}000\), comparing one new message against an archive of 200,000 stored ones is ten billion multiplications. The archive itself, stored as plain 4-byte numbers, needs 200,000 times 50,000 times 4 bytes, which is 40 gigabytes. And lesson 19 also warned you that more dimensions can make a filter worse, not better: the curse of dimensionality says the labels you need can grow exponentially with the number of features. The desks felt it as noisy clusters, with every distance looking like every other.
 
 Your colleague’s proposal is blunt: “Squeeze every message into a few hundred numbers. Nobody needs fifty thousand.” That sounds right. But it raises three questions that this lesson answers one after another.
 
 1. If you squeeze, can you get the message back? And which squeeze loses the least?
-2. If what you really need is not the message itself but the distances between messages (that is all nearest neighbour uses), how few numbers keep every distance nearly unchanged, and can you prove it?
+2. If what you really need is not the message itself but the distances between messages (that is all nearest neighbour and k-means use), how few numbers keep every distance nearly unchanged, and can you prove it?
 3. Most of the 50,000 counts in any one message are zero. Can you exploit that, and recover each message exactly from far fewer numbers?
 
 Each question gets its own method. The first is **principal component analysis**, the second **random projections**, and the third **compressed sensing**. All three squeeze the same way, with a matrix, so let’s start there.
@@ -111,7 +111,7 @@ print(objective([[0.5, 0], [0.5, 0], [0, 1]],
                 [[1, 1, 0], [0, 0, 1]]))
 ```
 
-It prints `48`, `32.0` and `2.0`. The hand-made two-number squeeze is already good, losing only 2. But is it the best two-number squeeze? And what is the best one-number squeeze? We need the method that answers both, and it turns out the answers are 28.13 for one number and 1.19 for two, found by a calculation you could do on a napkin, if your napkin computes eigenvectors.
+It prints `48`, `32.0` and `2.0`. The hand-made two-number squeeze is already good, losing only 2. But is it the best two-number squeeze? And what is the best one-number squeeze? We need the method that answers both, and it turns out the answers are 28.13 for one number and 1.19 for two, both read off one small \(3 \times 3\) matrix built from the archive.
 
 [[lab]]
 
@@ -133,7 +133,7 @@ Read it from the inside out.
 
 In one sentence: **find the squeeze and the unsqueeze that, together, lose the least total squared error on the archive.** With the junk-direction choice from the table (\(n = 1\)), the total was 32; the code above is this formula term by term, with `objective(U, W)` as the sum.
 
-Solving it takes three steps. First, show that the best recovery matrix has orthonormal columns and that the best compression matrix is its transpose. Second, turn the error into a quantity built from one matrix, the scatter matrix. Third, use the eigenvectors of that matrix.
+Solving it takes three steps. First, show that the best recovery matrix has orthonormal columns and that the best compression matrix is its transpose. Second, turn the error into a quantity built from one matrix of the archive. Third, find the directions that matrix stretches most.
 
 ### Step 1: the unsqueeze should be the transpose of the squeeze
 
@@ -167,7 +167,7 @@ Now fix one message \(x\) and ask which point \(Vy\) of \(R\) is closest to it. 
 
 \[ \|x - Vy\|^2 = \|x\|^2 + y^\top V^\top V y - 2\, y^\top V^\top x = \|x\|^2 + \|y\|^2 - 2\, y \cdot (V^\top x). \]
 
-The first equality is \(\|a - b\|^2 = \|a\|^2 + \|b\|^2 - 2\, a \cdot b\) with \(a = x\), \(b = Vy\), and \(\|Vy\|^2 = y^\top V^\top V y\). The second uses \(V^\top V = I\), so \(y^\top V^\top V y = y^\top y = \|y\|^2\). The right-hand side is a bowl in \(y\): its gradient with respect to \(y\) is \(2y - 2V^\top x\), which is zero exactly at \(y = V^\top x\), and since the bowl curves upwards (the \(\|y\|^2\) term) that point is its minimum. So the closest point of \(R\) to \(x\) is \(VV^\top x\).
+A vector counts as a one-column matrix, so \(a^\top b = a \cdot b\) and \(y^\top M y\) is \(y \cdot (My)\). The first equality is \(\|a - b\|^2 = \|a\|^2 + \|b\|^2 - 2\, a \cdot b\) with \(a = x\), \(b = Vy\), and \(\|Vy\|^2 = y^\top V^\top V y\). The second uses \(V^\top V = I\), so \(y^\top V^\top V y = y^\top y = \|y\|^2\). The right-hand side is a bowl in \(y\): its gradient with respect to \(y\) is \(2y - 2V^\top x\), which is zero exactly at \(y = V^\top x\), and since the bowl curves upwards (the \(\|y\|^2\) term) that point is its minimum. So the closest point of \(R\) to \(x\) is \(VV^\top x\).
 
 The old round trip \(UWx\) is also a point of \(R\), so it is at least as far from \(x\) as the closest point:
 
@@ -175,7 +175,7 @@ The old round trip \(UWx\) is also a point of \(R\), so it is at least as far fr
 
 Add this up over \(x_1, \dots, x_m\): the pair \((V, V^\top)\) has a total error no larger than \((U, W)\). Since \((U, W)\) was arbitrary, an optimal pair can always be taken of the form \((V, V^\top)\) with orthonormal columns. \(\blacksquare\)
 
-In the snippet, \((u, w)\) was the clumsy pair, \(R\) the line through \((2, 1, 0)\), and \(V\) the unit vector \(v\): the error fell from 35.2 to 32.8, as the lemma promises. So the PCA problem becomes a search over \(U\) alone:
+In the snippet, \(R\) was the line through \((2, 1, 0)\) and \(V\) the unit vector \(v\). So the PCA problem becomes a search over \(U\) alone:
 
 \[ \operatorname*{argmin}_{U \in \mathbb R^{d,n} \,:\, U^\top U = I} \; \sum_{i=1}^m \| x_i - U U^\top x_i \|^2 . \]
 
@@ -226,7 +226,7 @@ It prints `[[30, 22, 6], [22, 18, 5], [6, 5, 30]]` and `32.0 32.0`. The 30 in th
 
 ### Step 3: eigenvectors of the scatter matrix
 
-An **eigenvector** of a square matrix \(A\) is a nonzero vector \(u\) that \(A\) only stretches: \(Au = \lambda u\) for some number \(\lambda\), its **eigenvalue**. Two facts about scatter matrices do the rest, and both are standard linear algebra.
+An **eigenvector** of a square matrix \(A\) is a nonzero vector \(u\) that \(A\) only stretches: \(Au = \lambda u\) for some number \(\lambda\), its **eigenvalue**. The matrix with rows \((2, 0)\) and \((0, 1)\) sends \((1, 0)\) to \((2, 0)\), so \((1, 0)\) is an eigenvector with eigenvalue 2, while \((1, 1)\) goes to \((2, 1)\), which is not a multiple of it. Two facts about scatter matrices do the rest, and both are standard linear algebra.
 
 - \(A\) is **symmetric** (\(A^\top = A\)), since \(x x^\top\) is. Every symmetric matrix has a **spectral decomposition** \(A = VDV^\top\): \(V\) is a \(d \times d\) matrix with orthonormal columns (\(V^\top V = VV^\top = I\)), those columns are eigenvectors of \(A\), and \(D\) is diagonal with the matching eigenvalues \(D_{1,1}, \dots, D_{d,d}\). We order them so that \(D_{1,1} \ge D_{2,2} \ge \dots \ge D_{d,d}\).
 - \(A\) is **positive semidefinite**: \(v^\top A v = \sum_i (v \cdot x_i)^2 \ge 0\) for every \(v\). Taking \(v\) to be an eigenvector shows every eigenvalue is at least 0.
@@ -245,14 +245,14 @@ Fix such a \(U\) and let \(B = V^\top U\), a \(d \times n\) matrix: column \(i\)
 
 The second formula comes from writing out the diagonal of \(B^\top DB\): its \((i, i)\) entry is \(\sum_j D_{j,j} B_{j,i}^2\), and the trace adds these over \(i\). Call \(\beta_j = \sum_{i=1}^n B_{j,i}^2\), the share of axis \(j\) that the chosen directions capture. Two facts about the \(\beta_j\):
 
-- **Each \(\beta_j\) is at most 1.** The columns of \(B\) are orthonormal, since \(B^\top B = U^\top VV^\top U = U^\top U = I\). Extend them to a full orthonormal basis of \(\mathbb R^d\), a \(d \times d\) matrix \(\tilde B\) whose first \(n\) columns are those of \(B\) and with \(\tilde B^\top \tilde B = I\). A square matrix with \(\tilde B^\top \tilde B = I\) also has \(\tilde B \tilde B^\top = I\), so every row of \(\tilde B\) has squared length 1: \(\sum_{i=1}^d \tilde B_{j,i}^2 = 1\). Dropping the last \(d - n\) columns can only lower this, so \(\beta_j \le 1\).
+- **Each \(\beta_j\) is at most 1.** The columns of \(B\) are orthonormal, since \(B^\top B = U^\top VV^\top U = U^\top U = I\). Extend them to a full orthonormal basis of \(\mathbb R^d\), a \(d \times d\) matrix \(\tilde B\) whose first \(n\) columns are those of \(B\) and with \(\tilde B^\top \tilde B = I\). A square matrix with \(\tilde B^\top \tilde B = I\) also has \(\tilde B \tilde B^\top = I\) (\(\tilde B^\top\) is then its inverse, and a square matrix’s inverse works on both sides), so every row of \(\tilde B\) has squared length 1: \(\sum_{i=1}^d \tilde B_{j,i}^2 = 1\). Dropping the last \(d - n\) columns can only lower this, so \(\beta_j \le 1\).
 - **The \(\beta_j\) add up to \(n\).** \(\sum_j \beta_j = \sum_{i=1}^n \sum_j B_{j,i}^2\) is the sum of the squared lengths of \(n\) unit columns, which is \(n\).
 
 So \(\beta = (\beta_1, \dots, \beta_d)\) lies in \([0, 1]^d\) (every entry between 0 and 1) and has \(\|\beta\|_1 = \sum_j |\beta_j| = n\), and
 
 \[ \operatorname{trace}(U^\top AU) = \sum_{j=1}^d D_{j,j}\, \beta_j \;\le\; \max_{\beta \in [0,1]^d,\; \|\beta\|_1 \le n} \; \sum_{j=1}^d D_{j,j}\,\beta_j . \]
 
-In words: you have \(n\) units of “capture” to spread over the axes, at most one unit per axis, and axis \(j\) pays \(D_{j,j}\) per unit. Obviously you put a full unit on each of the \(n\) best-paying axes. Let’s make “obviously” a proof. Take any feasible \(\beta\) and suppose some \(j \le n\) has \(\beta_j < 1\). If the total is below \(n\), raise \(\beta_j\) towards 1; the value cannot drop, since \(D_{j,j} \ge 0\). Otherwise some \(k > n\) has \(\beta_k > 0\); move an amount \(t = \min(1 - \beta_j, \beta_k)\) from \(k\) to \(j\). The value changes by \(t\,(D_{j,j} - D_{k,k}) \ge 0\), since \(j < k\) means \(D_{j,j} \ge D_{k,k}\). Each move either fills an axis \(j \le n\) or empties an axis \(k > n\), so after at most \(d\) moves we reach \(\beta = (1, \dots, 1, 0, \dots, 0)\) with \(n\) ones, without ever lowering the value. So the maximum is \(\sum_{j=1}^n D_{j,j}\).
+In words: you have \(n\) units of “capture” to spread over the axes, at most one unit per axis, and axis \(j\) pays \(D_{j,j}\) per unit. Obviously you put a full unit on each of the \(n\) best-paying axes. Let’s make “obviously” a proof. Take any feasible \(\beta\) and suppose some \(j \le n\) has \(\beta_j < 1\). If the total is below \(n\), raise \(\beta_j\) towards 1, as far as the total allows; the value cannot drop, since \(D_{j,j} \ge 0\). Otherwise the total is \(n\) while the first \(n\) entries sum to less than \(n\), so some \(k > n\) has \(\beta_k > 0\); move an amount \(t = \min(1 - \beta_j, \beta_k)\) from \(k\) to \(j\). The value changes by \(t\,(D_{j,j} - D_{k,k}) \ge 0\), since \(j < k\) means \(D_{j,j} \ge D_{k,k}\). Each move either fills an axis \(j \le n\) or empties an axis \(k > n\), so after at most \(d\) moves we reach \(\beta = (1, \dots, 1, 0, \dots, 0)\) with \(n\) ones, without ever lowering the value. So the maximum is \(\sum_{j=1}^n D_{j,j}\).
 
 Here is that claim tested against 100,000 random feasible \(\beta\), using our archive’s eigenvalues (computed in the next snippet) and \(n = 2\):
 
@@ -269,15 +269,15 @@ for _ in range(100000):
 print(round(best, 2), round(sum(alpha[:n]), 2))
 ```
 
-It prints `75.92 76.81`: random spreads come close but never pass the top-two sum.
+It prints `75.92 76.81`: random spreads come close but never pass the top-two sum. With \(n = 1\) the junk direction keeps \(u^\top A u = 46\), below the top eigenvalue 49.87, as the bound says.
 
 Finally, choose \(U = (u_1, \dots, u_n)\), the top eigenvectors. Then \(B = V^\top U\) is the first \(n\) columns of the identity, \(\beta = (1, \dots, 1, 0, \dots, 0)\), and \(\operatorname{trace}(U^\top AU) = \sum_{j=1}^n D_{j,j}\): the upper bound is reached. \(\blacksquare\)
 
-**The leftover error.** The proof also tells us the error of the best squeeze. The trace of \(A\) is \(\sum_i \|x_i\|^2\) (each diagonal entry of \(x_ix_i^\top\) is a squared count), and the trace also equals the sum of all eigenvalues. So the smallest total error is
+**The leftover error.** The proof also tells us the error of the best squeeze. The trace of \(A\) is \(\sum_i \|x_i\|^2\) (each diagonal entry of \(x_ix_i^\top\) is a squared count), and the trace also equals the sum of all eigenvalues: diagonal entry \(i\) of \(VDV^\top\) is \(\sum_j V_{i,j}^2 D_{j,j}\), and summing over \(i\) gives \(\sum_j D_{j,j}\), because every column of \(V\) has squared length 1. So the smallest total error is
 
 \[ \sum_{i=1}^m \|x_i\|^2 - \sum_{j=1}^n D_{j,j} = \sum_{j=n+1}^{d} D_{j,j}. \]
 
-In one sentence: **PCA loses exactly the spread along the axes it throws away.** Let’s compute it for our archive. The snippet finds the eigenvalues by **power iteration**: multiply a starting vector by \(A\) over and over and rescale it to length 1; the stretch along the longest axis wins, so the vector turns towards \(u_1\). Then it removes that axis from \(A\) (subtract \(\lambda_1 u_1 u_1^\top\)) and repeats.
+In one sentence: **PCA loses exactly the spread along the axes it throws away.** Let’s compute it for our archive. The snippet finds the eigenvalues by **power iteration**: multiply a starting vector by \(A\) over and over and rescale it to length 1; the stretch along the longest axis wins, so the vector turns towards \(u_1\). Then it removes that axis from \(A\) (subtract \(\lambda_1 u_1 u_1^\top\)), a step called **deflation**, and repeats.
 
 ```python
 X = [(3, 2, 0), (2, 2, 1), (4, 3, 0),
@@ -366,7 +366,7 @@ PCA(X, n):
 
 Compressing a message is \(y = (u_1 \cdot x, \dots, u_n \cdot x)\), recovering it is \(\tilde x = \sum_j y_j u_j\).
 
-**Cost.** Building \(A\) is \(O(md^2)\) time and \(O(d^2)\) space; its full eigendecomposition is \(O(d^3)\). Building \(B\) is \(O(m^2 d)\) time and \(O(m^2)\) space; its eigendecomposition is \(O(m^3)\), and turning \(n\) of its eigenvectors into principal components costs \(O(nmd)\). Storing the components is \(O(nd)\). After that, compressing or recovering one message costs \(O(nd)\) time, or \(O(ns)\) to compress a message with only \(s\) nonzero counts. If you need only the top \(n\) components, power iteration with deflation, as in the snippet above, costs \(O(k^2)\) per multiplication for a \(k \times k\) matrix, times the number of iterations, times \(n\); how many iterations it needs depends on the gap between consecutive eigenvalues.
+**Cost.** The two routes take the time found in the previous section, plus \(O(d^2)\) or \(O(m^2)\) space for the matrix, and \(O(nmd)\) to turn \(n\) eigenvectors of \(B\) into components. Storing the components is \(O(nd)\). After that, compressing or recovering one message costs \(O(nd)\) time, or \(O(ns)\) to compress a message with only \(s\) nonzero counts. If you need only the top \(n\) components, power iteration with deflation, as in the snippet above, costs \(O(k^2)\) per multiplication for a \(k \times k\) matrix, times the number of iterations, times \(n\); how many iterations it needs depends on the gap between consecutive eigenvalues.
 
 **A demonstration.** Let’s watch PCA find a line we planted. Draw points \((x, x + y)\) with \(x\) uniform on \([-1, 1]\) and a small Gaussian noise \(y\) with mean 0 and standard deviation 0.1. The points lie near the diagonal line, so the top principal component should be close to \((1/\sqrt 2, 1/\sqrt 2) \approx (0.707, 0.707)\). The snippet centres the points, builds the \(2 \times 2\) scatter matrix, and takes its top eigenvector in closed form:
 
@@ -465,7 +465,7 @@ What we want for the nearest-neighbour filter is different: a squeeze chosen onc
 
 Here is the plan, in words. Fill a compression matrix \(W\) with random numbers, chosen before you see any message. Squeeze every message with it. Then prove that, with high probability, every distance between messages comes out nearly unchanged. No archive, no eigenvectors, no fitting.
 
-Why would distances survive a random squeeze? Think of what one row of \(W\) does: it takes a random weighted sum of the counts. Its square is a noisy reading of the message’s squared length, too small sometimes, too large other times, but right on average. With \(n\) independent rows, the average of \(n\) noisy readings is close to the truth, for the same reason that the empirical risk of lesson 2 is close to the true risk. The surprise is how few rows suffice, and that the number does not depend on \(d\) at all.
+Why would distances survive a random squeeze? Think of what one row of \(W\) does: it takes a random weighted sum of the counts. Its square is a noisy reading of the message’s squared length, too small sometimes, too large other times, but right on average. With \(n\) independent rows, the average of \(n\) noisy readings is close to the truth, for the same reason that the empirical risk of lesson 4 is close to the true risk. The surprise is how few rows suffice, and that the number does not depend on \(d\) at all.
 
 **Distortion.** Squeezing two messages \(x_1\) and \(x_2\) with \(W\) **does not distort their distance much** when the ratio
 
@@ -554,9 +554,9 @@ import random
 rng = random.Random(4)
 lam = 0.2
 xs = [rng.gauss(0, 1) for _ in range(400000)]
-mgf = sum(math.exp(lam * x * x) for x in xs) / len(xs)
+exp_moment = sum(math.exp(lam * x * x) for x in xs) / len(xs)
 fourth = sum(x ** 4 for x in xs) / len(xs)
-print(round(mgf, 3), round((1 - 2 * lam) ** -0.5, 3))
+print(round(exp_moment, 3), round((1 - 2 * lam) ** -0.5, 3))
 print(round(fourth, 2))
 ```
 
@@ -572,7 +572,7 @@ Choose \(\lambda = \frac{\varepsilon}{2(1+\varepsilon)}\), which is below 1/2. T
 
 It remains to show \(\varepsilon - \ln(1 + \varepsilon) \ge \varepsilon^2/3\) when \(\varepsilon \le 1/2\). First, \(\ln(1+\varepsilon) \le \varepsilon - \varepsilon^2/2 + \varepsilon^3/3\) for \(\varepsilon \ge 0\): the difference \(f(\varepsilon) = \varepsilon - \varepsilon^2/2 + \varepsilon^3/3 - \ln(1+\varepsilon)\) is 0 at 0 and has derivative \(1 - \varepsilon + \varepsilon^2 - \frac{1}{1+\varepsilon} = \frac{\varepsilon^3}{1 + \varepsilon} \ge 0\). So \(\varepsilon - \ln(1+\varepsilon) \ge \varepsilon^2/2 - \varepsilon^3/3\), and when \(\varepsilon \le 1/2\) we have \(\varepsilon^3/3 \le \varepsilon^2/6\), leaving at least \(\varepsilon^2/3\). The exponent is then at most \(-\frac k2 \cdot \frac{\varepsilon^2}{3} = -\varepsilon^2 k/6\). \(\blacksquare\)
 
-The restriction \(\varepsilon \le 1/2\) is not fussiness. The inequality \(\varepsilon - \ln(1+\varepsilon) \ge \varepsilon^2/3\) holds on the whole range up to 1/2 and fails at \(\varepsilon = 1\), and with it the clean \(e^{-\varepsilon^2 k/6}\) bound really is false for large \(\varepsilon\): for \(k = 400\) and \(\varepsilon = 1\), the exact chance that a \(\chi^2_{400}\) variable reaches 800 is larger than \(e^{-400/6}\). (For an even \(k\) the upper tail of \(\chi^2_k\) at a point \(t\) has the exact form \(\sum_{j < k/2} e^{-t/2}(t/2)^j / j!\), used in the second snippet.)
+The restriction \(\varepsilon \le 1/2\) is not fussiness: at \(\varepsilon = 1\) the inequality fails, and so does the clean bound itself. The first snippet checks the inequality on a grid up to 1/2 and at \(\varepsilon = 1\). The second computes the exact chance that a \(\chi^2_{400}\) variable reaches 800, using the exact upper tail of \(\chi^2_k\) at \(t\) for an even \(k\), \(\sum_{j < k/2} e^{-t/2}(t/2)^j / j!\).
 
 ```python
 import math
@@ -592,7 +592,7 @@ for j in range(k // 2):
 print(f"{tail:.1e} {math.exp(-eps ** 2 * k / 6):.1e}")
 ```
 
-They print `True 0.3069 0.3333` (the inequality holds up to 1/2, and at \(\varepsilon = 1\) the left side is 0.3069, below 1/3) and `6.2e-29 1.1e-29` (the true tail is more than five times the would-be bound). Everything in this lesson uses \(\varepsilon \le 1/2\).
+They print `True 0.3069 0.3333` (at \(\varepsilon = 1\) the left side is 0.3069, below 1/3) and `6.2e-29 1.1e-29` (the true tail is more than five times the would-be bound \(e^{-400/6}\)). Everything in this lesson uses \(\varepsilon \le 1/2\).
 
 **Lemma (one vector survives a random squeeze).** Fix \(x \in \mathbb R^d\), \(x \ne 0\). Let \(W \in \mathbb R^{n,d}\) have independent \(N(0,1)\) entries. Then for every \(\varepsilon \in (0, 1/2]\),
 
@@ -859,7 +859,7 @@ the **\(\ell_1\) norm** of \(v\). (For the message above with counts 3, 1 and 2,
 
 \[ \min_{v,\, t \in \mathbb R^d} \; \sum_{i=1}^d t_i \quad\text{such that}\quad Wv = y,\; -t_i \le v_i \le t_i \text{ for every } i . \]
 
-At the optimum each \(t_i\) is pushed down to \(|v_i|\), so the objective is \(\|v\|_1\). Linear programs can be solved in polynomial time (lesson 9 used one to find a separating halfspace). The question is whether the \(\ell_1\) minimizer is still the true message. It is, under a slightly stronger RIP, and we can even say what happens for messages that are only nearly sparse.
+At the optimum each \(t_i\) is pushed down to \(|v_i|\), so the objective is \(\|v\|_1\): for \(v = (3, -1, 2)\) the smallest allowed \(t\) is \((3, 1, 2)\), total 6. Linear programs can be solved in polynomial time (lesson 9 used one to find a separating halfspace). The question is whether the \(\ell_1\) minimizer is still the true message. It is, under a slightly stronger RIP, and we can even say what happens for messages that are only nearly sparse.
 
 For an arbitrary \(x\), let \(x_s\) be the vector that keeps the \(s\) entries of \(x\) largest in absolute value and sets the rest to 0: the best s-sparse approximation of \(x\). Then \(\|x - x_s\|_1\) is the total of the small entries, how far \(x\) is from being s-sparse. For the message with counts \((3, 1, 2)\) and \(s = 2\), \(x_s\) keeps 3 and 2 and \(\|x - x_s\|_1 = 1\). Here are the three ways of measuring that message, and its small-entry total, term by term:
 
@@ -903,7 +903,7 @@ It prints `0.606 8.15`: a \((0.3, 2s)\)-RIP matrix recovers an almost-sparse mes
 
 The proof is the longest in this lesson, so here is its plan. Write \(h = x^\star - x\) for the error. Split the \(d\) positions into blocks of \(s\). Show that the part of \(h\) outside the two most important blocks is small, using only the fact that \(x^\star\) has the smallest \(\ell_1\) norm (Claim 1). Show that the part inside those two blocks is small, using the RIP (Claim 2). Add.
 
-**Notation.** For a vector \(v\) and a set of positions \(I\), \(v_I\) is the vector equal to \(v\) on \(I\) and 0 elsewhere. \([d] = \{1, \dots, d\}\) is the set of all positions, and \(I^c = [d] \setminus I\) is the set of positions not in \(I\). We assume \(d/s\) is a whole number to keep the blocks equal; nothing changes otherwise except that the last block is smaller.
+**Notation.** For a vector \(v\) and a set of positions \(I\), \(v_I\) is the vector equal to \(v\) on \(I\) and 0 elsewhere. \([d] = \{1, \dots, d\}\) is the set of all positions, and \(I^c = [d] \setminus I\) is the set of positions not in \(I\). For \(v = (5, -1, 2)\) and \(I = \{1, 3\}\), \(v_I = (5, 0, 2)\) and \(v_{I^c} = (0, -1, 0)\). We assume \(d/s\) is a whole number to keep the blocks equal; nothing changes otherwise except that the last block is smaller.
 
 **The blocks.** Let \(T_0\) be the \(s\) positions where \(|x_i|\) is largest (ties broken arbitrarily), so \(x_{T_0} = x_s\) and \(x_{T_0^c} = x - x_s\). Let \(T_1\) be the \(s\) positions outside \(T_0\) where \(|h_i|\) is largest, \(T_2\) the next \(s\) positions by \(|h_i|\) outside \(T_0 \cup T_1\), and so on until every position is used. Write \(T_{0,1} = T_0 \cup T_1\).
 
@@ -949,7 +949,7 @@ Granting them, and using \(\|h_{T_0}\| \le \|h_{T_{0,1}}\|\) (a vector restricte
 
 \[ \|h\| \le 2\|h_{T_{0,1}}\| + 2 s^{-1/2}\|x - x_s\|_1 \le \Big(\frac{4\rho}{1 - \rho} + 2\Big) s^{-1/2}\|x - x_s\|_1 = 2\,\frac{1 + \rho}{1 - \rho}\, s^{-1/2}\|x - x_s\|_1, \]
 
-which is the theorem.
+which is the theorem. (The first step uses Claim 1 and \(\|h_{T_0}\| \le \|h_{T_{0,1}}\|\), the second Claim 2, and the last puts \(4\rho + 2(1 - \rho) = 2(1 + \rho)\) over \(1 - \rho\).)
 
 **Claim 1, the tail is small.** This uses no RIP at all, only that \(x^\star\) has the smallest \(\ell_1\) norm.
 
@@ -1065,7 +1065,16 @@ Then, with probability at least \(1 - \delta\) over a random projection \(W \in 
 - The span \(S\) is every vector \(U_I \alpha\) with \(\alpha \in \mathbb R^s\), where \(U_I\) is the \(d \times s\) matrix of the chosen columns. With \(U = I\) (the identity), \(S\) is exactly the set of messages that use only the words in \(I\).
 - The bound on \(n\) is the Johnson-Lindenstrauss dimension for a net of \((12/\varepsilon)^s\) points at accuracy \(\varepsilon/2\).
 
-In one sentence: **a random projection with a few times \(s\ln(1/\varepsilon)/\varepsilon^2\) rows keeps the length of every vector in one fixed s-dimensional subspace within a fraction \(\varepsilon\).**
+In one sentence: **a random projection with a few times \(s\ln(1/\varepsilon)/\varepsilon^2\) rows keeps the length of every vector in one fixed s-dimensional subspace within a fraction \(\varepsilon\).** For the messages that use two given words (\(s = 2\)), with \(\varepsilon = 0.5\) and \(\delta = 0.01\):
+
+```python
+import math
+s, eps, delta = 2, 0.5, 0.01
+net = math.log(2 / delta) + s * math.log(12 / eps)
+print(math.ceil(24 * net / eps ** 2))
+```
+
+It prints `1119`: about eleven hundred rows to pin down a whole plane of messages.
 
 *Proof.* It is enough to treat unit vectors, \(x = U_I\alpha\) with \(\|\alpha\| = 1\); note \(\|U_I \alpha\| = \|\alpha\|\) because the columns of \(U_I\) are orthonormal.
 
@@ -1188,8 +1197,7 @@ You now have two ways to squeeze with a promise of recovery, and they rest on di
 
 **Compressed sensing assumes the messages are sparse, in some known basis.** It recovers perfectly every s-sparse message, from about \(s \ln d\) numbers, with a nonlinear decoder.
 
-Each wins where the other’s assumption fails. On the archive of single-word messages \(e_1, \dots, e_d\), the messages are 1-sparse, so compressed sensing recovers them all from a number of measurements of order \(\ln d\), while PCA loses an average of \((d - n)/d\) of each message, more than half whenever \(n \le d/2\). In the other direction, take \(m\) messages that lie exactly in an \(n\)-dimensional subspace. PCA recovers them perfectly with \(n\) numbers. They are also \(n\)-sparse in any orthonormal basis whose first \(n\) vectors span the subspace, so compressed sensing works too, but it needs on the order of \(n \ln d\) numbers, and with exactly \(n\) it can fail. PCA is also more forgiving of some kinds of noise.
-
+Each wins where the other’s assumption fails. On the archive of single-word messages \(e_1, \dots, e_d\), the messages are 1-sparse, so compressed sensing recovers them all from a number of measurements of order \(\ln d\), while PCA loses an average of \((d - n)/d\) of each message, more than half whenever \(n \le d/2\). In the other direction, take \(m\) messages that lie exactly in an \(n\)-dimensional subspace. PCA recovers them perfectly with \(n\) numbers. They are also \(n\)-sparse in any orthonormal basis whose first \(n\) vectors span the subspace, so compressed sensing works too, but it needs on the order of \(n \ln d\) numbers, and with exactly \(n\) it can fail.
 For the mail room, word counts are sparse and do not lie near a small subspace, so compressed sensing’s assumption is the right one for recovering messages, and a random projection is the right tool for keeping distances. If all you need is the best summary of a fixed archive, for instance to plot it or to find its main themes, PCA is the right one.
 
 ## Fix the bug

@@ -113,9 +113,9 @@ The left number in each pair is the stump on “free”, the right one the stump
 
 ## Weak learners
 
-Recall what we asked of a learner in lesson 3. A class \(\mathcal H\) is PAC learnable if there are a sample complexity \(m_{\mathcal H}(\varepsilon, \delta)\) and an algorithm such that, for every accuracy \(\varepsilon\), every confidence \(\delta\), every distribution \(\mathcal D\) and every labelling function \(f\) for which realizability holds, after \(m \ge m_{\mathcal H}(\varepsilon, \delta)\) examples it returns a hypothesis with true risk at most \(\varepsilon\), with probability at least \(1 - \delta\). A quick reminder of the pieces: \(\mathcal D\) is the distribution fresh messages are drawn from, \(f\) is the true labelling, realizability means some hypothesis in \(\mathcal H\) has true risk 0, the true risk \(L_{(\mathcal D, f)}(h)\) is the chance that \(h\) disagrees with \(f\) on a fresh message, and \(m_{\mathcal H}(\varepsilon, \delta)\) is a number of examples that is enough for that accuracy and confidence. In this lesson we call that **strong learning**, because \(\varepsilon\) can be made as small as you like.
+Recall what we asked of a learner in lesson 3. Fresh messages are drawn from a distribution \(\mathcal D\) and labelled by the true labelling \(f\); the true risk \(L_{(\mathcal D, f)}(h)\) is the chance that \(h\) disagrees with \(f\) on a fresh message; realizability means some hypothesis in \(\mathcal H\) has true risk 0; and the examples are **i.i.d.**, drawn independently from the same \(\mathcal D\). A class \(\mathcal H\) is PAC learnable if some algorithm, given enough such examples, at least a sample complexity \(m_{\mathcal H}(\varepsilon, \delta)\), returns a hypothesis with true risk at most \(\varepsilon\), with probability at least \(1 - \delta\), for every accuracy \(\varepsilon\), confidence \(\delta\), \(\mathcal D\) and \(f\) with realizability. In this lesson we call that **strong learning**, because \(\varepsilon\) can be made as small as you like.
 
-Lesson 6’s fundamental theorem told us which classes are PAC learnable, and that any ERM learner will do. But it said nothing about time, and lesson 8 showed that for some classes ERM is computationally hard even when realizability holds. So here is a tempting trade. What if we ask for much less accuracy, in return for speed? Not “true risk at most \(\varepsilon\)”, but merely “a little better than a coin”.
+Lesson 6’s fundamental theorem told us which classes are PAC learnable, and that ERM will do: recall from lesson 2 that ERM, empirical risk minimization, returns a hypothesis with the smallest empirical risk. But it said nothing about time, and lesson 8 showed that for some classes ERM is computationally hard even when realizability holds. So here is a tempting trade. What if we ask for much less accuracy, in return for speed? Not “true risk at most \(\varepsilon\)”, but merely “a little better than a coin”.
 
 Here is that idea with the mail room’s numbers. A coin that says junk or keep at random is wrong half the time. The team’s best stump has true risk 0.375, so it beats the coin by \(0.5 - 0.375 = 0.125\). A weak learner is a learner that can always beat the coin by some fixed amount like that, called \(\gamma\) (gamma), whatever mail it is trained on.
 
@@ -125,15 +125,13 @@ Here is that idea with the mail room’s numbers. A coin that says junk or keep 
 \[ L_{(\mathcal D, f)}(h) \le \tfrac12 - \gamma. \]
 - A class \(\mathcal H\) is **\(\gamma\)-weak learnable** if a \(\gamma\)-weak learner for it exists.
 
-The new pieces of the definition: \(m_{\mathcal H}: (0, 1) \to \mathbb N\) says the sample size is a function that takes a confidence \(\delta\) strictly between 0 and 1 and returns a whole number (\(\mathbb N\) is the set of whole numbers \(1, 2, 3, \dots\)); \(f: \mathcal X \to \{\pm 1\}\) says the labelling takes a message and returns junk or keep. The display
-\[ L_{(\mathcal D, f)}(h) \le \tfrac12 - \gamma \]
-reads: the true risk of the returned \(h\), the chance it mislabels a fresh message drawn from \(\mathcal D\), is at most one half minus the edge. In plain words: **the hypothesis is wrong on fresh mail at most \(\gamma\) less often than a coin.** With the team’s stump, \(\gamma = 0.125\) and the promise is \(0.375 \le 0.5 - 0.125\), which holds with no room to spare.
+The new pieces: \(m_{\mathcal H}: (0, 1) \to \mathbb N\) says the sample size is a function that takes a confidence \(\delta\) strictly between 0 and 1 and returns a whole number (\(\mathbb N\) is \(1, 2, 3, \dots\)); \(f: \mathcal X \to \{\pm 1\}\) says the labelling takes a message and returns junk or keep. The display reads: the true risk of the returned \(h\) is at most one half minus \(\gamma\). In plain words: **the hypothesis is wrong on fresh mail at most \(\gamma\) less often than a coin.** With the team’s stump, \(\gamma = 0.125\) and the promise is \(0.375 \le 0.5 - 0.125\), which holds with no room to spare.
 
-Read the definition next to the definition of strong learning. Everything is the same except one thing: the accuracy is no longer yours to choose. It is pinned at \(\tfrac12 - \gamma\). A hypothesis that answers by flipping a fair coin has true risk exactly \(\tfrac12\), so a weak learner only promises to beat the coin by a fixed margin \(\gamma\). The number \(\gamma\) is called the learner’s **edge**.
+Everything is as in strong learning except one thing: the accuracy is no longer yours to choose. It is pinned at \(\tfrac12 - \gamma\). The number \(\gamma\) is called the learner’s **edge**.
 
 [[diagram:weak]]
 
-Is weak learning statistically easier than strong learning? Surprisingly, no. Recall the VC dimension from lesson 6: the size of the largest set of points that a class can shatter, that is, label in every possible way. Lesson 6’s fundamental theorem gives a lower bound on the sample complexity of PAC learning a class of VC dimension \(d\), of the form \(m_{\mathcal H}(\varepsilon, \delta) \ge C_1 \frac{d + \log(1/\delta)}{\varepsilon}\) for an absolute constant \(C_1\). Read it from the inside: \(\log\) is the natural logarithm (as everywhere in this course), so \(\log(1/\delta)\) grows slowly as you ask for more confidence; the class’s VC dimension \(d\) is added to it; and dividing by \(\varepsilon\) makes the requirement grow as the accuracy gets finer. “Absolute constant” means a fixed number that depends on nothing else. In plain words: **you need at least about \((d + \log(1/\delta))/\varepsilon\) examples, up to a fixed factor.** With \(C_1 = 1\) for illustration, \(d = 3\) and \(\delta = 0.05\), the weak target \(\varepsilon = 0.375\) asks for at least 16 examples, the strong target \(\varepsilon = 0.01\) for about 600:
+Is weak learning statistically easier than strong learning? Surprisingly, no. Recall the VC dimension from lesson 6: the size of the largest set of points that a class can shatter, that is, label in every possible way. Lesson 6’s fundamental theorem gives a lower bound on the sample complexity of PAC learning a class of VC dimension \(d\), of the form \(m_{\mathcal H}(\varepsilon, \delta) \ge C_1 \frac{d + \log(1/\delta)}{\varepsilon}\) for an absolute constant \(C_1\) (here, and whenever it is a VC dimension, \(d\) is not the number of words). Read it from the inside: \(\log\) is the natural logarithm (as everywhere in this course), so \(\log(1/\delta)\) grows slowly as you ask for more confidence; the class’s VC dimension \(d\) is added to it; and dividing by \(\varepsilon\) makes the requirement grow as the accuracy gets finer. “Absolute constant” means a fixed number that depends on nothing else. In plain words: **you need at least about \((d + \log(1/\delta))/\varepsilon\) examples, up to a fixed factor.** With \(C_1 = 1\) for illustration, \(d = 3\) and \(\delta = 0.05\), the weak target \(\varepsilon = 0.375\) asks for at least 16 examples, the strong target \(\varepsilon = 0.01\) for about 600:
 
 ```python
 import math
@@ -148,7 +146,7 @@ for eps in (0.5 - gamma, 0.01):
 
 It prints `0.125 0.4167` (the team’s edge, and the target \(\tfrac12 - \tfrac1{12}\) we will meet in the next section), then `0.375 16.0` and `0.01 599.6`. Weak learning needs fewer examples, but only by a constant factor. Now put \(\varepsilon = \tfrac12 - \gamma\) into the bound. If \(d = \infty\), no finite number of examples suffices even for that modest accuracy, so a class with infinite VC dimension is not \(\gamma\)-weak learnable either. If we ignore computation, weak learning is characterized by the VC dimension, exactly like strong learning.
 
-The hope lies elsewhere. Maybe there is a weak learner that is *fast*, for a class where every strong learner is slow. A natural recipe is to pick a simple **base class** \(B\), such as decision stumps, and run ERM over \(B\) as the weak learner. (Recall from lesson 2 that ERM, empirical risk minimization, returns a hypothesis with the smallest empirical risk; \(\mathrm{ERM}_B\), with the subscript, searches only the class \(B\), and \(\mathrm{ERM}_B(S)\) is the hypothesis it returns on the training sequence \(S\). With weights, it minimizes the weighted risk instead.) That works for \(\mathcal H\) if two things hold:
+The hope lies elsewhere. Maybe there is a weak learner that is *fast*, for a class where every strong learner is slow. A natural recipe is to pick a simple **base class** \(B\), such as decision stumps, and run ERM over \(B\) as the weak learner. (\(\mathrm{ERM}_B\), with the subscript, searches only the class \(B\), and \(\mathrm{ERM}_B(S)\) is the hypothesis it returns on the training sequence \(S\). With weights, it minimizes the weighted risk instead.) That works for \(\mathcal H\) if two things hold:
 
 - \(\mathrm{ERM}_B\) can be computed efficiently, and
 - for every training sequence labelled by some hypothesis in \(\mathcal H\), every \(\mathrm{ERM}_B\) hypothesis has risk at most \(\tfrac12 - \gamma\).
@@ -185,16 +183,16 @@ Let \(\mathcal H\) be the class of all three-piece hypotheses, and let the base 
 **Step 1: some stump is within \(1/3\) of perfect.** The two cuts split the line into three regions: \(R_1 = (-\infty, \theta_1)\), \(R_2 = [\theta_1, \theta_2]\) and \(R_3 = (\theta_2, \infty)\) (a round bracket leaves its endpoint out, a square one keeps it in, and \(\infty\) means the piece runs on forever). They are disjoint and cover the line, so \(\mathcal D(R_1) + \mathcal D(R_2) + \mathcal D(R_3) = 1\), and the smallest of the three weights is at most \(1/3\) (if all three exceeded \(1/3\), their sum would exceed 1). We now show that, for each region \(R_k\) and each \(\eta > 0\), some stump disagrees with \(h^\star\) on a set of probability at most \(\mathcal D(R_k) + \eta\).
 
 - Region \(R_1\). The stump \(g = b \cdot \operatorname{sign}(x - \theta_2)\) gives \(+b\) for \(x > \theta_2\) and \(-b\) for \(x \le \theta_2\). It agrees with \(h^\star\) on \(R_2\) and \(R_3\), so it disagrees only on \(R_1\).
-- Region \(R_3\). Take \(g = -b \cdot \operatorname{sign}(x - \theta)\) with \(\theta < \theta_1\). It gives \(+b\) for \(x \le \theta\) and \(-b\) for \(x > \theta\), so it disagrees with \(h^\star\) on \(R_3\) and on the sliver \((\theta, \theta_1)\). As \(\theta\) rises to \(\theta_1\), the slivers shrink to the empty set, and by continuity of probability their weight tends to 0. So some \(\theta\) makes the sliver weigh at most \(\eta\).
+- Region \(R_3\). Take \(g = -b \cdot \operatorname{sign}(x - \theta)\) with \(\theta < \theta_1\). It gives \(+b\) for \(x \le \theta\) and \(-b\) for \(x > \theta\), so it disagrees with \(h^\star\) on \(R_3\) and on the sliver \((\theta, \theta_1)\). As \(\theta\) rises to \(\theta_1\), the slivers shrink to the empty set, and the probability of sets that shrink to nothing tends to 0 (continuity of probability). So some \(\theta\) makes the sliver weigh at most \(\eta\).
 - Region \(R_2\). Take \(g = b \cdot \operatorname{sign}(x - \theta)\) with \(\theta\) far to the left. It gives \(+b\) except on \((-\infty, \theta]\), so it disagrees with \(h^\star\) on \(R_2\) and on the part of \((-\infty, \theta]\) outside \(R_2\). As \(\theta \to -\infty\) the sets \((-\infty, \theta]\) shrink to the empty set, so again some \(\theta\) makes their weight at most \(\eta\).
 
 Applying this to the lightest region, for every \(\eta > 0\) there is a stump with \(L_{(\mathcal D, f)}(g) \le \tfrac13 + \eta\). (The \(\eta\) is needed because a stump on the whole line is never constant: it can only push its threshold further and further out.)
 
 **Step 2: ERM over stumps finds one nearly that good.** The class \(B\) has VC dimension 2, which you can check the way lesson 6 checked thresholds. By lesson 6’s fundamental theorem, a class of finite VC dimension is agnostic PAC learnable by ERM. Recall from lesson 3 that agnostic means we no longer assume some hypothesis in the class is perfect; we only ask to come close to the best one the class has. We need the agnostic version here, because the labels come from \(h^\star\), which is usually not a stump. So there is a sample complexity \(m_B(\varepsilon, \delta)\) such that, on \(m \ge m_B(\varepsilon, \delta)\) examples, with probability at least \(1 - \delta\),
 \[ L_{(\mathcal D, f)}(\mathrm{ERM}_B(S)) \le \min_{g \in B} L_{(\mathcal D, f)}(g) + \varepsilon. \]
-On the left is the true risk of the stump ERM returns on \(S\). On the right, \(\min_{g \in B}\) means “the smallest value over every stump \(g\) in \(B\)”: the true risk of the best stump there is. In plain words: **the stump ERM finds is at most \(\varepsilon\) worse on fresh points than the best stump.** If the best stump had true risk 0.35 and \(\varepsilon = 1/24 \approx 0.042\), ERM’s stump would have true risk at most about 0.392.
+On the left is the true risk of the stump ERM returns on \(S\). On the right, \(\min_{g \in B}\) means “the smallest value over every stump \(g\) in \(B\)”: the true risk of the best stump there is. In plain words: **the stump ERM finds is at most \(\varepsilon\) worse on fresh points than the best stump.**
 
-Set \(\varepsilon = 1/24\) and \(\eta = 1/24\). The minimum over \(B\) is at most \(\tfrac13 + \tfrac1{24}\), so with probability at least \(1 - \delta\),
+Now push numbers through it: set \(\varepsilon = 1/24\) and \(\eta = 1/24\). The minimum over \(B\) is at most \(\tfrac13 + \tfrac1{24}\), so with probability at least \(1 - \delta\),
 \[ L_{(\mathcal D, f)}(\mathrm{ERM}_B(S)) \le \tfrac13 + \tfrac1{24} + \tfrac1{24} = \tfrac{5}{12} = \tfrac12 - \tfrac1{12}. \]
 The three terms are the lightest region, the sliver \(\eta\) and ERM’s slack \(\varepsilon\); the fractions printed `5/12 5/12` in the snippet above.
 That is the definition of a \(\tfrac1{12}\)-weak learner, with \(m_{\mathcal H}(\delta) = m_B(1/24, \delta)\). \(\blacksquare\)
@@ -247,10 +245,10 @@ def F(j, th):
                if l == -1 and x[j] > th)
     return let + flag
 
-print(F(0, 2.5), 1 - F(0, 2.5), F(0, 0.5))
+print(F(0, 2.5), 1 - F(0, 2.5), F(0, 0.5), F(0, 1.5))
 ```
 
-It prints `0.125 0.875 0.5`. The last number is “junk if free \(> 0.5\)”, round 1’s stump, now flagging the two heavy keep messages. So one function covers both signs, and we want
+It prints `0.125 0.875 0.5 0.3125`. The third number is “junk if free \(> 0.5\)”, round 1’s stump, now flagging the two heavy keep messages; the last one returns below. So one function covers both signs, and we want
 \[ \min_{j \in [d]} \ \min_{\theta \in \mathbb R} \ \min\{F_j(\theta),\, 1 - F_j(\theta)\}. \]
 Read it from the inside out: for one feature and one threshold, take the better of the two directions; then the best threshold for that feature; then the best feature. In plain words: **the smallest weighted risk of any stump at all.**
 
@@ -284,7 +282,7 @@ Trying every \(\theta \in \Theta_j\) for every \(j\), and summing over \(m\) exa
 
 **Each step costs \(O(1)\).** Suppose we know \(F = F_j(\theta)\) for a threshold just below \(x_{i,j}\), and now move to a threshold \(\theta'\) just above it. Only example \(i\) changes sides: it was above the threshold, predicted junk, and now it is at or below it, predicted keep. If \(y_i = +1\), it was right and is now wrong, so \(F\) grows by \(D_i\). If \(y_i = -1\), it was wrong and is now right, so \(F\) shrinks by \(D_i\). Both cases in one line:
 \[ F_j(\theta') = F_j(\theta) + y_i D_i. \]
-The label \(y_i\) is \(+1\) or \(-1\), so the product \(y_i D_i\) is the weight with a sign: added for junk, subtracted for keep. In plain words: **sliding the threshold past one example changes the risk by that example’s weight, up for junk and down for keep.** Under the round-2 weights, slide “free” from 0.5 to 1.5: messages 4 (keep, 0.25) and 6 (junk, \(1/16\)) cross, so \(F\) goes from 0.5 to \(0.5 - 0.25 + 0.0625 = 0.3125\).
+The label \(y_i\) is \(+1\) or \(-1\), so the product \(y_i D_i\) is the weight with a sign: added for junk, subtracted for keep. In plain words: **sliding the threshold past one example changes the risk by that example’s weight, up for junk and down for keep.** Under the round-2 weights, slide “free” from 0.5 to 1.5: messages 4 (keep, 0.25) and 6 (junk, \(1/16\)) cross, so \(F\) goes from 0.5 to \(0.5 - 0.25 + 0.0625 = 0.3125\), the last number the \(F_j\) snippet printed.
 
 [[diagram:sweep]]
 
@@ -397,7 +395,7 @@ Let’s run three rounds on the ten messages by hand. Watch what happens to mess
 
 **Round 2.** Under the new weights, “junk if free \(> 0.5\)” would now have weighted risk \(1/2\). The learner returns “junk if free \(> 2.5\)” instead. It gets 4 and 5 right but misses 6 and 7, which are junk with low “free” counts. So \(\varepsilon_2 = 2/16 = 0.125\) and \(w_2 = \tfrac12 \log 7 \approx 0.973\).
 
-**Round 3.** Now 6 and 7 are heavy, and the learner returns “junk if click \(> 3.5\)”, which misses only 9 and 10. Their weights are \(1/28\) each, so \(\varepsilon_3 = 1/14 \approx 0.071\) and \(w_3 = \tfrac12 \log 13 \approx 1.282\).
+**Round 3.** The update multiplies 6 and 7 by \(e^{w_2} = \sqrt 7\) and the rest by \(1/\sqrt 7\). After normalizing, 6 and 7 carry \(1/4\) each, messages 4 and 5 carry \(1/7\) each, and the other six carry \(1/28\) each (check: \(1/2 + 2/7 + 6/28 = 1\)). Now 6 and 7 are heavy, and the learner returns “junk if click \(> 3.5\)”, which misses only 9 and 10. Their weights are \(1/28\) each, so \(\varepsilon_3 = 1/14 \approx 0.071\) and \(w_3 = \tfrac12 \log 13 \approx 1.282\).
 
 The vote after three rounds is
 \[ h_s(x) = \operatorname{sign}\big(0.693\, h_1(x) + 0.973\, h_2(x) + 1.282\, h_3(x)\big), \]
@@ -416,7 +414,7 @@ for x in [(1, 4), (1, 1)]:
     print(x, psi, round(s, 3), 1 if s > 0 else -1)
 ```
 
-It prints `(1, 4) [1, -1, 1] 1.003 1` and `(1, 1) [1, -1, -1] -1.562 -1`. Three stumps, each wrong on two of ten messages, combine into a rule that is wrong on none. Here is the same run in Python, printing \(\varepsilon_t\), \(w_t\), the empirical risk of the vote so far, and the weight of message 4 after the update. The line `eps = ...` is \(\varepsilon_t\), `w = ...` is \(w_t\), `u` holds the weights times \(e^{-w_t y_i h_t(x_i)}\), and dividing by `sum(u)` is the normalization:
+It prints `(1, 4) [1, -1, 1] 1.003 1` and `(1, 1) [1, -1, -1] -1.562 -1`. Three stumps, each wrong on two of ten messages, combine into a rule that is wrong on none. Here is the whole run, printing \(\varepsilon_t\), \(w_t\), the empirical risk of the vote so far, and the weight of message 4 after the update; `u` holds the weights times \(e^{-w_t y_i h_t(x_i)}\), and dividing by `sum(u)` normalizes:
 
 ```python
 import math
@@ -470,15 +468,13 @@ T0 = math.floor(math.log(m) / (2 * gamma ** 2)) + 1
 print(T0, round(math.exp(-2 * gamma ** 2 * T0), 4))
 ```
 
-It prints `0.583`, the ceiling after three rounds, and `13 0.0963`: by round 13 the ceiling would be below \(1/10\), and on ten messages that forces zero mistakes. (Our run got there in three, because its later rounds had bigger edges than 0.3.)
-
-Before the proof, notice how strong this is. The weak learner only promises to beat a coin by \(\gamma\), each round, on whatever weights it is handed. Yet the empirical risk of the vote falls exponentially in the number of rounds. And because the empirical risk is a multiple of \(1/m\), the moment the bound drops below \(1/m\) the empirical risk must be exactly 0.
+It prints `0.583`, the ceiling after three rounds, and `13 0.0963`: by round 13 the ceiling would be below \(1/10\). The empirical risk is a multiple of \(1/m\), so once the bound drops below \(1/m\) it must be exactly 0: on ten messages, zero mistakes. (Our run got there in three, because its later rounds had bigger edges than 0.3.) Notice how strong this is: an edge of \(\gamma\) per round, on whatever weights the learner is handed, buys an exponential fall.
 
 We also need the rounds to be well defined. If \(\varepsilon_t = 0\), the vote \(w_t\) would be infinite; in that case the weak learner has found a hypothesis with no mistakes at all, and AdaBoost can simply stop and return it. So assume \(0 < \varepsilon_t \le \tfrac12 - \gamma\), which makes every vote finite and positive.
 
-*Proof.* We follow the vote as it builds up. For each \(t\), let
+*Proof.* We follow the score of the vote as it builds up: after one round on the ten messages it is \(0.693\, h_1(x)\), after two \(0.693\, h_1(x) + 0.973\, h_2(x)\). For each \(t\), let
 \[ f_t = \sum_{p \le t} w_p h_p, \]
-the score of the vote after \(t\) rounds: \(\sum_{p \le t}\) adds the voted stumps of rounds \(p = 1\) up to \(t\), so \(f_t(x)\) is the number whose sign is the vote. In plain words: **\(f_t\) is the running total of the voted stumps.** After one round, \(f_1(x) = 0.693\, h_1(x)\). The symbol \(\equiv\) means “equal for every input”, so \(f_0 \equiv 0\) says no rounds give score 0 everywhere, and AdaBoost outputs \(h_s = \operatorname{sign}(f_T)\).
+where \(\sum_{p \le t}\) adds the voted stumps of rounds \(p = 1\) up to \(t\), so \(f_t(x)\) is the number whose sign is the vote. In plain words: **\(f_t\) is the running total of the voted stumps.** The symbol \(\equiv\) means “equal for every input”, so \(f_0 \equiv 0\) says no rounds give score 0 everywhere, and AdaBoost outputs \(h_s = \operatorname{sign}(f_T)\).
 
 Now the smooth quantity. The product \(y_i f_t(x_i)\) is positive when the score points the right way and negative when it points the wrong way, and its size says how confidently. Feed it through \(e^{-u}\): a confidently right example contributes a small number, a wrong one a number above 1. After round 1, the eight messages the stump gets right have \(y_i f_1(x_i) = 0.693\) and contribute \(e^{-0.693} = 0.5\); messages 4 and 5 have \(-0.693\) and contribute 2. Define
 \[ Z_t = \frac1m \sum_{i=1}^m e^{-y_i f_t(x_i)}. \]
@@ -497,7 +493,7 @@ print([round(v, 2) for v in e])
 print(round(sum(e) / 10, 3), [v / sum(e) for v in e[2:5]])
 ```
 
-It prints `[0.5, 0.5, 0.5, 2.0, 2.0, 0.5, 0.5, 0.5, 0.5, 0.5]` and `0.8 [0.0625, 0.25, 0.25]`. The second list, each term divided by the total, is round 2’s weights for messages 3, 4 and 5; Step 3 below proves that this is no accident. This \(Z_t\) is the smooth quantity. The plan has four steps: show \(Z_T\) sits above the empirical risk, split \(Z_T\) into a product of per-round ratios, compute each ratio exactly, and bound it.
+It prints `[0.5, 0.5, 0.5, 2.0, 2.0, 0.5, 0.5, 0.5, 0.5, 0.5]` and `0.8 [0.0625, 0.25, 0.25]`. The second list, each term divided by the total, is round 2’s weights for messages 3, 4 and 5; Step 3 below proves that this is no accident. The plan has four steps: show \(Z_T\) sits above the empirical risk, split \(Z_T\) into a product of per-round ratios, compute each ratio exactly, and bound it.
 
 **Step 1: the empirical risk is at most \(Z_T\).** Take one example. If \(h_s\) gets it wrong, then \(\operatorname{sign}(f_T(x_i)) \neq y_i\). If \(y_i = +1\), that means \(f_T(x_i) \le 0\); if \(y_i = -1\), it means \(f_T(x_i) > 0\). Either way \(y_i f_T(x_i) \le 0\), so \(e^{-y_i f_T(x_i)} \ge 1\). If \(h_s\) gets it right, the indicator is 0, and an exponential is always positive. So for every example
 \[ \mathbb 1[h_s(x_i) \neq y_i] \le e^{-y_i f_T(x_i)}. \]
@@ -532,7 +528,7 @@ In plain words: **\(Z\) shrinks by the right examples’ weight times \(e^{-w}\)
 \[ \frac{Z_{t+1}}{Z_t} = \sqrt{\frac{\varepsilon}{1 - \varepsilon}}\,(1 - \varepsilon) + \sqrt{\frac{1 - \varepsilon}{\varepsilon}}\,\varepsilon = \sqrt{\varepsilon(1 - \varepsilon)} + \sqrt{\varepsilon(1 - \varepsilon)} = 2\sqrt{\varepsilon_{t+1}(1 - \varepsilon_{t+1})}. \]
 In plain words: **with AdaBoost’s vote, a round with weighted risk \(\varepsilon\) shrinks \(Z\) by exactly \(2\sqrt{\varepsilon(1 - \varepsilon)}\).** For round 1, \(2\sqrt{0.2 \cdot 0.8} = 2 \cdot 0.4 = 0.8\) again.
 
-Both Step 3 and Step 4 are easy to check on the ten messages. This version of the run never uses AdaBoost’s multiplicative update: it computes the weights straight from Step 3’s formula. If the formula were wrong, the weak learner’s risks would come out different from the previous run’s 0.2, 0.125 and 0.071. Then it prints each ratio \(Z_{t+1}/Z_t\) beside \(2\sqrt{\varepsilon(1 - \varepsilon)}\). The line `e = ...` is the list of terms \(e^{-y_i f_t(x_i)}\), `D = ...` is Step 3’s formula, and `root` is Step 4’s.
+Here are Steps 3 and 4 on the ten messages. This run never uses AdaBoost’s multiplicative update: `D = ...` computes the weights straight from Step 3’s formula, so if that formula were wrong, the risks would differ from the earlier run’s. It prints each ratio \(Z_{t+1}/Z_t\) beside Step 4’s `root`, \(2\sqrt{\varepsilon(1 - \varepsilon)}\).
 
 ```python
 import math
