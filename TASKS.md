@@ -291,12 +291,27 @@ Folder: `11-model-selection/`
 - [ ] 9 concept check: mastery confirmed
 - [ ] 10 end-of-chapter problems done
 
-### 12. Ch. 12 convex learning problems
+### 12a. Convexity
 
-Folder: `12-convex-learning/`
+Folder: `12a-convexity/`
 
-- [x] 1 prose and sheet (about 13,300 words with code, 14 snippets run by the lead; the failing fence is the build-it stub; no book references, 2026-11-20; long like lesson 9). Writer's claims to verify: a radius typo in the book (β/2 should be √(β/2)); several proofs added by the writer for results the book states without proof
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (CPU rule)
+- [x] 1 prose and sheet (split from lesson 12 on 2026-11-20; original in `_archive/12-convex-learning`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
+- [ ] 3 review stop: user approved the prose
+- [ ] 4 figures
+- [ ] 5 page
+- [ ] 6 learner judge: ready
+- [ ] 7 verification
+- [ ] 8 delivery: series.md, index.html
+- [ ] 9 concept check: mastery confirmed
+- [ ] 10 end-of-chapter problems done
+
+### 12b. Convex learnability and surrogates
+
+Folder: `12b-convex-learnability/`
+
+- [x] 1 prose and sheet (split from lesson 12 on 2026-11-20; original in `_archive/12-convex-learning`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page

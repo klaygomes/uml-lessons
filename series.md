@@ -35,7 +35,8 @@ Every lesson of the course, delivered or not. `_kit/index.py` reads this table f
 | 9b | Linear and logistic regression | How do you find, and prove you found, the best line for a junk score, and how does the same line give a probability of junk? |
 | 10 | Boosting | Can many rules that are barely better than a guess add up to a strong one? |
 | 11 | Model selection | How do you pick among models without fooling yourself with the same data? |
-| 12 | Convex learning | Which learning problems can an optimiser solve reliably, and why convexity is the line? |
+| 12a | Convexity | Which losses can an optimiser minimise reliably, and how does a walk prove it has reached the bottom? |
+| 12b | Convex learnability and surrogates | A convex loss can be minimised, but can it be learned from a finite label budget, and how does it become a promise about mistakes? |
 | 13a | Regularization and stability | Why does a penalty on the weights steady a jumpy learner, and why does a steady learner not overfit? |
 | 13b | Strong convexity and the fitting-stability tradeoff | Can you prove a penalized learner is stable for every distribution, and pick the penalty that certifies its error? |
 | 14 | Stochastic gradient descent | How does a learner that sees one example at a time still reach a good rule? |
