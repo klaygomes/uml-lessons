@@ -475,8 +475,8 @@ Folder: `25-feature-selection/`
 
 Folder: `26-rademacher-complexity/`
 
-- [ ] 1 prose and sheet (drafting by agent, started 2026-11-20; brief in the session scratchpad, template docs/writer-brief.md)
-- [ ] 2 gates: book check (PDF agents), read-aloud, fresh reader, greps
+- [x] 1 prose and sheet (about 13,000 words with code, 17 snippets run by the lead; the failing fence is the build-it stub; no book references; written with both rules; 2026-11-20). No exercises in the chapter: three problems written for the lesson. Writer's claims to verify: own McDiarmid proof; sharper constants than the book states (3c and 4c; hard-SVM bound without the (1+R‖w*‖) factor); learned-norm bound a factor 2 larger than the book's statement plus a ‖w‖ ≥ 2 condition. Check its assumptions that lesson 25 covers the ℓ1 penalty (it does) and lesson 20 two-layer networks
+- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page

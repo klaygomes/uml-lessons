@@ -233,19 +233,11 @@ The adversary wants to force a mistake on every one of the first few rounds. Tha
 
 A branching plan is a **binary tree**. Each node holds a message. The adversary starts at the top node, the **root**, and sends its message. When the label is revealed, it moves to the left child if the label was 0 and to the right child if it was 1, and sends that node’s message next. The **depth** of the tree is the number of steps along a path from the root to the bottom. A tree in which every path has the same depth \(d\) and every node above the bottom has two children is **complete**, and it has \(2^d - 1\) nodes that hold messages: 1 for depth 1, 3 for depth 2.
 
-Here is one for \(\mathcal H_1\), of depth 2. The root holds 1100, on which \(h_F\) and \(h_L\) say junk, \(h_U\) and \(h_N\) keep. Its left child, used after the label 0, holds 0010: the survivors are then \(h_U\) and \(h_N\), and 0010 splits them. Its right child, used after the label 1, holds 1000: the survivors are \(h_F\) and \(h_L\), and 1000 splits them. Every one of the four label paths (0 then 0, 0 then 1, 1 then 0, 1 then 1) is followed exactly by one hypothesis. So whatever the learner predicts, the adversary can announce the opposite label twice and still have a hypothesis that agrees. That is the depth-2 game from the Halving table, drawn as a plan.
+Here is one for \(\mathcal H_1\), of depth 2. The root holds 1100, on which \(h_F\) and \(h_L\) say junk, \(h_U\) and \(h_N\) keep. Its left child, used after the label 0, holds 0010: the survivors are then \(h_U\) and \(h_N\), and 0010 splits them. Its right child, used after the label 1, holds 1000: the survivors are \(h_F\) and \(h_L\), and 1000 splits them. Every one of the four label paths (0 then 0, 0 then 1, 1 then 0, 1 then 1) is followed by exactly one hypothesis. So whatever the learner predicts, the adversary can announce the opposite label twice and still have a hypothesis that agrees. That is the depth-2 game from the Halving table, drawn as a plan.
 
 [[diagram:shattered-tree]]
 
-To write this down we need names for the nodes. Number them like a heap in a computer science course: the root is node 1, and node \(i\) has left child \(2i\) and right child \(2i + 1\). So the messages are \(v_1, v_2, \dots, v_{2^d - 1}\). If \(i_t\) is the node used on round \(t\), then \(i_1 = 1\) and \(i_{t+1} = 2 i_t + y_t\): double to go down a level, and add the label to go right on a 1. Unrolled,
-
-\[ i_t = 2^{t-1} + \sum_{j=1}^{t-1} y_j \, 2^{t-1-j}. \]
-
-- \(2^{t-1}\) is the number of the leftmost node on level \(t\) (levels counted from 1 at the root).
-- \(\sum_{j=1}^{t-1}\) adds one term for each earlier round \(j = 1, \dots, t - 1\).
-- \(y_j \, 2^{t-1-j}\) adds the label of round \(j\), worth more the earlier it was: the labels so far, read as a binary number, are the offset from the left of the level.
-
-In plain words: **the node used on round \(t\) is found by writing the labels so far as a binary number and adding it to the first node number on level \(t\).** With labels \(y_1 = 1\), \(y_2 = 0\): \(i_1 = 1\), and \(i_2 = 2 + 1 \cdot 1 = 3\), the right child, holding 1000 in our tree.
+To write this down we need names for the nodes. Number them like a heap in a computer science course: the root is node 1, and node \(i\) has left child \(2i\) and right child \(2i + 1\). So the messages are \(v_1, v_2, \dots, v_{2^d - 1}\). If \(i_t\) is the node used on round \(t\), then \(i_1 = 1\) and \(i_{t+1} = 2 i_t + y_t\): **double to go down a level, and add the label to go right on a 1.** With labels \(y_1 = 1\), \(y_2 = 0\): \(i_1 = 1\), and \(i_2 = 2 \cdot 1 + 1 = 3\), the right child, holding 1000 in our tree.
 
 ```python
 from itertools import product
@@ -256,19 +248,14 @@ def path(ys):
         i.append(2 * i[-1] + y)
     return i
 
-closed = lambda ys, t: 2 ** (t - 1) + sum(
-    ys[j - 1] * 2 ** (t - 1 - j) for j in range(1, t))
 print(path((1, 0)))
-print(all(path(ys)[t - 1] == closed(ys, t)
-          for ys in product([0, 1], repeat=5)
-          for t in range(1, 6)))
 v = {1: "1100", 2: "0010", 3: "1000"}
 h = {n: (lambda x, k=k: int(x[k])) for k, n in enumerate("FLUN")}
 print(all(any(all(h[n](v[i]) == y for i, y in zip(path(ys), ys))
               for n in h) for ys in product([0, 1], repeat=2)))
 ```
 
-It prints `[1, 3]` (the path for labels 1 then 0), `True` (the recursion and the closed form agree on every path of depth 5) and `True` (our depth-2 tree for \(\mathcal H_1\) works: for each of the four label paths, some hypothesis agrees with all of it).
+It prints `[1, 3]` (the path for labels 1 then 0) and `True` (our depth-2 tree for \(\mathcal H_1\) works: for each of the four label paths, some hypothesis agrees with all of it).
 
 That last check is the property we need, and it gets a name.
 

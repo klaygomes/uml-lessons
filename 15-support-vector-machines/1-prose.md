@@ -240,6 +240,8 @@ It is often more convenient to work with **homogeneous** halfspaces, those with 
 
 \[ \min_{\mathbf w} \|\mathbf w\|^2 \quad \text{subject to} \quad y_i \langle \mathbf w, \mathbf x_i \rangle \ge 1 \text{ for all } i. \]
 
+It is the program you just read with \(b\) gone: **the shortest weight vector that gives every message a signed score of at least 1.**
+
 As in lesson 9, a halfspace with a bias term becomes a homogeneous one after appending a constant 1 to every message: \((1, \mathbf x)\) in \(\mathbb R^{d+1}\), with the bias term as the first weight. But there is one difference worth noticing. The program with a bias term minimizes \(\|\mathbf w\|^2\) and leaves \(b\) free, while the homogeneous program on the lifted vectors minimizes \(b^2 + \|\mathbf w\|^2\): it **regularizes** the bias term too, preferring small \(b\). In general the two programs can return different halfspaces. In practice, regularizing \(b\) usually makes no significant difference to the number of examples needed, and the homogeneous form is much easier to analyze, so from here on the theory is homogeneous.
 
 On our eight messages the two even agree: the homogeneous program on the lifted vectors returns the same \((b, w_1, w_2) = (-1, \tfrac23, -\tfrac13)\), as the solver in the duality section will confirm. The margin is now measured in \(\mathbb R^3\), where the length includes the bias term, so it is \(1/\sqrt{1 + \tfrac49 + \tfrac19} = 3/\sqrt{14} \approx 0.802\) rather than 1.342. Same hyperplane in the plane, different ruler.
@@ -248,7 +250,7 @@ On our eight messages the two even agree: the homogeneous program on the lifted 
 
 Here is the deeper reason to want a wide margin, and it is the reason this lesson exists.
 
-Lesson 9 showed that homogeneous halfspaces in \(\mathbb R^d\) have VC dimension \(d\). By the fundamental theorem of lesson 6, the number of examples needed to learn them grows with \(d\), and, worse, if the number of examples is much smaller than \(d/\varepsilon\), then *no* learner can guarantee true risk at most \(\varepsilon\) for every distribution. For a filter with two words that is nothing. For a filter that tracks fifty thousand words it is a disaster: the label budget would have to grow with the vocabulary.
+Lesson 9 showed that homogeneous halfspaces in \(\mathbb R^d\) (the space of vectors with \(d\) coordinates, one per word) have VC dimension \(d\): they can label some \(d\) messages in every possible way, and no \(d + 1\). By the fundamental theorem of lesson 6, the number of examples needed to learn them grows with \(d\), and, worse, for an accuracy target \(\varepsilon\) (epsilon, the true risk you are willing to tolerate), if the number of examples is much smaller than \(d/\varepsilon\), then *no* learner can guarantee true risk at most \(\varepsilon\) for every distribution. For a filter with two words that is nothing. For a filter that tracks fifty thousand words it is a disaster: the label budget would have to grow with the vocabulary.
 
 The way out is to assume something more about the distribution. There is no contradiction with the lower bound here: the lower bound says that *some* distributions need that many examples, and we are about to rule those distributions out with an extra assumption. The assumption is that the data are separable with a margin. But there is a catch to deal with first.
 
@@ -276,6 +278,8 @@ It prints `1 0.8018 5.4772 46.67`, `10 8.0178 54.7723 46.67` and `0.1 0.0802 0.5
 [[diagram:scale]]
 
 **Definition (separability with a \((\gamma, \rho)\)-margin).** Let \(\mathcal D\) be a distribution over \(\mathbb R^d \times \{\pm 1\}\). We say \(\mathcal D\) is **separable with a \((\gamma, \rho)\)-margin** if there is \((\mathbf w^\star, b^\star)\) with \(\|\mathbf w^\star\| = 1\) such that, with probability 1 over \((\mathbf x, y) \sim \mathcal D\), both \(y (\langle \mathbf w^\star, \mathbf x \rangle + b^\star) \ge \gamma\) and \(\|\mathbf x\| \le \rho\). It is separable with a \((\gamma, \rho)\)-margin **using a homogeneous halfspace** if this holds with \(b^\star = 0\).
+
+Reading it piece by piece: \(\mathcal D\) is the unknown source of labelled mail, and \((\mathbf x, y) \sim \mathcal D\) reads “a message and its label drawn from \(\mathcal D\)”. The star on \(\mathbf w^\star\) marks one fixed, ideal separator that we never get to see. “With probability 1” means the two inequalities hold for every message that can actually arrive. The first says that message’s signed score under the ideal separator is at least \(\gamma\) (gamma), so it sits at least \(\gamma\) from the hyperplane; the second says its length is at most \(\rho\) (rho). In plain words: **some unit separator keeps every possible message at least \(\gamma\) from the boundary, and no message is longer than \(\rho\).** For the uniform distribution on our eight lifted messages, the scaling snippet’s first line gives \(\gamma = 0.8018\) and \(\rho = 5.4772\) (that is \(\sqrt{30}\), the length of A’s lifted vector \((1, 5, 2)\)).
 
 The number \(\rho\) is the **radius**: every message lies in the ball of radius \(\rho\). (Lesson 9 called the radius of a training sequence \(R\); we switch to \(\rho\) here, because it will soon play a second role.) Scaling the data multiplies both \(\gamma\) and \(\rho\), so the ratio \(\rho / \gamma\) is the honest measure of difficulty.
 

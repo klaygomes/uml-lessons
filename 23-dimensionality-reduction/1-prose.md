@@ -1146,7 +1146,7 @@ DecodeL1(W, y):
   output: v
 ```
 
-**Cost.** Encoding costs \(O(nd)\), or \(O(ns)\) for an s-sparse message. `DecodeSparsest` tries up to \(\sum_{k \le s}\binom dk\) supports, each a small least-squares solve of cost \(O(nk^2)\): exponential in \(s\). `DecodeL1` is a linear program with \(2d\) variables and \(n + 2d\) constraints, solvable in time polynomial in \(n\) and \(d\). The price of compressed sensing is the decoder: squeezing is as cheap as a random projection, but getting a message back means solving a linear program over all \(d\) words. That trade makes sense when you squeeze far more often than you decode.
+**Cost.** Encoding costs \(O(nd)\), or \(O(ns)\) for an s-sparse message. `DecodeSparsest` tries up to \(\sum_{k \le s}\binom dk\) supports, each a small least-squares solve of cost \(O(nk^2)\): exponential in \(s\). `DecodeL1` is a linear program with \(2d\) variables and \(n + 2d\) constraints, solvable in time polynomial in \(n\) and \(d\). So squeezing is as cheap as a random projection and all the price is in the decoder, a trade that pays when you squeeze far more often than you decode.
 
 **Build it yourself.** The icosahedron matrix, six words, three stored numbers. For `decode_l1`, use a fact from the theory of linear programs: when the minimum exists, it is reached at a solution with at most \(n\) nonzero entries whose columns are linearly independent. So for this tiny problem you may enumerate every set of \(n = 3\) columns, solve the \(3 \times 3\) system, and keep the solution with the smallest \(\ell_1\) norm.
 
@@ -1197,7 +1197,7 @@ You now have two ways to squeeze with a promise of recovery, and they rest on di
 
 **Compressed sensing assumes the messages are sparse, in some known basis.** It recovers perfectly every s-sparse message, from about \(s \ln d\) numbers, with a nonlinear decoder.
 
-Each wins where the other’s assumption fails. On the archive of single-word messages \(e_1, \dots, e_d\), the messages are 1-sparse, so compressed sensing recovers them all from a number of measurements of order \(\ln d\), while PCA loses an average of \((d - n)/d\) of each message, more than half whenever \(n \le d/2\). In the other direction, take \(m\) messages that lie exactly in an \(n\)-dimensional subspace. PCA recovers them perfectly with \(n\) numbers. They are also \(n\)-sparse in any orthonormal basis whose first \(n\) vectors span the subspace, so compressed sensing works too, but it needs on the order of \(n \ln d\) numbers, and with exactly \(n\) it can fail.
+Each wins where the other’s assumption fails. The single-word messages \(e_1, \dots, e_d\) are 1-sparse, so compressed sensing recovers them all from order \(\ln d\) numbers, where PCA loses most of each one. In the other direction, take \(m\) messages that lie exactly in an \(n\)-dimensional subspace. PCA recovers them perfectly with \(n\) numbers. They are also \(n\)-sparse in any orthonormal basis whose first \(n\) vectors span the subspace, so compressed sensing works too, but it needs on the order of \(n \ln d\) numbers, and with exactly \(n\) it can fail.
 For the mail room, word counts are sparse and do not lie near a small subspace, so compressed sensing’s assumption is the right one for recovering messages, and a random projection is the right tool for keeping distances. If all you need is the best summary of a fixed archive, for instance to plot it or to find its main themes, PCA is the right one.
 
 ## Fix the bug
@@ -1222,7 +1222,7 @@ Measuring is not certifying. At \(n = 500\) the Johnson-Lindenstrauss bound on t
 
 **“If the linear program recovered my test messages, the matrix is fine.”** Success on the messages you tried is not a guarantee for the next one. In the build-it challenge the linear program recovers a two-word message from three numbers, yet some two-word messages are indistinguishable from each other at that size, so no decoder can recover them all.
 
-**“The constants in the RIP theorem tell you how many measurements you need.”** They tell you a number that certainly suffices, from a deliberately crude proof. The \(s \ln d\) shape is the lesson; the 216 is not.
+**“The constants in the RIP theorem tell you how many measurements you need.”** They give a number that certainly suffices, from a crude proof; the \(s \ln d\) shape is the lesson, the 216 is not.
 
 ## Recap and the next bug
 

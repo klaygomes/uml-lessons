@@ -292,13 +292,15 @@ To apply the lemma to gradient descent, take \(\mathbf v_t = \nabla f(\mathbf w^
 
 Consequently, for every \(\varepsilon > 0\), to reach \(f(\bar{\mathbf w}) - f(\mathbf w^\star) \le \varepsilon\) it suffices to run \(T \ge B^2\rho^2/\varepsilon^2\) steps.
 
+The braces \(\{\mathbf w : \|\mathbf w\| \le B\}\) read “the weight vectors \(\mathbf w\) such that \(\|\mathbf w\| \le B\)”, the ball of radius \(B\); the argmin under them is the set of lowest points of \(f\) in that ball, and \(\in\) says \(\mathbf w^\star\) is one of them. The accuracy \(\varepsilon\) (epsilon) is how close to the bottom we ask to be. In plain words: **after \(T\) steps the average sits at most \(B\rho/\sqrt T\) above the best point of the ball, so \(B^2\rho^2/\varepsilon^2\) steps buy accuracy \(\varepsilon\).** With \(B = 5\), \(\rho = 1\) and \(\varepsilon = 0.1\), that is \(25/0.01 = 2{,}500\) steps, the last row of the first snippet.
+
 *Proof.* Steps 1 and 2 bound the gap by the average of \(\langle \mathbf w^{(t)} - \mathbf w^\star, \nabla f(\mathbf w^{(t)}) \rangle\), and the step lemma bounds that by \(B\rho/\sqrt T\). For the second sentence, \(B\rho/\sqrt T \le \varepsilon\) is the same as \(T \ge B^2\rho^2/\varepsilon^2\). \(\blacksquare\)
 
 Now the mystery column in the first snippet is explained. Every message in our tiny world has \(\|\mathbf x\| \le 1\), and the logistic loss on one message has gradient of norm \(\|\mathbf x\| / (1 + e^{y\langle \mathbf w, \mathbf x \rangle}) < \|\mathbf x\| \le 1\), so \(f\) is 1-Lipschitz. The minimizer has norm about 4.6, so \(B = 5\) covers it. The corollary promises a gap of at most \(5/\sqrt T\): 0.5, 0.25 and 0.1 for our three runs, against the measured 0.07, 0.032 and 0.007. It is a worst-case promise, and on this gentle landscape it has plenty of room.
 
 ## When the floor has a crease
 
-The filter in production does not use the logistic loss. It uses the **hinge loss** of lesson 12, \(\ell(\mathbf w, (\mathbf x, y)) = \max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\}\): zero once a message is on the right side with a signed score of at least 1, and growing linearly otherwise. Its graph has a crease where \(y \langle \mathbf w, \mathbf x \rangle = 1\), and at the crease there is no gradient. Gradient descent, as written, does not know what to do there.
+The filter in production does not use the logistic loss. It uses the **hinge loss** of lesson 12, \(\ell(\mathbf w, (\mathbf x, y)) = \max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\}\), where \(\max\{a, b\}\) is the larger of the two numbers (message A at \(\mathbf w = \mathbf 0\) has signed score 0 and loss \(\max\{0, 1\} = 1\)). It is zero once a message is on the right side with a signed score of at least 1, and growing linearly otherwise. Its graph has a crease where \(y \langle \mathbf w, \mathbf x \rangle = 1\), and at the crease there is no gradient. Gradient descent, as written, does not know what to do there.
 
 What we used about the gradient in the analysis was not that it is a derivative. We used one inequality: the tangent plane lies below the function. Is there something else, at a crease, that lies below the function and touches it?
 
