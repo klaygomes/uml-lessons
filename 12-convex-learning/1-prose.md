@@ -525,7 +525,7 @@ The integral sign \(\int_0^1 \dots \, dt\) adds up the quantity inside over ever
 
 \[ f(\mathbf v) - f(\mathbf w) = \langle \nabla f(\mathbf w), \mathbf v - \mathbf w \rangle + \int_0^1 \langle \nabla f(\mathbf w + t(\mathbf v - \mathbf w)) - \nabla f(\mathbf w), \mathbf v - \mathbf w \rangle \, dt. \]
 
-By Cauchy–Schwarz and then smoothness, the integrand is at most \(\|\nabla f(\mathbf w + t(\mathbf v - \mathbf w)) - \nabla f(\mathbf w)\| \, \|\mathbf v - \mathbf w\| \le \beta t \|\mathbf v - \mathbf w\| \cdot \|\mathbf v - \mathbf w\|\), and \(\int_0^1 \beta t \, dt = \beta/2\). \(\square\)
+By Cauchy–Schwarz and then smoothness, the integrand is at most \(\|\nabla f(\mathbf w + t(\mathbf v - \mathbf w)) - \nabla f(\mathbf w)\| \, \|\mathbf v - \mathbf w\| \le \beta t \|\mathbf v - \mathbf w\|^2\), since the two points where the gradient is taken are \(t\|\mathbf v - \mathbf w\|\) apart. Adding up \(\beta t\) from 0 to 1 gives \(\beta/2\) (the area of a triangle of width 1 and height \(\beta\)), so the integral is at most \(\frac\beta2 \|\mathbf v - \mathbf w\|^2\), which is the claim. \(\square\)
 
 Put this next to the tangent inequality. When \(f\) is convex and \(\beta\)-smooth, the difference between \(f\) and its first-order approximation is caught between two bounds:
 
@@ -575,7 +575,28 @@ As with convexity and Lipschitzness, smoothness passes through a linear function
 
 \[ \|\nabla f(\mathbf v) - \nabla f(\mathbf w)\| = |g'(\langle \mathbf v, \mathbf x \rangle + b) - g'(\langle \mathbf w, \mathbf x \rangle + b)| \, \|\mathbf x\| \le \beta \, |\langle \mathbf v - \mathbf w, \mathbf x \rangle| \, \|\mathbf x\| \le \beta \|\mathbf x\|^2 \|\mathbf v - \mathbf w\|, \]
 
-using the chain-rule formula for both gradients (they share the factor \(\mathbf x\), whose length comes out), the smoothness of \(g\) (its derivative is \(\beta\)-Lipschitz) and then Cauchy–Schwarz. The same two ingredients also give the quadratic upper bound for \(f\) directly: apply \(g\)’s scalar bound with the step \(\langle \mathbf v - \mathbf w, \mathbf x \rangle\), then bound \(\langle \mathbf v - \mathbf w, \mathbf x \rangle^2 \le \|\mathbf v - \mathbf w\|^2 \|\mathbf x\|^2\). \(\square\)
+using the chain-rule formula for both gradients (they share the factor \(\mathbf x\), whose length comes out), the smoothness of \(g\) (its derivative is \(\beta\)-Lipschitz) and then Cauchy–Schwarz. \(\square\)
+
+In plain words: **through a message \(\mathbf x\), a \(\beta\)-smooth scalar loss becomes \(\beta\|\mathbf x\|^2\)-smooth.** The logistic loss on message C, with \(\|\mathbf x\|^2 = 21\), should then be \(21/4 = 5.25\)-smooth. The snippet draws 50,000 pairs of nearby weight vectors, where the signed score is near 0 and softplus bends hardest, and takes the largest ratio of gradient change to weight change, the definition’s two sides:
+
+```python
+import math, random
+
+x, y = (1, 4, 2), 1
+dot = lambda u, v: sum(a * b for a, b in zip(u, v))
+norm = lambda u: math.sqrt(dot(u, u))
+dg = lambda a: -1 / (1 + math.exp(a))
+grad = lambda w: [dg(y * dot(w, x)) * y * c for c in x]
+rng, ratio = random.Random(4), 0.0
+for _ in range(50000):
+    v, w = ([rng.uniform(-0.2, 0.2) for _ in x] for _ in "vw")
+    gap = [a - b for a, b in zip(grad(v), grad(w))]
+    d = [a - b for a, b in zip(v, w)]
+    ratio = max(ratio, norm(gap) / norm(d))
+print(round(ratio, 2), dot(x, x) / 4)
+```
+
+It prints `5.21 5.25`: close to the constant, never past it. The line `grad` is the chain-rule formula \(g'(\cdot)\,y\mathbf x\), with `dg` the slope of \(a \mapsto \log(1 + e^{-a})\).
 
 So, for \(\mathbf x \in \mathbb R^d\) and \(y \in \mathbb R\), the square loss \(f(\mathbf w) = (\langle \mathbf w, \mathbf x \rangle - y)^2\) is \((2\|\mathbf x\|^2)\)-smooth (here \(g(a) = a^2\) and \(b = -y\)), and for \(y \in \{\pm 1\}\) the logistic loss \(f(\mathbf w) = \log(1 + \exp(-y\langle \mathbf w, \mathbf x \rangle))\) is \((\|\mathbf x\|^2/4)\)-smooth (softplus composed with \(\langle \mathbf w, -y\mathbf x \rangle\), and \(\|-y\mathbf x\| = \|\mathbf x\|\)). On message C, with \(\|\mathbf x\|^2 = 21\), that is \(21/4 = 5.25\). The hinge loss is not smooth at all: at signed score 1 it has a kink, where its gradient jumps from \(-y\mathbf x\) to \(\mathbf 0\), and no gradient exists there.
 

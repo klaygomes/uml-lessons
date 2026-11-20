@@ -651,10 +651,25 @@ It prints `True [-1.3161, -0.0179, 0.2995]`: after 10,000 steps, the explicit av
 
 **Cost.** Let \(c_K\) be the time to evaluate the kernel once: \(O(n)\) for the polynomial and Gaussian kernels on \(\mathbb R^n\), and \(O(s)\) for subject lines of \(s\) words stored as sets.
 
-- *Time per step.* The test needs \(\sum_j \alpha_j K(x_j, x_i)\). Only the coordinates with \(\beta_j \ne 0\) contribute, and at step \(t\) at most \(\min(t, m)\) of them are nonzero, so the test costs \(O(\min(t, m)\, c_K)\). Updating \(\bar{\boldsymbol\alpha}\) the naive way costs \(O(m)\) per step. Since \(\bar\alpha_j = \frac{1}{\lambda T} \sum_t \beta_j^{(t)}/t\) and \(\beta_j\) changes only when example \(j\) is updated, you can instead settle coordinate \(j\) lazily at each of its updates, adding its old value times a difference of harmonic numbers \(\sum_{t'=t_0}^{t-1} 1/t'\), which is \(O(1)\) per update plus \(O(m)\) at the end. All of \(T\) steps: \(O(T \min(T, m)\, c_K)\).
+- *Time per step.* The test needs \(\sum_j \alpha_j K(x_j, x_i)\). Only the coordinates with \(\beta_j \ne 0\) contribute, and at step \(t\) at most \(\min(t, m)\) of them are nonzero, so the test costs \(O(\min(t, m)\, c_K)\). Updating \(\bar{\boldsymbol\alpha}\) the naive way costs \(O(m)\) per step. Since \(\bar\alpha_j = \frac{1}{\lambda T} \sum_t \beta_j^{(t)}/t\) and \(\beta_j\) changes only when example \(j\) is updated, you can instead settle coordinate \(j\) lazily at each of its updates, adding its old value times a difference of harmonic numbers (\(H_n = 1 + \frac12 + \dots + \frac1n\)), \(\sum_{t'=t_0}^{t-1} 1/t'\), which is \(O(1)\) per update plus \(O(m)\) at the end. All of \(T\) steps: \(O(T \min(T, m)\, c_K)\).
 - *With a cached Gram matrix.* Precompute all \(m^2\) kernel values in \(O(m^2 c_K)\) time and \(O(m^2)\) space; then each test is \(O(m)\). For \(m = 16{,}000\) messages, the Gram matrix has 256 million entries, about 2 GB at 8 bytes each. Caching is a trade, not a free lunch.
 - *Space without the cache.* \(O(m)\) for \(\boldsymbol\beta\) and \(\bar{\boldsymbol\alpha}\), plus the training messages themselves.
 - *Prediction.* \(O(r\, c_K)\) per new message, where \(r\) is the number of nonzero \(\bar\alpha_j\), at most \(m\).
+
+The lazy formula is easier to trust with numbers. Since \(\alpha_j^{(t)} = \beta_j^{(t)}/(\lambda t)\), averaging gives \(\bar\alpha_j = \frac{1}{\lambda T} \sum_{t=1}^T \beta_j^{(t)}/t\): **the average coefficient is the history of \(\beta_j\), each step divided by its step number.** Follow one coordinate for \(T = 6\) steps with \(\lambda = 0.1\), where \(\beta_j\) is 0 at step 1, 1 at steps 2 to 4 and 2 at steps 5 and 6. Grouping the steps where it held still gives \(1 \cdot (\frac12 + \frac13 + \frac14) + 2 \cdot (\frac15 + \frac16)\), two differences of harmonic numbers:
+
+```python
+from fractions import Fraction as F
+
+lam, T = F(1, 10), 6
+beta = [0, 1, 1, 1, 2, 2]
+direct = sum(b / (lam * t) for t, b in enumerate(beta, 1)) / T
+H = lambda a, b: sum(F(1, t) for t in range(a, b + 1))
+lazy = (1 * H(2, 4) + 2 * H(5, 6)) / (lam * T)
+print(direct, lazy)
+```
+
+It prints `109/36 109/36`.
 
 Compare with SGD on explicit features of dimension \(D\): \(O(D)\) per step and \(O(D)\) space. The kernel version wins whenever \(D\) is much larger than \(m\), which for triples of 20,000 words means always. It does have one cost the explicit version lacks: prediction grows with the number of training messages the hypothesis keeps.
 
