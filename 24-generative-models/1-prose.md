@@ -198,6 +198,8 @@ print(max(grid, key=lambda th: L(S, th)))
 
 It prints the table above with the log-likelihoods beside it (\(-4.447\), \(-2.773\), \(-2.249\), \(-2.619\)), and then `0.75`: a search over a thousand values of \(\theta\) lands on Ines’s fraction. That is no accident.
 
+[[diagram:likelihood]]
+
 **Proposition (the Bernoulli MLE is the average).** For \(S = (x_1, \dots, x_m)\) with \(k\) ones, the maximum likelihood estimator is \(\hat\theta = k/m = \frac{1}{m}\sum_{i=1}^m x_i\).
 
 *Proof.* First the ordinary case, \(0 < k < m\). Then \(L(S; \theta)\) is finite for \(0 < \theta < 1\) and falls to \(-\infty\) at both ends, because \(\log \theta \to -\infty\) as \(\theta \to 0\) and \(\log(1-\theta) \to -\infty\) as \(\theta \to 1\), each multiplied by a positive count. So the maximum is inside the interval, where the derivative is zero. The derivative of \(\log \theta\) is \(1/\theta\), and of \(\log(1 - \theta)\) it is \(-1/(1 - \theta)\), so
@@ -331,7 +333,7 @@ Now let the “hypothesis” be a parameter \(\theta\) and the example be an obs
 - \(P_\theta[x]\) is the probability (or density) the model gives to what actually happened.
 - The minus sign turns the log, which is negative for probabilities below 1, into a nonnegative cost.
 
-In one sentence: **the log loss is how surprised the model was by what it saw.** A probability of 1 costs 0; a probability of 0 costs \(-\log 0 = +\infty\).
+In one sentence: **the log loss is how surprised the model was by what it saw.** A probability of 1 costs 0; a probability of 0 costs \(-\log 0 = +\infty\). Because we use the natural logarithm, log losses are measured in units called **nats**; with base-2 logarithms they would be bits, as in lesson 18.
 
 Since the empirical risk with this loss is \(\frac1m\sum_i(-\log P_\theta[x_i]) = -\frac1m L(S;\theta)\), minimizing one is maximizing the other:
 
@@ -711,6 +713,8 @@ The **naive Bayes** assumption cuts this down with one bold simplification, the 
 
 In one sentence: **within each kind of message, the probability of the whole message is the product of the probabilities of its words, one by one.** This is Ines’s recipe from the start of the lesson; “free, click” under junk gave \(9/64\).
 
+[[diagram:naive-bayes]]
+
 The assumption is called naive because it is usually false: “claim” and “prize” travel together. But it turns an impossible estimation problem into an easy one. Plug it into Bayes’ rule. The denominator of Bayes’ rule, \(\mathbb P[X = x]\), is the same for both labels, so it cannot change which label wins, and we may drop it:
 
 \[ h_{\mathrm{Bayes}}(x) = \operatorname*{argmax}_{y \in \{0,1\}} \mathbb P[Y = y]\,\mathbb P[X = x \mid Y = y] = \operatorname*{argmax}_{y \in \{0,1\}} \mathbb P[Y = y]\prod_{j=1}^{d}\mathbb P[X_j = x_j \mid Y = y]. \]
@@ -896,6 +900,8 @@ Now expand both quadratic forms. Each is \(x^\top\Sigma^{-1}x - 2\mu_y^\top\Sigm
 - \(b\) is a constant: it puts the boundary halfway between the clouds, in stretched distance.
 
 In one sentence: **under the LDA assumptions, the Bayes optimal predictor is a halfspace: junk exactly when a weighted sum of the scores exceeds a threshold.** For our clouds, \(\Sigma^{-1} = \frac{1}{0.75}\begin{pmatrix}1 & -0.5\\ -0.5 & 1\end{pmatrix}\), \(\mu_1 - \mu_0 = (2, 1)\), so \(w = (2, 0)\), and \(b = \frac12(\frac43 - \frac{28}{3}) = -4\). Junk exactly when \(2x_1 - 4 > 0\), that is, when the capitals score exceeds 2.
+
+[[diagram:lda]]
 
 Look at that \(w\): the link score gets weight 0, even though junk has more links on average. The reason is the correlation. Given the capitals score, the extra links of junk are just what the shared cloud shape predicts from its shoutiness, so they carry no further evidence. A rule that weighs each score by its own difference in means would get this wrong.
 
@@ -1088,6 +1094,8 @@ For a centre \(\mu_y\), set the gradient to zero. The gradient of \(-\frac12\|x_
 In one sentence: **move each centre to the weighted average of the messages, and set each share to the kind’s soft count over \(m\).** If three messages at 0, 1 and 2 belong to kind 1 with weights 1, 1 and 0.5, the new centre is \((0 + 1 + 1)/2.5 = 0.8\).
 
 Compare this with the k-means algorithm of lesson 22. There, each message is assigned to its nearest centre, and each centre moves to the average of its assigned messages. Here, each message is assigned to every centre with a probability, and each centre moves to a weighted average over the entire sample. That is why EM for this model is called **soft k-means**.
+
+[[diagram:soft-kmeans]]
 
 ```
 SoftKMeans(x_1..x_m, k, T):

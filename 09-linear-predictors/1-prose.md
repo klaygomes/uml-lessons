@@ -802,13 +802,31 @@ The misses have a pattern: too high, too low, too high, as the straight line cut
 
 ### When \(A\) cannot be inverted
 
-Suppose two words always appear together the same number of times: say marketing templates always pair “free” with “gift”. Then every message has \(x_1 = x_2\), and \(A\) is singular. Is ERM stuck?
+Suppose two words always appear together the same number of times: say marketing templates always pair “free” with “gift”. Then every message has \(x_1 = x_2\), and \(A\) is **singular**: it has no inverse. Is ERM stuck?
 
-No. Here is the general argument. It needs one fact from linear algebra, the **spectral theorem**: a real symmetric matrix can be written \(A = V D V^\top\), where \(D\) is diagonal and \(V\) is orthonormal, meaning its columns \(\mathbf v_1, \dots, \mathbf v_d\) have length 1 and are mutually perpendicular, so \(V^\top V\) is the identity. Our \(A\) is symmetric because each \(\mathbf x_i \mathbf x_i^\top\) is.
+No. Take three such messages, whose “free” and “gift” counts are both 1, 2 and 3, with junk scores 10, 35 and 70 (no constant 1 this time, to keep the numbers small). Then \(A = \begin{pmatrix} 14 & 14 \\ 14 & 14 \end{pmatrix}\) and \(\mathbf b = (290, 290)\). The determinant is \(14 \cdot 14 - 14 \cdot 14 = 0\), so there is no inverse. But look at what \(A\) does to two special directions. It sends \((1, 1)\) to \((28, 28)\), the same direction stretched by 28; and it sends \((1, -1)\) to \((0, 0)\), squashed to nothing. A direction that \(A\) only stretches is an **eigenvector**, and the stretch factor is its **eigenvalue**: 28 for \((1, 1)\), 0 for \((1, -1)\). The eigenvalue 0 is exactly why \(A\) cannot be undone: it flattens a whole direction, and nothing can unflatten it. The way out is to undo \(A\) along the directions it stretches and leave the flattened one alone.
+
+Here is the general argument. It needs one fact from linear algebra, the **spectral theorem**: a real symmetric matrix (one equal to its own transpose) can be written \(A = V D V^\top\), where \(D\) is **diagonal**, zero everywhere off the main diagonal, holding the eigenvalues, and \(V\) is **orthonormal**, meaning its columns \(\mathbf v_1, \dots, \mathbf v_d\) are eigenvectors of length 1 and mutually perpendicular, so \(V^\top V\) is the identity \(I\), the matrix that changes nothing. Read \(V D V^\top\) right to left: \(V^\top\) measures how much of a vector lies along each eigenvector, \(D\) stretches each of those amounts by its eigenvalue, and \(V\) puts the pieces back together. For the twins, \(\mathbf v_1 = (1, 1)/\sqrt 2\) and \(\mathbf v_2 = (1, -1)/\sqrt 2\), and \(D\) has 28 and 0 on its diagonal. Our \(A\) is symmetric because each \(\mathbf x_i \mathbf x_i^\top\) is.
 
 Define \(D^+\) as the diagonal matrix with \(D^+_{i,i} = 1/D_{i,i}\) when \(D_{i,i} \ne 0\) and \(D^+_{i,i} = 0\) otherwise, and set
 
 \[ A^+ = V D^+ V^\top, \qquad \hat{\mathbf w} = A^+ \mathbf b. \]
+
+Read it like \(V D V^\top\), with one change in the middle: \(D^+\) divides by each nonzero eigenvalue instead of multiplying, and puts 0 where the eigenvalue is 0. The plus sign marks this “pseudo” inverse, and the hat on \(\hat{\mathbf w}\) marks the weights it produces. In plain words: **undo \(A\) along every direction it stretches, and ignore the direction it flattens.** For the twins, \(D^+\) has \(1/28\) and 0 on its diagonal, so \(A^+ = \tfrac{1}{28} \mathbf v_1 \mathbf v_1^\top = \tfrac{1}{56} \begin{pmatrix} 1 & 1 \\ 1 & 1 \end{pmatrix}\) and \(\hat{\mathbf w} = (580/56, 580/56) \approx (10.357, 10.357)\):
+
+```python
+r = 2 ** -0.5
+V = [[r, r], [r, -r]]
+D_plus = [1 / 28, 0]
+A_plus = [[sum(V[i][k] * D_plus[k] * V[j][k] for k in (0, 1))
+           for j in (0, 1)] for i in (0, 1)]
+b = [290, 290]
+w_hat = [sum(a * c for a, c in zip(row, b)) for row in A_plus]
+print([[round(56 * a, 6) for a in row] for row in A_plus])
+print([round(c, 3) for c in w_hat])
+```
+
+It prints `[[1.0, 1.0], [1.0, 1.0]]`, which is \(56 A^+\), then `[10.357, 10.357]`.
 
 **Claim.** \(A \hat{\mathbf w} = \mathbf b\), always. So \(\hat{\mathbf w}\) is an ERM solution even when \(A\) is singular.
 
@@ -816,7 +834,7 @@ Define \(D^+\) as the diagonal matrix with \(D^+_{i,i} = 1/D_{i,i}\) when \(D_{i
 
 \[ A \hat{\mathbf w} = V D V^\top V D^+ V^\top \mathbf b = V D D^+ V^\top \mathbf b = \sum_{i \,:\, D_{i,i} \ne 0} \mathbf v_i \mathbf v_i^\top \mathbf b. \]
 
-The last step holds because \(D D^+\) is diagonal with a 1 where \(D_{i,i} \ne 0\) and a 0 elsewhere. The right-hand side is the orthogonal projection of \(\mathbf b\) onto \(U = \operatorname{span}\{\mathbf v_i : D_{i,i} \ne 0\}\), and a projection leaves a vector of \(U\) unchanged: if \(\mathbf b = \sum_{k} c_k \mathbf v_k\) over those \(k\), then \(\mathbf v_i^\top \mathbf b = c_i\) by orthonormality. So it is enough to show \(\mathbf b \in U\). We do it in three small steps.
+The last step holds because \(D D^+\) is diagonal with a 1 where \(D_{i,i} \ne 0\) and a 0 elsewhere; the sum runs only over those \(i\) (read the colon under the \(\sum\) as “such that”). In plain words: **applying \(A\) after \(A^+\) keeps the part of \(\mathbf b\) along the stretched directions and drops the rest.** For the twins only \(\mathbf v_1\) survives, and \(\mathbf v_1 \mathbf v_1^\top \mathbf b = \tfrac12 (290 + 290, 290 + 290) = (290, 290)\), all of \(\mathbf b\): nothing was dropped. The **span** of some vectors is every combination of them, with any real weights; the span of \(\mathbf v_1\) is the diagonal line through \((1, 1)\). The right-hand side is the orthogonal projection of \(\mathbf b\) onto \(U = \operatorname{span}\{\mathbf v_i : D_{i,i} \ne 0\}\), the closest point to \(\mathbf b\) in \(U\), and a projection leaves a vector of \(U\) unchanged: if \(\mathbf b = \sum_{k} c_k \mathbf v_k\) over those \(k\), then \(\mathbf v_i^\top \mathbf b = c_i\) by orthonormality. So it is enough to show \(\mathbf b \in U\). We do it in three small steps.
 
 *(a) \(U\) is the range of \(A\)*, the set \(\{A \mathbf v\}\). Indeed \(A \mathbf v = \sum_i D_{i,i} \mathbf v_i \langle \mathbf v_i, \mathbf v \rangle\) only involves the \(\mathbf v_i\) with \(D_{i,i} \ne 0\), and each such \(\mathbf v_i = A (\mathbf v_i / D_{i,i})\) is in the range.
 
@@ -824,7 +842,7 @@ The last step holds because \(D D^+\) is diagonal with a 1 where \(D_{i,i} \ne 0
 
 *(c) \(\mathbf b = \sum_i y_i \mathbf x_i\) is a combination of messages*, so by (b) and (a) it lies in \(U\). \(\blacksquare\)
 
-Try it on the always-together words, with three messages whose “free” and “gift” counts are both 1, 2 and 3. Then \(A = \begin{pmatrix} 14 & 14 \\ 14 & 14 \end{pmatrix}\), with eigenvectors \((1, 1)/\sqrt 2\) (eigenvalue 28) and \((1, -1)/\sqrt 2\) (eigenvalue 0). Only the first survives in \(A^+\), which works out to \(\tfrac{1}{56} \begin{pmatrix} 1 & 1 \\ 1 & 1 \end{pmatrix}\).
+Back to the always-together words, now checking the claim itself: build \(A\) and \(\mathbf b\) from the three messages, apply \(A^+ = \tfrac{1}{56} \begin{pmatrix} 1 & 1 \\ 1 & 1 \end{pmatrix}\), and compare with another candidate that puts all the weight on “free”.
 
 ```python
 cs, ys = [1, 2, 3], [10, 35, 70]
@@ -846,15 +864,27 @@ It prints `[[14, 14], [14, 14]] [290, 290] 0`, then `[10.357, 10.357] [290.0, 29
 
 ## Curves from lines: polynomial regression
 
-The straight line missed the S-shape. Some tasks call for nonlinear predictors, and the cleanest are polynomials. A one-dimensional polynomial of degree \(n\) is
+The straight line missed the S-shape. Some tasks call for nonlinear predictors, and the cleanest are polynomials: besides a constant and a multiple of the count, allow a multiple of the count squared, the count cubed, and so on. Our line is the simplest case: at three “free”s it predicts \(-2.429 + 20.971 \cdot 3 \approx 60.5\). A one-dimensional polynomial of degree \(n\) is
 
 \[ p(x) = a_0 + a_1 x + a_2 x^2 + \dots + a_n x^n, \]
 
-named by its coefficient vector \((a_0, \dots, a_n)\), and the class of **polynomial regression** predictors of degree \(n\) is \(\mathcal H^n_{\text{poly}} = \{x \mapsto p(x)\}\), with \(\mathcal X = \mathcal Y = \mathbb R\).
+named by its coefficient vector \((a_0, \dots, a_n)\). The small raised numbers are powers (\(x^2 = x \cdot x\)), the subscripts on \(a\) number the coefficients to match, the dots mean “keep going in the same pattern”, and the degree \(n\) is the highest power used. In plain words: **a polynomial adds a constant, a multiple of \(x\), a multiple of \(x^2\), and so on up to \(x^n\).** The class of **polynomial regression** predictors of degree \(n\) is \(\mathcal H^n_{\text{poly}} = \{x \mapsto p(x)\}\), every such polynomial, with \(\mathcal X = \mathcal Y = \mathbb R\).
 
 It looks like a new problem, but it is the old one in disguise. Define the map \(\psi: \mathbb R \to \mathbb R^{n+1}\) by \(\psi(x) = (1, x, x^2, \dots, x^n)\). Then
 
 \[ p(x) = a_0 + a_1 x + \dots + a_n x^n = \langle \mathbf a, \psi(x) \rangle. \]
+
+Here \(\psi\) (psi) turns one count into a list of \(n + 1\) numbers, its powers from 0 to \(n\), and \(\mathbf a\) is the coefficient vector. Multiplying matching entries and adding gives \(a_0 \cdot 1 + a_1 x + \dots\), which is the polynomial. In plain words: **a polynomial of \(x\) is an inner product of its coefficients with the list of powers of \(x\).** For three “free”s, \(\psi(3) = (1, 3)\) at degree 1 and \((1, 3, 9, 27)\) at degree 3, and the line’s coefficients with \(\psi(3)\) give 60.484:
+
+```python
+a = (-2.429, 20.971)
+psi = lambda x, n: [x ** k for k in range(n + 1)]
+x = 3
+terms = [ak * pk for ak, pk in zip(a, psi(x, 1))]
+print(psi(x, 1), psi(x, 3), round(sum(terms), 3))
+```
+
+It prints `[1, 3] [1, 3, 9, 27] 60.484`.
 
 A polynomial in \(x\) is a *linear* function of \(\psi(x)\). So turn each example \((x_i, y_i)\) into \((\psi(x_i), y_i)\) and run least squares on the new vectors; the weights it returns are the coefficients. Learning reduces to a problem we have already solved.
 

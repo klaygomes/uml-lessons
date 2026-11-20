@@ -376,7 +376,7 @@ Two consequences, and one honest limit.
 
 **Where it stops is a fixed point.** At the end, every message is already with its nearest centre and every centre is already the mean of its cluster: neither step can lower the cost on its own. That is all the guarantee says.
 
-**The limit.** A fixed point need not be good. The second run above stopped at cost 35 when 20 was available, and the problems at the end of this lesson show that the ratio between where k-means stops and the best possible cost can be made as large as you like, and that a fixed point need not even be a local minimum of the cost as a function of the centres. The usual remedy is cheap: run k-means several times from different random starts and keep the lowest cost. On the twelve messages, starting from two random messages, 1,000 runs ended at cost 20 in 692 runs, at 23 in 208 and at the rows, 35, in 100.
+**The limit.** A fixed point need not be good. The second run above stopped at cost 35 when 20 was available, and the ratio between where k-means stops and the best possible cost can be made as large as you like: put four messages at the corners of a rectangle \(w\) wide and \(h\) tall, start the centres at the two left corners, and k-means stops at the top and bottom pairs, cost \(w^2\), while the left and right pairs cost \(h^2\). The first problem at the end of this lesson shows that a fixed point need not even be a local minimum of the cost as a function of the centres. The usual remedy is cheap: run k-means several times from different random starts and keep the lowest cost. On the twelve messages, starting from two random messages, 1,000 runs ended at cost 20 in 692 runs, at 23 in 208 and at the rows, 35, in 100.
 
 **Cost.** One iteration computes the distance from each of the \(m\) messages to each of the \(k\) centres, \(n\) scores each, so the assignment step costs \(O(mkn)\) time, and the update step \(O(mn)\). Space is \(O(mn)\) for the messages plus \(O(kn)\) for the centres. With \(T\) iterations and \(R\) restarts, \(O(RTmkn)\) in total.
 
@@ -771,7 +771,7 @@ Here is why the right choice cannot fail. Line 3 asks for the k-means cost and a
 
 ## What people get wrong
 
-**“k-means finds the best clustering.”** It finds a fixed point of two alternating steps, and the cost never goes up on the way. On the twelve messages, the start at messages 1 and 7 stops at cost 35 while 20 is possible, and the problems show that the gap can be made as large as you like. Restarts help; they do not certify.
+**“k-means finds the best clustering.”** It finds a fixed point of two alternating steps, and the cost never goes up on the way. On the twelve messages, the start at messages 1 and 7 stops at cost 35 while 20 is possible, and a stretched rectangle of four messages makes the gap as large as you like. Restarts help; they do not certify.
 
 **“If a clustering looks right on the plot, the method is right.”** A method that looks right on this batch has made no promise about the next one. Average linkage drew the four kinds on 25 of 30 test batches of the lab’s mail, but it minimizes no stated cost and keeps no log, so nothing it does can be checked against what the desks asked for.
 

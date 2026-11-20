@@ -165,13 +165,39 @@ It prints `200 0.165`.
 
 Using \(L_V\) of the learner’s output as the estimate of its true risk is called **validation**. In practice you do not draw \(V\) separately: you take the examples you have, shuffle them, and hold some out before training. Drawing \(S\) and then an independent \(V\) is the same thing as randomly partitioning one i.i.d. pool into two parts, which is why \(V\) is also called a **hold-out set**.
 
-The tool for the proof is **Hoeffding’s inequality**, which lesson 4 introduced. Let \(\theta_1, \dots, \theta_n\) be i.i.d. random variables with values in \([a, b]\) and mean \(\mu\). Then for every \(\varepsilon > 0\),
+The tool for the proof is **Hoeffding’s inequality**, which lesson 4 introduced. The idea: an average of many independent, bounded numbers rarely strays far from its expected value, and the chance of straying shrinks exponentially as you add more numbers. Take a filter of true risk 0.2 on 200 test messages. Its test error could in principle be anything from 0 to 1, but the chance that it lands more than 0.1 away from 0.2 is at most about 0.037. Formally, let \(\theta_1, \dots, \theta_n\) be i.i.d. random variables with values in \([a, b]\) and mean \(\mu\). Then for every \(\varepsilon > 0\),
 
 \[ \mathbb P\left[\left|\frac{1}{n}\sum_{i=1}^n \theta_i - \mu\right| > \varepsilon\right] \le 2\exp\left(-\frac{2n\varepsilon^2}{(b - a)^2}\right). \]
+
+Read it from the inside out.
+
+- \(\theta_1, \dots, \theta_n\) (theta) are the \(n\) numbers being averaged, here one 0-or-1 loss per test message, so \(n = 200\).
+- \([a, b]\) is the interval they live in; for losses, \(a = 0\) and \(b = 1\), so \((b - a)^2 = 1\).
+- \(\mu\) (mu) is the mean, the value each \(\theta_i\) has on average; here the true risk, 0.2.
+- \(\frac{1}{n}\sum_{i=1}^n \theta_i\) is their average, the test error, and \(|\cdot - \mu| > \varepsilon\) is the event that it misses \(\mu\) by more than \(\varepsilon\).
+- On the right, \(\exp(x)\) means \(e^x\), with \(e \approx 2.718\). The exponent \(-2n\varepsilon^2/(b-a)^2\) gets more negative as \(n\) grows, so the bound shrinks fast.
+
+In plain words: **the chance that an average of \(n\) bounded independent numbers misses its mean by more than \(\varepsilon\) is at most \(2e^{-2n\varepsilon^2/(b-a)^2}\).** With \(n = 200\) and \(\varepsilon = 0.1\), the exponent is \(-2 \times 200 \times 0.01 = -4\), and \(2e^{-4} \approx 0.037\). The exact binomial chance is far smaller still:
+
+```python
+from math import comb, exp
+
+n, mu, eps, a, b = 200, 0.2, 0.1, 0, 1
+bound = 2 * exp(-2 * n * eps**2 / (b - a)**2)
+exact = sum(comb(n, k) * mu**k * (1 - mu)**(n - k)
+            for k in range(n + 1) if abs(k / n - mu) > eps)
+print(round(bound, 4), f"{exact:.1e}")
+```
+
+It prints `0.0366 3.2e-04`.
+
+Applied to one fixed hypothesis, that says the validation risk is close to the true risk. With 200 validation messages and \(\delta = 0.05\) the margin comes out at 0.096: with probability 95%, the count lands within about ten points of the truth.
 
 **Theorem (the hold-out guarantee).** Let \(h\) be a hypothesis and let the loss take values in \([0, 1]\). Let \(V\) be a validation set of size \(m_v\), drawn independently of \(h\). Then for every \(\delta \in (0, 1)\), with probability at least \(1 - \delta\) over the choice of \(V\),
 
 \[ |L_V(h) - L_{\mathcal D}(h)| \le \sqrt{\frac{\log(2/\delta)}{2 m_v}}. \]
+
+From the inside out: \(\log(2/\delta)\) is the confidence cost (the 2 comes from the 2 in front of Hoeffding’s bound), dividing by \(2m_v\) spreads it over the validation examples, and the square root turns it into a margin. On the left, \(|L_V(h) - L_{\mathcal D}(h)|\) is the distance between the measured and the true risk. In plain words: **with probability at least \(1 - \delta\), the validation risk of a hypothesis fixed in advance is within \(\sqrt{\log(2/\delta)/(2m_v)}\) of its true risk.** At \(m_v = 200\) and \(\delta = 0.05\), \(\log 40 \approx 3.69\), divided by 400 gives 0.0092, and the square root is 0.096. The snippet after the proof checks the formula against the exact binomial at \(m_v = 500\), and the `margin` function in the next section computes it with `r = 1`.
 
 *Proof.* The hypothesis usually comes out of a learner, \(h = A(S)\), so it is itself random. The whole proof is about handling that carefully.
 
@@ -179,11 +205,13 @@ The tool for the proof is **Hoeffding’s inequality**, which lesson 4 introduce
 
 *Step 2: the validation set does not notice.* \(V\) was drawn independently of \(S\). Conditioning on an independent variable does not change a distribution, so given \(S = s\), the examples of \(V\) are still i.i.d. from \(\mathcal D\). This is the only place independence is used, and it is the step that matters most.
 
-*Step 3: losses are i.i.d. with the right mean.* Set \(\theta_i = \ell(h, (x_i, y_i))\). With \(h\) fixed, each \(\theta_i\) is a function of the \(i\)-th example only, so the \(\theta_i\) are i.i.d. They lie in \([0, 1]\), and their mean is \(\mathbb E[\theta_i] = \mathbb E_{z \sim \mathcal D}[\ell(h, z)] = L_{\mathcal D}(h)\), the definition of the true risk. Their average is \(L_V(h)\).
+*Step 3: losses are i.i.d. with the right mean.* Set \(\theta_i = \ell(h, (x_i, y_i))\). With \(h\) fixed, each \(\theta_i\) is a function of the \(i\)-th example only, so the \(\theta_i\) are i.i.d. They lie in \([0, 1]\), and their mean is \(\mathbb E[\theta_i] = \mathbb E_{z \sim \mathcal D}[\ell(h, z)] = L_{\mathcal D}(h)\), the definition of the true risk: the average loss of \(h\) on an example \(z\) drawn from \(\mathcal D\). Their average is \(L_V(h)\).
 
 *Step 4: Hoeffding, conditionally.* With \(a = 0\), \(b = 1\) and \(n = m_v\),
 
 \[ \mathbb P\left[|L_V(h) - L_{\mathcal D}(h)| > \varepsilon \,\middle|\, S = s\right] \le 2 e^{-2 m_v \varepsilon^2}. \]
+
+This is Hoeffding with \((b - a)^2 = 1\); the only new mark is the vertical bar inside \(\mathbb P[\cdot \mid S = s]\), read “given that \(S = s\)”: the probability computed in the world where the training sequence is already known.
 
 *Step 5: unfreeze.* The bound on the right does not depend on \(s\). By the law of total probability, the unconditional probability is the average of the conditional ones over the distribution of \(S\), and an average of numbers that are each at most \(2e^{-2m_v\varepsilon^2}\) is at most \(2e^{-2m_v\varepsilon^2}\).
 
@@ -225,11 +253,13 @@ Now we can say exactly what went wrong in the mail room. The team reported \(L_V
 
 Choosing was not the mistake. Validation is a natural tool for choosing. Train several learners, or one learner with several settings, on \(S\), and collect their outputs in a **candidate set** \(H = \{h_1, \dots, h_r\}\). For the boosted filter, \(h_T\) is the vote after \(T\) rounds. Then draw a fresh validation set and pick the candidate with the smallest validation risk. In other words, run ERM over \(H\), on \(V\).
 
-This is learning a finite class, the problem lesson 2 solved, with one twist: \(H\) is not fixed in advance, because it depends on \(S\). But \(V\) is independent of \(S\), and so independent of \(H\), and that is enough for the finite-class argument to go through. The only mistake the team made was charging for one hypothesis when they had compared sixty.
+This is learning a finite class, the problem lesson 2 solved, with one twist: \(H\) is not fixed in advance, because it depends on \(S\). But \(V\) is independent of \(S\), and so independent of \(H\), and that is enough for the finite-class argument to go through. The only mistake the team made was charging for one hypothesis when they had compared sixty. Charging properly means splitting the failure budget \(\delta\) among the sixty, each getting \(\delta/60\), and on 200 messages that widens the margin from 0.096 to 0.139.
 
 **Theorem (validation over a finite candidate set).** Let \(H = \{h_1, \dots, h_r\}\) be any set of hypotheses and let the loss take values in \([0, 1]\). Let \(V\) be a validation set of size \(m_v\), drawn independently of \(H\). Then for every \(\delta \in (0, 1)\), with probability at least \(1 - \delta\) over the choice of \(V\),
 
 \[ \forall h \in H: \quad |L_{\mathcal D}(h) - L_V(h)| \le \sqrt{\frac{\log(2|H|/\delta)}{2 m_v}}. \]
+
+Only two marks are new compared with the hold-out guarantee. \(\forall h \in H\) reads “for every \(h\) in \(H\)”, and \(|H|\), bars around a set, is how many candidates it has, so \(|H| = r\). The confidence cost \(\log(2|H|/\delta)\) is the single-hypothesis cost with \(\delta\) replaced by each candidate’s share \(\delta/|H|\). In plain words: **with probability at least \(1 - \delta\), every one of the \(r\) candidates has a validation risk within \(\sqrt{\log(2r/\delta)/(2m_v)}\) of its true risk, all at once.** For the team, \(r = 60\) and \(m_v = 200\): \(\log(2 \times 60/0.05) = \log 2400 \approx 7.78\), divided by 400 is 0.0195, and the square root is 0.139. The `margin` function below computes exactly this.
 
 *Proof.* Condition on \(H\), exactly as in steps 1 and 2 of the hold-out proof: given \(H\), its \(r\) members are fixed functions, and \(V\) is still i.i.d. from \(\mathcal D\). Set \(\varepsilon = \sqrt{\log(2r/\delta)/(2m_v)}\) and let \(B_j\) be the event that \(|L_V(h_j) - L_{\mathcal D}(h_j)| > \varepsilon\). For each fixed \(j\), the hold-out guarantee applied with confidence \(\delta/r\) gives
 
@@ -239,6 +269,8 @@ The events \(B_1, \dots, B_r\) are far from independent (all of them are about t
 
 \[ \mathbb P\Big[\bigcup_{j=1}^r B_j \,\Big|\, H\Big] \le \sum_{j=1}^r \frac{\delta}{r} = \delta. \]
 
+This is the same union bound as in the structural risk minimization proof, now over \(r\) equal shares of \(\delta/r\) instead of shares shrinking like \(1/d^2\).
+
 Outside the union, every candidate is within \(\varepsilon\). The bound does not depend on \(H\), so averaging over \(H\), as in step 5, keeps it. \(\blacksquare\)
 
 What does this buy for the hypothesis we actually pick? Write \(\hat h\) for the candidate with the smallest validation risk and \(h^\circ\) for the candidate with the smallest true risk. On the good event of the theorem, three inequalities chain together:
@@ -246,6 +278,18 @@ What does this buy for the hypothesis we actually pick? Write \(\hat h\) for the
 \[ L_{\mathcal D}(\hat h) \le L_V(\hat h) + \varepsilon \le L_V(h^\circ) + \varepsilon \le L_{\mathcal D}(h^\circ) + 2\varepsilon. \]
 
 The first and the last are the theorem, applied to \(\hat h\) and to \(h^\circ\). The middle one holds because \(\hat h\) has the smallest validation risk of all candidates, \(h^\circ\) included. So **the chosen candidate is within \(2\varepsilon\) of the best candidate**, and its reported validation risk is within \(\varepsilon\) of its own true risk, both with probability at least \(1 - \delta\).
+
+Push the team’s numbers through, reading the test set as a validation set over sixty candidates, so \(\varepsilon = 0.139\). The chosen \(\hat h\) is \(h_{11}\) and the best candidate \(h^\circ\) is \(h_9\). Left to right: 0.208, then \(0.165 + 0.139 = 0.304\), then \(0.180 + 0.139 = 0.319\), then \(0.200 + 2 \times 0.139 = 0.478\). Each number is at least the one before, as promised:
+
+```python
+eps = 0.139
+L_V = {11: 0.165, 9: 0.180}
+L_D = {11: 0.208, 9: 0.200}
+print(L_D[11], round(L_V[11] + eps, 3),
+      round(L_V[9] + eps, 3), round(L_D[9] + 2 * eps, 3))
+```
+
+It prints `0.208 0.304 0.319 0.478`.
 
 Here is how the margin \(\varepsilon\) grows with the number of candidates, at \(\delta = 0.05\), for validation sets of 200 and 2,000:
 

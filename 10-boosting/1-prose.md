@@ -180,7 +180,7 @@ Let \(\mathcal H\) be the class of all three-piece hypotheses, and let the base 
 
 [[diagram:three-piece]]
 
-*Proof.* Fix \(\mathcal D\) and \(f\) with realizability. Then some \(h^\star = h_{\theta_1, \theta_2, b} \in \mathcal H\) has \(L_{(\mathcal D, f)}(h^\star) = 0\), so \(f = h^\star\) except on a set of probability zero, and for any stump \(g\), \(L_{(\mathcal D, f)}(g) = \mathcal D(\{x : g(x) \neq h^\star(x)\})\).
+*Proof.* Fix \(\mathcal D\) and \(f\) with realizability. Then some \(h^\star = h_{\theta_1, \theta_2, b} \in \mathcal H\) has \(L_{(\mathcal D, f)}(h^\star) = 0\), so \(f = h^\star\) except on a set of probability zero, and for any stump \(g\), \(L_{(\mathcal D, f)}(g) = \mathcal D(\{x : g(x) \neq h^\star(x)\})\). Here \(\mathcal D(A)\), for a set \(A\) of points, is the probability that a point drawn from \(\mathcal D\) lands in \(A\), and the set is every \(x\) such that \(g\) and \(h^\star\) disagree: the true risk of a stump is the weight of the region where it disagrees with the truth.
 
 **Step 1: some stump is within \(1/3\) of perfect.** The two cuts split the line into three regions: \(R_1 = (-\infty, \theta_1)\), \(R_2 = [\theta_1, \theta_2]\) and \(R_3 = (\theta_2, \infty)\). They are disjoint and cover the line, so \(\mathcal D(R_1) + \mathcal D(R_2) + \mathcal D(R_3) = 1\), and the smallest of the three weights is at most \(1/3\) (if all three exceeded \(1/3\), their sum would exceed 1). We now show that, for each region \(R_k\) and each \(\eta > 0\), some stump disagrees with \(h^\star\) on a set of probability at most \(\mathcal D(R_k) + \eta\).
 
@@ -190,10 +190,13 @@ Let \(\mathcal H\) be the class of all three-piece hypotheses, and let the base 
 
 Applying this to the lightest region, for every \(\eta > 0\) there is a stump with \(L_{(\mathcal D, f)}(g) \le \tfrac13 + \eta\). (The \(\eta\) is needed because a stump on the whole line is never constant: it can only push its threshold further and further out.)
 
-**Step 2: ERM over stumps finds one nearly that good.** The class \(B\) has VC dimension 2, which you can check the way lesson 6 checked thresholds. By lesson 6’s fundamental theorem, a class of finite VC dimension is agnostic PAC learnable by ERM. We need the agnostic version here, because the labels come from \(h^\star\), which is usually not a stump. So there is a sample complexity \(m_B(\varepsilon, \delta)\) such that, on \(m \ge m_B(\varepsilon, \delta)\) examples, with probability at least \(1 - \delta\),
+**Step 2: ERM over stumps finds one nearly that good.** The class \(B\) has VC dimension 2, which you can check the way lesson 6 checked thresholds. By lesson 6’s fundamental theorem, a class of finite VC dimension is agnostic PAC learnable by ERM. Recall from lesson 3 that agnostic means we no longer assume some hypothesis in the class is perfect; we only ask to come close to the best one the class has. We need the agnostic version here, because the labels come from \(h^\star\), which is usually not a stump. So there is a sample complexity \(m_B(\varepsilon, \delta)\) such that, on \(m \ge m_B(\varepsilon, \delta)\) examples, with probability at least \(1 - \delta\),
 \[ L_{(\mathcal D, f)}(\mathrm{ERM}_B(S)) \le \min_{g \in B} L_{(\mathcal D, f)}(g) + \varepsilon. \]
+On the left is the true risk of the stump ERM returns on \(S\). On the right, \(\min_{g \in B}\) means “the smallest value over every stump \(g\) in \(B\)”: the true risk of the best stump there is. In plain words: **the stump ERM finds is at most \(\varepsilon\) worse on fresh points than the best stump.** If the best stump had true risk 0.35 and \(\varepsilon = 1/24 \approx 0.042\), ERM’s stump would have true risk at most about 0.392.
+
 Set \(\varepsilon = 1/24\) and \(\eta = 1/24\). The minimum over \(B\) is at most \(\tfrac13 + \tfrac1{24}\), so with probability at least \(1 - \delta\),
 \[ L_{(\mathcal D, f)}(\mathrm{ERM}_B(S)) \le \tfrac13 + \tfrac1{24} + \tfrac1{24} = \tfrac{5}{12} = \tfrac12 - \tfrac1{12}. \]
+The three terms are the lightest region, the sliver \(\eta\) and ERM’s slack \(\varepsilon\); the fractions printed `5/12 5/12` in the snippet above.
 That is the definition of a \(\tfrac1{12}\)-weak learner, with \(m_{\mathcal H}(\delta) = m_B(1/24, \delta)\). \(\blacksquare\)
 
 You can watch Step 1 happen. Below, each trial puts 30 random points on a line, gives them random weights, labels them with a random three-piece hypothesis, and finds the best stump by brute force. On a finite set of points, a threshold below all of them is a perfectly good constant stump, so here the \(\eta\) disappears.

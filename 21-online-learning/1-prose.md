@@ -1137,7 +1137,8 @@ WeightedMajority(d, T):
 
 OnlineGradientDescent(η):
   w ← 0
-  each round: predict w; receive z; v ← a subgradient of ℓ(·, z) at w
+  each round: predict w; receive z
+              v ← a subgradient of ℓ(·, z) at w
               w ← projection onto H of (w − η v)
 
 Perceptron:

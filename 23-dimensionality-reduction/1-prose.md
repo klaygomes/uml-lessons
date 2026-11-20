@@ -342,7 +342,7 @@ print(B, round(lam, 3), [round(t, 3) for t in u])
 print(gap < 1e-9)
 ```
 
-It prints `[[6, 1], [1, 11]] 11.193 [0.057, 0.881, 0.113, 0.0, 0.294, 0.35]` and `True`. (For a \(2 \times 2\) symmetric matrix the top eigenvalue has the closed form used in line 5, and \((b, \lambda - a)\) is its eigenvector.) The principal component leans heavily on the second message, the one with more squared length.
+It prints `[[6, 1], [1, 11]] 11.193 [0.057, 0.881, 0.113, 0.0, 0.294, 0.35]` and `True`. (For a \(2 \times 2\) symmetric matrix the top eigenvalue has the closed form used in line 6, and \((b, \lambda - a)\) is its eigenvector.) The principal component leans heavily on the second message, the one with more squared length.
 
 The cost changes from \(O(d^3)\) for the eigenvectors plus \(O(md^2)\) to build \(A\), to \(O(m^3)\) for the eigenvectors of \(B\) plus \(O(m^2 d)\) to build \(B\). For our archive that is roughly \(8 \times 10^9\) plus \(2 \times 10^{11}\), instead of more than \(10^{14}\). And because \(B\) needs only dot products between messages, the same computation works whenever you can compute dot products, even in a feature space too large to write down. You met that idea in lesson 16 as the kernel trick; here it gives **kernel PCA**, and one of this lesson’s problems asks you to work it out.
 
@@ -842,6 +842,13 @@ It prints `word 3 count 2.5` and the stored numbers `[-1.314, 2.127, 0.0]`. Exac
 
 The catch is the search. For six words and \(s = 1\) there are six candidate supports. For 50,000 words and messages of 60 words, the number of possible sets of 60 words is \(\binom{50000}{60} \approx 1.0 \times 10^{200}\). Minimizing \(\|v\|_0\) is a combinatorial search, and no computer will finish it.
 
+```python
+import math
+print(math.comb(6, 1), f"{math.comb(50000, 60):.1e}")
+```
+
+It prints `6 1.0e+200`: six supports to try in the tiny example, a one followed by two hundred zeros in the mail room.
+
 ## Recovery by a linear program
 
 Here is the surprising part. Replace the count of nonzero entries by the sum of absolute values,
@@ -854,7 +861,21 @@ the **\(\ell_1\) norm** of \(v\). (For the message above with counts 3, 1 and 2,
 
 At the optimum each \(t_i\) is pushed down to \(|v_i|\), so the objective is \(\|v\|_1\). Linear programs can be solved in polynomial time (lesson 9 used one to find a separating halfspace). The question is whether the \(\ell_1\) minimizer is still the true message. It is, under a slightly stronger RIP, and we can even say what happens for messages that are only nearly sparse.
 
-For an arbitrary \(x\), let \(x_s\) be the vector that keeps the \(s\) entries of \(x\) largest in absolute value and sets the rest to 0: the best s-sparse approximation of \(x\). Then \(\|x - x_s\|_1\) is the total of the small entries, how far \(x\) is from being s-sparse. For the message with counts \((3, 1, 2)\) and \(s = 2\), \(x_s\) keeps 3 and 2 and \(\|x - x_s\|_1 = 1\).
+For an arbitrary \(x\), let \(x_s\) be the vector that keeps the \(s\) entries of \(x\) largest in absolute value and sets the rest to 0: the best s-sparse approximation of \(x\). Then \(\|x - x_s\|_1\) is the total of the small entries, how far \(x\) is from being s-sparse. For the message with counts \((3, 1, 2)\) and \(s = 2\), \(x_s\) keeps 3 and 2 and \(\|x - x_s\|_1 = 1\). Here are the three ways of measuring that message, and its small-entry total, term by term:
+
+```python
+import math
+x = [3, 1, 2]
+s = 2
+l0 = sum(t != 0 for t in x)
+l1 = sum(abs(t) for t in x)
+l2 = math.sqrt(sum(t * t for t in x))
+kept = sorted(x, key=abs, reverse=True)[:s]
+tail = l1 - sum(abs(t) for t in kept)
+print(l0, l1, round(l2, 3), tail)
+```
+
+It prints `3 6 3.742 1`: three words, a total of six counts, a length of \(\sqrt{14} \approx 3.742\), and a total of 1 outside the two biggest entries.
 
 **Theorem (\(\ell_1\) recovery).** Let \(\varepsilon < \frac{1}{1 + \sqrt 2}\) and let \(W\) be \((\varepsilon, 2s)\)-RIP. Let \(x\) be an arbitrary vector, \(y = Wx\), and
 
@@ -1032,6 +1053,8 @@ print(len(net), round((1 + 2 / eps) ** 2), far <= eps)
 ```
 
 It prints `25 81 True`: 25 points cover the circle to within 0.25, well under the bound of 81.
+
+[[diagram:net]]
 
 **Lemma (one sparse subspace).** Let \(U\) be an orthonormal \(d \times d\) matrix, let \(I\) be a set of \(s\) positions, and let \(S\) be the span of the columns \(U_i\), \(i \in I\). Let \(\delta, \varepsilon \in (0, 1)\) and let \(n\) satisfy
 
