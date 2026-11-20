@@ -198,30 +198,17 @@ cap = lambda t: math.acos(t) - t * math.sqrt(1 - t * t)
 g = lambda t: 1 - cap(t) / math.pi
 t1 = t2 = t3 = -0.5
 err = 0.4 * g(t1) + 0.4 * g(t3) + 0.2 * (1 - g(t2))
-print(round(g(-0.5), 3), round(err, 3))
+print(round(g(-0.5), 3), round(err, 3),
+      round(0.2 + 0.2 * g(t2), 3))
 ```
 
-It prints `0.196 0.317`.
+It prints `0.196 0.317 0.239`; the last number is the lower bound the proof reaches next.
 
 Now the geometry enters. The work centre is the midpoint of the other two, \(\mathbf c_2 = (\mathbf c_1 + \mathbf c_3)/2\), and \(t\) is an affine function of the centre, so \(t_2 = (t_1 + t_3)/2\). An average cannot exceed both of the numbers it averages, so \(\max(t_1, t_3) \ge t_2\), and because \(g\) is nondecreasing, \(g(t_1) + g(t_3) \ge g(\max(t_1, t_3)) \ge g(t_2)\). Substitute:
 
 \[ \operatorname{err}(H) \ge 0.4\, g(t_2) + 0.2 - 0.2\, g(t_2) = 0.2 + 0.2\, g(t_2) \ge 0.2. \]
 
-Read the chain left to right. The first “\(\ge\)” replaces \(0.4\,(g(t_1) + g(t_3))\) by the smaller \(0.4\, g(t_2)\), which is exactly what the previous sentence proved. The “\(=\)” collects the two \(g(t_2)\) terms: \(0.4 - 0.2 = 0.2\). The last “\(\ge\)” drops \(0.2\, g(t_2)\), which is never negative. In plain words: **whatever share of work mail a halfspace catches, it lets in at least as much other mail, so its error never drops below the 20% of saying no.** With the line \(x_2 = 5.5\): the error 0.317 is at least \(0.2 + 0.2 \times 0.196 = 0.239\), which is at least 0.2.
-
-```python
-import math
-
-cap = lambda t: math.acos(t) - t * math.sqrt(1 - t * t)
-g = lambda t: 1 - cap(t) / math.pi
-t1, t2, t3 = -0.5, -0.5, -0.5
-err = 0.4 * g(t1) + 0.4 * g(t3) + 0.2 * (1 - g(t2))
-middle = 0.4 * g(t2) + 0.2 - 0.2 * g(t2)
-low = 0.2 + 0.2 * g(t2)
-print(round(err, 3), round(middle, 3), round(low, 3))
-```
-
-It prints `0.317 0.239 0.239`.
+Read the chain left to right. The first “\(\ge\)” replaces \(0.4\,(g(t_1) + g(t_3))\) by the smaller \(0.4\, g(t_2)\), which is exactly what the previous sentence proved. The “\(=\)” collects the two \(g(t_2)\) terms: \(0.4 - 0.2 = 0.2\). The last “\(\ge\)” drops \(0.2\, g(t_2)\), which is never negative. In plain words: **whatever share of work mail a halfspace catches, it lets in at least as much other mail, so its error never drops below the 20% of saying no.** With the line \(x_2 = 5.5\): the error 0.317 is at least \(0.2 + 0.2 \times 0.196 = 0.239\), the third number the snippet above printed, which is at least 0.2.
 
 Equality forces \(g(t_2) = 0\): the halfspace catches work mail with probability 0. \(\blacksquare\)
 
@@ -266,7 +253,7 @@ A halfspace predicts \(\operatorname{sign}(\langle \mathbf w, \mathbf x \rangle)
 
 \[ h(\mathbf x) = \operatorname*{argmax}_{y \in \{\pm 1\}} \langle \mathbf w, y\mathbf x \rangle, \]
 
-where \(y\mathbf x\) is \(\mathbf x\) with every entry multiplied by \(y\). If \(\langle \mathbf w, \mathbf x \rangle > 0\), then \(y = +1\) gives the positive number and \(y = -1\) its negative, so the argmax is \(+1\); if \(\langle \mathbf w, \mathbf x \rangle < 0\) it is \(-1\). (When the score is exactly 0 both labels tie, the same boundary case as \(\operatorname{sign}(0)\) in lesson 9.) A halfspace scores each label by an inner product with a vector that depends on both the message and the label, and returns the label with the highest score. That shape is what generalizes.
+because the positive one of \(\pm\langle \mathbf w, \mathbf x \rangle\) wins (at a score of exactly 0 both labels tie, the same boundary case as \(\operatorname{sign}(0)\) in lesson 9). A halfspace scores each label by an inner product with a vector that depends on both the message and the label, and returns the label with the highest score. That shape is what generalizes.
 
 Read it from the inside out.
 
@@ -357,7 +344,7 @@ print(psi, len(psi))
 
 It prints `[0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0] 12`.
 
-So \(\Psi(\mathbf x, y)\) is \(k\) blocks of length \(n\), all zero except block \(y\), which holds \(\mathbf x\). Cut \(\mathbf w \in \mathbb R^{nk}\) into the same blocks, \(\mathbf w = [\mathbf w_1; \dots; \mathbf w_k]\). In the inner product only block \(y\) of \(\mathbf w\) meets a nonzero block of \(\Psi\), so
+Cut \(\mathbf w \in \mathbb R^{nk}\) into the same blocks, \(\mathbf w = [\mathbf w_1; \dots; \mathbf w_k]\). In the inner product only block \(y\) of \(\mathbf w\) meets a nonzero block of \(\Psi\), so
 
 \[ \langle \mathbf w, \Psi(\mathbf x, y) \rangle = \langle \mathbf w_y, \mathbf x \rangle, \qquad h_{\mathbf w}(\mathbf x) = \operatorname*{argmax}_{y \in \mathcal Y} \langle \mathbf w_y, \mathbf x \rangle. \]
 
@@ -621,30 +608,7 @@ It prints `0.65 3.954 19.433`.
 
 Swapping the roles of \(\mathbf u\) and \(\mathbf v\) bounds \(\ell(\mathbf v) - \ell(\mathbf u)\) the same way, so \(|\ell(\mathbf u) - \ell(\mathbf v)| \le \rho\, \|\mathbf u - \mathbf v\|\). \(\blacksquare\)
 
-For the multivector map, \(\Psi(\mathbf x, y') - \Psi(\mathbf x, y)\) has \(\mathbf x\) in one block and \(-\mathbf x\) in another, so \(\rho = \sqrt 2\, \|\mathbf x\|\). Python can hunt for a pair of weight vectors that breaks the bound:
-
-```python
-import math
-import random
-
-rng, k, n = random.Random(0), 4, 5
-def psi(x, y):
-    return [0] * (y * n) + list(x) + [0] * ((k - 1 - y) * n)
-dot = lambda u, v: sum(a * b for a, b in zip(u, v))
-def ell(w, x, y):
-    s = lambda yp: dot(w, psi(x, yp))
-    return max(int(yp != y) + s(yp) - s(y) for yp in range(k))
-x, y = (1, 0, 0, 2, 1), 0
-rho = math.sqrt(2) * math.dist(x, [0] * n)
-worst = 0.0
-for _ in range(10_000):
-    w, u = ([rng.gauss(0, 1) for _ in range(k * n)] for _ in "wu")
-    ratio = abs(ell(w, x, y) - ell(u, x, y)) / math.dist(w, u)
-    worst = max(worst, ratio)
-print(round(rho, 3), round(worst, 3))
-```
-
-It prints `3.464 2.103`: across 10,000 random pairs, the loss never changes faster than \(\rho = \sqrt{12} = 3.464\) times the distance.
+For the multivector map, \(\Psi(\mathbf x, y') - \Psi(\mathbf x, y)\) has \(\mathbf x\) in one block and \(-\mathbf x\) in another, so \(\rho = \sqrt 2\, \|\mathbf x\|\): for the “prize” message, \(\sqrt{2 \times 6} = 3.464\), the factor the snippet multiplied by the distance.
 
 **The binary case.** Why call it a hinge loss? Take \(\mathcal Y = \{\pm 1\}\), the zero-one cost and \(\Psi(\mathbf x, y) = y\mathbf x / 2\). The term \(y' = y\) is 0. The term \(y' = -y\) is \(1 + \langle \mathbf w, (-y\mathbf x - y\mathbf x)/2 \rangle = 1 - y\langle \mathbf w, \mathbf x \rangle\). The maximum of the two is \(\max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\}\), lesson 15’s hinge loss exactly. (The factor \(1/2\) is there so the gap between the two labels’ scores is \(y\langle \mathbf w, \mathbf x \rangle\) rather than twice that.)
 

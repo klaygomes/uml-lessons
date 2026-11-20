@@ -195,7 +195,8 @@ def best_loss(v, y):
 inner = sum(p * q for p, q in zip(vc, yc))
 norm2_v, norm2_y = sum(p * p for p in vc), sum(q * q for q in yc)
 print(round(best_loss(v, y), 4), round(best_loss(vc, yc), 4))
-print(linear_regression(vc, yc).intercept, inner, norm2_v, norm2_y)
+b0 = linear_regression(vc, yc).intercept
+print(b0, inner, norm2_v, norm2_y)
 print(round((norm2_y - inner ** 2 / norm2_v) / len(y), 4))
 ```
 

@@ -4,7 +4,7 @@
 
 The regularized filter from lesson 13 is the best thing the team has shipped. It is a halfspace over word counts, trained with the hinge loss plus a penalty on the size of the weight vector, and on paper it has everything you could want: a convex problem, a stable learner, a guarantee on its true risk. The archive it trains on holds two million labelled messages.
 
-And yet the complaints are back. Every morning the spammers try something new, and every morning the filter is fooled by it until the evening. You look at the retrain logs and the reason is plain: the exact solver for the regularized problem takes about six hours on the full archive. By the time a new filter ships, the junk it was trained to catch is already yesterday’s junk. The filter is always a day behind.
+And yet the complaints are back. Every morning the spammers try something new, and every morning the filter is fooled by it until the evening. The retrain logs the manager pulled up at the end of lesson 13 make the reason plain: the exact solver for the regularized problem takes about six hours on the full archive, and the archive grows by thousands of labels a day. By the time a new filter ships, the junk it was trained to catch is already yesterday’s junk. The filter is always a day behind.
 
 What would a faster learner even look like? Here is a thought that sounds almost too lazy to work. Instead of solving the whole optimization problem over two million messages, start with some weight vector, look at *one* message, nudge the weights a little so that message is handled better, and move on to the next message. Each nudge costs about as much as reading one message. Could a few thousand nudges, each based on a single message, produce a filter with a guarantee as good as the exact solver’s?
 
@@ -23,7 +23,7 @@ Let’s shrink the world so we can see every number. Pretend there are only six 
 | E | free coffee at the meeting | 0.4 | 0.8 | keep, \(-1\) |
 | F | the newsletter: free webinar this week | 0.7 | 0.3 | keep, \(-1\) |
 
-We will learn a homogeneous halfspace with weight vector \(\mathbf w = (w_1, w_2)\). Recall the pieces from lessons 9 and 12. The inner product \(\langle \mathbf w, \mathbf x \rangle = w_1 x_1 + w_2 x_2\) is the filter’s score for a message, positive meaning junk, and multiplying it by the label gives the **signed score** \(y\langle \mathbf w, \mathbf x \rangle\), positive exactly when the filter is right. For this first walk we turn the signed score into a penalty with the logistic loss of lesson 9, \(\ell(\mathbf w, (\mathbf x, y)) = \log(1 + e^{-y \langle \mathbf w, \mathbf x \rangle})\). Here \(e \approx 2.718\) is Euler’s number and \(\log\) is the natural logarithm: the penalty is large for a very negative signed score, exactly \(\log 2 \approx 0.693\) at a signed score of 0, and near 0 for a large positive one. We use it because it is smooth everywhere. With the six messages equally likely, the true risk, the expected loss on the next message to arrive, is simply the average loss over the six:
+We will learn a homogeneous halfspace (one with no bias term, so its boundary passes through the origin) with weight vector \(\mathbf w = (w_1, w_2)\). Recall the pieces from lessons 9 and 12. The inner product \(\langle \mathbf w, \mathbf x \rangle = w_1 x_1 + w_2 x_2\) is the filter’s score for a message, positive meaning junk, and multiplying it by the label gives the **signed score** \(y\langle \mathbf w, \mathbf x \rangle\), positive exactly when the filter is right. For this first walk we turn the signed score into a penalty with the logistic loss of lesson 9, \(\ell(\mathbf w, (\mathbf x, y)) = \log(1 + e^{-y \langle \mathbf w, \mathbf x \rangle})\). Here \(e \approx 2.718\) is Euler’s number and \(\log\) is the natural logarithm: the penalty is large for a very negative signed score, exactly \(\log 2 \approx 0.693\) at a signed score of 0, and near 0 for a large positive one. We use it because it is smooth everywhere. With the six messages equally likely, the true risk, the expected loss on the next message to arrive, is simply the average loss over the six:
 
 \[ f(\mathbf w) = L_{\mathcal D}(\mathbf w) = \frac16 \sum_{i=1}^6 \log\left(1 + e^{-y_i \langle \mathbf w, \mathbf x_i \rangle}\right). \]
 
@@ -165,13 +165,15 @@ def gd(eta, T):
         w = [a - eta * b for a, b in zip(w, grad(w))]
     return [a / T for a in total], w
 
-f_star = f(gd(1.0, 20000)[1])
+w_star = gd(1.0, 20000)[1]
+f_star = f(w_star)
+print([round(c, 3) for c in w_star], round(f_star, 3))
 for T in (100, 400, 2500):
     w_bar = gd(5 / math.sqrt(T), T)[0]
     print(T, round(f(w_bar) - f_star, 3), 5 / math.sqrt(T))
 ```
 
-It prints `100 0.07 0.5`, then `400 0.032 0.25`, then `2500 0.007 0.1`. The middle column is the gap \(f(\bar{\mathbf w}) - f(\mathbf w^\star)\), and it shrinks as \(T\) grows. The last column is a number we have not explained yet, and the gap always sits below it. That last column is a guarantee, and proving it is the next job.
+It prints `[3.102, -3.393] 0.474`, the bottom \(\mathbf w^\star\) and its height \(f(\mathbf w^\star)\), then `100 0.07 0.5`, `400 0.032 0.25` and `2500 0.007 0.1`. The middle column is the gap \(f(\bar{\mathbf w}) - f(\mathbf w^\star)\), and it shrinks as \(T\) grows. The last column is a number we have not explained yet, and the gap always sits below it. That last column is a guarantee, and proving it is the next job.
 
 Before the proof, play with the walk yourself. In the lab below you set \(\eta\) and \(T\) and watch the path of iterates on the landscape of \(f\), with the average marked. Try a tiny \(\eta\), then a huge one. Which goes wrong, and how?
 
@@ -187,7 +189,7 @@ We need three facts from lesson 12. A function \(f\) is **convex** when \(f(\alp
 
 The right side is the tilted plane from the last section, built at \(\mathbf w\) and evaluated at \(\mathbf u\). In plain words: **a convex function never dips below any of its tangent planes.** At \(\mathbf w = \mathbf 0\) the plane predicts \(0.693 + \langle (1, -1), (-0.092, 0.067) \rangle = 0.534\) for \(\mathbf u = (1, -1)\), and the true height there is 0.567, above it.
 
-And \(f\) is **\(\rho\)-Lipschitz** when \(|f(\mathbf u) - f(\mathbf w)| \le \rho \|\mathbf u - \mathbf w\|\) for all \(\mathbf u, \mathbf w\). The single bars are absolute value, so the left side is how far apart two heights are; \(\rho\) (rho) caps that at \(\rho\) times the distance between the points. Its slope is never steeper than \(\rho\).
+And \(f\) is **\(\rho\)-Lipschitz** when \(|f(\mathbf u) - f(\mathbf w)| \le \rho \|\mathbf u - \mathbf w\|\) for all \(\mathbf u, \mathbf w\). The single bars are absolute value, so the left side is how far apart two heights are; \(\rho\) (rho) caps that at \(\rho\) times the distance between the points. In plain words: **the function’s slope is never steeper than \(\rho\).** Our \(f\) is 1-Lipschitz, as we will see, and indeed its heights 0.693 at \(\mathbf 0\) and 0.567 at \((1, -1)\) differ by 0.126, well under 1 times the distance \(\sqrt 2 \approx 1.414\) between the points.
 
 Fix any vector \(\mathbf w^\star\) (think of it as the minimizer, though the argument works for every \(\mathbf w^\star\)) and let \(B \ge \|\mathbf w^\star\|\). We want to bound \(f(\bar{\mathbf w}) - f(\mathbf w^\star)\).
 
@@ -219,7 +221,7 @@ It prints `0.567 >= 0.534`, then `0.68680 <= 0.68684`. The landscape is nearly f
 
 \[ f(\mathbf w^{(t)}) - f(\mathbf w^\star) \le \langle \mathbf w^{(t)} - \mathbf w^\star, \nabla f(\mathbf w^{(t)}) \rangle. \]
 
-In plain words: **an iterate’s height above the target is at most its slope measured along the arrow from the target to the iterate.**
+In plain words: **an iterate’s height above the target is at most its slope measured along the arrow from the target to the iterate.** At \(\mathbf w^{(1)} = \mathbf 0\), with the bottom \(\mathbf w^\star \approx (3.102, -3.393)\) and \(f(\mathbf w^\star) \approx 0.474\) printed by the snippet above, the left side is \(0.693 - 0.474 = 0.219\) and the right side is \(\langle -\mathbf w^\star, (-0.092, 0.067) \rangle = 0.513\).
 
 Combining the two steps,
 
@@ -235,7 +237,7 @@ The right side no longer mentions \(f\) except through the vectors we stepped al
 - \(\langle \mathbf w^{(t)} - \mathbf w^\star, \mathbf v_t \rangle\) is large when the step, which goes along \(-\mathbf v_t\), heads towards \(\mathbf w^\star\): call it the progress of step \(t\).
 - On the right, \(\|\mathbf w^\star\|^2/(2\eta)\) is the squared distance from the start \(\mathbf 0\) to the target, and \(\frac\eta2\sum_t\|\mathbf v_t\|^2\) charges for the length of every step.
 
-In plain words: **whatever directions you step along, the total progress towards any target is at most its squared distance from the start over \(2\eta\), plus \(\frac\eta2\) times the total squared step length.** One step of our walk, with \(\mathbf w^\star \approx (3.102, -3.393)\): the left side is \(\langle -\mathbf w^\star, (-0.092, 0.067) \rangle = 0.513\), and the right side is \(21.14/1 + 0.25 \cdot 0.013 \approx 21.14\). True, with room to spare.
+In plain words: **whatever directions you step along, the total progress towards any target is at most its squared distance from the start over \(2\eta\), plus \(\frac\eta2\) times the total squared step length.** One step of our walk, with the same \(\mathbf w^\star\): the left side is the 0.513 of Step 2, and the right side is \(21.14/1 + 0.25 \cdot 0.013 \approx 21.14\). True, with room to spare.
 
 In particular, if \(\|\mathbf v_t\| \le \rho\) for every \(t\), \(\|\mathbf w^\star\| \le B\), and \(\eta = \sqrt{B^2 / (\rho^2 T)} = B/(\rho \sqrt T)\), then
 
@@ -308,15 +310,13 @@ Look at the simplest crease, \(f(x) = |x|\) at \(x = 0\). The line \(y = 0.5x\) 
 
 [[diagram:subgradient]]
 
-This is in fact a characterization of convexity, which we state without proof (it is a standard result of convex analysis):
+This is in fact a characterization of convexity, a standard result of convex analysis that we state without proof. It needs one recap: a convex set (lesson 12) contains the segment between any two of its points, and an open one leaves every point a little room around it inside the set, as the whole plane does.
 
-Here a convex set (lesson 12) contains the segment between any two of its points, and an open one leaves every point a little room around it inside the set, as the whole plane does.
+**Lemma (supporting planes).** Let \(A\) be an open convex set. A function \(f: A \to \mathbb R\) is convex if and only if for every \(\mathbf w \in A\) there is a vector \(\mathbf v\) with
 
-**Lemma (supporting planes).** Let \(S\) be an open convex set. A function \(f: S \to \mathbb R\) is convex if and only if for every \(\mathbf w \in S\) there is a vector \(\mathbf v\) with
+\[ f(\mathbf u) \ge f(\mathbf w) + \langle \mathbf u - \mathbf w, \mathbf v \rangle \quad \text{for all } \mathbf u \in A. \]
 
-\[ f(\mathbf u) \ge f(\mathbf w) + \langle \mathbf u - \mathbf w, \mathbf v \rangle \quad \text{for all } \mathbf u \in S. \]
-
-This is the tangent inequality with \(\mathbf v\) in place of the gradient, and \(\mathbf u \in S\) reads “\(\mathbf u\) in \(S\)”. In plain words: **a function is convex exactly when, at every point, some plane through its graph stays below it everywhere.** For \(|x|\) at \(w = 0\) with \(v = 0.5\) and \(u = 2\): \(|2| = 2 \ge 0 + 2 \cdot 0.5 = 1\). The fan snippet below checks this inequality for six slopes at once.
+This is the tangent inequality with \(\mathbf v\) in place of the gradient, and \(\mathbf u \in A\) reads “\(\mathbf u\) in \(A\)”. In plain words: **a function is convex exactly when, at every point, some plane through its graph stays below it everywhere.** For \(|x|\) at \(w = 0\) with \(v = 0.5\) and \(u = 2\): \(|2| = 2 \ge 0 + 2 \cdot 0.5 = 1\). The fan snippet below checks this inequality for six slopes at once.
 
 **Definition (subgradient).** A vector \(\mathbf v\) satisfying that inequality is a **subgradient** of \(f\) at \(\mathbf w\). The set of all subgradients of \(f\) at \(\mathbf w\) is written \(\partial f(\mathbf w)\) (it is also called the differential set, or the subdifferential). The curly \(\partial\) is back, now with no fraction: read \(\partial f(\mathbf w)\) as “the slopes of all supporting planes at \(\mathbf w\)”. For \(|x|\) at 0 it is every slope from \(-1\) to \(1\).
 
@@ -379,7 +379,7 @@ It prints `(0.0, 0.0) [(-0.8, -0.2), (-0.6, -0.6)]`, then `[-0.1833, 0.1333] [-0
 
 ## Lipschitz means bounded subgradients
 
-The gradient descent corollary needed \(\|\mathbf v_t\| \le \rho\). Here is the promised fact, now for subgradients, and it goes both ways.
+The gradient descent corollary needed \(\|\mathbf v_t\| \le \rho\). Here is the promised fact, now for subgradients, and it goes both ways. Think of \(|x|\) again: it is 1-Lipschitz, and its subgradients, from \(-1\) to 1, are never longer than 1. A convex function with a subgradient of length 3 somewhere would have to climb at rate 3 along it.
 
 **Lemma (Lipschitz and subgradients).** Let \(A\) be an open convex set and \(f: A \to \mathbb R\) convex. Then \(f\) is \(\rho\)-Lipschitz over \(A\) if and only if \(\|\mathbf v\| \le \rho\) for every \(\mathbf w \in A\) and every \(\mathbf v \in \partial f(\mathbf w)\).
 
@@ -498,7 +498,7 @@ It prints `100 0.056 0.5`, then `400 0.024 0.25`, then `2500 0.009 0.1`. The mid
 
 Here \(\mathbb E[f(\bar{\mathbf w})]\) is the risk of the output averaged over all the random draws of a run, and “with probability 1” means the bound on \(\|\mathbf v_t\|\) never fails. In plain words: **averaged over runs, the output sits at most \(B^2/(2\eta T) + \eta\rho^2/2\) above the best point of the ball.** With \(B = 5\), \(\rho = 1\), \(T = 100\) and \(\eta = 0.5\), that is \(0.25 + 0.25 = 0.5\), against the 0.056 measured above; the `certificate` line of the snippet at the end of this section is this formula.
 
-With \(\eta = B/(\rho\sqrt T)\) the right side is \(B\rho/\sqrt T\). So for every \(\varepsilon > 0\), to reach \(\mathbb E[f(\bar{\mathbf w})] - f(\mathbf w^\star) \le \varepsilon\) it suffices to run \(T \ge B^2\rho^2/\varepsilon^2\) steps with that \(\eta\).
+With \(\eta = B/(\rho\sqrt T)\) the right side is \(B\rho/\sqrt T\), so, as for gradient descent, \(T \ge B^2\rho^2/\varepsilon^2\) steps buy expected accuracy \(\varepsilon\).
 
 The expectation is over the random choices \(\mathbf v_1, \dots, \mathbf v_T\), and we write \(\mathbf v_{1:t}\) for the first \(t\) of them. The point of the proof is to repeat the deterministic argument and see where randomness enters. It enters in exactly one place.
 
@@ -653,8 +653,6 @@ Here \(\min_{\mathbf w \in \mathcal H} L_{\mathcal D}(\mathbf w)\) is the smalle
 
 *Proof.* \(L_{\mathcal D}\) is an average of convex functions, so it is convex. Each \(\mathbf v_t\) is a subgradient of a \(\rho\)-Lipschitz convex function, so \(\|\mathbf v_t\| \le \rho\) by the Lipschitz lemma. We just showed \(\mathbb E[\mathbf v_t \mid \text{past}] \in \partial L_{\mathcal D}(\mathbf w^{(t)})\). Take \(\mathbf w^\star\) a minimizer of \(L_{\mathcal D}\) over \(\mathcal H\); it has \(\|\mathbf w^\star\| \le B\), and the minimum of \(L_{\mathcal D}\) over the ball \(\{\|\mathbf w\| \le B\}\) can only be smaller, so the SGD guarantee, applied with that ball, bounds the gap to \(\min_{\mathcal H} L_{\mathcal D}\) too. \(\blacksquare\)
 
-Compare with lesson 13. Regularized loss minimization on a convex-Lipschitz-bounded problem needed \(m \ge 8\rho^2B^2/\varepsilon^2\) examples for the same kind of guarantee. SGD needs \(B^2\rho^2/\varepsilon^2\): the same order, and smaller by a factor of 8. And it gets there with no optimization problem to solve at all.
-
 For the mail room, the hinge loss on messages with \(\|\mathbf x\| \le 1\) is 1-Lipschitz, so \(\rho = 1\). Say the team keeps the weight vector within \(B = 5\) and wants the filter’s expected hinge risk within \(\varepsilon = 0.05\) of the best in the class. (Since the 0-1 loss is at most the hinge loss, as lesson 12 showed, the filter’s expected error rate is at most its expected hinge risk.) Count the work, with two million messages in the archive and about 200 nonzero word counts per message:
 
 ```python
@@ -669,7 +667,7 @@ print(T, f"{gd_work:.1e}", f"{sgd_work:.1e}", gd_work // sgd_work)
 print(math.ceil(8 * rho**2 * B**2 / eps**2))
 ```
 
-It prints `10000 4.0e+12 2.0e+06 2000000`, then `80000`. Ten thousand steps. Gradient descent on the archive would spend \(4 \times 10^{12}\) operations reading every message at every step (and would still only be minimizing \(L_S\), with a generalization argument owed on top). SGD spends \(2 \times 10^6\), two million times less, and its guarantee is already about the true risk. The regularized learner of lesson 13 would want 80,000 examples for the same \(\varepsilon\).
+It prints `10000 4.0e+12 2.0e+06 2000000`, then `80000`. Ten thousand steps. Gradient descent on the archive would spend \(4 \times 10^{12}\) operations reading every message at every step (and would still only be minimizing \(L_S\), with a generalization argument owed on top). SGD spends \(2 \times 10^6\), two million times less, and its guarantee is already about the true risk. The second line is lesson 13’s count for regularized loss minimization, \(8\rho^2B^2/\varepsilon^2\): the same order, eight times more examples, and an optimization problem still to solve on top.
 
 [[diagram:stream]]
 
@@ -798,9 +796,9 @@ print(min(gaps) >= 0)
 
 It prints `True`.
 
-Now plug the lemma into the step lemma. The only place the update rule entered its proof was the identity with \(\|\mathbf w^{(t+1)} - \mathbf w^\star\|^2\). With projection, that identity holds for the half-step \(\mathbf w^{(t+\frac12)}\) instead. Since \(\mathbf w^\star \in \mathcal H\), the lemma gives \(\|\mathbf w^{(t+1)} - \mathbf w^\star\|^2 \le \|\mathbf w^{(t+\frac12)} - \mathbf w^\star\|^2\), so
+Now plug the lemma into the step lemma. The only place the update rule entered its proof was the identity with \(\|\mathbf w^{(t+1)} - \mathbf w^\star\|^2\). With projection, that identity holds for the half-step \(\mathbf w^{(t+\frac12)}\) instead, since \(\mathbf w^{(t+\frac12)} = \mathbf w^{(t)} - \eta\mathbf v_t\). Since \(\mathbf w^\star \in \mathcal H\), the lemma gives \(\|\mathbf w^{(t+1)} - \mathbf w^\star\|^2 \le \|\mathbf w^{(t+\frac12)} - \mathbf w^\star\|^2\), so putting \(\mathbf w^{(t+1)}\) in place of the half-step can only make the right side larger:
 
-\[ \|\mathbf w^{(t+1)} - \mathbf w^\star\|^2 - \|\mathbf w^{(t)} - \mathbf w^\star\|^2 \le \|\mathbf w^{(t+\frac12)} - \mathbf w^\star\|^2 - \|\mathbf w^{(t)} - \mathbf w^\star\|^2. \]
+\[ \langle \mathbf w^{(t)} - \mathbf w^\star, \mathbf v_t \rangle \le \frac{1}{2\eta} \left( \|\mathbf w^{(t)} - \mathbf w^\star\|^2 - \|\mathbf w^{(t+1)} - \mathbf w^\star\|^2 \right) + \frac\eta2 \|\mathbf v_t\|^2. \]
 
 The per-step equality becomes an inequality in the right direction, the telescoping goes through unchanged, and the step lemma, the SGD guarantee and the learning corollary all hold with projection added.
 
@@ -973,7 +971,7 @@ Each unrolling multiplies the earlier coefficient by \(\frac{t-1}{t}\), which tu
 
 \[ \|\lambda\mathbf w^{(t)} + \mathbf v_t\| \le 2\rho. \]
 
-Here is the closed form checked against the step-by-step update, on our six messages with \(\lambda = 0.1\) and the hinge loss (\(\rho = 1\)):
+In plain words: **each step vector is at most twice as long as a loss subgradient.** Here is the closed form checked against the step-by-step update, on our six messages with \(\lambda = 0.1\) and the hinge loss (\(\rho = 1\)):
 
 ```python
 import math
@@ -1020,7 +1018,7 @@ It prints `10 2.929 3.303 6.6052`, `100 5.187 5.605 1.121`, `1000 7.485 7.908 0.
 
 **“SGD is an approximation of gradient descent, so its guarantee must be worse.”** On a learning problem it is the other way round. Gradient descent on \(L_S\) only optimizes the empirical risk and still owes a generalization argument. SGD on fresh examples optimizes \(L_{\mathcal D}\) directly, with \(B^2\rho^2/\varepsilon^2\) examples, eight times fewer than lesson 13’s bound for regularized loss minimization.
 
-**“The guarantee holds for every run.”** It holds in expectation over the random draws. A single run can do worse. If you need a statement with probability, the expectation bound still helps: the excess risk is a nonnegative random variable, so Markov’s inequality says it exceeds \(\varepsilon/\delta\) with probability at most \(\delta\) (a crude conversion; sharper ones exist).
+**“The guarantee holds for every run.”** It holds in expectation over the random draws. A single run can do worse. If you need a statement with probability, the expectation bound still helps: the excess risk is a nonnegative random variable, so Markov’s inequality (lesson 4: a nonnegative variable reaches \(a\) with probability at most its mean over \(a\)) says it exceeds \(\varepsilon/\delta\) with probability at most \(\delta\) (a crude conversion; sharper ones exist).
 
 **“More passes over the archive make SGD better.”** For the true-risk guarantee, every step needs a fresh example, independent of the current weights. Looping over the same messages again turns SGD into an optimizer of \(L_S\), and the guarantee for \(L_{\mathcal D}\) no longer follows from this proof.
 
