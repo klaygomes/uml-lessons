@@ -641,7 +641,7 @@ if __name__ == "__main__":
 
 ## When scale decides: normalization
 
-Now the third complaint, the length in bytes and the sender volume in millions. Selection asks *which* features; normalization asks *in what units*. A **feature transformation** is a function applied to one feature’s values, such as subtracting the average or taking a logarithm. **Normalization** is a transformation that puts features on comparable scales. As with selection, there are no transformations that are good or bad in general: each one is good or bad for a particular learner and a particular belief about the problem.
+Now the third complaint, the length in bytes and the sender volume in millions. Selection asks *which* features; normalization asks *in what units*. A **feature transformation** is a function applied to one feature’s values, such as subtracting the average or taking a logarithm. **Normalization** is a transformation that puts features on comparable scales.
 
 Here is the cleanest example of scale changing what a learner can do. Ridge regression prefers small weights. But “small” depends on units. A feature measured in tiny units needs a huge weight to matter, and ridge will refuse to pay for it.
 
@@ -736,7 +736,7 @@ print(clip(100), clip(-100), clip(1), clip(-1))
 
 It prints `2 0.6 0.6 0.1`, `10 0.1743 0.1743 0.6688`, `100 0.0197 0.0197 0.9608`, then `1 -1 1 -1`. At \(a = 100\), the best linear predictor on the raw feature has risk 0.96, close to useless; on the clipped feature it is perfect. One line of preprocessing removed almost all of the approximation error.
 
-Of course clipping can also hurt: if the huge values carried real information, cutting them off destroys it. Clipping is a bet, the prior belief that values above some threshold say nothing more than the threshold itself. Every transformation is a bet of this kind.
+Clipping can also hurt: if the huge values carried real information, cutting them off destroys it. It is a bet that values above the threshold say nothing more than the threshold itself, and every transformation is a bet of this kind, good or bad only for a particular learner and problem.
 
 ### A toolbox of transformations
 
@@ -814,7 +814,7 @@ Clustering (lesson 22) and principal component analysis (lesson 23) are both spe
 - \(\|\mathbf x_i - \phi(\psi(\mathbf x_i))\|^2\) is the squared distance between an instance and its reconstruction.
 - \(\sum_{i=1}^m\) adds this **reconstruction error** over the \(m\) training instances.
 
-In plain words: **an auto-encoder learns a code from which the instances can be rebuilt.** Without restrictions this is trivial: take \(k = d\) and let both maps be the identity, and the error is 0 while nothing has been learned. So the pair must be restricted. PCA keeps \(k < d\) (lesson 23 called it \(n\)) and makes both maps matrices: lesson 23’s compression matrix \(W\) is the encoder, its recovery matrix \(U\) the decoder, and the best pair has the top \(k\) principal components as the columns of \(U\), with \(W = U^\top\). k-means allows any \(k\), even \(k > d\), but uses \(k\) centres \(\boldsymbol\mu_1, \dots, \boldsymbol\mu_k\): the encoder returns the indicator vector of the nearest centre, and the decoder \(\phi(\mathbf v) = \sum_i v_i\boldsymbol\mu_i\) returns that centre, so the reconstruction error is exactly lesson 22’s k-means cost. Here are six messages described by two numbers (the base-10 logarithm of the length and the number of bangs) and two centres:
+In plain words: **an auto-encoder learns a code from which the instances can be rebuilt.** Without restrictions this is trivial: take \(k = d\) and let both maps be the identity, and the error is 0 while nothing has been learned. So the pair must be restricted. PCA keeps \(k < d\) (lesson 23 called it \(n\)) and makes both maps matrices: lesson 23’s compression matrix \(W\) is the encoder, its recovery matrix \(U\) the decoder, and the best pair has the top \(k\) principal components as the columns of \(U\), with \(W = U^\top\). k-means allows any \(k\), even \(k > d\), but uses \(k\) centres \(\boldsymbol\mu_1, \dots, \boldsymbol\mu_k\): the encoder returns the indicator vector of the nearest centre, and the decoder \(\phi(\mathbf v) = \sum_i v_i\boldsymbol\mu_i\) returns that centre, so the reconstruction error, minimized over the centres, is exactly lesson 22’s k-means cost. Here are six messages described by two numbers (the base-10 logarithm of the length and the number of bangs) and two centres:
 
 ```python
 xs = [(2.1, 4), (2.4, 5), (2.0, 6), (3.6, 0), (3.9, 1), (3.5, 0)]

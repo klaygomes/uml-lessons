@@ -4,7 +4,7 @@
 
 The filter still runs the way lesson 15 shipped it. Every message becomes a vector of yes/no word features over the 50,000-word vocabulary, the labels are \(+1\) for junk and \(-1\) for keep, and soft-SVM finds a halfspace with a large margin. It weighs the evidence word by word, it does not care how large the vocabulary is, and the margin bound told you, before shipping, roughly how many labels it needed.
 
-But the data team’s finding from the end of lesson 15 has stopped being a curiosity. A wave of phishing arrives, and the filter lets almost all of it through.
+But the data team’s finding from the end of lesson 15, that junk is often marked by combinations of words, has stopped being a curiosity. A wave of phishing arrives, and the filter lets almost all of it through.
 
 The new messages say things like “You are a winner, claim your reward” or “Verify your password today”. Look at the words one at a time and none of them is suspicious. The facilities team announces the “winner” of the office bake-off every month. People “claim” expenses all the time. IT asks staff to “verify” their laptops, and the helpdesk resets “password”s daily. What marks the junk is not any single word but a **combination**: “winner” together with “claim”, or “verify” together with “password”.
 
