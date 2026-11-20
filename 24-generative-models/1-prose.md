@@ -103,7 +103,8 @@ for x in ({"free", "click"}, {"free", "click", "meeting"},
           {"winner", "click"}):
     p1, p0 = 0.5 * P(x, th1), 0.5 * P(x, th0)
     try:
-        print(round(p1, 4), round(p0, 4), round(p1 / (p1 + p0), 2))
+        post = p1 / (p1 + p0)
+        print(round(p1, 4), round(p0, 4), round(post, 2))
     except ZeroDivisionError as err:
         print(round(p1, 4), round(p0, 4), "crash:", err)
 ```
@@ -501,7 +502,8 @@ def objective(th):
     fake = alpha * (math.log(1 / th) + math.log(1 / (1 - th)))
     return (real + fake) / m
 grid = [i / 1000 for i in range(1, 1000)]
-print(min(grid, key=objective), round((k + alpha) / (m + 2 * alpha), 3))
+theta_alpha = (k + alpha) / (m + 2 * alpha)
+print(min(grid, key=objective), round(theta_alpha, 3))
 ```
 
 It prints `0.167 0.167`.
@@ -574,13 +576,16 @@ import math
 def D(p, q):
     if q in (0, 1):
         return math.inf
-    return p * math.log(p / q) + (1 - p) * math.log((1 - p) / (1 - q))
+    return (p * math.log(p / q)
+            + (1 - p) * math.log((1 - p) / (1 - q)))
 def expected_excess(p, m, a):
     return sum(math.comb(m, k) * p**k * (1 - p)**(m - k)
-               * D(p, (k + a) / (m + 2 * a)) for k in range(m + 1))
+               * D(p, (k + a) / (m + 2 * a))
+               for k in range(m + 1))
 p, m = 0.002, 200
 for a in (0, 1):
-    bound = (m * p * (1 - p) + a * a) / (a * (m + a)) if a else math.inf
+    top = m * p * (1 - p) + a * a
+    bound = top / (a * (m + a)) if a else math.inf
     print(a, round(expected_excess(p, m, a), 4), round(bound, 4))
 ```
 
@@ -907,8 +912,10 @@ def log_ratio(x):
 dm = [mu1[i] - mu0[i] for i in range(2)]
 w = [sum(inv[i][j] * dm[j] for j in range(2)) for i in range(2)]
 b = 0.5 * (quad(mu0) - quad(mu1))
-pts = [(a / 4, c / 4) for a in range(-8, 24) for c in range(-8, 24)]
-print([round(v, 6) for v in w], round(b, 6), round(log_ratio(mu1), 3))
+pts = [(a / 4, c / 4)
+       for a in range(-8, 24) for c in range(-8, 24)]
+print([round(v, 6) for v in w], round(b, 6),
+      round(log_ratio(mu1), 3))
 print(max(abs(log_ratio(x) - (w[0] * x[0] + w[1] * x[1] + b))
           for x in pts) < 1e-9)
 ```
@@ -1110,11 +1117,13 @@ def joint(x, y):
     g = math.exp(-(x - mu[y])**2 / 2) / math.sqrt(2 * math.pi)
     return c[y] * g
 for t in range(40):
-    lls.append(sum(math.log(joint(x, 0) + joint(x, 1)) for x in xs))
-    Q = [[joint(x, y) / (joint(x, 0) + joint(x, 1)) for y in (0, 1)]
-         for x in xs]
+    tot = [joint(x, 0) + joint(x, 1) for x in xs]
+    lls.append(sum(math.log(v) for v in tot))
+    Q = [[joint(x, y) / v for y in (0, 1)]
+         for x, v in zip(xs, tot)]
     n = [sum(q[y] for q in Q) for y in (0, 1)]
-    mu = [sum(q[y] * x for q, x in zip(Q, xs)) / n[y] for y in (0, 1)]
+    mu = [sum(q[y] * x for q, x in zip(Q, xs)) / n[y]
+          for y in (0, 1)]
     c = [n[y] / len(xs) for y in (0, 1)]
 print([round(v, 1) for v in lls[:4]], round(lls[-1], 1))
 print(all(b >= a - 1e-9 for a, b in zip(lls, lls[1:])))
@@ -1148,3 +1157,44 @@ if __name__ == "__main__":
 1. Implement `soft_kmeans` (run `iters` EM iterations from the given start, identity covariances) and `log_likelihood` (the mixture log-likelihood with the \((2\pi)^{d/2}\) constant included).
 2. Start both centres at the same point. What happens, and which line of the monotonicity proof tells you EM can never escape?
 3. Replace the E step by a hard assignment to the most probable kind, and check that you have rebuilt k-means from lesson 22. Does the log-likelihood still never decrease?
+
+## What people get wrong
+
+**“A probability of 0 is just a very small probability.”** In a product it is not small, it is a veto: one factor of 0 wipes out every other word’s evidence, and in a log it is minus infinity. The rare-word theorem shows that with \(m \le \log 2/(2\theta^\star)\) examples, maximum likelihood produces such a veto with probability at least one half, and its true risk is then infinite.
+
+**“Smoothing is a hack that makes the numbers look nicer.”** Add-\(\alpha\) is regularized maximum likelihood, and add-one is exactly the predictive probability of a Bayesian with a uniform prior. It comes with a theorem: finite expected excess risk for every word, at the cost of a bias of at most \(\alpha/(m + 2\alpha)\).
+
+**“More pseudo-counts are always safer.”** They make the log-loss certificate smaller but pull every estimate toward \(1/2\). In the fix, 20 pseudo-counts broke the accuracy certificate at 600 labels per kind.
+
+**“Naive Bayes assumes the words are independent.”** It assumes they are independent *given the label*. “free” and “prize” are strongly correlated across all mail, simply because both are common in junk; the assumption is only that, within junk, one does not make the other more likely. That assumption is still usually false, and naive Bayes works anyway surprisingly often, because a classifier only needs the right side of the comparison, not the right probabilities.
+
+**“EM finds the maximum likelihood estimate.”** It never decreases the likelihood, which is all the theorem says. It can stop at a local maximum, and a bad start (two identical centres, for instance) can keep it there forever.
+
+**“Maximum likelihood is a different principle from ERM.”** It is ERM with the log loss. Everything you know about ERM applies, including that it overfits when the class is too rich for the data, and that a regularizer helps.
+
+## Recap and the next bug
+
+1. The **generative** approach assumes the data comes from a **parametric model** and estimates its **parameters**; the discriminative approach of the earlier lessons only learns to label.
+2. The **maximum likelihood estimator** picks the parameter that makes the training sequence most likely. For a yes/no feature it is the counted fraction \(k/m\); for a Gaussian, the sample mean and the root of the average squared deviation.
+3. Maximum likelihood is **ERM with the log loss** \(-\log P_\theta[x]\). Its true risk is the **entropy** of the data plus the **relative entropy** from the truth to the model, which is zero only when the model is right.
+4. For a Gaussian centre the expected excess risk is \(1/(2m)\). For a rare yes/no feature, maximum likelihood sets the estimate to 0 with probability at least one half when \(m \le \log 2/(2\theta^\star)\), and its true risk is infinite: the bug.
+5. **Pseudo-counts**, \(\hat\theta_\alpha = (k + \alpha)/(m + 2\alpha)\), are regularized maximum likelihood and, for \(\alpha = 1\), the Bayesian prediction under a uniform prior. They keep the estimate within \(\sqrt{\log(2/\delta)/(2m)} + \alpha/(m + 2\alpha)\) of the truth and the expected excess risk below \((m/4 + \alpha^2)/(\alpha(m + \alpha))\).
+6. **Naive Bayes** assumes the features are independent given the label, cutting \(2^d\) parameters to \(2d + 1\); trained by counting in \(O(md)\), it predicts in \(O(d)\). **LDA** assumes Gaussian classes with a shared covariance and produces a halfspace.
+7. **EM** handles latent variables by alternating soft assignments and refits; it is alternate maximization of \(G\), so the log-likelihood never decreases. With identity covariances it is **soft k-means**.
+
+Ines’s filter now ships with a certificate, and it is fast. But look at what it is made of. It keeps a parameter for every one of the 200 words in the dictionary, and the real dictionary has tens of thousands. Most of those words are noise: they appear about as often in junk as in keep, and every one of them adds a little random evidence to every decision, and two more numbers to estimate. And some of the most useful signals are not words at all: the ratio of links to text, a sender’s history, “prize” and “claim” appearing together. Which features should the filter keep, and could it build better ones than the ones it was given? That is the next lesson: feature selection and generation.
+
+## Concept check
+
+Write your answers down before moving on to the next lesson, with your reasoning, not just the answer.
+
+1. The word “unsubscribe” appears in every one of the 300 junk messages your users labelled. What is its maximum likelihood estimate in junk, and what happens to Ines’s filter on a junk message that does not contain it? What does add-one smoothing estimate instead? Which part of the pseudo-count theorem covers this case, and why does it not matter which end of \([0, 1]\) the true frequency is close to?
+2. In the proof that EM never decreases the likelihood, the chain has two equalities and two inequalities. Suppose your M step is only approximate: it returns some \(\theta^{(t+1)}\) with \(F(Q^{(t+1)}, \theta^{(t+1)}) \ge F(Q^{(t+1)}, \theta^{(t)})\), but not the maximizer. Does the theorem still hold? Which link of the chain changes, and why is it still valid? What if instead the E step were approximate?
+3. A word appears in junk with true frequency \(\theta^\star = 0.001\). (a) Up to what number of junk messages \(m\) does the rare-word theorem guarantee that maximum likelihood has infinite true risk with probability at least one half? (b) With \(m = 1{,}000\) and add-one smoothing, what does the pseudo-count theorem bound the expected excess risk by? (c) With \(m = 1{,}000\) and \(\delta = 0.05\), how far from \(\theta^\star\) can the add-one estimate be, by part (a) of the theorem, and why is that bound so much worse than the bias alone?
+
+## Problems
+
+Once the concept check is done, try these. Hints come one at a time in the chat, and no full solutions.
+
+- **Problem 1 (a biased width).** Let \(x_1, \dots, x_m\) be i.i.d. Gaussian with centre \(\mu\) and variance \(\sigma^2\), and let \(\hat\sigma^2 = \frac1m\sum_i(x_i - \hat\mu)^2\) be the maximum likelihood estimate of the variance. Prove that \(\mathbb E[\hat\sigma^2] = \frac{m-1}{m}\sigma^2\), so the estimator is biased, and find a multiple of \(\hat\sigma^2\) that is unbiased.
+- **Problem 2 (the shares of soft k-means).** For nonnegative weights \(\nu_1, \dots, \nu_k\), not all zero, consider maximizing \(\sum_{y=1}^k \nu_y\log c_y\) over probability vectors \(c\) with every \(c_y > 0\). (i) Check that the share part of the soft k-means M step has this form, with \(\nu_y = \sum_i Q_{i,y}\). (ii) Show that \(c^\star = \nu/\sum_y \nu_y\) is a probability vector. (iii) Show that the problem is equivalent to minimizing the relative entropy \(D_{\mathrm{RE}}(c^\star\|c)\) over the same \(c\). (iv) Conclude, using a property of the relative entropy proved in this lesson, that \(c^\star\) is the solution.

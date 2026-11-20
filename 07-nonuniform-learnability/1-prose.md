@@ -735,7 +735,7 @@ for m, best in ((300, 0.2715), (1000, 0.1938), (3000, 0.151)):
     print(m, n, f"{size_H(n):.2e}")
 ```
 
-It prints `300 14 4.71e+15`, `1000 22 1.55e+28` and `3000 37 6.24e+54`. With 1,000 labels and the best bound at 0.1938, the rule cannot stop before size 22, and \(\mathcal H_{22}\) holds about \(1.55 \times 10^{28}\) lists. MDL is no better: at 1,000 labels its best bound is 0.2227, so it cannot stop before a length \(\ell\) with \(\ell \ge 2m \cdot 0.2227^2 - \log 40 \approx 95.5\): it must examine codes of up to 96 bits. Keep those numbers in mind.
+The `while` loop is the stopping rule: grow \(n\) until the gap alone reaches the best bound. It prints `300 14 4.71e+15`, `1000 22 1.55e+28` and `3000 37 6.24e+54`. With 1,000 labels and the best bound at 0.1938, the rule cannot stop before size 22, and \(\mathcal H_{22}\) holds about \(1.55 \times 10^{28}\) lists. MDL is no better: at 1,000 labels its best bound is 0.2227, so it cannot stop before a length \(\ell\) with \(\ell \ge 2m \cdot 0.2227^2 - \log 40 \approx 95.5\): it must examine codes of up to 96 bits. Keep those numbers in mind.
 
 **Build it yourself.** Using only the standard library. The starter code simulates the stream (the hidden list `TRUTH` is there only to generate labels; your learners must not read it).
 
@@ -822,13 +822,29 @@ There is an even weaker way to define learning: let the sample size depend on th
 
 A word of warning first, because of a name clash. In lesson 1, a *hypothesis* was consistent when it agreed with every example. Here, **consistency** is a property of a *learning rule*, borrowed from statistics, and it has nothing to do with fitting the examples. Same word, different idea.
 
+In words first: a consistent learning rule, given enough labels, gets within \(\varepsilon\) of any hypothesis you name, but “enough” may depend on the mail stream itself, so on a stream it has never met you cannot say in advance how many. The memorizer on a stream dominated by a few repeated messages needs a hundred labels; on a stream of a million equally likely messages it needs millions.
+
 **Definition (consistency).** Let \(Z\) be a domain set, \(\mathcal P\) a set of probability distributions over \(Z\), and \(\mathcal H\) a hypothesis class. A learning rule \(A\) is **consistent** with respect to \(\mathcal H\) and \(\mathcal P\) if there is a function \(m^{\mathrm{CON}}_{\mathcal H}: (0,1)^2 \times \mathcal H \times \mathcal P \to \mathbb N\) such that for every \(\varepsilon, \delta \in (0, 1)\), every \(h \in \mathcal H\) and every \(\mathcal D \in \mathcal P\), if \(m \ge m^{\mathrm{CON}}_{\mathcal H}(\varepsilon, \delta, h, \mathcal D)\) then with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\), \(L_{\mathcal D}(A(S)) \le L_{\mathcal D}(h) + \varepsilon\). If \(\mathcal P\) is the set of all distributions, \(A\) is **universally consistent** with respect to \(\mathcal H\).
+
+Here \(Z\) plays the role of message-label pairs, \(\mathcal X \times \{0,1\}\), and \(\mathcal P\) is the family of streams you are willing to face. The only change from nonuniform learnability is the signature: \(m^{\mathrm{CON}}_{\mathcal H}: (0,1)^2 \times \mathcal H \times \mathcal P \to \mathbb N\) takes the two dials, a hypothesis and also a distribution, and returns a number of labels. In plain words: **for each stream and each hypothesis there is some number of labels beyond which the rule competes with that hypothesis on that stream.** The two streams just mentioned get two very different entries of \(m^{\mathrm{CON}}\), as the snippet below shows.
 
 A nonuniform learner for \(\mathcal H\) is universally consistent for \(\mathcal H\) (take \(m^{\mathrm{CON}}\) to ignore \(\mathcal D\)). The converse fails, and the counterexample is an old friend: lesson 1’s memorizer. Let Memorize return, on a message \(x\), the majority label among the copies of \(x\) in the training sequence, and a fixed default label if \(x\) never appeared. Over any countable domain with a finite label set, Memorize is universally consistent for the class of all classifiers. Yet over an infinite domain the class of all classifiers is not nonuniformly learnable, as we saw. So consistency is strictly weaker. (It is also unsettling: lesson 1’s cautionary tale meets the definition.)
 
 Why does Memorize succeed eventually? Take the noise-free case. It errs only on messages it has never seen, so its true risk is at most the probability mass of the unseen messages. By linearity of expectation and the independence of the \(m\) draws, the expected unseen mass is
 
 \[ \mathbb E_{S}\Big[\sum_{x} \mathcal D(x)\, \mathbb 1[x \notin S]\Big] = \sum_x \mathcal D(x)\, \mathbb P[x \notin S] = \sum_x \mathcal D(x) \big(1 - \mathcal D(x)\big)^m. \]
+
+Read it from the inside out. \(\mathcal D(x)\) is the probability that message \(x\) arrives. \(\mathbb 1[x \notin S]\) is 1 when \(x\) is not among the training messages (\(\notin\) reads “is not in”) and 0 otherwise, so the sum \(\sum_x\) over every message adds up the probability of the unseen ones: the **missing mass**. \(\mathbb E_S\) averages that over random training sequences. Linearity moves the average inside the sum, the average of an indicator is the probability of its statement, and \(x\) is missed by all \(m\) independent draws with probability \((1 - \mathcal D(x))^m\), one factor per draw. In plain words: **on average, the unseen mail weighs the sum, over messages, of each message’s probability times its chance of being missed \(m\) times in a row.** If message 1 arrives half the time, at \(m = 10\) it contributes \(0.5 \times 0.5^{10} = 0.0005\); message 4, at \(1/16\), contributes \(0.0625 \times (15/16)^{10} = 0.033\); message 8, at \(1/256\), only 0.004 because it is so rare.
+
+```python
+def contribution(q, m):
+    return q * (1 - q) ** m
+
+for x in (1, 4, 8):
+    print(x, round(contribution(2.0 ** -x, 10), 5))
+```
+
+It prints `1 0.00049`, `4 0.03278` and `8 0.00376`. The snippet below adds these terms up, as `missing_mass`.
 
 For any fixed \(\mathcal D\) on a countable domain this goes to 0 as \(m\) grows. But how fast depends entirely on \(\mathcal D\). Compare a stream where message \(x\) arrives with probability \(2^{-x}\) with one spread evenly over a million messages:
 
@@ -858,7 +874,7 @@ We now have three definitions: PAC (one sample size for every hypothesis and eve
 
 **How do I learn, and how do I say what I know?** PAC learning, through No-Free-Lunch, shows prior knowledge is necessary, gives a crisp way to state it (choose a class) and a generic learner for it (ERM). Nonuniform learning also gives a crisp way to state prior knowledge (weights over classes or hypotheses) and a generic learner (SRM). SRM is especially good at **model selection**, when you are unsure which class to use. Fit lists by ERM with cap 6 and you overfit, as the 30-label table showed; cap them at 1 and you underfit; SRM over all sizes picks the size from the data, paying only a small extra in estimation error and the loss of knowing in advance how many examples you need. Consistency gives no learning paradigm and no way to state prior knowledge at all. Memorize needs none.
 
-**Should I prefer a consistent learner?** It sounds desirable to be consistent for every function from \(\mathcal X\) to \(\mathcal Y\): with enough data you would eventually match the Bayes optimal predictor. The argument has two problems. First, on the distributions you actually meet, the consistent learner may need more examples than you will ever have. Second, consistency is cheap to add. Over a countable domain with a finite label set, take any nonuniform learner: run it, compute its bound, and if the bound is small enough, return its hypothesis; otherwise fall back to Memorize. The result is consistent for every classifier. A property that easy to bolt on is a poor reason to choose one learner over another.
+**Should I prefer a consistent learner?** It sounds desirable to be consistent for every function from \(\mathcal X\) to \(\mathcal Y\): with enough data you would eventually match the Bayes optimal predictor (lesson 3: the best possible predictor of all, with true risk 0.1 on our stream). The argument has two problems. First, on the distributions you actually meet, the consistent learner may need more examples than you will ever have. Second, consistency is cheap to add. Over a countable domain with a finite label set, take any nonuniform learner: run it, compute its bound, and if the bound is small enough, return its hypothesis; otherwise fall back to Memorize. The result is consistent for every classifier. A property that easy to bolt on is a poor reason to choose one learner over another.
 
 ## Recap and the next bug
 

@@ -803,7 +803,7 @@ A union bound over the at most \(|\mathcal H_C|\) chosen hypotheses gives
 
 \[ \mathbb P_\sigma\left[ \max_{h} |\theta_h| > \rho \right] \le 2 |\mathcal H_C| \exp\left( -\frac{m \rho^2}{2} \right) \quad \text{for every } \rho > 0. \]
 
-Read both displays from the inside out. \(\rho\) (rho) is a level you choose, \(|\theta_h| > \rho\) is the event that the signed gap overshoots it, \(\mathbb P_\sigma\) says only the coins are random. Hoeffding’s \(2\exp(-2m\rho^2/(b - a)^2)\) with \(b - a = 2\) becomes \(2\exp(-m\rho^2/2)\). The union bound then pays once per labelling, the factor \(|\mathcal H_C|\), and \(\max_h\) is the largest over the chosen rules. In plain words: **one rule’s signed gap rarely exceeds \(\rho\), and the chance that any of the \(|\mathcal H_C|\) rules does is at most that many times larger.** For thresholds on 400 scores, \(|\mathcal H_C| = 401\), with \(m = 200\), and the worst-spread case where every \(c_i = 1\):
+Read both displays from the inside out. \(\rho\) (rho) is a level you choose, \(|\theta_h| > \rho\) is the event that the signed gap overshoots it, and \(\mathbb P_\sigma\) says only the coins are random. Hoeffding’s \(2\exp(-2m\rho^2/(b - a)^2)\) with \(b - a = 2\) becomes \(2\exp(-m\rho^2/2)\). The union bound then pays once per labelling, the factor \(|\mathcal H_C|\), and \(\max_h\) is the largest over the chosen rules. In plain words: **one rule’s signed gap rarely exceeds \(\rho\), and the chance that any of the \(|\mathcal H_C|\) rules does is at most that many times larger.** For thresholds on 400 scores, \(|\mathcal H_C| = 401\), with \(m = 200\), and the worst-spread case where every \(c_i = 1\):
 
 ```python
 import math
@@ -821,19 +821,38 @@ for rho in (0.2, 0.35):
 
 It prints `0.2 0.0032 0.037 15`, then `0.35 0.0 9.6e-06 0.0038`. At \(\rho = 0.2\) the observed overshoot rate, 0.3%, sits under Hoeffding’s 3.7%, but the union bound over 401 labellings gives 15, which says nothing. At \(\rho = 0.35\) the union bound is down to 0.4%: paying for 401 labellings costs only a modestly higher level, because the exponential falls so fast.
 
-*Step 6: from a tail bound to an expectation.* We need \(\mathbb E_\sigma[\max_h |\theta_h|]\). Here is a small lemma that turns a tail bound of this shape into one.
+*Step 6: from a tail bound to an expectation.* We need \(\mathbb E_\sigma[\max_h |\theta_h|]\). A **tail bound** says how rarely a quantity exceeds each level \(\rho\); the snippet above showed one falling from 15 to 0.004 as \(\rho\) rose from 0.2 to 0.35. If the chance of exceeding a level collapses past some point, the quantity cannot average much more than that point. Here is a small lemma that makes this precise.
 
 **Tail lemma.** Let \(X \ge 0\) be a random variable, and suppose \(\mathbb P[X > \rho] \le 2b\, e^{-\rho^2/a^2}\) for all \(\rho \ge 0\), with \(a > 0\) and \(b \ge e\). Then \(\mathbb E[X] \le a(1 + \sqrt{\log b})\).
 
-*Proof.* For a non-negative variable, \(\mathbb E[X] = \int_0^\infty \mathbb P[X > \rho]\, d\rho\). Split at \(\rho_0 = a\sqrt{\log b}\). Below \(\rho_0\), bound the probability by 1, which contributes \(\rho_0\). Above \(\rho_0\), use the tail bound together with \(1 \le \rho/\rho_0\):
+Matched against Step 5, \(a\) sets the scale of the fall and \(b\) is the number of labellings. In plain words: **if the tail falls off like a bell curve of width \(a\), inflated by a factor \(b\), the average is at most \(a\) times \(1 + \sqrt{\log b}\).** With \(a = 0.1\) and \(b = 401\), that is \(0.1 \times (1 + 2.45) \approx 0.345\).
+
+*Proof.* For a non-negative variable, \(\mathbb E[X] = \int_0^\infty \mathbb P[X > \rho]\, d\rho\). The integral sign \(\int_0^\infty \dots d\rho\) is the area under the curve of \(\mathbb P[X > \rho]\) as \(\rho\) runs from 0 upward; think of it as adding the chance of passing each tiny level step. A die roll shows why it gives the average: it passes level 0 for sure, level 1 with chance \(5/6\), and so on, and \(1 + 5/6 + 4/6 + 3/6 + 2/6 + 1/6 = 3.5\), the average roll. Split at \(\rho_0 = a\sqrt{\log b}\). Below \(\rho_0\), bound the probability by 1, which contributes \(\rho_0\). Above \(\rho_0\), use the tail bound together with \(1 \le \rho/\rho_0\):
 
 \[ \int_{\rho_0}^\infty 2b\, e^{-\rho^2/a^2}\, d\rho \le \frac{2b}{\rho_0} \int_{\rho_0}^\infty \rho\, e^{-\rho^2/a^2}\, d\rho = \frac{2b}{\rho_0} \cdot \frac{a^2}{2} e^{-\rho_0^2/a^2} = \frac{2b}{\rho_0} \cdot \frac{a^2}{2b} = \frac{a}{\sqrt{\log b}} \le a, \]
 
 where the last step uses \(\log b \ge 1\). Adding the two parts gives \(a\sqrt{\log b} + a\). \(\blacksquare\)
 
+The display reads left to right: the area under the tail bound past \(\rho_0\); the same with an extra factor \(\rho/\rho_0 \ge 1\), which makes the area exactly computable; the computed area; and its simplification, using \(e^{-\rho_0^2/a^2} = e^{-\log b} = 1/b\). In plain words: **past \(\rho_0\) the tail is so thin that its whole area is at most \(a\).** Numerically, with \(a = 0.1\) and \(b = 401\), adding up thin slices of width 0.00001:
+
+```python
+from math import exp, log, sqrt
+
+a, b, step = 0.1, 401, 1e-5
+rho0 = a * sqrt(log(b))
+tail = sum(2 * b * exp(-((rho0 + k * step) / a) ** 2) * step
+           for k in range(100_000))
+print(round(rho0, 4), round(tail, 4), round(a / sqrt(log(b)), 4),
+      round(rho0 + a, 4))
+```
+
+It prints `0.2448 0.0381 0.0408 0.3448`: the split point, the area past it, the bound \(a/\sqrt{\log b}\) on that area, and the lemma’s bound \(\rho_0 + a\) on the whole average.
+
 Apply it with \(a^2 = 2/m\) and \(b = \max(|\mathcal H_C|, e)\); the tail bound of Step 5 still holds with this larger \(b\). Then \(\sqrt{\log b} \le 1 + \sqrt{\log |\mathcal H_C|}\), and \(a = \sqrt{2/m} = 2/\sqrt{2m}\), so
 
 \[ \mathbb E_\sigma\left[ \max_h |\theta_h| \right] \le \frac{2}{\sqrt{2m}} \left( 2 + \sqrt{\log |\mathcal H_C|} \right) \le \frac{4 + 2\sqrt{\log \tau_{\mathcal H}(2m)}}{\sqrt{2m}}. \]
+
+This is the lemma’s \(a(1 + \sqrt{\log b})\) with the values plugged in, then Step 4’s \(|\mathcal H_C| \le \tau_{\mathcal H}(2m)\). With \(m = 200\) and 401 labellings it is the 0.4448 printed earlier, and the simulation below meets that number again as `bound`.
 
 *Step 7: put it together.* The bound of Step 6 holds for every fixed \(S, S'\), so it survives the outer expectation in Step 3: \(\mathbb E_S[Z] \le (4 + 2\sqrt{\log \tau_{\mathcal H}(2m)})/\sqrt{2m}\). Step 1 divides by \(\delta\). \(\blacksquare\)
 
@@ -867,6 +886,8 @@ It prints `401 0.0845 0.4448`. An infinite class, but on these 400 scores only \
 Now combine the two halves. Let \(\mathrm{VCdim}(\mathcal H) = d\). If \(d = 0\), no single point is shattered, so all hypotheses agree on every point: \(\mathcal H\) is one function, a finite class, and lesson 4 already gives uniform convergence. So let \(d \ge 1\). For \(2m \ge d\), Sauer’s lemma gives \(\tau_{\mathcal H}(2m) \le (2em/d)^d\), and the theorem gives, with probability at least \(1 - \delta\), for all \(h\),
 
 \[ |L_S(h) - L_{\mathcal D}(h)| \le \frac{4 + 2\sqrt{d \log(2em/d)}}{\delta \sqrt{2m}}. \]
+
+It is the theorem’s bound with Sauer’s \((2em/d)^d\) in place of \(\tau_{\mathcal H}(2m)\), and the log of a \(d\)-th power is \(d\) times the log. In plain words: **for a class of VC dimension \(d\), every training score is within roughly \(\sqrt{d \log m / m}/\delta\) of the truth.** For thresholds, \(d = 1\), at \(m = 200\) and \(\delta = 0.1\), it gives 4.64, a little above the 4.45 from the exact growth function, since Sauer’s simpler bound is looser.
 
 Write \(u = d \log(2em/d)\). When \(u \ge 4\), we have \(4 \le 2\sqrt u\), so the numerator is at most \(4\sqrt u\) and the bound is at most \(\frac{1}{\delta}\sqrt{8u/m}\). This is at most \(\varepsilon\) when
 

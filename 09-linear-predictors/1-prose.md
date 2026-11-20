@@ -659,21 +659,32 @@ That is a **regression** problem: the label set is \(\mathcal Y = \mathbb R\), n
 
 \[ \mathcal H_{\text{reg}} = L_d = \{ \mathbf x \mapsto \langle \mathbf w, \mathbf x \rangle + b \; : \; \mathbf w \in \mathbb R^d, \, b \in \mathbb R \}. \]
 
-The 0-1 loss is useless here. If a message’s true score is 30, then predicting 30.001 and predicting 90 are both “wrong”, but one is clearly better. So we need a loss that grows with the size of the miss. The most common choice is the **square loss** you met in lesson 3,
-
-\[ \ell(h, (\mathbf x, y)) = (h(\mathbf x) - y)^2, \]
-
-and with it the empirical risk is the average squared miss,
-
-\[ L_S(h) = \frac{1}{m} \sum_{i=1}^m (h(\mathbf x_i) - y_i)^2, \]
-
-often called the mean squared error. Other losses are possible. The **absolute loss** \(|h(\mathbf x) - y|\) is one, and ERM with it can again be written as a linear program; that is Problem 1 at the end of this lesson.
+This is the same set \(L_d\) we read slowly at the start of the lesson, now given the name \(\mathcal H_{\text{reg}}\), “the hypothesis class for regression”: **every weighted sum plus a constant, used directly as the prediction.**
 
 Here are six messages with their junk scores, using one word, the count of “free”. Notice the shape before any fitting: the score climbs slowly, then steeply, then flattens out near 100, because past a point every extra “free” convinces almost nobody new.
 
 | “free” count \(x\) | 0 | 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|---|
 | junk score \(y\) | 2 | 10 | 35 | 70 | 88 | 95 |
+
+The 0-1 loss is useless here. If a message’s true score is 30, then predicting 30.001 and predicting 90 are both “wrong”, but one is clearly better. So we need a loss that grows with the size of the miss. Try a rough guess, “each free is worth 20 points”, \(h(x) = 20x\). On the message with three “free”s it predicts 60 against a true 70, a miss of \(-10\); squaring the miss gives a cost of 100, while a miss of 2 would cost only 4. That is the **square loss** you met in lesson 3,
+
+\[ \ell(h, (\mathbf x, y)) = (h(\mathbf x) - y)^2. \]
+
+The letter \(\ell\) names the loss; its inputs are the hypothesis \(h\) and one labelled example \((\mathbf x, y)\). Inside out: \(h(\mathbf x)\) is the prediction, subtracting \(y\) gives the miss, and the exponent 2 squares it, so misses in either direction cost the same and big misses cost much more. In plain words: **the cost of a prediction is the square of how far it missed.** With it, recall from lesson 1 that \(L_S(h)\) is the empirical risk of \(h\) on the training sequence \(S\), the average loss over the examples; here it is the average squared miss,
+
+\[ L_S(h) = \frac{1}{m} \sum_{i=1}^m (h(\mathbf x_i) - y_i)^2, \]
+
+often called the mean squared error. Inside out: one squared miss per example \(i\), the sum \(\sum_{i=1}^m\) adds all \(m\) of them, and \(\frac1m\) divides by how many there are. In plain words: **the empirical risk is the average squared miss over the labelled messages.** For \(h(x) = 20x\) the misses are \(-2, 10, 5, -10, -8, 5\), the squares add to 318, and \(318 / 6 = 53\):
+
+```python
+xs, ys = [0, 1, 2, 3, 4, 5], [2, 10, 35, 70, 88, 95]
+h = lambda x: 20 * x
+losses = [(h(x) - y) ** 2 for x, y in zip(xs, ys)]
+print(losses, sum(losses) / len(xs))
+```
+
+It prints `[4, 100, 25, 100, 64, 25] 53.0`. Other losses are possible. The **absolute loss** \(|h(\mathbf x) - y|\), where the bars now mean “size without the sign” (a miss of \(-10\) costs 10), is one, and ERM with it can again be written as a linear program; that is Problem 1 at the end of this lesson.
 
 What does lesson 6 say about how many examples we need? Nothing, directly: the VC dimension is defined for classes with two labels. One honest route is the discretization trick from lesson 4. If every weight and the bias term are stored as 64-bit floats, the class is finite, with at most \(2^{64(d+1)}\) members, and the finite-class bounds apply, provided the loss is bounded (scores between 0 and 100, with predictions clipped to that range, would do). Later lessons give sharper tools for regression.
 

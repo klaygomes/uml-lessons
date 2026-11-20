@@ -69,11 +69,19 @@ To have something we can follow with a pencil, take just two counts, “free” 
 
 No single stump gets all ten right, because the junk messages sit along a diagonal and a stump can only cut straight across one axis. How well can a stump do? Try “junk if free \(> 0.5\)”. It says junk for messages 4 to 10, so it is wrong on 4 and 5, which are keep. Two mistakes out of ten.
 
-Soon we will need to score a stump not by counting mistakes, but by adding up how much each mistaken example *matters*. So let’s set that up now. A **distribution over the examples** is a vector \(D = (D_1, \dots, D_m)\) with every \(D_i \ge 0\) and \(\sum_i D_i = 1\). We call \(D_i\) the **weight** of example \(i\). The **weighted risk** of a hypothesis is the total weight of the examples it gets wrong:
-\[ L_D(h) = \sum_{i=1}^m D_i\, \mathbb 1[h(x_i) \neq y_i]. \]
-When every weight is \(1/m\), the weighted risk is just the empirical risk, \(L_D(h) = L_S(h)\). (Here \(D\) lives on the \(m\) examples, not on all messages; we keep the letter because the weighted risk is literally the true risk under the distribution that picks example \(i\) with probability \(D_i\).)
+Soon we will need to score a stump not by counting mistakes, but by adding up how much each mistaken example *matters*. So let’s set that up now. Give each of the ten messages a share of one unit of importance: say 0.25 each to messages 4 and 5, and \(1/16 = 0.0625\) each to the other eight, so that the shares add up to \(0.5 + 0.5 = 1\). Then “junk if free \(> 0.5\)”, which is wrong only on 4 and 5, scores \(0.25 + 0.25 = 0.5\) instead of 0.2: the two messages it misses now count for half of everything.
 
-With equal weights of 0.1, here is the weighted risk of every stump with \(b = +1\) and a threshold between two observed counts:
+A **distribution over the examples** is a vector \(D = (D_1, \dots, D_m)\) with every \(D_i \ge 0\) and \(\sum_i D_i = 1\) (the capital sigma \(\sum\) means “add up”, here over every example \(i\)). As before, \(m\) is the number of examples, and example \(i\) is the pair \((x_i, y_i)\) of a message and its label. We call \(D_i\) the **weight** of example \(i\). The **weighted risk** of a hypothesis is the total weight of the examples it gets wrong:
+\[ L_D(h) = \sum_{i=1}^m D_i\, \mathbb 1[h(x_i) \neq y_i]. \]
+
+- \(h(x_i) \neq y_i\) asks whether \(h\) gets example \(i\) wrong.
+- \(\mathbb 1[\cdot]\) is the indicator: it turns a yes/no question into a number, 1 for yes and 0 for no.
+- \(D_i\, \mathbb 1[\dots]\) is therefore the weight of example \(i\) if \(h\) gets it wrong, and 0 if \(h\) gets it right.
+- \(\sum_{i=1}^m\) adds that up over the examples, from \(i = 1\) to \(i = m\).
+
+In plain words: **the total weight of the examples \(h\) gets wrong.** In the numbers above, the terms for messages 4 and 5 are \(0.25 \cdot 1\) each and every other term is \(0.0625 \cdot 0\), so \(L_D(h) = 0.5\). Recall the empirical risk \(L_S(h)\) from lesson 1, the fraction of the examples that \(h\) gets wrong. When every weight is \(1/m\), the weighted risk is just that, \(L_D(h) = L_S(h)\). (Here \(D\) lives on the \(m\) examples, not on all messages; we keep the letter because the weighted risk is literally the true risk under the distribution that picks example \(i\) with probability \(D_i\).)
+
+With equal weights of 0.1, here is the weighted risk of every stump with \(b = +1\) and a threshold between two observed counts. The function `weighted_risk` mirrors the formula: it adds `D[i]` for exactly the examples where `h(X[i]) != y[i]`.
 
 ```python
 X = [(0, 0), (0, 1), (0, 3), (1, 1), (2, 0),
@@ -105,9 +113,11 @@ The left number in each pair is the stump on “free”, the right one the stump
 
 ## Weak learners
 
-Recall what we asked of a learner in lesson 3. A class \(\mathcal H\) is PAC learnable if there are a sample complexity \(m_{\mathcal H}(\varepsilon, \delta)\) and an algorithm such that, for every accuracy \(\varepsilon\), every confidence \(\delta\), every distribution \(\mathcal D\) and every labelling function \(f\) for which realizability holds, after \(m \ge m_{\mathcal H}(\varepsilon, \delta)\) examples it returns a hypothesis with true risk at most \(\varepsilon\), with probability at least \(1 - \delta\). In this lesson we call that **strong learning**, because \(\varepsilon\) can be made as small as you like.
+Recall what we asked of a learner in lesson 3. A class \(\mathcal H\) is PAC learnable if there are a sample complexity \(m_{\mathcal H}(\varepsilon, \delta)\) and an algorithm such that, for every accuracy \(\varepsilon\), every confidence \(\delta\), every distribution \(\mathcal D\) and every labelling function \(f\) for which realizability holds, after \(m \ge m_{\mathcal H}(\varepsilon, \delta)\) examples it returns a hypothesis with true risk at most \(\varepsilon\), with probability at least \(1 - \delta\). A quick reminder of the pieces: \(\mathcal D\) is the distribution fresh messages are drawn from, \(f\) is the true labelling, realizability means some hypothesis in \(\mathcal H\) has true risk 0, the true risk \(L_{(\mathcal D, f)}(h)\) is the chance that \(h\) disagrees with \(f\) on a fresh message, and \(m_{\mathcal H}(\varepsilon, \delta)\) is a number of examples that is enough for that accuracy and confidence. In this lesson we call that **strong learning**, because \(\varepsilon\) can be made as small as you like.
 
 Lesson 6’s fundamental theorem told us which classes are PAC learnable, and that any ERM learner will do. But it said nothing about time, and lesson 8 showed that for some classes ERM is computationally hard even when realizability holds. So here is a tempting trade. What if we ask for much less accuracy, in return for speed? Not “true risk at most \(\varepsilon\)”, but merely “a little better than a coin”.
+
+Here is that idea with the mail room’s numbers. A coin that says junk or keep at random is wrong half the time. The team’s best stump has true risk 0.375, so it beats the coin by \(0.5 - 0.375 = 0.125\). A weak learner is a learner that can always beat the coin by some fixed amount like that, called \(\gamma\) (gamma), whatever mail it is trained on.
 
 **Definition (\(\gamma\)-weak learnability).** Let \(\gamma > 0\).
 
@@ -115,11 +125,28 @@ Lesson 6’s fundamental theorem told us which classes are PAC learnable, and th
 \[ L_{(\mathcal D, f)}(h) \le \tfrac12 - \gamma. \]
 - A class \(\mathcal H\) is **\(\gamma\)-weak learnable** if a \(\gamma\)-weak learner for it exists.
 
-Read it next to the definition of strong learning. Everything is the same except one thing: the accuracy is no longer yours to choose. It is pinned at \(\tfrac12 - \gamma\). A hypothesis that answers by flipping a fair coin has true risk exactly \(\tfrac12\), so a weak learner only promises to beat the coin by a fixed margin \(\gamma\). The number \(\gamma\) is called the learner’s **edge**.
+The new pieces of the definition: \(m_{\mathcal H}: (0, 1) \to \mathbb N\) says the sample size is a function that takes a confidence \(\delta\) strictly between 0 and 1 and returns a whole number (\(\mathbb N\) is the set of whole numbers \(1, 2, 3, \dots\)); \(f: \mathcal X \to \{\pm 1\}\) says the labelling takes a message and returns junk or keep. The display
+\[ L_{(\mathcal D, f)}(h) \le \tfrac12 - \gamma \]
+reads: the true risk of the returned \(h\), the chance it mislabels a fresh message drawn from \(\mathcal D\), is at most one half minus the edge. In plain words: **the hypothesis is wrong on fresh mail at most \(\gamma\) less often than a coin.** With the team’s stump, \(\gamma = 0.125\) and the promise is \(0.375 \le 0.5 - 0.125\), which holds with no room to spare.
+
+Read the definition next to the definition of strong learning. Everything is the same except one thing: the accuracy is no longer yours to choose. It is pinned at \(\tfrac12 - \gamma\). A hypothesis that answers by flipping a fair coin has true risk exactly \(\tfrac12\), so a weak learner only promises to beat the coin by a fixed margin \(\gamma\). The number \(\gamma\) is called the learner’s **edge**.
 
 [[diagram:weak]]
 
-Is weak learning statistically easier than strong learning? Surprisingly, no. Lesson 6’s fundamental theorem gives a lower bound on the sample complexity of PAC learning a class of VC dimension \(d\), of the form \(m_{\mathcal H}(\varepsilon, \delta) \ge C_1 \frac{d + \log(1/\delta)}{\varepsilon}\) for an absolute constant \(C_1\). Put \(\varepsilon = \tfrac12 - \gamma\) into it. If \(d = \infty\), no finite number of examples suffices even for that modest accuracy, so a class with infinite VC dimension is not \(\gamma\)-weak learnable either. If we ignore computation, weak learning is characterized by the VC dimension, exactly like strong learning.
+Is weak learning statistically easier than strong learning? Surprisingly, no. Recall the VC dimension from lesson 6: the size of the largest set of points that a class can shatter, that is, label in every possible way. Lesson 6’s fundamental theorem gives a lower bound on the sample complexity of PAC learning a class of VC dimension \(d\), of the form \(m_{\mathcal H}(\varepsilon, \delta) \ge C_1 \frac{d + \log(1/\delta)}{\varepsilon}\) for an absolute constant \(C_1\). Read it from the inside: \(\log\) is the natural logarithm (as everywhere in this course), so \(\log(1/\delta)\) grows slowly as you ask for more confidence; the class’s VC dimension \(d\) is added to it; and dividing by \(\varepsilon\) makes the requirement grow as the accuracy gets finer. “Absolute constant” means a fixed number that depends on nothing else. In plain words: **you need at least about \((d + \log(1/\delta))/\varepsilon\) examples, up to a fixed factor.** With \(C_1 = 1\) for illustration, \(d = 3\) and \(\delta = 0.05\), the weak target \(\varepsilon = 0.375\) asks for at least 16 examples, the strong target \(\varepsilon = 0.01\) for about 600:
+
+```python
+import math
+
+gamma = 0.5 - 0.375
+print(gamma, round(0.5 - 1 / 12, 4))
+C1, d, delta = 1, 3, 0.05
+for eps in (0.5 - gamma, 0.01):
+    m = C1 * (d + math.log(1 / delta)) / eps
+    print(eps, round(m, 1))
+```
+
+It prints `0.125 0.4167` (the team’s edge, and the target \(\tfrac12 - \tfrac1{12}\) we will meet in the next section), then `0.375 16.0` and `0.01 599.6`. Weak learning needs fewer examples, but only by a constant factor. Now put \(\varepsilon = \tfrac12 - \gamma\) into the bound. If \(d = \infty\), no finite number of examples suffices even for that modest accuracy, so a class with infinite VC dimension is not \(\gamma\)-weak learnable either. If we ignore computation, weak learning is characterized by the VC dimension, exactly like strong learning.
 
 The hope lies elsewhere. Maybe there is a weak learner that is *fast*, for a class where every strong learner is slow. A natural recipe is to pick a simple **base class** \(B\), such as decision stumps, and run ERM over \(B\) as the weak learner. That works for \(\mathcal H\) if two things hold:
 

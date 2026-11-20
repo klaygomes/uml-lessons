@@ -16,7 +16,7 @@ This lesson is about that question, and its name is **model selection**: choosin
 
 Our mail room for this lesson is a simulation we built, which lets us do something no real team can: compute the true risk of every filter exactly. Messages have 20 yes/no features. Seven of them are warning signs, and a message is junk when at least four of the seven are present, except that one label in ten is flipped, because users disagree and click carelessly (the noise of lesson 3). The best any hypothesis can do here, the Bayes risk, is therefore 0.10.
 
-Here are nine of the team’s sixty filters. For each one you see its empirical risk on the 100 training examples, \(L_S(h_T)\), its error on the 200 test messages, and its true risk \(L_{\mathcal D}(h_T)\). Before you read the table, guess: is the filter the test set picked also the filter with the smallest true risk?
+Here are nine of the team’s sixty filters. A quick reminder of the names from lesson 1, since they fill every table of this lesson. Write \(h_T\) for the filter you get after \(T\) rounds, so \(h_{11}\) is the vote of eleven stumps. Its **empirical risk** \(L_S(h_T)\) is the fraction of the 100 training examples it gets wrong; the subscript \(S\) names the training sequence it is scored on. Its **true risk** \(L_{\mathcal D}(h_T)\) is the chance that it mislabels the next message to arrive, where \(\mathcal D\) is the distribution incoming mail is drawn from. For each filter you see both, plus its error on the 200 test messages, which is the same kind of fraction as \(L_S\), only counted on the test messages. Before you read the table, guess: is the filter the test set picked also the filter with the smallest true risk?
 
 | rounds \(T\) | empirical risk \(L_S\) | test error | true risk \(L_{\mathcal D}\) |
 |---|---|---|---|
@@ -50,7 +50,7 @@ print(round(expected_min / n, 3))
 print(round(one_lucky, 3), round(1 - (1 - one_lucky) ** r, 4))
 ```
 
-It prints `0.137`, then `0.124 0.9996`. Every one of the sixty is a 20% filter, and yet the winner reports 13.7% on average. One candidate alone gets a test error of 16.5% or better only 12.4% of the time; the best of sixty does so 99.96% of the time. (The first line uses a small identity: for a count \(N\) that takes values \(0, 1, \dots, n\), \(\mathbb E[N] = \sum_{k \ge 1} \mathbb P[N \ge k]\), and the minimum of independent counts is at least \(k\) exactly when every one of them is.) The team’s real candidates are far from independent, since the filter after 11 rounds and the filter after 12 share eleven stumps, which is why their gap was milder than this one. But the mechanism is the same.
+It prints `0.137`, then `0.124 0.9996`. Every one of the sixty is a 20% filter, and yet the winner reports 13.7% on average. One candidate alone gets a test error of 16.5% or better only 12.4% of the time; the best of sixty does so 99.96% of the time. (The first line uses a small identity. Say a filter with risk 0.2 sees two messages, and \(N\) counts its mistakes. Its average count is \(2 \times 0.2 = 0.4\). The chance of at least one mistake is \(1 - 0.8^2 = 0.36\), the chance of two is \(0.2^2 = 0.04\), and \(0.36 + 0.04 = 0.4\) as well. That is no accident: for a count \(N\) that takes values \(0, 1, \dots, n\), \(\mathbb E[N] = \sum_{k \ge 1} \mathbb P[N \ge k]\). Here \(\mathbb E[N]\) is the expectation, the long-run average of \(N\); \(\mathbb P[N \ge k]\) is the probability that the count reaches \(k\); and \(\sum_{k \ge 1}\) adds those probabilities for \(k = 1, 2, \dots\) up. In words: **the average count is the sum, over every level \(k\), of the chance of reaching it**, because a count of 2 is reached at level 1 and at level 2, and so is counted twice. In the code, `tail(k, n, p)` is \(\mathbb P[N \ge k]\) for one candidate, raising it to the power `r` gives the chance that all sixty reach \(k\), since the minimum of independent counts is at least \(k\) exactly when every one of them is, and `sum(... for k in range(1, n + 1))` is the \(\sum_{k \ge 1}\).) The team’s real candidates are far from independent, since the filter after 11 rounds and the filter after 12 share eleven stumps, which is why their gap was milder than this one. But the mechanism is the same.
 
 [[diagram:winner]]
 
@@ -64,25 +64,62 @@ So the team’s number was optimistic because the test set did two jobs at once:
 
 Lesson 7 met a learner that faces a whole sequence of hypothesis classes, \(\mathcal H_1, \mathcal H_2, \mathcal H_3, \dots\), and does not want to commit to one of them in advance. For the boosted filter, take \(\mathcal H_T\) to be the class of weighted votes of \(T\) stumps, the class lesson 10 wrote \(L(B, T)\). For a polynomial fitted to points, \(\mathcal H_d\) would be the polynomials of degree at most \(d\). In both cases a larger index means a richer class: a smaller gap to the truth, and a larger gap between empirical and true risk.
 
-To compare classes we need to know how much each one can be trusted on \(m\) examples. Recall from lesson 4 that a class \(\mathcal H\) has the **uniform convergence** property with sample complexity \(m^{\mathrm{UC}}_{\mathcal H}(\varepsilon, \delta)\) when, for every distribution \(\mathcal D\), a training sequence of at least that many examples satisfies, with probability at least \(1 - \delta\), \(|L_S(h) - L_{\mathcal D}(h)| \le \varepsilon\) for every \(h \in \mathcal H\) at the same time. Assume that for every \(d\),
+To compare classes we need to know how much each one can be trusted on \(m\) examples, where \(m\) is the length of the training sequence. Recall from lesson 4 the idea of **uniform convergence**: once the training sequence is long enough, every hypothesis in the class has an empirical risk close to its true risk, all of them at the same time, except on a rare unlucky draw. Two numbers say what “close” and “rare” mean. The accuracy \(\varepsilon\) (the Greek letter epsilon) is how far apart the two risks may be, say 0.1; the confidence parameter \(\delta\) (delta) is the chance of an unlucky draw we tolerate, say 0.05. The **sample complexity** \(m^{\mathrm{UC}}_{\mathcal H}(\varepsilon, \delta)\) is how many examples that takes for the class \(\mathcal H\); the superscript UC just stands for uniform convergence. Formally, for every distribution \(\mathcal D\), a training sequence of at least that many examples satisfies, with probability at least \(1 - \delta\), \(|L_S(h) - L_{\mathcal D}(h)| \le \varepsilon\) for every \(h \in \mathcal H\) at the same time. The bars \(|\cdot|\) around a difference are the absolute value, the distance between the two numbers whichever is larger, and \(h \in \mathcal H\) reads “\(h\) belongs to \(\mathcal H\)”.
 
-\[ m^{\mathrm{UC}}_{\mathcal H_d}(\varepsilon, \delta) \le \frac{g(d) \log(1/\delta)}{\varepsilon^2}, \]
+A richer class needs more examples, and we will describe how rich class \(d\) is by a single number \(g(d)\), where \(g: \mathbb N \to \mathbb R\) is some increasing function from the counting numbers \(\mathbb N = \{1, 2, 3, \dots\}\) to the real numbers \(\mathbb R\). For binary classification you can take \(g(d)\) to be the VC dimension of \(\mathcal H_d\) times the universal constant from lesson 6’s fundamental theorem; for the boosting classes, \(g\) simply grows with \(T\). Halving the accuracy should cost four times the examples, and asking for more confidence should cost only a little. So assume that for every \(d\),
 
-where \(g: \mathbb N \to \mathbb R\) is some increasing function. For binary classification you can take \(g(d)\) to be the VC dimension of \(\mathcal H_d\) times the universal constant from lesson 6’s fundamental theorem; for the boosting classes, \(g\) simply grows with \(T\).
+\[ m^{\mathrm{UC}}_{\mathcal H_d}(\varepsilon, \delta) \le \frac{g(d) \log(1/\delta)}{\varepsilon^2}. \]
+
+Read it from the inside out.
+
+- \(\log(1/\delta)\) is the natural logarithm of \(1/\delta\). At \(\delta = 0.05\), \(1/\delta = 20\) and \(\log 20 \approx 3.0\); making \(\delta\) ten times smaller only adds about 2.3.
+- \(\varepsilon^2\) in the denominator is the accuracy squared, so \(\varepsilon = 0.1\) divides by 0.01, a factor of 100.
+- \(g(d)\) multiplies everything by the richness of class \(d\).
+- The subscript \(\mathcal H_d\) on \(m^{\mathrm{UC}}\) says whose sample complexity this is, and \(\le\) says the formula is a ceiling: the class may need fewer.
+
+In plain words: **class \(d\) is trustworthy to within \(\varepsilon\), except with probability \(\delta\), once it has \(g(d)\log(1/\delta)/\varepsilon^2\) examples.** With \(g(d) = 5\), \(\varepsilon = 0.1\) and \(\delta = 0.05\), that is \(5 \times 3.0 / 0.01 \approx 1{,}498\) examples. Turn it around and ask what accuracy 1,498 examples buy: solving for \(\varepsilon\) gives back 0.1, and the proof below uses exactly this turning around.
+
+```python
+from math import log, sqrt
+
+g_d, eps, delta = 5, 0.1, 0.05
+m_needed = g_d * log(1 / delta) / eps**2
+eps_back = sqrt(g_d * log(1 / delta) / m_needed)
+print(round(m_needed), round(eps_back, 3))
+```
+
+It prints `1498 0.1`.
+
+Now the idea of the proposition, in words first. Each class \(d\) makes its own promise, “empirical risk plus my margin is an upper bound on true risk”, and a richer class has a wider margin. We want all those promises to hold at once, for infinitely many classes, while still failing with total probability at most \(\delta\). The trick is to give class 1 most of the failure budget, class 2 a quarter as much, class 3 a ninth, and so on, so the shares add up to \(\delta\). The price of a smaller share is a slightly wider margin, which is where the \(2\log d\) below comes from.
 
 **Proposition (the structural risk minimization bound).** Under that assumption, for every \(\delta \in (0, 1)\), with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\), for every \(d \in \mathbb N\) and every \(h \in \mathcal H_d\),
 
 \[ L_{\mathcal D}(h) \le L_S(h) + \sqrt{\frac{g(d)\left(\log(1/\delta) + 2\log d + \log(\pi^2/6)\right)}{m}}. \]
 
+Before the formula, the setup: \(\delta \in (0, 1)\) says \(\delta\) is a number strictly between 0 and 1, and \(S \sim \mathcal D^m\) reads “\(S\) is drawn from \(\mathcal D^m\)”: \(m\) examples, each drawn independently from \(\mathcal D\). Now the bound, from the inside out. Inside the parentheses are three logarithms: \(\log(1/\delta)\) is the confidence cost from the assumption, \(2\log d\) is the extra cost of class \(d\) getting a smaller share of the failure budget, and \(\log(\pi^2/6) \approx 0.50\) is a small constant from the shares, with \(\pi \approx 3.14\). Multiplying by \(g(d)\), dividing by \(m\) and taking the square root \(\sqrt{\cdot}\) turns that into the margin of class \(d\), the **complexity term**. Adding it to \(L_S(h)\) gives the ceiling on \(L_{\mathcal D}(h)\). In plain words: **with probability at least \(1 - \delta\), every hypothesis in every class has a true risk no larger than its empirical risk plus a margin that grows with its class.** With \(g(d) = d = 1\), \(\delta = 0.05\) and \(m = 100\), the parentheses hold \(3.0 + 0 + 0.5 = 3.5\), divided by 100 gives 0.035, and its square root is 0.19: a stump with empirical risk 0.27 has true risk at most 0.46. The snippet a little further on, `srm_term`, computes this complexity term line for line.
+
 *Proof.* We go in three steps: turn the sample complexity into an accuracy, give each class its own share of the failure probability, and add the shares up.
 
 First, the accuracy one class can promise. Fix \(d\) and a confidence \(\delta_d\), and set \(\varepsilon_d = \sqrt{g(d)\log(1/\delta_d)/m}\). Squaring and rearranging gives \(g(d)\log(1/\delta_d)/\varepsilon_d^2 = m\), so by the assumption \(m^{\mathrm{UC}}_{\mathcal H_d}(\varepsilon_d, \delta_d) \le m\). A training sequence of \(m\) examples is therefore long enough: with probability at least \(1 - \delta_d\), every \(h \in \mathcal H_d\) has \(|L_S(h) - L_{\mathcal D}(h)| \le \varepsilon_d\). Call the complementary event, where some \(h \in \mathcal H_d\) is further off, \(F_d\). So \(\mathbb P[F_d] \le \delta_d\).
 
-Second, the shares. We cannot give every class the full \(\delta\), because there are infinitely many classes and the failures could pile up. So we give class \(d\) the share \(\delta_d = w(d)\,\delta\) with weights \(w(d) = \frac{6}{\pi^2 d^2}\). These weights add up to exactly 1, because \(\sum_{d \ge 1} 1/d^2 = \pi^2/6\).
+Second, the shares. We cannot give every class the full \(\delta\), because there are infinitely many classes and the failures could pile up. So we give class \(d\) the share \(\delta_d = w(d)\,\delta\) with weights \(w(d) = \frac{6}{\pi^2 d^2}\). These weights add up to exactly 1, because \(\sum_{d \ge 1} 1/d^2 = \pi^2/6\): the sum \(1 + 1/4 + 1/9 + \dots\) of the reciprocal squares, over every \(d\) from 1 on, is a famous constant, about 1.645. In plain words: **class \(d\) gets a share of the failure budget proportional to \(1/d^2\), and the shares use up exactly \(\delta\).** At \(\delta = 0.05\), class 1 gets 0.0304, class 2 gets 0.0076, class 3 gets 0.0034:
 
-Third, the union bound from lesson 2. The probability that some class fails is
+```python
+from math import pi
+
+delta = 0.05
+w = lambda d: 6 / (pi**2 * d**2)
+print(round(sum(w(d) for d in range(1, 10**6)), 5))
+print([round(w(d) * delta, 4) for d in (1, 2, 3)])
+```
+
+It prints `1.0` and `[0.0304, 0.0076, 0.0034]`.
+
+Third, the union bound from lesson 2: the chance that at least one of several events happens is at most the sum of their chances. The probability that some class fails is
 
 \[ \mathbb P\Big[\bigcup_{d} F_d\Big] \le \sum_{d} \mathbb P[F_d] \le \sum_d w(d)\,\delta = \delta. \]
+
+The big \(\bigcup_d\) is a union, “\(F_1\) or \(F_2\) or \(F_3\) or …”, the event that at least one class fails. The first \(\le\) is the union bound, the second uses \(\mathbb P[F_d] \le \delta_d = w(d)\,\delta\), and the last step is the weights adding to 1. In plain words: **the chance that any class breaks its promise is at most the sum of their shares, which is \(\delta\).** In the snippet, that is \(0.0304 + 0.0076 + 0.0034 + \dots = 0.05\).
 
 Outside that event, every class \(d\) and every \(h \in \mathcal H_d\) satisfy \(L_{\mathcal D}(h) \le L_S(h) + \varepsilon_d\). It remains to write \(\varepsilon_d\) out. Since \(1/\delta_d = \pi^2 d^2/(6\delta)\), its logarithm is \(\log(1/\delta) + 2\log d + \log(\pi^2/6)\), which is the expression under the square root. \(\blacksquare\)
 

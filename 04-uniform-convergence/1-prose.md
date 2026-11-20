@@ -88,18 +88,18 @@ Here \(S \sim \mathcal D^m\) is lesson 1’s notation for a random training sequ
 
 An estimate whose expectation equals the thing it estimates is called **unbiased**. Every row of the dashboard, looked at alone, is unbiased.
 
-Here is the same claim run 10,000 times instead of eight. Each entry of `seen` below is one week’s \(L_S(h_{11})\), and averaging the list over weeks is the \(\mathbb E_S\) on the left of the chain. Under the 0-1 loss, the number of mistakes in a week is a sum of 60 independent coin flips that each come up “mistake” with probability 0.30, which Python can draw directly.
+Here is the same claim run 10,000 times instead of eight. Under the 0-1 loss, the number of mistakes in a week is a sum of 60 independent coin flips that each come up “mistake” with probability 0.30, which Python can draw directly. Each entry of `k` below is one week’s mistakes, so `k / m` is that week’s \(L_S(h_{11})\), and averaging over weeks is the \(\mathbb E_S\) on the left of the chain. Being off by more than 0.1 means missing the mean of 18 by more than 6 mistakes, and counting mistakes keeps the test exact.
 
 ```python
 import random
 
 rng, r, m, weeks = random.Random(0), 0.30, 60, 10_000
-seen = [rng.binomialvariate(m, r) / m for _ in range(weeks)]
-print(round(sum(seen) / weeks, 4))
-print(round(sum(abs(s - r) > 0.1 for s in seen) / weeks, 4))
+k = [rng.binomialvariate(m, r) for _ in range(weeks)]
+print(round(sum(k) / m / weeks, 4))
+print(round(sum(abs(x - m * r) > 6 for x in k) / weeks, 4))
 ```
 
-It prints `0.2995` and `0.0898`. The average over many weeks sits on 0.30, as the proof says. The second number is the one to remember: in about 9% of weeks, this row is off by more than 10 points. For one row, that is an occasional bad week. The dashboard has thirty rows.
+It prints `0.2995` and `0.0635`. The average over many weeks sits on 0.30, as the proof says. The second number is the one to remember: in about 6% of weeks, this row is off by more than 10 points. For one row, that is an occasional bad week. The dashboard has thirty rows.
 
 ## The top of the dashboard is crowded with lucky rows
 
@@ -162,13 +162,13 @@ The proposition tells you which way the dashboard errs. It does not tell you by 
 
 Watch what the lab did as you raised the number of examples. The luck in every row shrank, and once every row’s luck was small, the winner’s luck had nowhere to hide. That is the whole idea of this lesson, and it deserves a definition. Pick a small tolerance, say 0.1, and suppose that this week every row’s luck, the winner’s included, lies between −0.1 and +0.1. Then no row, whichever one you ship, can look more than 0.1 better or worse than it is. We call the tolerance \(\varepsilon\) (the Greek letter epsilon), the accuracy parameter of lesson 3.
 
-**Definition (ε-representative sample).** A training sequence \(S\) is **\(\varepsilon\)-representative** (with respect to a domain \(Z\) of examples, a hypothesis class \(\mathcal H\), a loss function \(\ell\) and a distribution \(\mathcal D\)) if
+**Definition (ε-representative sample).** A training sequence \(S\) is **\(\varepsilon\)-representative** (with respect to the set \(Z\) of all possible examples, the domain, a hypothesis class \(\mathcal H\), a loss function \(\ell\) and a distribution \(\mathcal D\)) if
 
 \[ \forall h \in \mathcal H, \quad |L_S(h) - L_{\mathcal D}(h)| \le \varepsilon. \]
 
 Read it from the inside out. \(L_S(h) - L_{\mathcal D}(h)\) is row \(h\)’s luck this week. The bars \(|\cdot|\) around a number mean its absolute value, its size with the sign dropped (around a set, as in lesson 1, the same bars mean how many elements it has; here they wrap a number). So \(|\dots| \le \varepsilon\) says the luck is at most \(\varepsilon\) in either direction. The symbol \(\forall\) reads “for every”, so \(\forall h \in \mathcal H\) demands this of every row at once. In plain words: **this week, no row of the dashboard is off from its true risk by more than \(\varepsilon\).**
 
-In dashboard terms: every row’s luck is between \(-\varepsilon\) and \(+\varepsilon\), at the same time, this week. In the typical week above, the largest luck in absolute value, over all thirty rows, was 0.132 (row \(h_{18}\), which looked much worse than it is), so that training sequence was 0.132-representative but not 0.1-representative. Here are three of that week’s rows in Python: the lucky winner \(h_7\), the lucky \(h_{14}\), and the unlucky \(h_{18}\), each as (mistakes, true risk).
+In the typical week above, the largest luck in absolute value, over all thirty rows, was 0.132 (row \(h_{18}\), which looked much worse than it is), so that training sequence was 0.132-representative but not 0.1-representative. Here are three of that week’s rows in Python: the lucky winner \(h_7\), the lucky \(h_{14}\), and the unlucky \(h_{18}\), each as (mistakes, true risk).
 
 ```python
 rows = {7: (11, 0.280), 14: (14, 0.315), 18: (28, 0.335)}
@@ -183,11 +183,13 @@ It prints `0.132 False True`. The worst luck of the three, which is also the wor
 
 Why is this the right condition? Because it survives selection. The winner’s curse happens because the row you pick depends on the luck. A promise about *every* row cannot be dodged that way: whichever row ERM picks, the promise was already made about it. Concretely, if every row is within 0.1 this week, the shipped row’s true risk is at most its dashboard number plus 0.1. And the best row, say at 0.25, shows at most 0.35, so the shipped row shows at most 0.35 too and is truly at most 0.45: within twice the tolerance of the best.
 
+The lemma below needs one new piece of notation. \(\operatorname{argmin}_{h \in \mathcal H} L_S(h)\) is not the smallest value but the set of hypotheses that achieve it, the rows tied at the top of the dashboard, and \(h_S \in \operatorname{argmin}\) says the shipped row is one of them.
+
 **Lemma (a representative sample makes ERM good).** If \(S\) is \(\varepsilon\)-representative, then every ERM output \(h_S \in \operatorname{argmin}_{h \in \mathcal H} L_S(h)\) satisfies
 
 \[ L_{\mathcal D}(h_S) \le L_S(h_S) + \varepsilon \qquad \text{and} \qquad L_{\mathcal D}(h_S) \le \min_{h \in \mathcal H} L_{\mathcal D}(h) + 2\varepsilon. \]
 
-One piece of notation is new. \(\operatorname{argmin}_{h \in \mathcal H} L_S(h)\) is not the smallest value but the set of hypotheses that achieve it, the rows tied at the top of the dashboard, and \(h_S \in \operatorname{argmin}\) says the shipped row is one of them. Read the first inequality as: production’s number for the shipped row is at most the dashboard’s number plus \(\varepsilon\). Read the second as: it is at most the best true risk in the class plus \(2\varepsilon\). In plain words: **when every row is within \(\varepsilon\), the shipped hypothesis is at most \(\varepsilon\) worse than its row says and at most \(2\varepsilon\) worse than the best.** Take the typical week, which was 0.132-representative. The dashboard showed \(h_7\) at 0.183, so the lemma promises a true risk of at most \(0.183 + 0.132 = 0.315\), and at most \(0.25 + 2 \times 0.132 = 0.513\). Production found 0.280, inside both. The snippet after the proof checks each link.
+Read the first inequality as: production’s number for the shipped row is at most the dashboard’s number plus \(\varepsilon\). Read the second as: it is at most the best true risk in the class plus \(2\varepsilon\). In plain words: **when every row is within \(\varepsilon\), the shipped hypothesis is at most \(\varepsilon\) worse than its row says and at most \(2\varepsilon\) worse than the best.** Take the typical week, which was 0.132-representative. The dashboard showed \(h_7\) at 0.183, so the lemma promises a true risk of at most \(0.183 + 0.132 = 0.315\), and at most \(0.25 + 2 \times 0.132 = 0.513\). Production found 0.280, inside both. The snippet after the proof checks each link.
 
 *Proof.* The first inequality is the definition applied to the row \(h = h_S\). That is legitimate even though \(h_S\) depends on \(S\): the definition quantifies over every \(h \in \mathcal H\), and \(h_S\) is one of them.
 
@@ -197,7 +199,7 @@ For the second, take any \(h \in \mathcal H\) and chain three steps:
 
 The first step is representativeness for \(h_S\). The second holds because \(h_S\) has the smallest empirical risk, so it is at most that of \(h\). The third is representativeness again, this time for \(h\). The chain holds for every \(h \in \mathcal H\), in particular for the one with the smallest true risk. \(\blacksquare\)
 
-Every symbol in the chain has been met already; the only new habit is reading a row of \(\le\) signs, where each link is one step and the two ends are what you keep. Here is the chain on the typical week, with \(\varepsilon\) the week’s worst luck and \(h\) the best row \(h_1\), which showed 19 mistakes:
+In a row of \(\le\) signs, each link is one step and the two ends are what you keep. Here is the chain on the typical week, with \(\varepsilon\) the week’s worst luck and \(h\) the best row \(h_1\), which showed 19 mistakes:
 
 ```python
 eps = 28 / 60 - 0.335
@@ -210,7 +212,7 @@ print(all(a <= b for a, b in zip(chain, chain[1:])))
 
 It prints `[0.28, 0.315, 0.448, 0.513]` and `True`: every link holds, and the two ends are the lemma’s second promise.
 
-Read the two conclusions as two promises the team can finally keep. The first is about the dashboard: production will find the shipped hypothesis at most \(\varepsilon\) worse than the dashboard says. The second is about the choice: the shipped hypothesis is at most \(2\varepsilon\) worse than the best in the class. Equivalently, to be within \(\varepsilon\) of the best, an \(\varepsilon/2\)-representative sample is enough: to ship within 0.05 of the best, make every row accurate to 0.025. The factor 2 is honest, too: one \(\varepsilon\) is the winner’s possible luck, the other is the best hypothesis’s possible bad luck, and both can happen in the same week.
+These are two promises the team can finally keep, one about the dashboard and one about the choice. To be within \(\varepsilon\) of the best, an \(\varepsilon/2\)-representative sample is enough: to ship within 0.05 of the best, make every row accurate to 0.025. The factor 2 is honest, too: one \(\varepsilon\) is the winner’s possible luck, the other is the best hypothesis’s possible bad luck, and both can happen in the same week.
 
 ## The uniform convergence property
 
@@ -222,7 +224,7 @@ This is the densest sentence in the lesson, so let’s take it apart.
 
 - \(m^{\mathrm{UC}}_{\mathcal H}\) is a function. The superscript UC stands for uniform convergence, and the subscript says which class it belongs to.
 - \((0, 1)^2 \to \mathbb N\) is its type: it takes a pair of numbers, each strictly between 0 and 1 (that is what \((0, 1)^2\) means), and returns a natural number, an element of \(\mathbb N = \{1, 2, 3, \dots\}\), here a count of examples. The pair is \((\varepsilon, \delta)\).
-- “For every probability distribution \(\mathcal D\) over \(Z\)”: \(Z\) is the domain of examples, all the (message, label) pairs, and the same function must work whichever \(\mathcal D\) the world uses.
+- “For every probability distribution \(\mathcal D\) over \(Z\)”: over all the (message, label) pairs, the same function must work whichever \(\mathcal D\) the world uses.
 - “Drawn i.i.d.” is the \(S \sim \mathcal D^m\) of before, and “with probability at least \(1 - \delta\)” is over that random draw.
 
 In plain words: **there is a recipe that turns \((\varepsilon, \delta)\) into a number of examples, and that many examples make every row \(\varepsilon\)-accurate in all but a \(\delta\) fraction of weeks, whatever the world.** For the 30-row dashboard and \(\varepsilon = \delta = 0.05\), this lesson will show that 1,419 examples are enough, so \(m^{\mathrm{UC}}_{\mathcal H}(0.05, 0.05) \le 1{,}419\). The last snippet of “From one row to every row” runs exactly this definition on our world: it draws 10,000 weeks of 1,419 examples and counts the weeks that are not 0.05-representative.
@@ -319,9 +321,7 @@ var = sum((v - mean)**2 for v in avgs) / weeks
 print(round(var, 5), round(p * (1 - p) / m, 5))
 ```
 
-It prints `0.00351 0.0035`: the variance of 100,000 simulated weekly averages, against the formula. The second display is the `chebyshev` column of the snippet after Hoeffding’s inequality.
-
-For our row \(h_{11}\), the variance of one loss is \(0.3 \times 0.7 = 0.21\), as we found above. With \(m = 60\) and \(\varepsilon = 0.1\), Chebyshev says the row is off by 0.1 or more with probability at most \(0.21/0.6 = 0.35\).
+It prints `0.00351 0.0035`: the variance of 100,000 simulated weekly averages, against the formula. For \(h_{11}\)’s row, with \(m = 60\) and \(\varepsilon = 0.1\), the second display gives \(0.21/0.6 = 0.35\), the same bound as before, now read in empirical risk; it is the `chebyshev` column of the snippet after Hoeffding’s inequality.
 
 That bound shrinks like \(1/m\). For one row, fine. For a dashboard, it is the wrong shape, as you’ll see when we add up the rows: we will need a bound that shrinks *exponentially* in \(m\). That is Hoeffding’s inequality, and its engine is a small lemma about one bounded variable.
 
@@ -331,7 +331,7 @@ The lemma looks not at a variable itself but at \(e\), the number 2.718…, rais
 
 \[ \mathbb E\big[e^{\lambda X}\big] \le e^{\lambda^2 (b - a)^2 / 8}. \]
 
-Read it from the inside out. \(X\) is a centred variable, with mean 0, and \([a, b]\) is the interval it lives in, so \(b - a\) is the width of its range. \(\lambda\) (the Greek letter lambda) is a positive dial that multiplies \(X\); we will tune it later. \(e^{\lambda X}\) is \(e\) raised to the power \(\lambda X\), and \(\mathbb E\) averages it over the outcomes of \(X\). The right side is \(e\) raised to \(\lambda^2 (b-a)^2/8\), which depends only on the dial and the width. In plain words: **for a centred variable with a range of width \(b - a\), the average of \(e^{\lambda X}\) is at most \(e^{\lambda^2 (b-a)^2/8}\).** The example above is \(\lambda = 1\), \(a = -0.3\), \(b = 0.7\). The first snippet after the proof computes both sides for five values of \(\lambda\).
+Read it from the inside out. \(X\) is a centred variable, with mean 0, and \([a, b]\) is the interval it lives in, so \(b - a\) is the width of its range. \(\lambda\) (the Greek letter lambda) is a positive dial that multiplies \(X\); we will tune it later. \(e^{\lambda X}\) is \(e\) raised to the power \(\lambda X\), and \(\mathbb E\) averages it over the outcomes of \(X\). The right side depends only on the dial and the width. In plain words: **for a centred variable, the average of \(e^{\lambda X}\) is capped by a number that knows only \(\lambda\) and the width of the range.** The example above is \(\lambda = 1\), \(a = -0.3\), \(b = 0.7\). The first snippet after the proof computes both sides for five values of \(\lambda\).
 
 *Proof.* If \(a = b\), then \(X = 0\) and both sides equal 1, so assume \(a < b\). Since \(X\) has mean 0 and lives in \([a, b]\), we have \(a \le 0 \le b\).
 
@@ -368,7 +368,7 @@ This is the chord evaluated at the mean of \(X\), which is 0. Our centred loss o
 
 Here \(\log\) is the natural logarithm, the inverse of raising \(e\) to a power, so \(e^{L(h)}\) undoes it. This \(h\) is a plain number, not a hypothesis; the letter is borrowed for the proof only. For our loss, \(p = 0.3\), and at \(h = 1\) we get \(L(1) \approx 0.116\), below \(1/8 = 0.125\). The second snippet after the proof scans \(h^2/8 - L(h)\) across a grid and finds it never negative.
 
-*Step 4, three facts about \(L\).* First, \(L(0) = 0 + \log 1 = 0\). Second, with \(q(h) = \frac{p e^h}{1 - p + p e^h}\), the derivative is \(L'(h) = -p + q(h)\), and \(q(0) = p\), so \(L'(0) = 0\). Third, differentiating \(q\) by the quotient rule gives \(q'(h) = q(h)\big(1 - q(h)\big)\), so \(L''(h) = q(1 - q)\). Since \(q \in [0, 1]\), and a product \(q(1 - q)\) of two non-negative numbers summing to 1 is at most \(1/4\), we get \(L''(h) \le 1/4\) for every \(h\).
+*Step 4, three facts about \(L\).* First, \(L(0) = 0 + \log 1 = 0\). Second, with \(q(h) = \frac{p e^h}{1 - p + p e^h}\), the derivative is \(L'(h) = -p + q(h)\), and \(q(0) = p\), so \(L'(0) = 0\). Third, the quotient rule gives \(q'(h) = \frac{p e^h (1 - p + p e^h) - p e^h \cdot p e^h}{(1 - p + p e^h)^2} = \frac{p e^h}{1 - p + p e^h} \cdot \frac{1 - p}{1 - p + p e^h}\), and the two factors are \(q(h)\) and \(1 - q(h)\), so \(q' = q(1 - q)\) and \(L''(h) = q(1 - q)\). Since \(q \in [0, 1]\), and a product \(q(1 - q)\) of two non-negative numbers summing to 1 is at most \(1/4\), we get \(L''(h) \le 1/4\) for every \(h\).
 
 *Step 5, Taylor.* Taylor’s theorem with the Lagrange remainder says that a smooth function equals its value at 0, plus its slope at 0 times \(h\), plus half its curvature somewhere along the way times \(h^2\). With \(L'\) the slope, \(L''\) the curvature, and \(\xi\) (the Greek letter xi) a point between 0 and \(h\) that the theorem promises without naming,
 
@@ -401,13 +401,13 @@ print(round(gap, 6))
 
 It prints `0.0`: the gap is never negative, and it touches zero only at \(h = 0\), where both sides are 0.
 
-Now the payoff. Hoeffding’s inequality says that when an average is built from \(m\) independent draws that each stay inside a range of width 1, the chance that it misses its mean by more than \(\varepsilon\) is at most twice \(e^{-2m\varepsilon^2}\). For \(h_{11}\)’s row at 60 examples and \(\varepsilon = 0.1\), that is at most \(2e^{-1.2} \approx 0.60\), and every extra example multiplies the bound by the same factor \(e^{-0.02}\).
+Now the payoff. Hoeffding’s inequality says that when an average is built from \(m\) independent draws that each stay inside a range of width 1, the chance that it misses its mean by more than \(\varepsilon\) is at most twice \(e^{-2m\varepsilon^2}\). For \(h_{11}\)’s row at 60 examples and \(\varepsilon = 0.1\), that is at most \(2e^{-1.2} \approx 0.60\).
 
 **Hoeffding’s inequality.** Let \(Z_1, \dots, Z_m\) be i.i.d. random variables with \(\mathbb E[Z_i] = \mu\) and \(\mathbb P[a \le Z_i \le b] = 1\). Then for every \(\varepsilon > 0\),
 
 \[ \mathbb P\Big[\Big|\frac{1}{m}\sum_{i=1}^m Z_i - \mu\Big| > \varepsilon\Big] \le 2 \exp\big(-2 m \varepsilon^2 / (b - a)^2\big). \]
 
-Read it from the inside out. \(\frac{1}{m}\sum_{i=1}^m Z_i\) is the average of the \(m\) draws, a row of the dashboard when \(Z_i\) is example \(i\)’s loss. Subtracting \(\mu\) and taking \(|\cdot|\) gives how far the average lands from its mean, and the event inside \(\mathbb P[\dots]\) is that this distance exceeds \(\varepsilon\). The condition \(\mathbb P[a \le Z_i \le b] = 1\) just says every draw lands in \([a, b]\). On the right, \(\exp(t)\) is another way to write \(e^t\), used when the exponent is too long to sit up high, and dividing by \((b - a)^2\) rescales for ranges wider or narrower than 1. In plain words: **the chance that an average of \(m\) bounded i.i.d. draws misses its mean by more than \(\varepsilon\) is at most \(2e^{-2m\varepsilon^2}\), once the range is scaled to width 1.** The 0.60 above is the `hoeffding` column of the snippet after the proof, which sets it next to the exact answer and Chebyshev’s.
+Read it from the inside out. \(\frac{1}{m}\sum_{i=1}^m Z_i\) is the average of the \(m\) draws, a row of the dashboard when \(Z_i\) is example \(i\)’s loss. Subtracting \(\mu\) and taking \(|\cdot|\) gives how far the average lands from its mean, and the event inside \(\mathbb P[\dots]\) is that this distance exceeds \(\varepsilon\). The condition \(\mathbb P[a \le Z_i \le b] = 1\) just says every draw lands in \([a, b]\). On the right, \(\exp(t)\) is another way to write \(e^t\), used when the exponent is too long to sit up high, and dividing by \((b - a)^2\) rescales for ranges wider or narrower than 1. With width 1 the right side is the \(2e^{-2m\varepsilon^2}\) of the last paragraph, and the 0.60 is the `hoeffding` column of the snippet after the proof.
 
 *Proof.* Centre the variables: \(X_i = Z_i - \mu\), and \(\bar X = \frac1m \sum_i X_i\). Each \(X_i\) has mean 0 and lives in \([a - \mu, b - \mu]\), an interval of the same width \(b - a\).
 
@@ -415,15 +415,13 @@ Read it from the inside out. \(\frac{1}{m}\sum_{i=1}^m Z_i\) is the average of t
 
 \[ \mathbb P[\bar X \ge \varepsilon] = \mathbb P\big[e^{\lambda \bar X} \ge e^{\lambda \varepsilon}\big] \le e^{-\lambda \varepsilon}\, \mathbb E\big[e^{\lambda \bar X}\big]. \]
 
-Here \(\bar X\), read “X bar”, is the average of the centred variables, so \(\bar X \ge \varepsilon\) is the upper half of the event we want. The display is Markov with \(Z = e^{\lambda \bar X}\) and threshold \(e^{\lambda \varepsilon}\), and \(e^{-\lambda\varepsilon}\) is one over that threshold.
+\(\bar X \ge \varepsilon\) is the upper half of the event we want, and the display is Markov with \(Z = e^{\lambda \bar X}\) and threshold \(e^{\lambda \varepsilon}\), and \(e^{-\lambda\varepsilon}\) is one over that threshold.
 
-*Step 2, independence turns the sum into a product.* We have \(e^{\lambda \bar X} = \prod_i e^{\lambda X_i / m}\). Each factor is a function of \(Z_i\) alone, and functions of independent variables are independent, so the expectation of the product is the product of the expectations:
+*Step 2, independence turns the sum into a product.* The symbol \(\prod_{i=1}^m\) is the product counterpart of \(\sum\): it multiplies the \(m\) factors instead of adding them. Since \(\bar X = \sum_i X_i/m\) and a power of a sum is a product of powers, \(e^{\lambda \bar X} = \prod_i e^{\lambda X_i / m}\). Each factor is a function of \(Z_i\) alone, and functions of independent variables are independent, so the expectation of the product is the product of the expectations:
 
 \[ \mathbb E\big[e^{\lambda \bar X}\big] = \prod_{i=1}^m \mathbb E\big[e^{(\lambda/m) X_i}\big]. \]
 
-This is the step that uses independence, and the only one.
-
-The symbol \(\prod_{i=1}^m\) is the product counterpart of \(\sum\): it multiplies the \(m\) factors instead of adding them. In plain words: **for independent draws, the average of a product is the product of the averages.** With two centred losses of \(h_{11}\) and \(\lambda = 1\), there are four outcomes to average over, and Python can check both sides:
+This is the step that uses independence, and the only one. In plain words: **for independent draws, the average of a product is the product of the averages.** With two centred losses of \(h_{11}\) and \(\lambda = 1\), there are four outcomes to average over, and Python can check both sides:
 
 ```python
 from itertools import product
@@ -445,7 +443,7 @@ It prints `1.057228 1.057228`: averaging over all four outcomes gives the same n
 
 The exponent is step 1’s \(-\lambda\varepsilon\) plus \(m\) copies of \(\lambda^2(b-a)^2/(8m^2)\), since multiplying powers of \(e\) adds their exponents.
 
-*Step 4, choose \(\lambda\).* The bound holds for every \(\lambda > 0\), so pick the one that makes the exponent smallest. It is a parabola in \(\lambda\), minimized at \(\lambda = 4 m \varepsilon/(b - a)^2\). Substituting, the exponent becomes \(-\frac{4m\varepsilon^2}{(b-a)^2} + \frac{2m\varepsilon^2}{(b-a)^2} = -\frac{2m\varepsilon^2}{(b-a)^2}\). For \(h_{11}\)’s row, with \(m = 60\), \(\varepsilon = 0.1\) and width 1, the best dial is \(\lambda = 24\) and the exponent is \(-2.4 + 1.2 = -1.2\).
+*Step 4, choose \(\lambda\).* The bound holds for every \(\lambda > 0\), so pick the one that makes the exponent smallest. It is a parabola in \(\lambda\), \(-\lambda\varepsilon + c\lambda^2\) with \(c = (b - a)^2/(8m)\); its slope \(-\varepsilon + 2c\lambda\) is zero at \(\lambda = \varepsilon/(2c) = 4 m \varepsilon/(b - a)^2\). Substituting, the exponent becomes \(-\frac{4m\varepsilon^2}{(b-a)^2} + \frac{2m\varepsilon^2}{(b-a)^2} = -\frac{2m\varepsilon^2}{(b-a)^2}\). For \(h_{11}\)’s row, with \(m = 60\), \(\varepsilon = 0.1\) and width 1, the best dial is \(\lambda = 24\) and the exponent is \(-2.4 + 1.2 = -1.2\).
 
 *Step 5, the lower tail.* The variables \(-Z_i\) are also i.i.d., with mean \(-\mu\), in an interval of width \(b - a\). The same four steps give \(\mathbb P[\bar X \le -\varepsilon] \le e^{-2m\varepsilon^2/(b-a)^2}\).
 
@@ -476,7 +474,7 @@ It prints
 500 9.3e-07 4.2e-02 9.1e-05
 ```
 
-Here is the surprise. At \(m = 60\), Hoeffding is the *worse* of the two bounds: 0.60 against Chebyshev’s 0.35. Hoeffding uses only the range of the loss, while Chebyshev also uses its variance. But look down the columns. Chebyshev creeps down from 0.35 to 0.042; Hoeffding plunges to 0.00009. Each extra example multiplies Hoeffding’s bound by the same factor, \(e^{-2\varepsilon^2}\), so it falls exponentially. That shape is what pays for a whole dashboard, as we are about to see. (The exact column falls faster still. Both bounds are cautious; they have to hold for every distribution with that range.)
+Here is the surprise. At \(m = 60\), Hoeffding is the *worse* of the two bounds: 0.60 against Chebyshev’s 0.35. Hoeffding uses only the range of the loss, while Chebyshev also uses its variance. But look down the columns. Chebyshev creeps down from 0.35 to 0.042; Hoeffding plunges to 0.00009. Each extra example multiplies Hoeffding’s bound by the same factor, \(e^{-2\varepsilon^2} = e^{-0.02}\) here, so it falls exponentially. That shape is what pays for a whole dashboard, as we are about to see. (The exact column falls faster still. Both bounds are cautious; they have to hold for every distribution with that range.)
 
 [[diagram:concentration]]
 
@@ -492,13 +490,11 @@ and therefore \(\mathcal H\) is agnostic PAC learnable by ERM with
 
 \[ m_{\mathcal H}(\varepsilon, \delta) \le m^{\mathrm{UC}}_{\mathcal H}(\varepsilon/2, \delta) \le \left\lceil \frac{2 \log(2|\mathcal H|/\delta)}{\varepsilon^2} \right\rceil. \]
 
-Here \(\log\) is the natural logarithm.
-
 Read the first bound from the inside out.
 
 - The type \(\ell: \mathcal H \times Z \to [0, 1]\) says the loss takes a hypothesis and an example and returns a number between 0 and 1; the 0-1 loss is one such.
-- \(|\mathcal H|\), with the bars of lesson 1 around a set, is how many hypotheses the class has: the number of rows.
-- \(2|\mathcal H|/\delta\) grows with the class and with the confidence you demand, and \(\log\) shrinks it drastically.
+- \(|\mathcal H|\), bars around a set, is the number of rows.
+- \(2|\mathcal H|/\delta\) grows with the class and with the confidence you demand, and \(\log\), the natural logarithm, shrinks it drastically.
 - Dividing by \(2\varepsilon^2\) charges for accuracy: halve \(\varepsilon\) and you pay four times as much.
 - The brackets \(\lceil \cdot \rceil\) are the ceiling: round up to the next whole number, since you cannot label part of an example.
 
@@ -520,35 +516,38 @@ The union bound asks nothing about how the events overlap. The rows of a real da
 
 Here \(\sum_{h \in \mathcal H}\) adds one term per row, thirty terms for our dashboard. In plain words: **the chance that some row is bad is at most the sum of each row’s chance of being bad.** In our world with \(m = 60\) and \(\varepsilon = 0.1\), Python can estimate both sides, and the total that Hoeffding allows in the next step:
 
+As in the one-row snippet, “off by more than 0.1” is tested as “more than 6 mistakes from the mean”, with the true risks as exact fractions, \(r_j = (49 + j)/200\).
+
 ```python
 import random
+from fractions import Fraction
 from math import exp
 
-rng, m, eps, weeks = random.Random(0), 60, 0.1, 10_000
-r = [0.25 + 0.005 * j for j in range(30)]
+rng, m, weeks = random.Random(0), 60, 10_000
+r = [Fraction(50 + j, 200) for j in range(30)]
 per_row, any_row = [0] * 30, 0
 for _ in range(weeks):
-    bad = [abs(rng.binomialvariate(m, p) / m - p) > eps
-           for p in r]
+    k = [rng.binomialvariate(m, float(p)) for p in r]
+    bad = [abs(x - m * p) > 6 for x, p in zip(k, r)]
     per_row = [c + b for c, b in zip(per_row, bad)]
     any_row += any(bad)
 print(round(any_row / weeks, 3), round(sum(per_row) / weeks, 3))
-print(round(30 * 2 * exp(-2 * m * eps**2), 2))
+print(round(30 * 2 * exp(-2 * m * 0.1**2), 2))
 ```
 
-It prints `0.954 2.843` and then `18.07`: some row is bad in 95% of weeks, the thirty rows’ chances add up to 2.84, and Hoeffding’s total is 18. All three are true, and the last two are useless at 60 examples, since a bound above 1 says nothing. The union bound pays for overlaps it never looks at, and Hoeffding pays for distributions it never sees. Step 5 is where we choose \(m\) to bring the last number below \(\delta\).
+It prints `0.952 2.792` and then `18.07`: some row is bad in 95% of weeks, the thirty rows’ chances add up to 2.79, and Hoeffding’s total is 18. All three are true, and the last two are useless at 60 examples, since a bound above 1 says nothing. The union bound pays for overlaps it never looks at, and Hoeffding pays for distributions it never sees. Step 5 is where we choose \(m\) to bring the last number below \(\delta\).
 
 *Step 3, Hoeffding for one fixed row.* Fix one \(h\) and set \(\theta_i = \ell(h, z_i)\). Because \(h\) is fixed in advance, before the sample is drawn, each \(\theta_i\) is a function of \(z_i\) alone, so \(\theta_1, \dots, \theta_m\) are i.i.d., because \(z_1, \dots, z_m\) are. Each has expectation \(L_{\mathcal D}(h)\), and each lies in \([0, 1]\), the range of the loss. Their average is \(L_S(h)\). Hoeffding with \(a = 0\), \(b = 1\) gives
 
 \[ \mathcal D^m\big(\{S : |L_S(h) - L_{\mathcal D}(h)| > \varepsilon\}\big) \le 2 e^{-2 m \varepsilon^2}. \]
 
-This is Hoeffding’s inequality with \(\mu = L_{\mathcal D}(h)\) and width 1, its probability written as \(\mathcal D^m\) of a set; for one row at \(m = 60\) and \(\varepsilon = 0.1\) it is the 0.60 we met before.
+It is Hoeffding with \(\mu = L_{\mathcal D}(h)\), written as \(\mathcal D^m\) of a set: 0.60 per row at \(m = 60\) and \(\varepsilon = 0.1\).
 
 *Step 4, add up.* Each of the \(|\mathcal H|\) terms of the sum is at most \(2e^{-2m\varepsilon^2}\), so the probability of a non-representative sample is at most \(2 |\mathcal H| e^{-2 m \varepsilon^2}\).
 
-*Step 5, solve for \(m\).* We need \(2|\mathcal H| e^{-2m\varepsilon^2} \le \delta\). Divide by \(2|\mathcal H|\), take logarithms (both sides are positive and \(\log\) is increasing), and rearrange: \(-2m\varepsilon^2 \le \log(\delta / 2|\mathcal H|)\), that is, \(m \ge \log(2|\mathcal H|/\delta)/(2\varepsilon^2)\). The smallest integer with that property is the ceiling in the statement. For the 30-row dashboard at \(m = 1{,}419\) and \(\varepsilon = 0.05\), the total is \(60\,e^{-7.095} \approx 0.0498\), just under \(\delta = 0.05\).
+*Step 5, solve for \(m\).* We need \(2|\mathcal H| e^{-2m\varepsilon^2} \le \delta\). Divide by \(2|\mathcal H|\), and take logarithms (both sides are positive and \(\log\) is increasing): \(-2m\varepsilon^2 \le \log(\delta / 2|\mathcal H|) = -\log(2|\mathcal H|/\delta)\). Dividing by \(-2\varepsilon^2\) flips the inequality: \(m \ge \log(2|\mathcal H|/\delta)/(2\varepsilon^2)\). The smallest integer with that property is the ceiling in the statement. For the 30-row dashboard at \(m = 1{,}419\) and \(\varepsilon = 0.05\), the total is \(60\,e^{-7.095} \approx 0.0498\), just under \(\delta = 0.05\).
 
-*Step 6, learning.* The agnostic PAC bound is the corollary of the last section, applied with \(\varepsilon/2\): replacing \(\varepsilon\) by \(\varepsilon/2\) turns \(2\varepsilon^2\) in the denominator into \(\varepsilon^2/2\). \(\blacksquare\)
+*Step 6, learning.* The agnostic PAC bound is the corollary of the last section, applied with \(\varepsilon/2\) as worked out above. \(\blacksquare\)
 
 Step 3 is where the winner’s curse is finally defeated, and it is worth seeing why it could not be skipped. You might hope to apply Hoeffding straight to the shipped row, with \(\theta_i = \ell(h_S, z_i)\). But \(h_S\) was chosen by looking at all of \(z_1, \dots, z_m\), so those \(\theta_i\) are not independent draws with mean \(L_{\mathcal D}(h_S)\): the sample that judges \(h_S\) also picked it. The proof never does that. It applies Hoeffding only to hypotheses fixed in advance, every one of them, and then the union bound turns “every row is fine” into a statement that no choice can escape.
 
@@ -588,7 +587,7 @@ It prints `0.0019 0.0`. The theorem allowed 5% of weeks to be non-representative
 
 ## Infinite classes, the engineer’s way
 
-The theorem needs a finite class. Many classes we care about are not finite. Take the domain \(\mathcal X = \mathbb R\) (a single number per message, say its length), labels \(\pm 1\), and the **threshold** hypotheses: pick a cutoff, say 500 characters, and call every longer message \(+1\) and every shorter one \(-1\). Written with the cutoff \(\theta\), these are \(h_\theta(x) = \operatorname{sign}(x - \theta)\), where \(\operatorname{sign}\) gives \(+1\) for a positive number and \(-1\) for a negative one; with \(\theta = 500\), a message of length 620 gets \(\operatorname{sign}(120) = +1\). There is one hypothesis for every real \(\theta\), infinitely many, and \(\log |\mathcal H|\) is infinite.
+The theorem needs a finite class. Many classes we care about are not finite. Take the domain \(\mathcal X = \mathbb R\), the real numbers (a single number per message, say its length), labels \(\pm 1\), and the **threshold** hypotheses: pick a cutoff, say 500 characters, and call every longer message \(+1\) and every shorter one \(-1\). Written with the cutoff \(\theta\), these are \(h_\theta(x) = \operatorname{sign}(x - \theta)\), where \(\operatorname{sign}\) gives \(+1\) for a positive number and \(-1\) for a negative one; with \(\theta = 500\), a message of length 620 gets \(\operatorname{sign}(120) = +1\). There is one hypothesis for every real \(\theta\), infinitely many, and \(\log |\mathcal H|\) is infinite.
 
 But your computer never stores a real number. It stores \(\theta\) as a 64-bit floating-point number, and there are at most \(2^{64}\) of those. So the class you actually learn has at most \(2^{64}\) members. More generally, a class described by \(d\) numbers is, in practice, a class of at most \(2^{64 d}\) hypotheses. Call this the **discretization trick**. Plugging it into the agnostic PAC bound,
 
@@ -703,7 +702,7 @@ Classes for which uniform convergence holds are also called Glivenko-Cantelli cl
 4. **Hoeffding’s inequality** bounds how far an average of \(m\) i.i.d. bounded variables can stray, with a tail \(2e^{-2m\varepsilon^2/(b-a)^2}\) that falls exponentially in \(m\). Its proof is Markov’s inequality, applied to \(e^{\lambda \bar X}\), plus independence and Hoeffding’s lemma.
 5. Hoeffding for each fixed hypothesis plus the union bound give every finite class uniform convergence with \(m \ge \log(2|\mathcal H|/\delta)/(2\varepsilon^2)\), and agnostic PAC learnability with \(2\log(2|\mathcal H|/\delta)/\varepsilon^2\). The class size enters only through its logarithm. The discretization trick stretches this, roughly, to classes described by \(d\) floating-point numbers.
 
-Your dashboard is honest now. Then, at the Friday demo, a colleague stands up with a bolder plan. Why choose a class at all? Why 30 rows, or 4,525? Her “universal filter” has no bias whatsoever: it considers every possible way of labelling messages, and she says that, given enough data, it will learn whatever rule junk follows. You run her class through this lesson’s formula, with \(\varepsilon = \delta = 0.05\). With thirty yes/no features there are \(2^{2^{30}}\) hypotheses, and the bound asks for about 149 billion examples, more than a hundred times the number of distinct messages that even exist. But a bound that is too big only shows that this proof fails. It does not show that her filter fails. Could a learner with no bias at all succeed, given enough data? Or is there a reason, deeper than any bound, why no such filter can exist? That is the next lesson.
+Your dashboard is honest now. Then, at the Friday demo, a colleague stands up with a bolder plan. Why choose a class at all? Why 30 rows, or 4,525? Her “universal filter” has no bias whatsoever: it considers every possible way of labelling messages, and she says that, given enough data, it will learn whatever rule junk follows. You run her class through this lesson’s formula, with \(\varepsilon = \delta = 0.05\). With thirty yes/no features there are \(2^{2^{30}}\) hypotheses, and making that dashboard 0.05-representative asks for about 149 billion examples, more than a hundred times the number of distinct messages that even exist. But a bound that is too big only shows that this proof fails. It does not show that her filter fails. Could a learner with no bias at all succeed, given enough data? Or is there a reason, deeper than any bound, why no such filter can exist? That is the next lesson.
 
 ## Concept check
 
