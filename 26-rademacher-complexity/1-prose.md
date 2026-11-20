@@ -449,9 +449,11 @@ The second is **Jensen’s inequality** for the logarithm. The logarithm is **co
 from math import exp, log
 
 for a in (0.5, 1, 2, 4):
-    print(a, round((exp(a) + exp(-a)) / 2, 3), round(exp(a * a / 2), 3))
+    left = (exp(a) + exp(-a)) / 2
+    print(a, round(left, 3), round(exp(a * a / 2), 3))
 Y = (1, 100)
-print(round(sum(log(y) for y in Y) / 2, 3), round(log(sum(Y) / 2), 3))
+avg_log = sum(log(y) for y in Y) / len(Y)
+print(round(avg_log, 3), round(log(sum(Y) / len(Y)), 3))
 ```
 
 It prints `0.5 1.128 1.133`, `1 1.543 1.649`, `2 3.762 7.389`, `4 27.308 2980.958` and then `2.303 3.922`: the exponential inequality holds with room to spare as \(a\) grows, and the log of the average beats the average of the logs.

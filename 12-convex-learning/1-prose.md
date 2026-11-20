@@ -209,7 +209,7 @@ Read that as a promise to a search algorithm. On a convex landscape, the moment 
 
 ## The tangent below the graph
 
-A second property gives a searcher a sense of direction, and a way to know how far from the bottom it is. Take lesson 9’s logistic risk on the ten messages, the average of \(\log(1 + \exp(-y\langle \mathbf w, \mathbf x \rangle))\), and stand at \(\mathbf w = \mathbf 0\), where it equals \(\log 2 \approx 0.6931\). Nudge one weight at a time by a tiny amount and watch how fast the risk changes: nudging the bias weight changes nothing, nudging the “free” weight up lowers the risk at rate 0.3, nudging the “meeting” weight up raises it at rate 0.1. Those three rates, collected into a vector, are the gradient. When \(f\) is differentiable, its **gradient** at \(\mathbf w\) is the vector of partial derivatives,
+A second property gives a searcher a sense of direction, and a way to know how far from the bottom it is. Take lesson 9’s logistic risk on the ten messages, the average of \(\log(1 + \exp(-y\langle \mathbf w, \mathbf x \rangle))\) (here \(\exp(t) = e^t\) and \(\log\) is the natural logarithm, its inverse), and stand at \(\mathbf w = \mathbf 0\), where it equals \(\log 2 \approx 0.6931\). Nudge one weight at a time by a tiny amount and watch how fast the risk changes: nudging the bias weight changes nothing, nudging the “free” weight up lowers the risk at rate 0.3, nudging the “meeting” weight up raises it at rate 0.1. Those three rates, collected into a vector, are the gradient. When \(f\) is differentiable, its **gradient** at \(\mathbf w\) is the vector of partial derivatives,
 
 \[ \nabla f(\mathbf w) = \left( \frac{\partial f(\mathbf w)}{\partial w_1}, \dots, \frac{\partial f(\mathbf w)}{\partial w_d} \right). \]
 
@@ -295,7 +295,7 @@ Two examples. The function \(f(x) = x^2\) has \(f''(x) = 2 > 0\), so it is conve
 
 \[ f'(x) = \frac{\exp(x)}{1 + \exp(x)} = \frac{1}{\exp(-x) + 1}, \]
 
-which is increasing because \(\exp(-x)\) decreases; so softplus is convex. Here \(\exp(x) = e^x\) and \(\log\) is the natural logarithm, its inverse. The first fraction is the chain rule (the derivative of \(\log(1 + t)\) is \(1/(1 + t)\), times the derivative \(\exp(x)\) of the inside); the second divides top and bottom by \(\exp(x)\). In plain words: **the slope of softplus climbs from 0 towards 1 as \(x\) grows.** At \(x = 0\) it is \(1/(1 + 1) = 1/2\), and the line `df = lambda x: 1 / (1 + math.exp(-x))` in the next snippet is the second form, term for term. Its second derivative is \(f'(x) f'(-x)\), the logistic function of lesson 9 times its mirror image. Let’s check all three statements on a grid, and the tangent inequality too.
+which is increasing because \(\exp(-x)\) decreases; so softplus is convex. The first fraction is the chain rule (the derivative of \(\log(1 + t)\) is \(1/(1 + t)\), times the derivative \(\exp(x)\) of the inside); the second divides top and bottom by \(\exp(x)\). In plain words: **the slope of softplus climbs from 0 towards 1 as \(x\) grows.** At \(x = 0\) it is \(1/(1 + 1) = 1/2\), and the line `df = lambda x: 1 / (1 + math.exp(-x))` in the next snippet is the second form, term for term. Differentiating once more gives \(\frac{e^{-x}}{(1 + e^{-x})^2} = \frac{1}{1 + e^{-x}} \cdot \frac{1}{e^{x} + 1}\), so the second derivative is \(f'(x) f'(-x)\), the logistic function of lesson 9 times its mirror image. Let’s check all three statements on a grid, and the tangent inequality too.
 
 ```python
 import math

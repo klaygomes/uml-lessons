@@ -155,26 +155,7 @@ To score a feature, fit the best line through it. Write the feature’s eight va
 - \(\frac1m\) turns the total into an average: this is the empirical risk \(L_S\) of the line.
 - \(\min_{a,b \in \mathbb R}\) asks for the smallest such average over every slope and intercept.
 
-In plain words: **the training error of the best line that uses only this feature.** For bangs, the flat line \(a = 0, b = 0\) predicts 0 everywhere, misses every label by exactly 1, and scores 1.0. The line \(a = 0.3, b = -0.5\) does better. Searching a grid of slopes and intercepts in steps of 0.01 finds the best:
-
-```python
-from statistics import fmean
-
-y = [1, 1, 1, 1, -1, -1, -1, -1]
-v = [5, 3, 0, 4, 1, 0, 0, 2]
-m = len(y)
-
-def loss(a, b):
-    return sum((a * v[i] + b - y[i]) ** 2 for i in range(m)) / m
-
-print(round(loss(0, 0), 4), round(loss(0.3, -0.5), 4))
-grid = [(a / 100, b / 100) for a in range(-100, 101)
-        for b in range(-200, 201)]
-best = min(grid, key=lambda ab: loss(*ab))
-print(best, round(loss(*best), 4))
-```
-
-It prints `1.0 0.6313` and `(0.33, -0.62) 0.6233`. So bangs scores about 0.623. A grid search is fine for one feature, but with twenty thousand features we want a formula. Two steps get us there.
+In plain words: **the training error of the best line that uses only this feature.** For bangs, the flat line \(a = 0, b = 0\) predicts 0 everywhere, misses every label by exactly 1, and scores 1.0; the best line, which the snippet below finds with Python’s `statistics.linear_regression` (lesson 9’s least squares for one feature), scores about 0.623. With twenty thousand features we want a formula for that number. Two steps get us there.
 
 **Step 1: centering changes nothing.** Write \(\bar v = \frac1m \sum_{i=1}^m v_i\) for the average of the feature (for bangs, \(15/8 = 1.875\)) and \(\bar y\) for the average label (here 0, four junk and four keep). Subtract the averages from both vectors before fitting, and the best achievable loss is the same:
 
@@ -251,31 +232,23 @@ In plain words: **a filter that keeps the features whose best line fits best is 
 
 *Proof.* By the two steps, the best loss is \(\frac1m \|\mathbf y - \bar y\|^2 (1 - \rho^2)\): factor \(\|\mathbf y - \bar y\|^2\) out of the bracket and recognize \(\rho^2\) in what remains. Since \(\frac1m\|\mathbf y - \bar y\|^2\) is positive and the same for every feature (we assume the labels are not all equal), smaller loss means larger \(\rho^2\), which means larger \(|\rho|\). The Cauchy–Schwarz inequality, \(|\langle \mathbf p, \mathbf q \rangle| \le \|\mathbf p\| \|\mathbf q\|\), gives \(|\rho| \le 1\), and the loss formula shows \(|\rho| = 1\) exactly when the best loss is zero. \(\blacksquare\)
 
-Here are all three features of the table, scored by the formula:
+Here are all three features of the table, scored by Python’s `statistics.correlation`, which computes exactly \(\rho\), next to the best loss \(\frac1m\|\mathbf y - \bar y\|^2(1 - \rho^2) = 1 - \rho^2\) (here \(\frac1m\|\mathbf y - \bar y\|^2 = 8/8 = 1\)):
 
 ```python
-from statistics import fmean
+from statistics import correlation
 
 y = [1, 1, 1, 1, -1, -1, -1, -1]
 features = {"bangs": [5, 3, 0, 4, 1, 0, 0, 2],
             "links": [2, 1, 3, 0, 1, 2, 0, 1],
             "night": [1, 1, 0, 1, 0, 1, 0, 0]}
-
-def pearson(v, y):
-    vc = [p - fmean(v) for p in v]
-    yc = [q - fmean(y) for q in y]
-    inner = sum(p * q for p, q in zip(vc, yc))
-    norm_v = sum(p * p for p in vc) ** 0.5
-    norm_y = sum(q * q for q in yc) ** 0.5
-    return inner / (norm_v * norm_y)
-
 for name, v in features.items():
-    print(name, round(pearson(v, y), 4))
+    rho = correlation(v, y)
+    print(name, round(rho, 4), round(1 - rho ** 2, 4))
 ```
 
-It prints `bangs 0.6138`, `links 0.2582`, `night 0.5`. Check bangs against the loss: \(1 \cdot (1 - 0.6138^2) \approx 0.6233\). A filter method with \(k = 1\) keeps bangs, and with \(k = 2\) keeps bangs and night. Scoring each feature costs one pass over its \(m\) values, so the whole filter method costs \(O(dm)\) time plus \(O(d \log d)\) to sort the scores, and \(O(d)\) extra space. Cheap enough for twenty thousand words.
+It prints `bangs 0.6138 0.6233`, `links 0.2582 0.9333`, `night 0.5 0.75`: bangs gets back the loss of 0.6233 found above. A filter method with \(k = 1\) keeps bangs, and with \(k = 2\) keeps bangs and night. Scoring each feature costs one pass over its \(m\) values, so the whole filter method costs \(O(dm)\) time plus \(O(d \log d)\) to sort the scores, and \(O(d)\) extra space. Cheap enough for twenty thousand words.
 
-Pearson’s coefficient is not the only score in use. Estimates of the mutual information between a feature and the label, or the area under the ROC curve of a single-feature rule, are popular too. They all share the weakness we are about to find.
+Pearson’s coefficient is not the only score in use. Two other popular ones are the **mutual information** between a feature and the label (lesson 24’s relative entropy from the joint distribution of the pair to the product of their separate distributions: how much knowing the feature reduces the surprise about the label) and the **area under the ROC curve** of the feature (the chance that a random junk message has a higher value of it than a random keep message). They all share the weakness we are about to find.
 
 ## When a lonely score lies
 
