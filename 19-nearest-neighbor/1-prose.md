@@ -282,8 +282,7 @@ print(round(worst, 3), round(2 * math.sqrt(2), 3))
 
 It prints `2.828 2.828`: the worst ratio found is the constant, reached when you step diagonally inside the band where users disagree.
 
-One more convention before the proofs. The learner’s output depends on the random training sequence: a different thousand labelled invoices gives a different 1-NN rule, with a different true risk. So we measure it on average over many draws of the training sequence. Recall that \(S \sim \mathcal D^m\) means the \(m\) examples of \(S\) are drawn independently from \(\mathcal D\). The guarantee will bound \(\mathbb E_{S \sim \mathcal D^m}[L_{\mathcal D}(h_S)]\): **the true risk of the 1-NN rule, averaged over the random training sequence.** The simulation in Step 1 will put it at about 0.152 for a thousand invoices on two scores. And the setting throughout is \(\mathcal X = [0, 1]^d\), \(\mathcal Y = \{0, 1\}\), the 0-1 loss \(\ell(h, (x, y)) = \mathbb 1[h(x) \neq y]\), and Euclidean distance. The **indicator** \(\mathbb 1[\cdot]\) is 1 when the statement inside is true and 0 when it is false, so the 0-1 loss charges 1 for a mistake and 0 otherwise.
-
+One more convention before the proofs. The learner’s output depends on the random training sequence: a different thousand labelled invoices gives a different 1-NN rule, with a different true risk. So we measure it on average over many draws of the training sequence. Recall that \(S \sim \mathcal D^m\) means the \(m\) examples of \(S\) are drawn independently from \(\mathcal D\). The guarantee will bound \(\mathbb E_{S \sim \mathcal D^m}[L_{\mathcal D}(h_S)]\): **the true risk of the 1-NN rule, averaged over the random training sequence.** The simulation in Step 1 will put it at about 0.152 for a thousand invoices on two scores.
 The guarantee comes in three steps. Step 1 turns the error of the 1-NN rule into a distance: how far a fresh message is from its nearest neighbour. Step 2 is a counting fact about regions that a random sample misses. Step 3 combines them to bound that distance, and hence the error.
 
 ## Step 1: from mistakes to distances
@@ -315,7 +314,7 @@ where \(y \sim p\) means a label that is 1 with probability \(p\) and 0 otherwis
 
 \[ \mathbb P[y \neq y'] = q(1 - p) + (1 - q)p. \]
 
-Now the one trick of the proof: write \(q = p - (p - q)\) in the first term and \(1 - q = (1 - p) + (p - q)\) in the second, and expand.
+Now the one trick of the proof: write \(q = p - (p - q)\) in the first term and \(1 - q = (1 - p) + (p - q)\) in the second, expand, and collect the two \((p - q)\) terms, \(-(p - q)(1 - p) + (p - q)p = (p - q)(2p - 1)\).
 
 \[ q(1 - p) + (1 - q)p = p(1-p) - (p - q)(1 - p) + (1 - p)p + (p - q)p = 2p(1 - p) + (p - q)(2p - 1). \]
 
@@ -362,7 +361,7 @@ print(gap < 1e-12)
 
 It prints `True`: the identity holds on all 10,201 pairs, and both inequalities never fail.
 
-Now let’s see the lemma at work in the invoice world, with the two scores that matter (\(d = 2\)) and \(m = 1{,}000\). The code below follows the proof exactly: it draws the messages, finds the nearest neighbour, and adds up the disagreement probability of Step 1c instead of flipping the coins. The Bayes risk of this world is \(11/96 \approx 0.115\), as the grid average showed earlier.
+Now let’s see the lemma at work in the invoice world, with the two scores that matter (\(d = 2\)) and \(m = 1{,}000\). The code below follows the proof exactly: it draws the messages, finds the nearest neighbour, and adds up the disagreement probability of Step 1c instead of flipping the coins. The Bayes risk is the \(11/96 \approx 0.115\) from the grid average.
 
 ```python
 import math, random
@@ -385,13 +384,28 @@ c, bayes = 2 * math.sqrt(2), 11 / 96
 print(round(err / runs, 3), round(2 * bayes + c * dist / runs, 3))
 ```
 
-It prints `0.152 0.275`. The expected true risk of the 1-NN rule is about 0.152, and the lemma’s bound is 0.275. Where does the gap come from? Almost all of it is Step 1e. In this world \(\mathbb E_x[2\eta(x)(1 - \eta(x))] \approx 0.151\), so the first inequality, the Lipschitz one, is nearly tight: the 1-NN rule really does pay about \(2\eta(1-\eta)\) per message. What we gave away is the replacement of \(\eta(1-\eta)\) by \(\min\{\eta, 1-\eta\}\), which is exact only where \(\eta\) is 0, \(1/2\) or 1. Hold on to that: “twice the Bayes risk” is a ceiling, and real 1-NN rules usually sit below it.
+It prints `0.152 0.275`. The expected true risk of the 1-NN rule is about 0.152, and the lemma’s bound is 0.275. Where does the gap come from? Almost all of it is Step 1e. Averaging \(2\eta(1-\eta)\) and \(2\min\{\eta, 1-\eta\}\) over the same grid as the Bayes risk:
+
+```python
+def eta(x):
+    return min(1.0, max(0.0, 2 * x[0] + 2 * x[1] - 1.5))
+
+n = 400
+grid = [((i + 0.5) / n, (j + 0.5) / n)
+        for i in range(n) for j in range(n)]
+coin = [2 * eta(x) * (1 - eta(x)) for x in grid]
+bayes = [2 * min(eta(x), 1 - eta(x)) for x in grid]
+print(round(sum(coin) / len(coin), 3),
+      round(sum(bayes) / len(bayes), 3))
+```
+
+It prints `0.151 0.229`. So the first inequality, the Lipschitz one, is nearly tight: the 1-NN rule really does pay about \(2\eta(1-\eta)\) per message. What we gave away is the replacement of \(\eta(1-\eta)\) by \(\min\{\eta, 1-\eta\}\), which is exact only where \(\eta\) is 0 or 1 (at \(\eta = 1/2\) it doubles 0.25 to 0.5). Hold on to that: “twice the Bayes risk” is a ceiling, and real 1-NN rules usually sit below it.
 
 ## Step 2: boxes nobody sampled
 
 The lemma leaves one quantity to control: the expected distance from a fresh message to its nearest neighbour. The plan is to chop the domain into small boxes. If the fresh message lands in a box that contains a training message, its nearest neighbour is at most a box-width away. The danger is landing in a box that the training sequence missed entirely. So we need to know how much probability the missed boxes carry, and that is a clean fact about random samples, true for any collection of sets.
 
-**Lemma (missed mass).** Let \(C_1, \dots, C_r\) be subsets of a domain \(\mathcal X\), and let \(S\) be a sequence of \(m\) points drawn i.i.d. from a distribution \(\mathcal D\) over \(\mathcal X\). Then
+**Lemma (missed mass).** Let \(C_1, \dots, C_r\) be subsets of a domain \(\mathcal X\), and let \(S\) be a sequence of \(m\) points drawn i.i.d. (independently, each from the same distribution) from a distribution \(\mathcal D\) over \(\mathcal X\). Then
 
 \[ \mathbb E_{S \sim \mathcal D^m}\Big[ \sum_{i \,:\, C_i \cap S = \emptyset} \mathbb P[C_i] \Big] \le \frac{r}{me}. \]
 
@@ -480,7 +494,7 @@ In plain words: **the average nearest-neighbour distance is at most one box diag
 
 \[ \mathbb E_{S, x}\big[\|x - x_{\pi_1(x)}\|\big] \le \sqrt d \Big( \varepsilon + \frac{T^d}{me} \Big). \]
 
-In plain words: **the average nearest-neighbour distance is at most a cube diagonal times the sum of the box side and the missed-mass bound.** With \(m = 1{,}000\) on the 5 by 5 grid: \(\sqrt 2\,(0.2 + 25/(1000e)) = 1.414 \times 0.209 \approx 0.296\). The distance snippet below computes exactly this as its middle column.
+This is the previous bound with the missed mass replaced by its average, \(r/(me)\). With \(m = 1{,}000\) on the 5 by 5 grid: \(\sqrt 2\,(0.2 + 25/(1000e)) = 1.414 \times 0.209 \approx 0.296\), the middle column of the distance snippet below.
 
 **Choosing the box size.** Small boxes make \(\varepsilon\) small but there are more of them to miss; big boxes do the opposite. Let \(u = m^{1/(d+1)}\), the \((d+1)\)-th root of \(m\), so that \(u^{d+1} = m\). For \(m = 1{,}000\) and \(d = 2\), \(u = 10\).
 
@@ -550,21 +564,26 @@ Why ever consult more than one neighbour? Look back at Step 1c: the 1-NN rule co
 
 \[ \mathbb E_{S \sim \mathcal D^m}[L_{\mathcal D}(h_S)] \le \Big(1 + \sqrt{8/k}\Big) L_{\mathcal D}(f_{\mathcal D}) + \big(6c\sqrt d + k\big)\, m^{-1/(d+1)}. \]
 
-Compare it with the 1-NN guarantee term by term. The factor 2 on the Bayes risk becomes \(1 + \sqrt{8/k}\), which is below 2 for \(k \ge 10\). The excess keeps the shrinking \(m^{-1/(d+1)}\), but its constant grows from \(4c\sqrt d\) to \(6c\sqrt d + k\). In plain words: **voting \(k\) neighbours cuts the multiple of the Bayes risk you pay, and charges an extra \(k\) in the excess for reaching further.** With ten neighbours, two scores and a million labels: \(1.894 \times 0.115 \approx 0.217\), plus \((6 \times 2.83 \times 1.414 + 10) \times 0.01 = 0.34\), about 0.557, worse than the 1-NN rule’s 0.389 at this budget. The certificate snippet in “Fix the bug” evaluates exactly this formula.
+Compare it with the 1-NN guarantee term by term. The factor 2 on the Bayes risk becomes \(1 + \sqrt{8/k}\), which is below 2 for \(k \ge 10\). The excess keeps the shrinking \(m^{-1/(d+1)}\), but its constant grows from \(4c\sqrt d\) to \(6c\sqrt d + k\). In plain words: **voting \(k\) neighbours cuts the multiple of the Bayes risk you pay, and charges an extra \(k\) in the excess for reaching further.** With ten neighbours, two scores and a million labels: \(1.894 \times 0.115 \approx 0.217\), plus \((6 \times 2.83 \times 1.414 + 10) \times 0.01 = 0.34\), about 0.557, worse than the 1-NN rule’s 0.389 at this budget.
 
 The proof follows the same plan with two changes, and you will build it yourself in this lesson’s problems. First, a box is now dangerous not when it is empty but when it holds fewer than \(k\) training messages, and a concentration bound replaces the simple “all \(m\) points miss” computation. Second, the single coin of Step 1c becomes a majority vote of \(k\) coins, and a lemma about majority votes replaces the factor 2.
 
-Here is what the new multiplier on the Bayes risk looks like (with the factor 2 of the 1-NN rule for comparison).
+Here is the multiplier for several \(k\) (with the 1-NN rule’s 2 for comparison), and the whole bound for two scores and a million labels.
 
 ```python
 import math
 
+c, d, bayes = 2 * math.sqrt(2), 2, 11 / 96
+shrink = (10**6) ** (-1 / (d + 1))
 for k in (1, 10, 50, 100, 1000):
     factor = 2 if k == 1 else 1 + math.sqrt(8 / k)
-    print(k, round(factor, 3))
+    reach = 4 * c * math.sqrt(d) if k == 1 else (
+        6 * c * math.sqrt(d) + k)
+    bound = factor * bayes + reach * shrink
+    print(k, round(factor, 3), round(bound, 3))
 ```
 
-It prints `1 2`, `10 1.894`, `50 1.4`, `100 1.283` and `1000 1.089`. As \(k\) grows, the multiplier slides towards 1, so with enough data the k-NN rule approaches the Bayes risk itself. But the price is the \(k\) in the second term: each extra neighbour adds \(m^{-1/(d+1)}\) to the bound, because consulting more neighbours means reaching further away. Choosing \(k\) is a tradeoff, and it depends on how many labels you have.
+It prints `1 2 0.389`, `10 1.894 0.557`, `50 1.4 0.9`, `100 1.283 1.387` and `1000 1.089 10.365`. As \(k\) grows the multiplier slides towards 1, so with enough data the k-NN rule approaches the Bayes risk itself; but at a fixed budget the extra \(k\, m^{-1/(d+1)}\) soon dominates. Choosing \(k\) is a tradeoff that depends on how many labels you have.
 
 ## The curse of dimensionality
 
@@ -607,7 +626,7 @@ A sceptic should object here. This is an upper bound from a proof that we have j
 
 **On the grid, every labelling is Lipschitz.** Let \(\eta: G \to [0, 1]\) be any function at all. For distinct \(g, g' \in G\), \(|\eta(g) - \eta(g')| \le 1 = c \cdot \frac1c \le c\|g - g'\|\). So every function on the grid, including every labelling \(G \to \{0, 1\}\), is c-Lipschitz.
 
-**Run the No-Free-Lunch argument on the grid.** Lesson 5’s proof of the No-Free-Lunch theorem begins by choosing a set \(C\) of \(2m\) domain points, and builds its hard tasks on \(C\): uniform over \(C\), with labels given by a function \(f_i: C \to \{0, 1\}\). Since \(2m \le (c+1)^d\), we can choose \(C \subseteq G\). Every task in that family has deterministic labels, so its Bayes risk is 0, and its conditional probability on \(C\) is \(\eta = f_i\), which is c-Lipschitz by the previous step. The proof shows that for any learner, one of these tasks gives expected true risk at least \(1/4\), and true risk at least \(1/8\) with probability at least \(1/7\).
+**Run the No-Free-Lunch argument on the grid.** Lesson 5’s proof of the No-Free-Lunch theorem begins by choosing a set \(C\) of \(2m\) domain points, and builds its hard tasks on \(C\): uniform over \(C\), with labels given by a function \(f_i: C \to \{0, 1\}\). Since \(2m \le (c+1)^d\), we can choose \(C \subseteq G\) (\(C\) a subset of \(G\): all its points are grid points). Every task in that family has deterministic labels, so its Bayes risk is 0, and its conditional probability on \(C\) is \(\eta = f_i\), which is c-Lipschitz by the previous step. The proof shows that for any learner, one of these tasks gives expected true risk at least \(1/4\), and true risk at least \(1/8\) with probability at least \(1/7\).
 
 **Extending \(\eta\) to the whole cube.** The assumption asks for \(\eta\) on all of \([0, 1]^d\). Since the task puts no probability off \(C\), any extension describes the same task, and one extension is c-Lipschitz: \(\tilde\eta(x) = \min\{1, \min_{g \in C} (f_i(g) + c\|x - g\|)\}\). Each \(f_i(g) + c\|x - g\|\) is c-Lipschitz in \(x\), and taking minima, including with the constant 1, keeps that property. At a point \(g' \in C\), the term \(g = g'\) gives \(f_i(g')\), every other term is at least \(c \cdot \frac1c = 1\), so \(\tilde\eta(g') = f_i(g')\). \(\blacksquare\)
 
@@ -745,7 +764,7 @@ if __name__ == "__main__":
 
 Time to fix the invoice filter properly, with a guarantee rather than a hope. The company’s “report junk” button gives you a year of clicks on invoices: a budget of 1,000,000 labels. Your manager wants a certificate: a proven bound, from this lesson’s theorems, saying that the expected true risk on invoices is at most 0.40. Not a measurement on one test set; a promise that holds for every world with the same Bayes risk and Lipschitz constant.
 
-You choose two things. First, how many scores to keep: the team has ranked them, payment score first, sender score second, then the other twenty-eight, and you keep the first \(d\). Second, \(k\): either the 1-NN rule, with the 1-NN guarantee, or a k-NN rule with \(k \ge 10\), with the k-NN guarantee. To evaluate either guarantee you need the Bayes risk and the Lipschitz constant of the scores you keep. The data team supplies both. Keeping only the payment score, users’ junk probability given that one score has Bayes risk \(25/96 \approx 0.260\) and Lipschitz constant 2. Keeping two or more scores, the Bayes risk is \(11/96 \approx 0.115\) and the constant is \(2\sqrt 2\), because the scores past the second carry nothing.
+You choose two things. First, how many scores to keep: the team has ranked them, payment score first, sender score second, then the other twenty-eight, and you keep the first \(d\). Second, \(k\): either the 1-NN rule, with the 1-NN guarantee, or a k-NN rule with \(k \ge 10\), with the k-NN guarantee. To evaluate either guarantee you need the Bayes risk and the Lipschitz constant of the scores you keep. The data team supplies both. Keeping only the payment score, users’ junk probability given that one score has Bayes risk \(25/96 \approx 0.260\) and is 2-Lipschitz. Keeping two or more scores, the Bayes risk is \(11/96 \approx 0.115\) and the constant is \(2\sqrt 2\), because the scores past the second carry nothing.
 
 Here is the certificate as code, evaluated at two settings your colleagues suggested.
 
