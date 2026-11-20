@@ -172,7 +172,7 @@ It prints `1 5 5 True`, `-1 -3 3 True`, `-1 0 0 False` and `1 -1 -1 False`: the 
 
 So the hypothesis class is \(HS_d\), and we would like to run ERM on it. As a reminder from lesson 2, **ERM**, empirical risk minimization, means: return a hypothesis with the smallest **empirical risk**, the fraction of labelled examples it gets wrong. Counting plain mistakes like that is the **0-1 loss**: a mistake costs 1, a correct answer costs 0. The production rule, wrong on E and G, has empirical risk \(2/8 = 0.25\); our weighted score has 0. Two separate worries stand in the way.
 
-The first is statistical. \(HS_d\) is infinite, so lesson 2’s finite-class bound says nothing. But lesson 6 gave us the tool for infinite classes, the **VC dimension**, a single number measuring how many points a class can label in every possible way, and later in this lesson we will prove that the VC dimension of \(HS_d\) is \(d + 1\). Recall the two dials of PAC learning: \(\varepsilon\) is the accuracy you ask for (true risk at most \(\varepsilon\)), and \(\delta\) is the chance of failure you tolerate (the guarantee holds with probability at least \(1 - \delta\)). By the fundamental theorem of lesson 6, ERM over halfspaces is then a PAC learner with a number of examples that grows roughly like \((d + \log(1/\delta))/\varepsilon\). Read it inside out: \(\log(1/\delta)\), the natural logarithm of \(1/\delta\), grows slowly as you demand more confidence (\(\delta = 0.05\) gives about 3); add the number of words \(d\); and divide by the accuracy \(\varepsilon\), so halving \(\varepsilon\) doubles the count. In plain words: **the examples needed grow with the number of words and the log of the confidence, divided by the accuracy.** With thirty words, \(\delta = 0.05\) and \(\varepsilon = 0.1\), that is about \((30 + 3)/0.1 = 330\), times a constant; we will compute it properly at the end of the VC section. So statistically, halfspaces are fine.
+The first is statistical. \(HS_d\) is infinite, so lesson 2’s finite-class bound says nothing. But lesson 6 gave us the tool for infinite classes, the **VC dimension**, the size of the largest set of points a class can label in every possible way, and later in this lesson we will prove that the VC dimension of \(HS_d\) is \(d + 1\). Recall the two dials of PAC learning: \(\varepsilon\) is the accuracy you ask for (true risk at most \(\varepsilon\)), and \(\delta\) is the chance of failure you tolerate (the guarantee holds with probability at least \(1 - \delta\)). By the fundamental theorem of lesson 6, ERM over halfspaces is then a PAC learner with a number of examples that grows roughly like \((d + \log(1/\delta))/\varepsilon\). Read it inside out: \(\log(1/\delta)\), the natural logarithm of \(1/\delta\), grows slowly as you demand more confidence (\(\delta = 0.05\) gives about 3); add the number of words \(d\); and divide by the accuracy \(\varepsilon\), so halving \(\varepsilon\) doubles the count. In plain words: **the examples needed grow with the number of words and the log of the confidence, divided by the accuracy.** With thirty words, \(\delta = 0.05\) and \(\varepsilon = 0.1\), that is about \((30 + 3)/0.1 = 330\), times a constant; we will compute it properly at the end of the VC section. So statistically, halfspaces are fine.
 
 The second worry is computational, and it is the one from the opening: how do you *find* the empirical risk minimizer among infinitely many halfspaces? In general, when no halfspace gets every example right (the **agnostic** case of lesson 3), this is known to be computationally hard. The usual way around it is to minimize a different, friendlier loss instead of the 0-1 loss; logistic regression at the end of this lesson is one example, and lesson 12 studies the idea in depth.
 
@@ -197,11 +197,32 @@ It prints `[5, 1, 3, 1, 3, 3, 3, 1] True`. We will see two ways to find such wei
 
 ## Separable mail is a linear program
 
-A **linear program** (LP) is an optimization problem with a linear objective and linear inequality constraints:
+Start with a small puzzle in the story. Forget the bias term for a moment and look for two weights \(w_1, w_2\) such that message A, \((3, 0)\), scores at least 1, and message E, \((1, 2)\), scores at most \(-1\). Written as “at least” conditions, that is \(3 w_1 + 0 w_2 \ge 1\) and \(-1 w_1 - 2 w_2 \ge 1\). Each condition is a weighted sum of the unknowns compared with a number, and so is anything we might want to make large, say \(w_1\) itself. A problem of exactly that shape is a **linear program** (LP): a linear objective, maximized under linear inequality constraints. In general,
 
 \[ \max_{\mathbf w \in \mathbb R^d} \; \langle \mathbf u, \mathbf w \rangle \quad \text{subject to} \quad A \mathbf w \ge \mathbf v, \]
 
-where \(\mathbf w\) is the vector of unknowns, \(A\) is an \(m \times d\) matrix, \(\mathbf v \in \mathbb R^m\) and \(\mathbf u \in \mathbb R^d\) are fixed vectors, and \(A \mathbf w \ge \mathbf v\) means every coordinate of \(A \mathbf w\) is at least the matching coordinate of \(\mathbf v\). Linear programs can be solved efficiently, in time polynomial in \(m\), \(d\) and the number of bits used to write the numbers, and good solvers are freely available.
+where \(\mathbf w\) is the vector of unknowns, \(A\) is an \(m \times d\) matrix, \(\mathbf v \in \mathbb R^m\) and \(\mathbf u \in \mathbb R^d\) are fixed vectors, and \(A \mathbf w \ge \mathbf v\) means every coordinate of \(A \mathbf w\) is at least the matching coordinate of \(\mathbf v\). Read the pieces one at a time.
+
+- A **matrix** \(A\) is a table of numbers; \(m \times d\) means \(m\) rows and \(d\) columns. In the puzzle, the rows are \((3, 0)\) and \((-1, -2)\), one per condition.
+- \(A \mathbf w\) is the list of inner products of each row with \(\mathbf w\), one number per row: the left-hand sides of the conditions.
+- \(\ge\) between two lists compares them entry by entry, so \(A \mathbf w \ge \mathbf v\) is all the conditions at once, with \(\mathbf v = (1, 1)\) holding the right-hand sides.
+- “subject to” means “searching only among \(\mathbf w\) that satisfy”; such \(\mathbf w\) are called **feasible**.
+- \(\max_{\mathbf w \in \mathbb R^d}\) says: over all feasible weight vectors, make the value that follows as large as possible. The subscript names what you are allowed to vary.
+- \(\langle \mathbf u, \mathbf w \rangle\) is the objective; \(\mathbf u = (1, 0)\) picks out \(w_1\).
+
+In plain words: **among all weight vectors that pass every “at least” test, find one where a chosen weighted sum is largest.** The candidate \(\mathbf w = (1, -1)\) gives \(A \mathbf w = (3, 1)\), which is at least \((1, 1)\) entry by entry, so it is feasible, with objective value 1:
+
+```python
+A = [[3, 0], [-1, -2]]
+v = [1, 1]
+u = [1, 0]
+w = [1, -1]
+Aw = [sum(a * c for a, c in zip(row, w)) for row in A]
+ok = all(p >= q for p, q in zip(Aw, v))
+print(Aw, ok, sum(p * q for p, q in zip(u, w)))
+```
+
+It prints `[3, 1] True 1`. Linear programs can be solved efficiently, in time polynomial in \(m\), \(d\) and the number of bits used to write the numbers, and good solvers are freely available.
 
 Our constraints \(y_i \langle \mathbf w, \mathbf x_i \rangle > 0\) are almost of that form, except that they are strict, and an LP wants \(\ge\). Here is the step that fixes it, and it is the most useful idea in this section: **a separator can always be rescaled until every score is at least 1.**
 
@@ -211,13 +232,13 @@ Our constraints \(y_i \langle \mathbf w, \mathbf x_i \rangle > 0\) are almost of
 
 \[ y_i \langle \bar{\mathbf w}, \mathbf x_i \rangle = \frac{1}{\gamma} \, y_i \langle \mathbf w^\star, \mathbf x_i \rangle \ge \frac{\gamma}{\gamma} = 1, \]
 
-where the inequality is just \(y_i \langle \mathbf w^\star, \mathbf x_i \rangle \ge \gamma\), the definition of \(\gamma\) as the minimum. For the converse, \(y_i \langle \bar{\mathbf w}, \mathbf x_i \rangle \ge 1 > 0\) says every example is labelled correctly, so the empirical risk is 0, the smallest possible. \(\blacksquare\)
+where the inequality is just \(y_i \langle \mathbf w^\star, \mathbf x_i \rangle \ge \gamma\), the definition of \(\gamma\) as the minimum. Here \(\min_i\) means “the smallest value over all \(i\)”, the star in \(\mathbf w^\star\) marks the separator we started from, the bar in \(\bar{\mathbf w}\) marks the rescaled one, and the Greek letter \(\gamma\) (gamma) is the smallest signed score. Read the display inside out: dividing the weights by \(\gamma\) divides every score by \(\gamma\); each original signed score was at least \(\gamma\); so each new one is at least \(\gamma / \gamma = 1\). In plain words: **divide the separator by its smallest signed score, and the smallest becomes exactly 1.** If the closest call scored 0.5, dividing by 0.5 doubles everything and the closest call now scores 1; the snippet at the end of this section does exactly that on our messages. For the converse, \(y_i \langle \bar{\mathbf w}, \mathbf x_i \rangle \ge 1 > 0\) says every example is labelled correctly, so the empirical risk is 0, the smallest possible. \(\blacksquare\)
 
 Multiplying \(\mathbf w\) by a positive number never changes the sign of any score, so it never changes the hypothesis. That freedom is what we spent.
 
-Now write it as an LP. Let \(A\) be the \(m \times d\) matrix whose rows are the messages multiplied by their labels, \(A_{i,j} = y_i x_{i,j}\), where \(x_{i,j}\) is coordinate \(j\) of \(\mathbf x_i\). Then row \(i\) of \(A \mathbf w\) is \(y_i \langle \mathbf w, \mathbf x_i \rangle\), and the constraints become \(A \mathbf w \ge \mathbf v\) with \(\mathbf v = (1, \dots, 1) \in \mathbb R^m\). What do we maximize? Nothing in particular: every feasible \(\mathbf w\) is an equally good ERM hypothesis. So we set a dummy objective, \(\mathbf u = (0, \dots, 0)\), and the solver just has to find a feasible point.
+Now write it as an LP. Let \(A\) be the \(m \times d\) matrix whose rows are the messages multiplied by their labels, \(A_{i,j} = y_i x_{i,j}\), where \(x_{i,j}\) is coordinate \(j\) of \(\mathbf x_i\): the first subscript picks the message, the second the entry, so \(A_{i,j}\) is the entry in row \(i\), column \(j\). In plain words: **each row is a message with the 1 glued on, flipped in sign when the message is keep.** Message A, \((1, 3, 0)\) with label \(+1\), gives the row \((1, 3, 0)\); message E, \((1, 1, 2)\) with label \(-1\), gives \((-1, -1, -2)\). Then row \(i\) of \(A \mathbf w\) is \(y_i \langle \mathbf w, \mathbf x_i \rangle\), and the constraints become \(A \mathbf w \ge \mathbf v\) with \(\mathbf v = (1, \dots, 1) \in \mathbb R^m\). What do we maximize? Nothing in particular: every feasible \(\mathbf w\) is an equally good ERM hypothesis. So we set a dummy objective, \(\mathbf u = (0, \dots, 0)\), and the solver just has to find a feasible point.
 
-Here is the rescaling on our eight messages, after appending the constant 1, starting from a separator whose smallest score is only 0.5:
+Here is the rescaling on our eight messages, after appending the constant 1, starting from a separator whose smallest score is only 0.5. The code mirrors the claim term by term: `A` holds the rows \(y_i \mathbf x_i\), `Aw` computes \(A \mathbf w\), `gamma` is the minimum, and `w_bar` is \(\mathbf w^\star / \gamma\):
 
 ```python
 S = [((3, 0), 1), ((2, 1), 1), ((4, 2), 1), ((1, 0), 1),
@@ -241,17 +262,40 @@ It prints `[4.0, 1.5, 3.5, 1.0, 1.0, 1.5, 0.5, 0.5]`, then `0.5 [-1.0, 3.0, -2.0
 
 The LP is a perfectly good answer, but it hands the work to a solver. There is a much older algorithm, Rosenblatt’s **Perceptron** from 1958, that you can write in five lines, and that comes with a beautiful guarantee.
 
-The idea: start with \(\mathbf w^{(1)} = \mathbf 0\), the all-zeros vector, which labels nothing correctly (every score is 0). At each step \(t\), look for an example that \(\mathbf w^{(t)}\) gets wrong, that is, with \(y_i \langle \mathbf w^{(t)}, \mathbf x_i \rangle \le 0\). If there is one, **update** by adding the message, scaled by its label:
+The idea, in words first: start with all weights at zero; find a message the current weights get wrong; if it is junk, add its vector to the weights, and if it is keep, subtract it; repeat until nothing is wrong. Starting from zero weights, every score is 0, so junk message A is wrong, and adding its vector \((1, 3, 0)\) gives the weights \((1, 3, 0)\).
+
+Now the notation. The weights change from step to step, so we label them by step: \(\mathbf w^{(t)}\) means the value of \(\mathbf w\) at step \(t\), with the \(t\) in brackets so it is not mistaken for a power. Start with \(\mathbf w^{(1)} = \mathbf 0\), the all-zeros vector, which labels nothing correctly (every score is 0). At each step \(t\), look for an example that \(\mathbf w^{(t)}\) gets wrong, that is, with \(y_i \langle \mathbf w^{(t)}, \mathbf x_i \rangle \le 0\), a signed score that is not positive. If there is one, **update** by adding the message, scaled by its label:
 
 \[ \mathbf w^{(t+1)} = \mathbf w^{(t)} + y_i \mathbf x_i. \]
 
-If there is none, stop and output \(\mathbf w^{(t)}\). (Throughout, \(\mathbf w^{(t)}\) means the value of \(\mathbf w\) at step \(t\), not a power.)
+If there is none, stop and output \(\mathbf w^{(t)}\). Read the update inside out: \(\mathbf x_i\) is the message’s vector, \(y_i \mathbf x_i\) multiplies every entry by the label (so it is the vector itself for junk, its negative for keep), and adding that to \(\mathbf w^{(t)}\) entry by entry gives the next weights \(\mathbf w^{(t+1)}\). In plain words: **on a mistake, add the message to the weights if it is junk and subtract it if it is keep.** Here is that first step:
 
-Why is that a sensible thing to do? Ask what the update does to the example it was made for. Expand the inner product:
+```python
+w = [0, 0, 0]
+x, y = (1, 3, 0), 1
+print(y * sum(a * b for a, b in zip(w, x)))
+w = [wj + y * xj for wj, xj in zip(w, x)]
+print(w)
+```
+
+It prints `0`, the signed score that makes A a mistake, then `[1, 3, 0]`.
+
+Why is that a sensible thing to do? Ask what the update does to the example it was made for. One more piece of notation first. The **length** (or **norm**) of a vector is \(\|\mathbf x\| = \sqrt{x_1^2 + \dots + x_d^2}\), the ordinary straight-line distance from the origin; the double bars mean “length of”. Its square is the inner product of the vector with itself, \(\|\mathbf x\|^2 = \langle \mathbf x, \mathbf x \rangle\). Message E with the 1 glued on, \((1, 1, 2)\), has \(\|\mathbf x\|^2 = 1 + 1 + 4 = 6\) and length \(\sqrt 6 \approx 2.45\). Now expand the inner product:
 
 \[ y_i \langle \mathbf w^{(t+1)}, \mathbf x_i \rangle = y_i \langle \mathbf w^{(t)} + y_i \mathbf x_i, \mathbf x_i \rangle = y_i \langle \mathbf w^{(t)}, \mathbf x_i \rangle + y_i^2 \|\mathbf x_i\|^2 = y_i \langle \mathbf w^{(t)}, \mathbf x_i \rangle + \|\mathbf x_i\|^2. \]
 
-The first equality is the update, the second splits the inner product (it is linear in each argument), and the third uses \(y_i^2 = 1\), which is the third reason for \(\pm 1\) labels. So every update raises that example’s signed score by exactly \(\|\mathbf x_i\|^2\). It pushes \(\mathbf w\) to be “more correct” on the example it just got wrong. Of course it may make things worse on other examples, which is why we need a proof that the process ends at all.
+The first equality is the update, the second splits the inner product (it is linear in each argument), and the third uses \(y_i^2 = 1\), which is the third reason for \(\pm 1\) labels. So every update raises that example’s signed score by exactly \(\|\mathbf x_i\|^2\). It pushes \(\mathbf w\) to be “more correct” on the example it just got wrong. Of course it may make things worse on other examples, which is why we need a proof that the process ends at all. In one sentence: **an update raises the signed score of the message it was made for by that message’s squared length.** Take the second step of our run: the weights are \((1, 3, 0)\), and keep message E, \((1, 1, 2)\), scores 4, so its signed score is \(-4\), a mistake. Subtracting E gives \((0, 2, -2)\), which scores E at \(-2\), signed score 2. The gain is \(2 - (-4) = 6\), exactly \(\|\mathbf x\|^2\):
+
+```python
+dot = lambda u, v: sum(a * b for a, b in zip(u, v))
+w, x, y = [1, 3, 0], (1, 1, 2), -1
+before = y * dot(w, x)
+w_next = [wj + y * xj for wj, xj in zip(w, x)]
+after = y * dot(w_next, x)
+print(before, after, after - before, dot(x, x))
+```
+
+It prints `-4 2 6 6`. The next snippet repeats the check with random weights, messages and labels, to show it is not a coincidence of our numbers:
 
 ```python
 import random
@@ -299,13 +343,39 @@ Before we prove anything, play with it. In the lab below you can drag a line thr
 
 Three updates on eight messages is quick. Is it always quick? Could the Perceptron chase its tail forever, fixing one example and breaking another? On separable data, no, and the proof is one of the loveliest in the subject. It needs two quantities.
 
-The **radius** \(R = \max_i \|\mathbf x_i\|\) is the length of the longest message vector. And
+The first is how far the messages reach. Among our eight, with the 1 glued on, the longest is C, \((1, 4, 2)\), with squared length \(1 + 16 + 4 = 21\) and length \(\sqrt{21} \approx 4.58\). That is the **radius** \(R = \max_i \|\mathbf x_i\|\): \(\|\mathbf x_i\|\) is the length of message \(i\), and \(\max_i\) takes the largest over all \(i\). In plain words: **\(R\) is the length of the longest message vector.**
 
-\[ B = \min \{ \|\mathbf w\| \; : \; y_i \langle \mathbf w, \mathbf x_i \rangle \ge 1 \text{ for all } i \in [m] \} \]
+The second is how short a separator can be while still scoring every example at least 1. Our \((-1, 2, -2)\) does that (its smallest signed score is exactly 1), and its length is \(\sqrt{1 + 4 + 4} = 3\). Could a shorter vector pass the same test? The best such length is
 
-is the length of the shortest vector that scores every example at least 1, the rescaled kind of separator from the LP section. A small \(B\) means a short vector already clears every example with room to spare.
+\[ B = \min \{ \|\mathbf w\| \; : \; y_i \langle \mathbf w, \mathbf x_i \rangle \ge 1 \text{ for all } i \in [m] \}. \]
 
-We also need one inequality. The **Cauchy–Schwarz inequality** says \(\langle \mathbf u, \mathbf v \rangle \le \|\mathbf u\| \|\mathbf v\|\) for all vectors. Proof: if \(\mathbf v = \mathbf 0\) both sides are 0. Otherwise, for every real \(t\), \(0 \le \|\mathbf u - t \mathbf v\|^2 = \|\mathbf u\|^2 - 2t \langle \mathbf u, \mathbf v \rangle + t^2 \|\mathbf v\|^2\); choosing \(t = \langle \mathbf u, \mathbf v \rangle / \|\mathbf v\|^2\) gives \(0 \le \|\mathbf u\|^2 - \langle \mathbf u, \mathbf v \rangle^2 / \|\mathbf v\|^2\), so \(\langle \mathbf u, \mathbf v \rangle^2 \le \|\mathbf u\|^2 \|\mathbf v\|^2\), and taking square roots finishes it. Dividing through, \(\langle \mathbf u, \mathbf v \rangle / (\|\mathbf u\| \|\mathbf v\|)\) is at most 1: it is the cosine of the angle between the two vectors.
+Inside out: \([m]\) is shorthand, from lesson 1, for the positions \(\{1, 2, \dots, m\}\); the condition after the colon says \(\mathbf w\) gives every example a signed score of at least 1, the rescaled kind of separator from the LP section; the braces collect the lengths \(\|\mathbf w\|\) of all such vectors; and \(\min\) takes the smallest of those lengths. In plain words: **\(B\) is the length of the shortest vector that scores every example at least 1.** Since \((-1, 2, -2)\) qualifies, \(B \le 3\) for our messages; we will find the exact value later. A small \(B\) means a short vector already clears every example with room to spare.
+
+```python
+X = [(1, 3, 0), (1, 2, 1), (1, 4, 2), (1, 1, 0),
+     (1, 1, 2), (1, 0, 1), (1, 2, 3), (1, 0, 0)]
+Y = [1, 1, 1, 1, -1, -1, -1, -1]
+norm = lambda v: sum(c * c for c in v) ** 0.5
+dot = lambda u, v: sum(a * b for a, b in zip(u, v))
+R = max(norm(x) for x in X)
+w = (-1, 2, -2)
+print(round(R, 3), round(R ** 2, 3))
+print(min(y * dot(w, x) for x, y in zip(X, Y)), norm(w))
+```
+
+It prints `4.583 21.0`, the radius and its square, then `1 3.0`: the candidate’s smallest signed score is 1 and its length is 3.
+
+We also need one inequality. Take the candidate \(\mathbf u = (-1, 2, -2)\) and message C, \(\mathbf v = (1, 4, 2)\). Their inner product is \(-1 + 8 - 4 = 3\), while their lengths multiply to \(3 \cdot 4.58 \approx 13.75\). The inner product came out smaller, and it always does: the **Cauchy–Schwarz inequality** says \(\langle \mathbf u, \mathbf v \rangle \le \|\mathbf u\| \|\mathbf v\|\) for all vectors. In plain words: **multiplying matching entries and adding never beats multiplying the two lengths.** Equality needs the vectors to point the same way.
+
+```python
+dot = lambda u, v: sum(a * b for a, b in zip(u, v))
+norm = lambda v: dot(v, v) ** 0.5
+u, v = (-1, 2, -2), (1, 4, 2)
+lhs, rhs = dot(u, v), norm(u) * norm(v)
+print(lhs, round(rhs, 3), round(lhs / rhs, 3))
+```
+
+It prints `3 13.748 0.218`; the last number is the ratio, which the proof below shows is at most 1. Proof: if \(\mathbf v = \mathbf 0\) both sides are 0. Otherwise, for every real \(t\), \(0 \le \|\mathbf u - t \mathbf v\|^2 = \|\mathbf u\|^2 - 2t \langle \mathbf u, \mathbf v \rangle + t^2 \|\mathbf v\|^2\); choosing \(t = \langle \mathbf u, \mathbf v \rangle / \|\mathbf v\|^2\) gives \(0 \le \|\mathbf u\|^2 - \langle \mathbf u, \mathbf v \rangle^2 / \|\mathbf v\|^2\), so \(\langle \mathbf u, \mathbf v \rangle^2 \le \|\mathbf u\|^2 \|\mathbf v\|^2\), and taking square roots finishes it. Dividing through, \(\langle \mathbf u, \mathbf v \rangle / (\|\mathbf u\| \|\mathbf v\|)\) is at most 1: it is the cosine of the angle between the two vectors.
 
 **Theorem (the Perceptron’s mistake bound).** Assume \((\mathbf x_1, y_1), \dots, (\mathbf x_m, y_m)\) is separable, and let \(B\) and \(R\) be as above. Then the Perceptron stops after at most \((RB)^2\) updates, and when it stops, \(y_i \langle \mathbf w^{(t)}, \mathbf x_i \rangle > 0\) for every \(i \in [m]\).
 
@@ -317,9 +387,13 @@ Fix any vector \(\mathbf w^\star\) with \(y_i \langle \mathbf w^\star, \mathbf x
 
 \[ \langle \mathbf w^\star, \mathbf w^{(t+1)} \rangle - \langle \mathbf w^\star, \mathbf w^{(t)} \rangle = \langle \mathbf w^\star, \mathbf w^{(t+1)} - \mathbf w^{(t)} \rangle = \langle \mathbf w^\star, y_i \mathbf x_i \rangle = y_i \langle \mathbf w^\star, \mathbf x_i \rangle \ge 1. \]
 
-The first equality is linearity, the second is the update rule, and the inequality is the defining property of \(\mathbf w^\star\). Summing these differences over \(t = 1, \dots, T\), the sum telescopes:
+The first equality is linearity, the second is the update rule, and the inequality is the defining property of \(\mathbf w^\star\). In plain words: **each update adds the signed score of the corrected message under \(\mathbf w^\star\), which is at least 1, to the inner product with \(\mathbf w^\star\).** In our run with \(\mathbf w^\star = (-1, 2, -2)\), the first update adds message A, whose signed score under \(\mathbf w^\star\) is 5, so the inner product jumps from 0 to 5.
+
+Summing these differences over \(t = 1, \dots, T\), the sum telescopes:
 
 \[ \langle \mathbf w^\star, \mathbf w^{(T+1)} \rangle = \sum_{t=1}^{T} \left( \langle \mathbf w^\star, \mathbf w^{(t+1)} \rangle - \langle \mathbf w^\star, \mathbf w^{(t)} \rangle \right) \ge T. \]
+
+“Telescopes” means the sum collapses like a folding telescope: each difference starts where the previous one ended, so writing them out, every middle value appears once with a plus and once with a minus and cancels, leaving the last value minus the first, and the first is 0. Each of the \(T\) differences is at least 1, so the total is at least \(T\). In plain words: **after \(T\) updates the inner product with \(\mathbf w^\star\) is at least \(T\).** Our run’s inner products are 0, 5, 8, 9, with differences 5, 3, 1; they add to 9, the final value, which is at least \(T = 3\). The replay snippet after the proof prints those values in its second column.
 
 *Step 2: the squared length grows by at most \(R^2\) per update.* If update \(t\) uses example \(i\),
 
@@ -329,9 +403,13 @@ The middle step expands the square. The inequality uses two facts: example \(i\)
 
 \[ \|\mathbf w^{(T+1)}\|^2 \le T R^2, \quad \text{so} \quad \|\mathbf w^{(T+1)}\| \le \sqrt T \, R. \]
 
+In plain words: **each update adds at most \(R^2\) to the squared length, so after \(T\) updates the length is at most \(\sqrt T\) times \(R\).** In our run the squared lengths are 0, 10, 8, 9: the steps are \(+10\), \(-2\), \(+1\), each at most \(R^2 = 21\), and the final 9 is far below \(3 \cdot 21 = 63\). The replay snippet’s third and fourth columns show the same numbers.
+
 *Step 3: combine.* The inner product grows linearly in \(T\), the length only like \(\sqrt T\), so the angle has to close. Precisely, by Step 1, Step 2 and Cauchy–Schwarz,
 
 \[ 1 \ge \frac{\langle \mathbf w^\star, \mathbf w^{(T+1)} \rangle}{\|\mathbf w^\star\| \, \|\mathbf w^{(T+1)}\|} \ge \frac{T}{\|\mathbf w^\star\| \sqrt T R} = \frac{\sqrt T}{R \|\mathbf w^\star\|}. \]
+
+Read it left to right. The fraction in the middle is the cosine of the angle between \(\mathbf w^\star\) and the current weights, at most 1 by Cauchy–Schwarz. Its top is at least \(T\) (Step 1) and its bottom is at most \(\|\mathbf w^\star\| \sqrt T R\) (Step 2), and a bigger top over a smaller bottom can only make the fraction smaller, giving the second inequality. Cancelling \(\sqrt T\) gives the last expression. In plain words: **the cosine grows at least like \(\sqrt T\), but can never pass 1.** After our three updates the cosine is \(9 / (3 \cdot 3) = 1\), and the guaranteed lower value is \(\sqrt 3 / (\sqrt{21} \cdot 3) \approx 0.126\); the replay snippet’s last column shows the cosine climbing 0.527, 0.943, 1.0.
 
 So \(\sqrt T \le R \|\mathbf w^\star\|\), that is, \(T \le (R \|\mathbf w^\star\|)^2\). (If \(T = 0\) there is nothing to prove.)
 
@@ -362,11 +440,28 @@ For a unit vector \(\mathbf u\) (one with \(\|\mathbf u\| = 1\)), the number \(|
 
 \[ \gamma_{\mathbf u} = \min_i \, y_i \langle \mathbf u, \mathbf x_i \rangle. \]
 
-When \(\mathbf u\) separates \(S\), this is the distance from the hyperplane to the closest example: how much room the separator leaves. Let \(\gamma^\star = \sup_{\|\mathbf u\| = 1} \gamma_{\mathbf u}\) be the largest margin any separator achieves.
+When \(\mathbf u\) separates \(S\), this is the distance from the hyperplane to the closest example: how much room the separator leaves. Inside out: \(\langle \mathbf u, \mathbf x_i \rangle\) is the score of message \(i\), which for a unit vector is its distance to the boundary with a sign; multiplying by \(y_i\) makes it positive when the message is on its correct side; and \(\min_i\) keeps the smallest. The subscript in \(\gamma_{\mathbf u}\) records which separator is being measured. In plain words: **the margin is how far the closest message sits from the boundary, counted negative if it is on the wrong side.** Shrink our \((-1, 2, -2)\), of length 3, to the unit vector \(\mathbf u = (-1, 2, -2)/3\): every signed score is divided by 3, and the smallest, 1, becomes \(1/3\), so \(\gamma_{\mathbf u} \approx 0.333\), shared by B, D and H.
+
+```python
+X = [(1, 3, 0), (1, 2, 1), (1, 4, 2), (1, 1, 0),
+     (1, 1, 2), (1, 0, 1), (1, 2, 3), (1, 0, 0)]
+Y = [1, 1, 1, 1, -1, -1, -1, -1]
+u = [c / 3 for c in (-1, 2, -2)]
+dot = lambda p, q: sum(a * b for a, b in zip(p, q))
+gaps = [y * dot(u, x) for x, y in zip(X, Y)]
+print(round(dot(u, u), 3), [round(g, 3) for g in gaps])
+print(round(min(gaps), 3))
+```
+
+It prints `1.0`, confirming \(\|\mathbf u\|^2 = 1\), then the eight distances, then their minimum `0.333`.
+
+Let \(\gamma^\star = \sup_{\|\mathbf u\| = 1} \gamma_{\mathbf u}\) be the largest margin any separator achieves. \(\sup\), the supremum, reads “the largest value, or the value approached from below if no single \(\mathbf u\) reaches it”, and the subscript \(\|\mathbf u\| = 1\) says we range over all unit vectors. In plain words: **\(\gamma^\star\) is the widest room any separator can leave.** Our unit vector gives 0.333, so \(\gamma^\star \ge 0.333\); the grid search below finds about 0.384.
 
 **Claim.** \(B = 1/\gamma^\star\), so the mistake bound reads \(T \le (R / \gamma^\star)^2\). Moreover, for *any* unit \(\mathbf u\) with \(\gamma_{\mathbf u} > 0\), \(T \le (R / \gamma_{\mathbf u})^2\).
 
 *Proof.* Take a unit \(\mathbf u\) with \(\gamma_{\mathbf u} > 0\). Then \(\mathbf u / \gamma_{\mathbf u}\) scores every example at least \(\gamma_{\mathbf u} / \gamma_{\mathbf u} = 1\), and its length is \(1 / \gamma_{\mathbf u}\). So \(B \le 1/\gamma_{\mathbf u}\), which already gives the last sentence, through the theorem. Taking the best \(\mathbf u\), \(B \le 1/\gamma^\star\). Conversely, take any \(\mathbf w\) that scores every example at least 1 and let \(\mathbf u = \mathbf w / \|\mathbf w\|\). Then \(\gamma_{\mathbf u} \ge 1 / \|\mathbf w\|\), so \(\gamma^\star \ge 1 / \|\mathbf w\|\), so \(\|\mathbf w\| \ge 1/\gamma^\star\); taking the shortest such \(\mathbf w\), \(B \ge 1/\gamma^\star\). \(\blacksquare\)
+
+In plain words, the claim says: **the shortest vector that scores everything at least 1 is one over the widest margin.** With our unit vector, \(\mathbf u / \gamma_{\mathbf u} = (-1, 2, -2)/3 \div \tfrac13 = (-1, 2, -2)\), length 3, which is \(1 / 0.333\). The grid search below does the same for the widest separator.
 
 [[diagram:margin]]
 
@@ -398,7 +493,7 @@ So the bound is a worst case over every order of examples and every data set wit
 
 ## How many examples? The VC dimension of halfspaces
 
-Both algorithms find a consistent halfspace. Lesson 6 tells us how many examples make a consistent hypothesis trustworthy, as long as we know the VC dimension. Recall that a class **shatters** a finite set of points when it can realize every one of the \(2^{|C|}\) possible labelings of that set, and the **VC dimension** is the size of the largest set it shatters. We start with homogeneous halfspaces, \(\mathbf x \mapsto \operatorname{sign}(\langle \mathbf w, \mathbf x \rangle)\).
+Both algorithms find a consistent halfspace. Lesson 6 tells us how many examples make a consistent hypothesis trustworthy, as long as we know the VC dimension. Recall that a class **shatters** a finite set of points \(C\) when it can realize every one of the \(2^{|C|}\) possible labelings of that set (the bars \(|C|\) count how many points \(C\) has, and each point gets one of two labels, so three points have \(2^3 = 8\) labelings), and the **VC dimension** is the size of the largest set it shatters. We start with homogeneous halfspaces, \(\mathbf x \mapsto \operatorname{sign}(\langle \mathbf w, \mathbf x \rangle)\).
 
 **Theorem (VC dimension of homogeneous halfspaces).** The VC dimension of the class of homogeneous halfspaces in \(\mathbb R^d\) is \(d\).
 
@@ -406,15 +501,17 @@ Both algorithms find a consistent halfspace. Lesson 6 tells us how many examples
 
 *A shattered set of size \(d\).* Let \(\mathbf e_1, \dots, \mathbf e_d\) be the standard basis: \(\mathbf e_i\) is all zeros except a 1 in coordinate \(i\). Given any labeling \(y_1, \dots, y_d \in \{\pm 1\}\), set \(\mathbf w = (y_1, \dots, y_d)\). Then \(\langle \mathbf w, \mathbf e_i \rangle = y_i\), whose sign is \(y_i\). Every labeling is realized.
 
-*No shattered set of size \(d + 1\).* Let \(\mathbf x_1, \dots, \mathbf x_{d+1}\) be any \(d + 1\) vectors in \(\mathbb R^d\). A basic fact of linear algebra is that more than \(d\) vectors in \(\mathbb R^d\) are linearly dependent: there are real numbers \(a_1, \dots, a_{d+1}\), not all zero, with \(\sum_i a_i \mathbf x_i = \mathbf 0\). Replacing every \(a_i\) by \(-a_i\) if necessary, we may assume some \(a_i\) is positive. Let \(I = \{i : a_i > 0\}\), which is nonempty, and \(J = \{j : a_j < 0\}\), which may be empty. Moving the negative terms across,
+*No shattered set of size \(d + 1\).* Let \(\mathbf x_1, \dots, \mathbf x_{d+1}\) be any \(d + 1\) vectors in \(\mathbb R^d\). A basic fact of linear algebra is that more than \(d\) vectors in \(\mathbb R^d\) are linearly dependent: there are real numbers \(a_1, \dots, a_{d+1}\), not all zero, with \(\sum_i a_i \mathbf x_i = \mathbf 0\): some weighted mix of the points cancels out to the zero vector. For four points in \(\mathbb R^3\), for instance, \(\mathbf e_1 + \mathbf e_2 + \mathbf e_3 - (1, 1, 1) = \mathbf 0\), with weights \(a = (1, 1, 1, -1)\). Replacing every \(a_i\) by \(-a_i\) if necessary, we may assume some \(a_i\) is positive. Let \(I = \{i : a_i > 0\}\), which is nonempty, and \(J = \{j : a_j < 0\}\), which may be empty. Moving the negative terms across,
 
 \[ \sum_{i \in I} a_i \mathbf x_i = \sum_{j \in J} |a_j| \mathbf x_j. \]
+
+Read the pieces: \(\sum_{i \in I}\) adds over the positions in \(I\) only, \(|a_j|\) is the size of \(a_j\) without its sign, and each side is a weighted mix of points with nonnegative weights. In plain words: **some points with positive weights add up to the same vector as the remaining points with positive weights.** In \(\mathbb R^3\), take the four points \(\mathbf e_1, \mathbf e_2, \mathbf e_3\) and \((1, 1, 1)\), with \(a = (1, 1, 1, -1)\): then \(I = \{1, 2, 3\}\), \(J = \{4\}\), and the display says \(\mathbf e_1 + \mathbf e_2 + \mathbf e_3 = 1 \cdot (1, 1, 1)\), which is true. The snippet after the proof checks this example.
 
 Now consider the labeling that says \(+1\) on \(I\) and \(-1\) everywhere else, and suppose some \(\mathbf w\) realizes it. Then \(\langle \mathbf w, \mathbf x_i \rangle > 0\) for every \(i \in I\) (a sign of \(+1\) needs a positive score) and \(\langle \mathbf w, \mathbf x_j \rangle \le 0\) for every \(j \in J\). Take the inner product of both sides of the last display with \(\mathbf w\):
 
 \[ 0 < \sum_{i \in I} a_i \langle \mathbf x_i, \mathbf w \rangle = \left\langle \sum_{i \in I} a_i \mathbf x_i, \mathbf w \right\rangle = \left\langle \sum_{j \in J} |a_j| \mathbf x_j, \mathbf w \right\rangle = \sum_{j \in J} |a_j| \langle \mathbf x_j, \mathbf w \rangle \le 0. \]
 
-The left inequality holds because \(I\) is nonempty and each term is a positive number times a positive score. The right one holds because each term is a nonnegative number times a score that is at most 0 (and an empty sum is 0). That says \(0 < 0\), a contradiction. So this labeling is not realized, and the \(d + 1\) points are not shattered. \(\blacksquare\)
+The left inequality holds because \(I\) is nonempty and each term is a positive number times a positive score. The right one holds because each term is a nonnegative number times a score that is at most 0 (and an empty sum is 0). That says \(0 < 0\), a contradiction. In plain words: **the weighted scores of the \(I\) side must be positive, the weighted scores of the \(J\) side cannot be, yet the two sides are the same vector.** With \(\mathbf w = (1, 1, 1)\) the four scores are 1, 1, 1 and 3: the left side is \(1 + 1 + 1 = 3\), the right side is \(1 \cdot 3 = 3\), equal as they must be, and the fourth point is forced positive. So this labeling is not realized, and the \(d + 1\) points are not shattered. \(\blacksquare\)
 
 Python can check both halves in \(\mathbb R^3\). The second half uses four points with the dependency \(\mathbf e_1 + \mathbf e_2 + \mathbf e_3 - (1, 1, 1) = \mathbf 0\), so \(I = \{1, 2, 3\}\), \(J = \{4\}\), and the forbidden labeling is \((+, +, +, -)\):
 
@@ -468,7 +565,19 @@ So a filter over a vocabulary of \(d\) words, with a bias term, has VC dimension
 
 \[ C_1 \frac{(d + 1) + \log(1/\delta)}{\varepsilon} \le m_{HS_d}(\varepsilon, \delta) \le C_2 \frac{(d + 1) \log(1/\varepsilon) + \log(1/\delta)}{\varepsilon}, \]
 
-and any ERM learner, the LP or the Perceptron, achieves it. The number of words you track is, up to a log, the price in labels.
+and any ERM learner, the LP or the Perceptron, achieves it. Read it piece by piece. \(m_{HS_d}(\varepsilon, \delta)\) is the **sample complexity** from lesson 3: the number of labelled examples needed so that, with probability at least \(1 - \delta\), the learned halfspace has true risk at most \(\varepsilon\). The VC dimension \(d + 1\) appears in both fractions; \(\log\) is the natural logarithm; \(C_1\) and \(C_2\) are fixed numbers that do not depend on \(d\), \(\varepsilon\) or \(\delta\). The lower bound says no learner can do with fewer than the left side; the upper bound says ERM never needs more than the right side. The two differ only by the factor \(\log(1/\varepsilon)\) on the VC dimension. In plain words: **the labels needed are about the VC dimension over the accuracy, give or take a log and a constant.** With thirty words, \(\varepsilon = 0.1\) and \(\delta = 0.05\), the fractions are about 340 and 744:
+
+```python
+import math
+
+d, eps, delta = 30, 0.1, 0.05
+lower = ((d + 1) + math.log(1 / delta)) / eps
+upper = ((d + 1) * math.log(1 / eps)
+         + math.log(1 / delta)) / eps
+print(round(lower, 1), round(upper, 1))
+```
+
+It prints `340.0 743.8`, before the constants. The number of words you track is, up to a log, the price in labels.
 
 ## Halfspaces as code
 
@@ -493,7 +602,7 @@ Perceptron(S):
       return h(x) = sign(⟨w, x⟩)
 ```
 
-**HalfspaceLP** spends \(O(mn)\) time and space building \(A\), and then calls a solver whose running time is polynomial in \(m\), \(n\) and the number of bits in the input. Which polynomial depends on the solver.
+**HalfspaceLP** spends \(O(mn)\) time and space building \(A\) (as in lesson 8, \(O(mn)\) reads “at most a constant times \(m\) times \(n\)”; eight messages with three entries each is 24 multiplications), and then calls a solver whose running time is polynomial in \(m\), \(n\) and the number of bits in the input. Which polynomial depends on the solver.
 
 **Perceptron** keeps one vector, so it needs \(O(n)\) space beyond the data. Each pass through the loop scans for a mistake in \(O(mn)\) time, and by the mistake bound there are at most \((RB)^2\) updates, so the total is \(O(mn (RB)^2)\) time on separable data. On data that is not separable it never stops, so a real implementation also takes a cap on the number of updates. Predicting a new message costs \(O(n)\) for either learner.
 

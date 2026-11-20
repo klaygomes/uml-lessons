@@ -259,11 +259,33 @@ if __name__ == "__main__":
 
 ## Rectangles: draw the tightest box
 
-Lesson 6 met axis aligned rectangles as a class with VC dimension \(2n\) in \(\mathbb R^n\). They suit features that are numbers rather than yes/no answers. Suppose two of the filter’s inputs are scores: \(x_1\), the share of capital letters in the subject, and \(x_2\), the share of the body taken up by links. This season’s junk sits in a middle band on both: enough capitals to shout, not so many that a simple threshold catches it.
+Lesson 6 met axis aligned rectangles as a class with VC dimension \(2n\) in \(\mathbb R^n\): \(\mathbb R^n\) is the set of lists of \(n\) real numbers, and the VC dimension is the size of the largest set of points the class can label in every possible way. They suit features that are numbers rather than yes/no answers. Suppose two of the filter’s inputs are scores: \(x_1\), the share of capital letters in the subject, and \(x_2\), the share of the body taken up by links. This season’s junk sits in a middle band on both: enough capitals to shout, not so many that a simple threshold catches it.
 
-Formally, the class of axis aligned rectangles in \(\mathbb R^n\) is
+A rectangle is one interval per score, and it says junk when every score falls inside its interval. Take capitals between 0.3 and 0.8 and links between 0.2 and 0.6: a message with capitals 0.5 and links 0.3 is inside both, so junk, and one with capitals 0.9 is outside the first, so keep. Formally, the class of axis aligned rectangles in \(\mathbb R^n\) is
 
 \[ \mathcal H_n = \{ h_{(a_1, \dots, a_n, b_1, \dots, b_n)} : \forall i,\ a_i \le b_i \}, \qquad h_{(a, b)}(x) = \begin{cases} 1 & \text{if } \forall i,\ x_i \in [a_i, b_i] \\ 0 & \text{otherwise.} \end{cases} \]
+
+Read it from the inside out.
+
+- \([a_i, b_i]\) is the interval of numbers from \(a_i\) to \(b_i\), ends included, and \(x_i \in [a_i, b_i]\) says the \(i\)-th score of message \(x\) lies in it.
+- \(\forall i\) reads “for every \(i\)”, here every coordinate from 1 to \(n\).
+- The big left brace is a case split: the value is 1 when the first row’s condition holds, and 0 otherwise.
+- The subscript \((a_1, \dots, a_n, b_1, \dots, b_n)\), shortened to \((a, b)\), lists the \(2n\) numbers that pick one rectangle: \(a\) for the lower ends, \(b\) for the upper ends.
+- The braces with a colon collect hypotheses: the set of all \(h_{(a, b)}\) such that \(a_i \le b_i\) for every \(i\), so no interval is upside down.
+
+In plain words: **a rectangle hypothesis says junk exactly when every score of the message lies inside its own interval.**
+
+```python
+a, b = (0.3, 0.2), (0.8, 0.6)
+def h(x):
+    if all(a[i] <= x[i] <= b[i] for i in range(len(x))):
+        return 1
+    return 0
+print(all(a[i] <= b[i] for i in range(2)))
+print(h((0.5, 0.3)), h((0.9, 0.5)))
+```
+
+It prints `True`, then `1 0`: the intervals are the right way up, the first message is junk and the second is keep. The `all(...)` inside `h` is the \(\forall i\) of the case split, and the first print checks the condition in the braces.
 
 Assume realizability: some rectangle labels every example correctly. Can you find one with zero empirical risk, quickly? Before you read on, here are eight examples. Where would you put the box?
 
@@ -282,7 +304,7 @@ The answer is the laziest box that could possibly work: the **tightest box** aro
 
 \[ a_i = \min\{ x_i : (x, 1) \in S \}, \qquad b_i = \max\{ x_i : (x, 1) \in S \}. \]
 
-Here that gives \([0.35, 0.75] \times [0.25, 0.5]\), and none of the four keep messages falls inside it.
+Here \((x, 1) \in S\) reads “the example with message \(x\) and label 1, junk, is in the training sequence”, the braces collect the \(i\)-th coordinate of each such message, and \(\min\) and \(\max\) take the smallest and the largest. In plain words: **each interval runs from the smallest to the largest value that coordinate takes among the junk examples.** The junk capitals are 0.35, 0.6, 0.5 and 0.75, so \(a_1 = 0.35\) and \(b_1 = 0.75\); the junk links give \(a_2 = 0.25\) and \(b_2 = 0.5\). The box is written \([0.35, 0.75] \times [0.25, 0.5]\), where the \(\times\) means “a capitals value from the first interval paired with a links value from the second”, and none of the four keep messages falls inside it. In the snippet below, `pos` is the set \(\{x : (x, 1) \in S\}\) and the two `min` and `max` calls are the formula.
 
 ```python
 S = [((0.35, 0.25), 1), ((0.6, 0.5), 1), ((0.5, 0.3), 1),
@@ -305,7 +327,7 @@ It prints `[(0.35, 0.75), (0.25, 0.5)]` and `0`.
 
 *Proof.* Junk examples first. Each positive \(x\) has \(a_i \le x_i \le b_i\) in every coordinate, because \(a_i\) and \(b_i\) are the smallest and largest \(i\)-th coordinates among the positives, and \(x\) is one of them. So the box labels every positive example 1.
 
-Now keep examples. By realizability there is a rectangle \(h^\star = \prod_i [a_i^\star, b_i^\star]\) that labels every example correctly. It labels every positive 1, so every positive lies in it: \(a_i^\star \le x_i \le b_i^\star\) for every positive \(x\) and every \(i\). Taking the minimum and the maximum over the positives gives \(a_i^\star \le a_i\) and \(b_i \le b_i^\star\). So the tightest box sits inside \(h^\star\). A negative example lies outside \(h^\star\), because \(h^\star\) labels it 0, so it lies outside the smaller box too, and the box labels it 0.
+Now keep examples. By realizability there is a rectangle \(h^\star = \prod_i [a_i^\star, b_i^\star]\) that labels every example correctly. (The capital pi \(\prod_i\) chains the intervals with \(\times\), one per coordinate, just as \([0.35, 0.75] \times [0.25, 0.5]\) did for two, and the star marks the true rectangle’s ends.) It labels every positive 1, so every positive lies in it: \(a_i^\star \le x_i \le b_i^\star\) for every positive \(x\) and every \(i\). Taking the minimum and the maximum over the positives gives \(a_i^\star \le a_i\) and \(b_i \le b_i^\star\). So the tightest box sits inside \(h^\star\). A negative example lies outside \(h^\star\), because \(h^\star\) labels it 0, so it lies outside the smaller box too, and the box labels it 0.
 
 For the time, each \(a_i\) and \(b_i\) is a minimum or a maximum over at most \(m\) numbers, so \(O(m)\) each, and there are \(2n\) of them: \(O(nm)\) in all. \(\blacksquare\)
 
@@ -369,9 +391,34 @@ print(min([empty] + [errs(B) for B in tight]),
 
 It prints `255 2025` and `2 2`: 255 candidate boxes from subsets, 2,025 from the grid, and the same best number of mistakes.
 
-How many subsets are there? The number of subsets of at most \(K\) elements of an \(m\)-element set is \(\sum_{k=0}^{K} \binom{m}{k}\). Each such subset can be written as a sorted list of its indices, padded with zeros to length \(K\): a \(K\)-tuple over \(\{0, 1, \dots, m\}\). Different subsets give different tuples, so there are at most \((m + 1)^K\) of them. With \(K = 2n\), and \(O(nm)\) work to build and score each box, the runtime is
+How many subsets are there? Take three messages and subsets of at most two: one empty subset, three single messages, three pairs, seven in all. In general, the number of subsets of at most \(K\) elements of an \(m\)-element set is \(\sum_{k=0}^{K} \binom{m}{k}\). Here \(\binom{m}{k}\), read “\(m\) choose \(k\)”, is the number of ways to pick \(k\) of the \(m\) messages, and the sum adds those counts for every size \(k\) from 0 to \(K\): for \(m = 3\) and \(K = 2\), \(1 + 3 + 3 = 7\). Each such subset can be written as a sorted list of its indices, padded with zeros to length \(K\): a \(K\)-tuple over \(\{0, 1, \dots, m\}\), that is, \(K\) slots each holding one of \(m + 1\) numbers. Different subsets give different tuples, so there are at most \((m + 1)^K\) of them. In plain words: **subsets of at most \(K\) messages are no more numerous than fillings of \(K\) slots with \(m + 1\) choices each.** For \(m = 3\) and \(K = 2\) that is \(7 \le 4^2 = 16\).
+
+```python
+import itertools
+from math import comb
+m, K = 3, 2
+subsets = [s for k in range(K + 1)
+           for s in itertools.combinations(range(1, m + 1), k)]
+tuples = {s + (0,) * (K - len(s)) for s in subsets}
+print(len(subsets), sum(comb(m, k) for k in range(K + 1)))
+print(len(tuples), (m + 1) ** K)
+```
+
+It prints `7 7` and `7 16`: listing the subsets agrees with the sum of binomials, the padded tuples are all different, and there are fewer of them than the bound.
+
+With \(K = 2n\), and \(O(nm)\) work to build and score each box, the runtime is
 
 \[ O\!\left( nm \, (m+1)^{2n} \right) = m^{O(n)}. \]
+
+On the left, \(nm\) is the cost of one box and \((m+1)^{2n}\) the number of boxes. On the right, \(m^{O(n)}\) means \(m\) raised to a power at most a constant times \(n\). In plain words: **for a fixed dimension the work is a polynomial in \(m\), but the degree of that polynomial grows with the dimension.** With \(n = 2\) and \(m = 100\), the left side is \(2 \times 100 \times 101^4 \approx 2.08 \times 10^{10}\), under \(100^{3n} = 10^{12}\).
+
+```python
+n, m = 2, 100
+work = n * m * (m + 1) ** (2 * n)
+print(f"{work:.3g}", f"{m ** (3 * n):.3g}", work <= m ** (3 * n))
+```
+
+It prints `2.08e+10 1e+12 True`. The next snippet compares the exact subset count with \((m+1)^{2n}\) at real sizes.
 
 ```python
 from math import comb
@@ -440,15 +487,65 @@ Back to yes/no features. A **literal** is a feature or its negation: \(x_i\), sa
 
 for some indices \(i_1, \dots, i_k, j_1, \dots, j_r \in [n]\), which says 1 exactly when \(x_{i_1} = \dots = x_{i_k} = 1\) and \(x_{j_1} = \dots = x_{j_r} = 0\). In the mail room, “F and not N” (says “FREE”, sent in the daytime) is a conjunction. Let \(\mathcal H_C^n\) be the class of all of them.
 
+Read the formula from the inside out.
+
+- \(x_i\) is feature \(i\) of message \(x\), a 0 or a 1, and \(\neg\), “not”, flips it, so \(\neg x_j\) holds when feature \(j\) is 0.
+- \(\wedge\) is “and”: the whole thing is 1 only when every piece is.
+- \(i_1, \dots, i_k\) are the \(k\) features that must be present, and \(j_1, \dots, j_r\) the \(r\) features that must be absent. The second-level subscripts just number them.
+- \([n]\) is shorthand, as in lesson 1, for \(\{1, 2, \dots, n\}\), the feature numbers.
+
+In plain words: **a conjunction says junk exactly when every listed feature is present and every negated one is absent.** For “F and not N”, \(k = r = 1\), with \(i_1 = F\) and \(j_1 = N\). The message 1010 has F on and N off, so junk; 1011 has N on, so keep; 0010 has F off, so keep.
+
+```python
+names = "FLUN"
+pos, neg = [names.index("F")], [names.index("N")]
+def h(x):
+    return int(all(x[i] == "1" for i in pos)
+               and all(x[j] == "0" for j in neg))
+print(h("1010"), h("1011"), h("0010"))
+```
+
+It prints `1 0 0`. The list `pos` holds the \(i\)’s, `neg` the \(j\)’s, and the `and` between the two `all` calls is the \(\wedge\) that joins them.
+
 How big is it? In a conjunction, each feature either appears, or appears negated, or does not appear: three choices per feature, \(3^n\) in all. Add the all-negative formula, which labels everything 0 (for instance \(x_1 \wedge \neg x_1\)), and
 
 \[ |\mathcal H_C^n| \le 3^n + 1. \]
+
+The bars count the class, \(3^n\) is three choices multiplied over \(n\) features, and the \(+1\) is the all-negative formula. In plain words: **there are at most \(3^n + 1\) conjunctions over \(n\) features.** With two features, F and L, that is \(3^2 + 1 = 10\): the empty conjunction, F, ¬F, L, ¬L, the four pairs such as F ∧ ¬L, and the all-negative formula.
+
+```python
+import itertools
+n = 2
+C = set()
+for signs in itertools.product((None, 0, 1), repeat=n):
+    C.add(frozenset((i, v) for i, v in enumerate(signs)
+                    if v is not None))
+print(len(C) + 1, 3 ** n + 1)
+```
+
+It prints `10 10`. Each feature gets one of three marks (`None` for absent, 0 for negated, 1 for present), and the `+ 1` adds the all-negative formula.
 
 **Sample complexity.** By lesson 2’s finite-class bound, ERM over \(\mathcal H_C^n\) learns in the realizable case with \(m \ge \log(|\mathcal H_C^n|/\delta)/\varepsilon\) examples. When \(n \ge 2\) and \(\delta \le 1/2\), this is at most \(n \log(3/\delta)/\varepsilon\), a simpler expression worth having. Here is why, one inequality at a time:
 
 \[ \log\frac{3^n + 1}{\delta} \le \log\frac{2 \cdot 3^n}{\delta} = n \log 3 + \log 2 + \log\frac1\delta \le n \log 3 + 2 \log \frac 1\delta \le n \log 3 + n \log \frac1\delta. \]
 
-The first step is \(3^n + 1 \le 2 \cdot 3^n\), true because \(1 \le 3^n\). The middle equality splits the logarithm of a product into a sum. The next step uses \(\log 2 \le \log(1/\delta)\), which is exactly \(\delta \le 1/2\). The last uses \(2 \le n\) and \(\log(1/\delta) \ge 0\). The right side is \(n \log(3/\delta)\); divide by \(\varepsilon\) and you have the bound. With thirty features, \(\varepsilon = 0.05\) and \(\delta = 0.01\), the exact bound is the 752 you saw earlier, and the simpler \(n \log(3/\delta)/\varepsilon\) is 3,422: safe, and loose.
+The first step is \(3^n + 1 \le 2 \cdot 3^n\), true because \(1 \le 3^n\). The middle equality splits the logarithm of a product into a sum. The next step uses \(\log 2 \le \log(1/\delta)\), which is exactly \(\delta \le 1/2\). The last uses \(2 \le n\) and \(\log(1/\delta) \ge 0\). The right side is \(n \log(3/\delta)\); divide by \(\varepsilon\) and you have the bound. In plain words: **the logarithm of the class size over \(\delta\) never exceeds \(n\) times \(\log(3/\delta)\).** With thirty features, \(\varepsilon = 0.05\) and \(\delta = 0.01\), the exact bound is the 752 you saw earlier, and the simpler \(n \log(3/\delta)/\varepsilon\) is 3,422: safe, and loose. Here is the chain at those numbers, one value per expression, left to right.
+
+```python
+import math
+n, delta, eps = 30, 0.01, 0.05
+log = math.log
+steps = [log((3 ** n + 1) / delta),
+         log(2 * 3 ** n / delta),
+         n * log(3) + log(2) + log(1 / delta),
+         n * log(3) + 2 * log(1 / delta),
+         n * log(3) + n * log(1 / delta)]
+print([round(s, 2) for s in steps])
+print(math.ceil(steps[0] / eps),
+      round(n * log(3 / delta) / eps))
+```
+
+It prints `[37.56, 38.26, 38.26, 42.17, 171.11]` and `752 3422`: the values never go down, the equality step leaves the value unchanged, and the last step, which trades 2 for \(n = 30\), is where most of the looseness comes from.
 
 So conjunctions are cheap in examples. Are they cheap in time? Exhaustive search says 4.9 years. Here is the trick that brings it down to a blink.
 
@@ -493,7 +590,7 @@ It prints `1100 F L not U not N`, `1110 F L not N`, `1010 F not N` and `True`: o
 
 ### Why it works
 
-Let \(v_1, \dots, v_{m_+}\) be the positive messages of \(S\), in order. Define \(h_0\) as the conjunction of all \(2n\) literals, and \(h_{i+1}\) as \(h_i\) with every literal that \(v_{i+1}\) does not satisfy deleted. The learner returns \(h_{m_+}\).
+Let \(v_1, \dots, v_{m_+}\) be the positive messages of \(S\), in order, where \(m_+\) (read “\(m\) plus”) is how many junk examples \(S\) holds; in the table, \(m_+ = 3\) and \(v_1, v_2, v_3\) are 1100, 1110 and 1010. Define \(h_0\) as the conjunction of all \(2n\) literals, and \(h_{i+1}\) as \(h_i\) with every literal that \(v_{i+1}\) does not satisfy deleted. The learner returns \(h_{m_+}\). In the table, \(h_1\) is F L ¬U ¬N, \(h_2\) is F L ¬N and \(h_3\) is F ¬N, exactly what the snippet above printed.
 
 **Claim (crossing out literals is an ERM in the realizable case).** If some conjunction is consistent with \(S\), then \(h_{m_+}\) is consistent with \(S\). It is computed in time \(O(nm)\).
 
@@ -584,13 +681,29 @@ That is a disjunction of conjunctions. A **3-term DNF formula** (disjunctive nor
 
 where each \(A_i\) is a Boolean conjunction. It says 1 if at least one of the three conjunctions says 1, and 0 if all three say 0. Let \(\mathcal H_{3DNF}^n\) be the class of all of them. In the mail room, the security team’s rule is \((F \wedge L) \vee (U \wedge N) \vee (L \wedge U \wedge \neg F)\).
 
-**Sample complexity.** Each term is one of at most \(3^n + 1\) conjunctions, so \(|\mathcal H_{3DNF}^n| \le (3^n + 1)^3\), and the same calculation as for conjunctions bounds the sample complexity of ERM in the realizable case by about \(3n \log(3/\delta)/\varepsilon\). Three times the conjunctions, still linear in \(n\). Statistically, this class is no harder than its parts.
+Read it piece by piece. \(A_1(x)\), \(A_2(x)\) and \(A_3(x)\) are the three conjunctions applied to message \(x\), each a 0 or a 1, called the **terms**. The symbol \(\vee\) is “or”: the result is 1 when at least one side is. In plain words: **a 3-term DNF says junk when at least one of its three conjunctions says junk.** On the security team’s rule, the message 0011 (unknown sender, at night) fires only the second term, so junk; 0110 (a link, unknown sender, no “FREE”) fires only the third, so junk; 1001 (“FREE”, at night) fires none, so keep.
+
+```python
+def msg(bits):
+    return dict(zip("FLUN", map(int, bits)))
+A = [lambda x: x["F"] and x["L"],
+     lambda x: x["U"] and x["N"],
+     lambda x: x["L"] and x["U"] and not x["F"]]
+for bits in ("0011", "0110", "1001"):
+    x = msg(bits)
+    print(bits, [int(bool(Ai(x))) for Ai in A],
+          int(any(Ai(x) for Ai in A)))
+```
+
+It prints `0011 [0, 1, 0] 1`, `0110 [0, 0, 1] 1` and `1001 [0, 0, 0] 0`: the three terms, then their OR, which is `any`.
+
+**Sample complexity.** Each term is one of at most \(3^n + 1\) conjunctions, so \(|\mathcal H_{3DNF}^n| \le (3^n + 1)^3\) (three independent choices, multiplied), and the same calculation as for conjunctions bounds the sample complexity of ERM in the realizable case by about \(3n \log(3/\delta)/\varepsilon\). Three times the conjunctions, still linear in \(n\). Statistically, this class is no harder than its parts.
 
 Computationally, it is a different animal. To say how, we need two more definitions.
 
 A learner is **proper** if the hypothesis it returns always belongs to the class \(\mathcal H\) we are learning. \(\mathrm{ERM}_{\mathcal H}\) is proper by definition: it returns a member of \(\mathcal H\).
 
-**RP** (randomized polynomial time) is the class of decision problems for which some algorithm that may flip coins runs in time polynomial in the input size on every input, always answers no when the right answer is no, and answers yes with probability at least \(1/2\) when the right answer is yes. Clearly \(P \subseteq RP\), and it is known that \(RP \subseteq NP\). Nobody knows whether either inclusion is strict, but it is widely believed that NP is strictly larger than RP: NP-hard problems are believed to have no randomized polynomial algorithm.
+**RP** (randomized polynomial time) is the class of decision problems for which some algorithm that may flip coins runs in time polynomial in the input size on every input, always answers no when the right answer is no, and answers yes with probability at least \(1/2\) when the right answer is yes. Clearly \(P \subseteq RP\), and it is known that \(RP \subseteq NP\), where \(\subseteq\) reads “is contained in”: every problem in P is in RP, and every problem in RP is in NP. Nobody knows whether either inclusion is strict, but it is widely believed that NP is strictly larger than RP: NP-hard problems are believed to have no randomized polynomial algorithm.
 
 **Fact (proper learning of 3-term DNF is hard).** Unless \(RP = NP\), there is no polynomial time algorithm that properly learns the sequence of 3-term DNF problems in which the \(n\)-th problem has dimension \(n\). In particular, \(\mathrm{ERM}_{\mathcal H_{3DNF}^n}\) is proper, so it cannot be implemented in polynomial time either.
 
@@ -611,6 +724,8 @@ The bigger class comes from a piece of Boolean algebra. OR distributes over AND,
 \[ A_1 \vee A_2 \vee A_3 = \bigwedge_{u \in A_1,\ v \in A_2,\ w \in A_3} (u \vee v \vee w), \]
 
 where \(u \in A_1\) means “\(u\) is one of the literals of \(A_1\)”. The right side is an AND of clauses, each an OR of three literals: a **3-CNF formula** (conjunctive normal form).
+
+Read the right side from the inside out. \(u \vee v \vee w\) is one **clause**: true when at least one of its three literals holds. The big \(\bigwedge\) is an AND of many clauses, and the text under it says which: one clause for every way of picking a literal \(u\) from \(A_1\), a literal \(v\) from \(A_2\) and a literal \(w\) from \(A_3\). In plain words: **three terms ORed together equal the AND of every clause that takes one literal from each term.** The security team’s terms have 2, 2 and 3 literals, so the right side has \(2 \times 2 \times 3 = 12\) clauses. At 1001, which every term rejects, pick L from \(A_1\), U from \(A_2\) and L from \(A_3\): the clause \(L \vee U \vee L\) is false, so the AND is 0, matching the keep the left side gave. The snippet after the proof checks the identity on 8,000 cases; its `dnf` line is the left side and its `cnf` line the right side, with the three nested `for` loops as the indices under \(\bigwedge\).
 
 **Claim (3-term DNF as 3-CNF).** For every message \(x\), the two sides agree.
 
@@ -643,11 +758,33 @@ It prints `8000`: 500 random triples of terms (some empty, some containing a fea
 
 ### New features for old
 
-Now the trick that turns this identity into an algorithm. There are \(2n\) literals, so \((2n)^3\) ordered triples \((u, v, w)\) of them. Define a map
+Now the trick that turns this identity into an algorithm. Instead of describing a message by its \(n\) features, describe it by its answers to every possible clause. With FLUN, the clause \(L \vee U \vee \neg F\) asks “a link, or an unknown sender, or no ‘FREE’?”, and 1001 answers no. There are \(2n\) literals, so \((2n)^3\) ordered triples \((u, v, w)\) of them, and one question per triple. Define a map
 
 \[ \psi : \{0,1\}^n \to \{0,1\}^{(2n)^3}, \qquad \psi(x)_{(u,v,w)} = \mathbb 1[x \text{ satisfies } u \vee v \vee w]. \]
 
-Each coordinate of \(\psi(x)\) is a new yes/no feature of the message: “does it satisfy this clause?”. With four features there are 512 of them; with thirty, 216,000.
+Read it from the inside out.
+
+- \(\{0,1\}^n\) is the set of strings of \(n\) bits, the messages; \(\{0,1\}^{(2n)^3}\) is the set of strings of \((2n)^3\) bits, the new descriptions.
+- \(\psi : \dots \to \dots\) says \(\psi\) (the Greek letter psi) turns a message into such a longer string.
+- The subscript \((u, v, w)\) names one position of that string, one per triple of literals.
+- \(\mathbb 1[\cdot]\), the indicator, is 1 when the statement inside the brackets is true and 0 when it is false.
+
+In plain words: **\(\psi\) rewrites a message as one yes/no bit per clause, saying whether the message satisfies that clause.** Each coordinate of \(\psi(x)\) is a new yes/no feature of the message: “does it satisfy this clause?”. With four features there are 512 of them; with thirty, 216,000. Here is \(\psi\) of 1001, and the bit for \(L \vee U \vee \neg F\).
+
+```python
+n = 4
+lits = [(i, v) for i in range(n) for v in (0, 1)]
+def psi(x):
+    s = [x[i] == v for i, v in lits]
+    return [int(a or b or c) for a in s for b in s for c in s]
+z = psi((1, 0, 0, 1))
+L, U = lits.index((1, 1)), lits.index((2, 1))
+not_F = lits.index((0, 0))
+print(len(z), sum(z))
+print(z[(L * 2 * n + U) * 2 * n + not_F])
+```
+
+It prints `512 448` and `0`: 512 clause features, 448 of them satisfied by 1001, and the clause \(L \vee U \vee \neg F\) not among them. The three nested loops in `psi` are the triples, and `int(a or b or c)` is the indicator of the clause.
 
 In the new features, a 3-CNF formula is a conjunction. The formula \(\bigwedge (u \vee v \vee w)\) over the triples in the identity says 1 at \(x\) exactly when every one of those coordinates of \(\psi(x)\) is 1. So for every 3-term DNF \(h\) over \(\{0,1\}^n\) there is a conjunction \(g\) over \(\{0,1\}^{(2n)^3}\) with \(g(\psi(x)) = h(x)\) for every \(x\): the same truth table.
 
@@ -657,7 +794,16 @@ That makes the learner almost embarrassing to write. Map every example \((x, y)\
 
 **Runtime.** Computing \(\psi(x)\) takes \(O(n^3)\) operations. Crossing out literals in dimension \(d = (2n)^3\) takes \(O(dm) = O(n^3 m)\). Predicting takes \(O(n^3)\), within the training budget, so the lazy-learner rule is respected.
 
-**Sample complexity.** It is the sample complexity of conjunctions in dimension \(d = (2n)^3\): at most \(d \log(3/\delta)/\varepsilon = 8 n^3 \log(3/\delta)/\varepsilon\), of order \(n^3 \log(1/\delta)/\varepsilon\). Polynomial in \(n\), \(1/\varepsilon\) and \(1/\delta\), so the whole procedure is efficient.
+**Sample complexity.** It is the sample complexity of conjunctions in dimension \(d = (2n)^3\): at most \(d \log(3/\delta)/\varepsilon = 8 n^3 \log(3/\delta)/\varepsilon\), of order \(n^3 \log(1/\delta)/\varepsilon\). Here \(d\) replaces \(n\) in the conjunction bound you walked through, and \((2n)^3 = 8n^3\). In plain words: **the clause-feature learner needs the conjunction bound with \(8n^3\) features in place of \(n\).** With four features, \(d = 512\) and the bound is \(512 \log(300)/0.05 \approx 58{,}407\) examples.
+
+```python
+import math
+n, eps, delta = 4, 0.05, 0.01
+d = (2 * n) ** 3
+print(d, round(d * math.log(3 / delta) / eps))
+```
+
+It prints `512 58407`. Polynomial in \(n\), \(1/\varepsilon\) and \(1/\delta\), so the whole procedure is efficient.
 
 That is the theorem of this section, and it is worth stating plainly. **3-term DNF is efficiently learnable** in the realizable case, by ERM over a larger class (conjunctions over the clause features, equivalently 3-CNF formulas), even though, unless \(RP = NP\), it is not efficiently learnable by any proper learner. Hardness of ERM over \(\mathcal H\) does not mean \(\mathcal H\) is hard to learn.
 
@@ -729,7 +875,7 @@ if __name__ == "__main__":
 
 Back to the real mail system: thirty features, and the security team’s three kinds of junk. Your manager wants the usual promise, \(\varepsilon = 0.05\) and \(\delta = 0.01\), and two budgets. Labels: the company’s junk and keep clicks for a year, about five million. Compute: one week on the machine that does a billion operations a second, about \(6 \times 10^{14}\) operations.
 
-You have three ways to write down the junk rule. You can learn it as a 3-term DNF, properly, by exhaustive search. You can learn it as a 3-CNF, through the clause features. Or you can drop all bias and learn any rule at all, lesson 1’s memorizer, which is fast since it only stores examples in a hash table. Here are the guarantee’s label counts and the runtime in seconds for each, at a billion operations a second.
+You have three ways to write down the junk rule. You can learn it as a 3-term DNF, properly, by exhaustive search. You can learn it as a 3-CNF, through the clause features. Or you can drop all bias and learn any rule at all, lesson 1’s memorizer, which is fast since it only stores examples in a hash table. Here are the guarantee’s label counts and the runtime in seconds for each, at a billion operations a second. Every row uses the realizable bound you read earlier, \(\log(|\mathcal H|/\delta)/\varepsilon\), split as \((\log |\mathcal H| + \log(1/\delta))/\varepsilon\): `log_size` is \(\log |\mathcal H|\) (\(3n \log 3\) for 3-term DNF, \(d \log 3\) for 3-CNF, \(2^n \log 2\) for all rules), and `work` is the operations per example.
 
 ```python
 import math
@@ -771,6 +917,32 @@ There is a catch. Nobody can currently prove that any cryptographic protocol is 
 
 where the probability is over \(x\) drawn uniformly from \(\{0,1\}^n\) and over the coins of \(A\). In words: given \(f(x)\), no fast algorithm can find any preimage of it, except with a vanishing chance.
 
+Read the formula from the inside out.
+
+- \(f(x)\) is the scrambled value the attacker sees, and \(A(f(x))\) is the attacker’s guess at an input.
+- \(f(A(f(x))) = f(x)\) says the guess scrambles to the same value: any preimage counts as a win, not only \(x\) itself.
+- \(\mathbb P[\cdot]\) is the probability of that win, over a uniform \(x\) and the attacker’s coin flips.
+- \(\mathrm{poly}(n)\) means time bounded by some polynomial in \(n\), and \(1/p(n)\) is one over a polynomial: whatever polynomial you name, the attacker’s chance falls below its reciprocal once \(n\) is large.
+
+In plain words: **every fast attacker’s chance of inverting \(f\) shrinks faster than one over any polynomial.** Take a toy function you will meet again below, \(f(x) = x^{17} \bmod 3233\) (the remainder of \(x^{17}\) after dividing by 3233), and the laziest attacker, who guesses a random input. Every value has exactly one preimage, so it wins with probability \(1/3233 \approx 0.000309\).
+
+```python
+import random
+N, e = 3233, 17
+def f(x):
+    return pow(x, e, N)
+rng = random.Random(0)
+def A(c):
+    return rng.randrange(N)
+wins, trials = 0, 100000
+for _ in range(trials):
+    x = rng.randrange(N)
+    wins += f(A(f(x))) == f(x)
+print(wins / trials, round(1 / N, 6))
+```
+
+It prints `0.00028 0.000309`: the measured win rate of the guesser, then \(1/N\). The `wins += ...` line is the event inside \(\mathbb P\), and averaging over trials estimates the probability. At this size a search would win outright; a real one-way function is one where no fast attacker does much better than guessing.
+
 **Definition (trapdoor one-way function).** A one-way function \(f\) is a trapdoor function if for some polynomial \(p\), for every \(n\) there is a bit string \(s_n\) of length at most \(p(n)\), the **secret key**, and a polynomial time algorithm that, for every \(n\) and every \(x \in \{0,1\}^n\), on input \((f(x), s_n)\) outputs \(x\). Hard to invert, unless you hold the key; then easy. Such functions are parameterized by their keys.
 
 Here is a toy version, the textbook RSA function on tiny numbers (far too small to be secure, but the shape is right): computing \(f\) is one modular power, inverting with the key is another, and inverting without it is a search.
@@ -795,9 +967,19 @@ It prints `1414 2024 (2024, 2025)`. The key inverts in one step; the search need
 
 **Claim (trapdoor functions give an unlearnable class).** Let \(\mathcal F_n\) be a family of trapdoor functions over \(\{0,1\}^n\), computable by a fixed polynomial time algorithm from the key and the input. Consider the class of their inverses, \(\mathcal H_{\mathcal F_n} = \{ f^{-1} : f \in \mathcal F_n \}\). Its sample complexity is polynomial in \(n\), yet no efficient learner exists for it, as long as the functions really are one-way.
 
-*Argument.* The statistical half first. Each \(f^{-1}\) is determined by a secret key of at most \(p(n)\) bits, so the class can be parameterized by keys, and \(|\mathcal H_{\mathcal F_n}| \le 2^{p(n)}\) (counting keys up to that length gives at most \(2^{p(n)+1}\), the same order). By the finite-class bound, its sample complexity is of order \(p(n) + \log(1/\delta)\) over \(\varepsilon\): polynomial in \(n\). Information is not the obstacle.
+*Argument.* The statistical half first. Each \(f^{-1}\) is determined by a secret key of at most \(p(n)\) bits, so the class can be parameterized by keys, and \(|\mathcal H_{\mathcal F_n}| \le 2^{p(n)}\) (counting keys up to that length gives at most \(2^{p(n)+1}\), the same order). By the finite-class bound, its sample complexity is of order \(p(n) + \log(1/\delta)\) over \(\varepsilon\): polynomial in \(n\). Information is not the obstacle. (Here \(f^{-1}\) is the inverse of \(f\), the map that undoes it, and the braces collect one inverse for every \(f\) in the family.) The toy key 2753 has 12 bits, so at most \(2^{12} = 4{,}096\) keys of that length, and with \(\varepsilon = \delta = 1/4\) the realizable bound asks for \(\log(4096 \cdot 4)/0.25 \approx 38.8\), so 39 examples.
 
-Now the computational half. Suppose, for contradiction, that \(L\) learns \(\mathcal H_{\mathcal F_n}\) efficiently. Here is how to invert some \(f \in \mathcal F_n\) without its key. Draw a polynomial number of strings \(x_1, \dots, x_m\) uniformly from \(\{0,1\}^n\), and compute \(f(x_1), \dots, f(x_m)\); that is polynomial time, because \(f\) is easy to compute. The pairs \((f(x_i), x_i)\) are a training sequence for the target \(f^{-1}\), drawn i.i.d. from the distribution of \(f(x)\) with \(x\) uniform. Feed them to \(L\) with, say, \(\varepsilon = \delta = 1/4\). With probability at least \(3/4\), it returns \(h\) with \(\mathbb P_x[h(f(x)) \ne x] \le 1/4\), with respect to that same distribution. Now take the challenge \(f(x)\), with \(x\) fresh and uniform, and answer \(h(f(x))\). With probability at least \(3/4 \cdot 3/4 = 9/16\), the answer is \(x\) itself, and then \(f(h(f(x))) = f(x)\).
+```python
+import math
+bits = (2753).bit_length()
+eps, delta = 0.25, 0.25
+size = 2 ** bits
+print(bits, size, math.ceil(math.log(size / delta) / eps))
+```
+
+It prints `12 4096 39`.
+
+Now the computational half. Suppose, for contradiction, that \(L\) learns \(\mathcal H_{\mathcal F_n}\) efficiently. Here is how to invert some \(f \in \mathcal F_n\) without its key. Draw a polynomial number of strings \(x_1, \dots, x_m\) uniformly from \(\{0,1\}^n\), and compute \(f(x_1), \dots, f(x_m)\); that is polynomial time, because \(f\) is easy to compute. The pairs \((f(x_i), x_i)\) are a training sequence for the target \(f^{-1}\), drawn i.i.d. from the distribution of \(f(x)\) with \(x\) uniform. Feed them to \(L\) with, say, \(\varepsilon = \delta = 1/4\). With probability at least \(3/4\), it returns \(h\) with \(\mathbb P_x[h(f(x)) \ne x] \le 1/4\), with respect to that same distribution. Now take the challenge \(f(x)\), with \(x\) fresh and uniform, and answer \(h(f(x))\). (The subscript in \(\mathbb P_x\) says the probability is over \(x\) alone.) Both good things must happen, the learner succeeds and the challenge is not among its mistakes, so the chances multiply: with probability at least \(3/4 \cdot 3/4 = 9/16 = 0.5625\), the answer is \(x\) itself, and then \(f(h(f(x))) = f(x)\).
 
 That procedure runs in polynomial time and inverts \(f\) with probability at least \(9/16\), for every \(n\). The one-way property, with the constant polynomial \(p(n) = 2\), says the probability must be below \(1/2\). Contradiction. So no efficient learner exists. \(\blacksquare\)
 

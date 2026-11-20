@@ -849,3 +849,302 @@ Read the rows before you open the lab. Maximum likelihood is accurate and has no
 In the lab, each round draws a fresh set of true frequencies and a fresh training sequence. A setting that happens to classify this round’s test messages well does not pass; only a setting whose certificates meet both targets does.
 
 [[lab-act2]]
+
+## Another assumption: Gaussian clouds
+
+Naive Bayes is one generative assumption. Here is a second, for measured features, and it leads somewhere you have been before.
+
+Suppose the mail room scores every message on two measured features: the **capitals score** \(x_1\) (how shouty the subject is) and the **link score** \(x_2\) (how many links, scaled). Plot keep messages and they form an elliptical cloud around \((1, 1)\); plot junk and they form a cloud of the same shape around \((3, 2)\). In both clouds the two scores tend to rise together: a shouty message tends to have more links.
+
+To describe a cloud like this we need the Gaussian in \(d\) dimensions. Its centre is a vector \(\mu \in \mathbb R^d\). Its shape is a **covariance matrix** \(\Sigma\), a \(d \times d\) table: on the diagonal, the variance of each score (its spread); off the diagonal, the **covariance** of each pair of scores, positive when they tend to rise together. For our clouds,
+
+\[ \Sigma = \begin{pmatrix} 1 & 0.5 \\ 0.5 & 1 \end{pmatrix}: \]
+
+each score has variance 1, and the two scores have covariance 0.5. The density of the Gaussian with centre \(\mu\) and covariance \(\Sigma\) is
+
+\[ \mathbb P[X = x] = \frac{1}{(2\pi)^{d/2}\,|\Sigma|^{1/2}}\exp\left(-\frac12 (x - \mu)^\top \Sigma^{-1}(x - \mu)\right). \]
+
+- \(x - \mu\) is the offset of the message from the centre, a column vector; \((x - \mu)^\top\) is the same offset written as a row (the \(\top\) means transpose).
+- \(\Sigma^{-1}\) is the inverse matrix of \(\Sigma\), the matrix with \(\Sigma^{-1}\Sigma = I\), the identity. The product \((x - \mu)^\top\Sigma^{-1}(x - \mu)\) is a single number: a squared distance in which directions where the cloud is wide count less, and directions where it is narrow count more. With \(\Sigma = I\) it is the ordinary squared distance \(\|x - \mu\|^2\).
+- \(|\Sigma|\) is the determinant of \(\Sigma\), a measure of the cloud’s volume; with the factor \((2\pi)^{d/2}\) it makes the total volume under the density equal to 1.
+
+In one sentence: **a Gaussian cloud is densest at its centre and thins out with the stretched squared distance from it.** For \(d = 1\) this is the bell from before. At the centre of our clouds, the density is \(1/(2\pi\sqrt{0.75}) \approx 0.184\).
+
+**Linear discriminant analysis** (LDA) makes three generative assumptions: the two labels are equally likely, \(\mathbb P[Y = 1] = \mathbb P[Y = 0] = 1/2\); given the label \(y\), the message is Gaussian with centre \(\mu_y\); and the covariance \(\Sigma\) is the same for both labels. Under these assumptions, what does the Bayes optimal predictor look like?
+
+It predicts junk when \(\mathbb P[Y = 1]\,\mathbb P[X = x \mid Y = 1] > \mathbb P[Y = 0]\,\mathbb P[X = x \mid Y = 0]\), that is, when the ratio of the two sides is above 1, that is, when its logarithm is above 0. That logarithm is the **log-likelihood ratio**:
+
+\[ \log\left(\frac{\mathbb P[Y = 1]\,\mathbb P[X = x \mid Y = 1]}{\mathbb P[Y = 0]\,\mathbb P[X = x \mid Y = 0]}\right) = \frac12(x - \mu_0)^\top\Sigma^{-1}(x - \mu_0) - \frac12(x - \mu_1)^\top\Sigma^{-1}(x - \mu_1). \]
+
+- On the left, the prior shares are equal and cancel, and so do the normalizing constants \((2\pi)^{d/2}|\Sigma|^{1/2}\), because \(\Sigma\) is shared.
+- What is left is the log of a ratio of two exponentials, which is the difference of their exponents.
+
+In one sentence: **the evidence for junk is how much closer the message is to the junk centre than to the keep centre, in stretched distance.** For the message \(x = (3, 2)\), sitting on the junk centre, its stretched squared distance to the keep centre is \(4/3\) and to the junk centre 0, so the ratio’s log is \(\frac12 \cdot \frac43 = 0.667\).
+
+Now expand both quadratic forms. Each is \(x^\top\Sigma^{-1}x - 2\mu_y^\top\Sigma^{-1}x + \mu_y^\top\Sigma^{-1}\mu_y\), where the middle term combines \(x^\top\Sigma^{-1}\mu_y\) and \(\mu_y^\top\Sigma^{-1}x\), which are equal because \(\Sigma\), and hence \(\Sigma^{-1}\), is symmetric. The \(x^\top\Sigma^{-1}x\) terms cancel between the two halves, and the log-likelihood ratio is \(\langle w, x\rangle + b\) with
+
+\[ w = \Sigma^{-1}(\mu_1 - \mu_0), \qquad b = \frac12\left(\mu_0^\top\Sigma^{-1}\mu_0 - \mu_1^\top\Sigma^{-1}\mu_1\right). \]
+
+- \(\langle w, x\rangle = \sum_j w_j x_j\) is the inner product of lesson 9: a weighted sum of the scores.
+- \(w\) points from the keep centre to the junk centre, then is reshaped by \(\Sigma^{-1}\) to account for the clouds’ correlations.
+- \(b\) is a constant: it puts the boundary halfway between the clouds, in stretched distance.
+
+In one sentence: **under the LDA assumptions, the Bayes optimal predictor is a halfspace: junk exactly when a weighted sum of the scores exceeds a threshold.** For our clouds, \(\Sigma^{-1} = \frac{1}{0.75}\begin{pmatrix}1 & -0.5\\ -0.5 & 1\end{pmatrix}\), \(\mu_1 - \mu_0 = (2, 1)\), so \(w = (2, 0)\), and \(b = \frac12(\frac43 - \frac{28}{3}) = -4\). Junk exactly when \(2x_1 - 4 > 0\), that is, when the capitals score exceeds 2.
+
+Look at that \(w\): the link score gets weight 0, even though junk has more links on average. The reason is the correlation. Given the capitals score, the extra links of junk are just what the shared cloud shape predicts from its shoutiness, so they carry no further evidence. A rule that weighs each score by its own difference in means would get this wrong.
+
+```python
+import math
+mu0, mu1 = (1, 1), (3, 2)
+inv = [[1 / .75, -.5 / .75], [-.5 / .75, 1 / .75]]
+def quad(v):
+    return sum(v[i] * inv[i][j] * v[j]
+               for i in range(2) for j in range(2))
+def log_ratio(x):
+    d0 = [x[i] - mu0[i] for i in range(2)]
+    d1 = [x[i] - mu1[i] for i in range(2)]
+    return 0.5 * quad(d0) - 0.5 * quad(d1)
+dm = [mu1[i] - mu0[i] for i in range(2)]
+w = [sum(inv[i][j] * dm[j] for j in range(2)) for i in range(2)]
+b = 0.5 * (quad(mu0) - quad(mu1))
+pts = [(a / 4, c / 4) for a in range(-8, 24) for c in range(-8, 24)]
+print([round(v, 6) for v in w], round(b, 6), round(log_ratio(mu1), 3))
+print(max(abs(log_ratio(x) - (w[0] * x[0] + w[1] * x[1] + b))
+          for x in pts) < 1e-9)
+```
+
+It prints `[2.0, 0.0] -4.0 0.667` and `True`: on 1,024 grid points, the difference of stretched distances and the linear rule agree.
+
+So a generative assumption has rederived the hypothesis class of lesson 9. The difference is in how the halfspace is chosen. LDA does not search for a good \(w\); it estimates the centres and the covariance, and computes \(w\) and \(b\) from them. The usual estimates are the maximum likelihood ones: each centre is the average of its class, and the shared covariance is the average, over all \(m\) examples, of the outer product of each example’s offset from its own class centre.
+
+```
+LDATrain(S):
+  for y in {0, 1}:
+    μ[y] ← average of the x_i with y_i = y
+  Σ ← (1/m) Σ_i (x_i − μ[y_i]) (x_i − μ[y_i])ᵀ
+  w ← solve Σ w = μ[1] − μ[0]
+  b ← ½ (μ[0]ᵀ Σ⁻¹ μ[0] − μ[1]ᵀ Σ⁻¹ μ[1])
+  return (w, b)
+
+LDAPredict(w, b, x):
+  return 1 if ⟨w, x⟩ + b > 0 else 0
+```
+
+**Cost.** The centres take \(O(md)\) time, the covariance \(O(md^2)\) (one \(d \times d\) outer product per example), and solving the linear system \(O(d^3)\) by Gaussian elimination; space is \(O(d^2)\) for \(\Sigma\). Prediction is \(O(d)\), like any halfspace. For \(b\), note that \(\mu_y^\top\Sigma^{-1}\mu_y\) can reuse the solved system: \(b = -\tfrac12\langle w, \mu_1 + \mu_0\rangle\), because \(\mu_0^\top\Sigma^{-1}\mu_0 - \mu_1^\top\Sigma^{-1}\mu_1 = -(\mu_1 - \mu_0)^\top\Sigma^{-1}(\mu_1 + \mu_0)\) by symmetry of \(\Sigma^{-1}\).
+
+**Build it yourself.** In the standard library, for \(d = 2\):
+
+```python
+S = [((2, 2), 0), ((0, 0), 0), ((2, 1), 0), ((0, 1), 0),
+     ((4, 3), 1), ((2, 1), 1), ((4, 2), 1), ((2, 2), 1)]
+
+def lda_train(S): ...
+def lda_predict(w, b, x): ...
+
+if __name__ == "__main__":
+    w, b = lda_train(S)
+    assert [round(v, 6) for v in w] == [4.0, -2.0]
+    assert round(b, 6) == -6.0
+    assert lda_predict(w, b, (3, 2)) == 1
+    assert lda_predict(w, b, (1, 1)) == 0
+```
+
+1. Implement `lda_train` (class means, pooled covariance, a 2 by 2 inverse) and `lda_predict`.
+2. Draw 2,000 messages from the two clouds of this section (use `random.gauss` on independent coordinates and mix them to get covariance 0.5) and check that the estimated \(w\) approaches \((2, 0)\) as \(m\) grows.
+3. Break the shared-covariance assumption: give junk a wider cloud. Compare LDA’s error with the Bayes optimal predictor’s, computed from the true densities.
+
+## Hidden causes: latent variables
+
+So far every example came with its label. Now look at the unlabelled archive: a million messages nobody ever clicked on. The product team suspects there are two kinds of message in it, newsletters and personal notes, with different length scores, but no message says which kind it is. The kind is a **latent variable**: part of the story of how the message was produced, but never observed.
+
+A model with a latent variable tells the production story in two steps. First, choose the kind: kind \(y\) with probability \(c_y\), for \(y\) in \(\{1, \dots, k\}\). Second, write a message of that kind: draw \(x\) from a Gaussian with centre \(\mu_y\) and covariance \(\Sigma_y\). With two kinds, a newsletter share of \(c_2 = 0.3\), and centres 1 and 4 on the length score, you get a two-humped density. The probability (density) of a message adds over the kinds that could have produced it:
+
+\[ \mathbb P[X = x] = \sum_{y=1}^{k}\mathbb P[Y = y]\,\mathbb P[X = x \mid Y = y] = \sum_{y=1}^{k} c_y\,\frac{1}{(2\pi)^{d/2}|\Sigma_y|^{1/2}}\exp\left(-\frac12(x - \mu_y)^\top\Sigma_y^{-1}(x - \mu_y)\right). \]
+
+- \(Y\) is the latent kind and \(c_y = \mathbb P[Y = y]\) its share; the \(c_y\) are nonnegative and add up to 1.
+- The first equality is the law of total probability: a message arises by some kind, so add the chances over the kinds.
+- Each term is a kind’s share times its Gaussian cloud, the density from the previous section with its own centre and covariance.
+
+In one sentence: **a mixture of Gaussians is a weighted sum of bells, one per hidden kind.** At \(x = 1\), with \(c = (0.7, 0.3)\), centres 1 and 4 and width 1: \(0.7 \cdot 0.399 + 0.3 \cdot 0.0044 \approx 0.281\).
+
+Let \(\theta\) collect all the parameters (the shares, centres and covariances). For an i.i.d. sample \(S = (x_1, \dots, x_m)\), the log-likelihood is
+
+\[ L(\theta) = \sum_{i=1}^{m}\log \mathbb P_\theta[X = x_i] = \sum_{i=1}^{m}\log\left(\sum_{y=1}^{k}\mathbb P_\theta[X = x_i, Y = y]\right). \]
+
+- \(\mathbb P_\theta[X = x_i, Y = y]\) is the joint probability that the kind is \(y\) and the message is \(x_i\): \(c_y\) times the \(y\)-th bell at \(x_i\).
+- The outer sum adds one log per example; the inner sum, inside the log, adds over the kinds.
+
+In one sentence: **the log-likelihood adds, over messages, the log of the total chance of each message over all the kinds that might have produced it.** Maximum likelihood wants the \(\theta\) that maximizes it.
+
+The sum inside the logarithm is the trouble. Without it, the log of each joint probability would split into simple pieces, and maximizing would be as easy as for LDA: if we knew each message’s kind, we would just average each kind’s messages. With it, there is no closed form, and in many cases the optimization is computationally hard. The **Expectation-Maximization** algorithm, **EM**, due to Dempster, Laird and Rubin, is an iterative way to search for a maximum. It may stop at a local maximum rather than the global one, but it often works well in practice.
+
+EM’s idea is a chicken-and-egg loop. If we knew the kinds, finding \(\theta\) would be easy. If we knew \(\theta\), we could compute, for each message, how probable each kind is. So alternate. To say it precisely, replace “the kind of message \(i\)” by a **soft assignment**: a probability vector \(Q_{i,1}, \dots, Q_{i,k}\) over the kinds for each message, collected in an \(m \times k\) matrix \(Q\) whose rows add up to 1. Then define the expected complete log-likelihood:
+
+\[ F(Q, \theta) = \sum_{i=1}^{m}\sum_{y=1}^{k} Q_{i,y}\log\left(\mathbb P_\theta[X = x_i, Y = y]\right). \]
+
+- For each message \(i\) and kind \(y\), \(\log\mathbb P_\theta[X = x_i, Y = y]\) is what the log-likelihood would be if we knew that message \(i\) has kind \(y\).
+- \(Q_{i,y}\) weights it by how much we currently believe that. So \(F\) is the expected log-likelihood of a labelled data set whose labels are drawn from the rows of \(Q\).
+- The sum over kinds is now *outside* the log.
+
+In one sentence: **\(F\) is the log-likelihood we would have if the hidden kinds were known, averaged over our current beliefs about them.** With one message \(x = 1\), the belief \(Q = (0.9, 0.1)\), and the mixture above: \(0.9\log(0.7 \cdot 0.399) + 0.1\log(0.3 \cdot 0.0044) \approx -1.81\).
+
+We assume, as is true for Gaussian mixtures, that for any fixed \(Q\) with rows adding to 1, maximizing \(F(Q, \theta)\) over \(\theta\) is tractable. EM builds a sequence \((Q^{(1)}, \theta^{(1)}), (Q^{(2)}, \theta^{(2)}), \dots\); the superscript \((t)\) is the iteration number. Each iteration does two steps:
+
+\[ \text{E step:}\quad Q^{(t+1)}_{i,y} = \mathbb P_{\theta^{(t)}}[Y = y \mid X = x_i], \qquad \text{M step:}\quad \theta^{(t+1)} \in \operatorname*{argmax}_\theta F(Q^{(t+1)}, \theta). \]
+
+- The **E step** (expectation) sets each soft assignment to the probability of each kind given the message, under the current parameters, by Bayes’ rule. It defines the new expected log-likelihood \(F(Q^{(t+1)}, \cdot)\).
+- The **M step** (maximization) finds the parameters that maximize that expected log-likelihood, which is tractable by assumption.
+
+In one sentence: **guess the hidden kinds from the parameters, then refit the parameters to the guessed kinds, and repeat.** The starting values are usually random, and the loop stops when the log-likelihood stops improving noticeably.
+
+## Why EM never goes downhill
+
+An iterative algorithm with no guarantee is a hope. EM comes with one: the log-likelihood never decreases. The proof is short once we see EM as climbing a different function, one coordinate at a time.
+
+Define, with the convention \(0 \log 0 = 0\),
+
+\[ G(Q, \theta) = F(Q, \theta) - \sum_{i=1}^{m}\sum_{y=1}^{k} Q_{i,y}\log Q_{i,y} = \sum_{i=1}^{m}\sum_{y=1}^{k} Q_{i,y}\log\frac{\mathbb P_\theta[X = x_i, Y = y]}{Q_{i,y}}. \]
+
+- The subtracted double sum is minus the sum of the entropies of the rows of \(Q\): a bonus for soft assignments that are uncertain.
+- The second form combines the two logs into one; terms with \(Q_{i,y} = 0\) are left out.
+
+In one sentence: **\(G\) is the expected complete log-likelihood plus the entropy of the beliefs.** Let \(\mathcal Q\) be the set of \(m \times k\) matrices with entries in \([0, 1]\) whose rows add up to 1, the allowed soft assignments.
+
+**Lemma (EM is alternate maximization).** The two EM steps are \(Q^{(t+1)} \in \operatorname*{argmax}_{Q \in \mathcal Q} G(Q, \theta^{(t)})\) and \(\theta^{(t+1)} \in \operatorname*{argmax}_\theta G(Q^{(t+1)}, \theta)\). Moreover, \(G(Q^{(t+1)}, \theta^{(t)}) = L(\theta^{(t)})\).
+
+*Proof.* The M step first. The entropy term of \(G\) does not involve \(\theta\), so for fixed \(Q^{(t+1)}\), maximizing \(G\) over \(\theta\) is the same as maximizing \(F\). That is the M step.
+
+The E step. Fix any \(\theta\) and any \(Q \in \mathcal Q\). We show \(G(Q, \theta) \le L(\theta)\), and then that the E step’s choice reaches it.
+
+For the inequality, fix a message \(i\) and write \(a_y = \mathbb P_\theta[X = x_i, Y = y]\) and \(A = \sum_y a_y = \mathbb P_\theta[X = x_i]\). Using \(\log t \le t - 1\) from the relative-entropy proof, with \(t = a_y/(Q_{i,y}A)\), on the kinds with \(Q_{i,y} > 0\):
+
+\[ \sum_{y : Q_{i,y} > 0} Q_{i,y}\log\frac{a_y}{Q_{i,y}A} \le \sum_{y : Q_{i,y} > 0} Q_{i,y}\left(\frac{a_y}{Q_{i,y}A} - 1\right) = \sum_{y : Q_{i,y} > 0}\frac{a_y}{A} - 1 \le 0. \]
+
+- The left side is message \(i\)’s part of \(G\), minus \(\log A\) (because the \(Q_{i,y}\) add up to 1, \(\sum_y Q_{i,y}\log A = \log A\)).
+- The middle step multiplies out: each \(Q_{i,y}\) cancels, and the \(Q_{i,y}\) themselves add up to 1.
+- The last step holds because the \(a_y\) over some kinds add up to at most \(A\).
+
+In one sentence: **any soft assignment explains message \(i\) at most as well as the true total chance of message \(i\).** This is Jensen’s inequality for the logarithm, in the special form we need. Adding over \(i\): \(G(Q, \theta) \le \sum_i \log\mathbb P_\theta[X = x_i] = L(\theta)\).
+
+For the equality, put \(Q_{i,y} = \mathbb P_\theta[Y = y \mid X = x_i]\). By the definition of conditional probability, \(\mathbb P_\theta[X = x_i, Y = y] = \mathbb P_\theta[Y = y \mid X = x_i]\,\mathbb P_\theta[X = x_i]\), so the ratio inside the log of \(G\) is \(\mathbb P_\theta[X = x_i]\) for every \(y\), and
+
+\[ G(Q, \theta) = \sum_{i=1}^{m}\log\mathbb P_\theta[X = x_i]\sum_{y=1}^{k}\mathbb P_\theta[Y = y \mid X = x_i] = \sum_{i=1}^{m}\log\mathbb P_\theta[X = x_i] = L(\theta), \]
+
+since conditional probabilities over all kinds add up to 1. **With the E step’s beliefs, \(G\) equals the log-likelihood exactly.** (For a Gaussian mixture every joint probability is positive, so no terms are dropped.) So the E step’s \(Q\) attains the upper bound \(L(\theta)\): it maximizes \(G(\cdot, \theta)\) over \(\mathcal Q\), and \(G(Q^{(t+1)}, \theta^{(t)}) = L(\theta^{(t)})\). \(\blacksquare\)
+
+**Theorem (EM never decreases the likelihood).** For every \(t\), \(L(\theta^{(t+1)}) \ge L(\theta^{(t)})\).
+
+*Proof.* Three links, each from the lemma:
+
+\[ L(\theta^{(t+1)}) = G(Q^{(t+2)}, \theta^{(t+1)}) \ge G(Q^{(t+1)}, \theta^{(t+1)}) \ge G(Q^{(t+1)}, \theta^{(t)}) = L(\theta^{(t)}). \]
+
+- The first equality is the lemma’s “moreover” at iteration \(t+1\): the E step’s beliefs make \(G\) equal to \(L\).
+- The first inequality: \(Q^{(t+2)}\) maximizes \(G(\cdot, \theta^{(t+1)})\) over \(\mathcal Q\), so it does at least as well as the particular matrix \(Q^{(t+1)}\).
+- The second inequality: \(\theta^{(t+1)}\) maximizes \(G(Q^{(t+1)}, \cdot)\), so it does at least as well as \(\theta^{(t)}\).
+- The last equality is the lemma’s “moreover” at iteration \(t\).
+
+In one sentence: **each E step lifts \(G\) up to the log-likelihood, each M step lifts \(G\) further, so the log-likelihood can only climb.** \(\blacksquare\)
+
+[[diagram:em]]
+
+Since the log-likelihood never decreases, and (for a mixture where it is bounded above) a nondecreasing bounded sequence converges, the values \(L(\theta^{(t)})\) settle down. What the theorem does not promise is that they settle at the *global* maximum: EM climbs, and a hill can be a local one.
+
+## Soft k-means
+
+Let’s write EM out for a mixture of \(k\) Gaussians in which every covariance is the identity, \(\Sigma_y = I\), so the parameters are the shares \(c\) and the centres \(\mu_1, \dots, \mu_k\).
+
+**E step.** By Bayes’ rule, the probability of kind \(y\) given message \(x_i\) is the joint probability divided by the total over kinds. The Gaussian normalizing constant \((2\pi)^{d/2}\) is the same for every kind and cancels:
+
+\[ \mathbb P_{\theta^{(t)}}[Y = y \mid X = x_i] = \frac{1}{Z_i}\,c^{(t)}_y\exp\left(-\frac12\left\|x_i - \mu^{(t)}_y\right\|^2\right). \]
+
+- \(\|x_i - \mu_y\|^2\) is the ordinary squared distance from message \(i\) to centre \(y\) (the stretched distance with \(\Sigma = I\)).
+- \(Z_i\) is the **normalization factor**, \(\sum_{y'} c_{y'}\exp(-\frac12\|x_i - \mu_{y'}\|^2)\), which makes the probabilities for message \(i\) add up to 1.
+
+In one sentence: **each message belongs to each kind in proportion to the kind’s share times how close the message is to its centre.** A message at length score 2.5, halfway between centres 1 and 4 with shares 0.7 and 0.3, belongs to the first kind with probability \(0.7/(0.7 + 0.3) = 0.7\), since the distances are equal.
+
+**M step.** Write \(Q_{i,y}\) for the E step’s probabilities. Dropping constants that do not involve \(c\) or \(\mu\), the M step maximizes
+
+\[ \sum_{i=1}^{m}\sum_{y=1}^{k} Q_{i,y}\left(\log c_y - \frac12\|x_i - \mu_y\|^2\right). \]
+
+- Each term is \(\log\mathbb P_\theta[X = x_i, Y = y]\), which is \(\log c_y - \frac12\|x_i - \mu_y\|^2 - \frac d2\log 2\pi\), with the last constant dropped.
+
+In one sentence: **reward shares that are large where the beliefs are large, and centres that are close to the messages believed to belong to them.** The centres and the shares appear in separate terms, so they can be optimized separately.
+
+For a centre \(\mu_y\), set the gradient to zero. The gradient of \(-\frac12\|x_i - \mu_y\|^2\) with respect to \(\mu_y\) is \(x_i - \mu_y\), so the condition is \(\sum_i Q_{i,y}(x_i - \mu_y) = 0\); the objective is a concave quadratic in \(\mu_y\), so this point is the maximum. For the shares, the constraint that \(c\) is a probability vector needs more care, and you will prove the answer in the problems. The results are
+
+\[ \mu_y = \frac{\sum_{i=1}^{m} Q_{i,y}\,x_i}{\sum_{i=1}^{m} Q_{i,y}}, \qquad c_y = \frac{\sum_{i=1}^{m} Q_{i,y}}{\sum_{y'=1}^{k}\sum_{i=1}^{m} Q_{i,y'}}. \]
+
+- \(\mu_y\) is a weighted average of all the messages, each weighted by how much it belongs to kind \(y\).
+- \(\sum_i Q_{i,y}\) is the total belief in kind \(y\), a “soft count” of its messages; \(c_y\) is that soft count as a share of all \(m\) (the denominator equals \(m\), since every row of \(Q\) adds up to 1).
+
+In one sentence: **move each centre to the weighted average of the messages, and set each share to the kind’s soft count over \(m\).** If three messages at 0, 1 and 2 belong to kind 1 with weights 1, 1 and 0.5, the new centre is \((0 + 1 + 1)/2.5 = 0.8\).
+
+Compare this with the k-means algorithm of lesson 22. There, each message is assigned to its nearest centre, and each centre moves to the average of its assigned messages. Here, each message is assigned to every centre with a probability, and each centre moves to a weighted average over the entire sample. That is why EM for this model is called **soft k-means**.
+
+```
+SoftKMeans(x_1..x_m, k, T):
+  choose initial c and μ_1..μ_k
+  repeat T times (or until L stops improving):
+    for i = 1..m:                      ▷ E step
+      for y = 1..k:
+        Q[i, y] ← c_y · exp(−½‖x_i − μ_y‖²)
+      divide row i of Q by its sum
+    for y = 1..k:                      ▷ M step
+      n_y ← Σ_i Q[i, y]
+      μ_y ← (Σ_i Q[i, y] x_i) / n_y
+      c_y ← n_y / m
+  return c, μ
+```
+
+**Cost.** Each E step computes \(mk\) squared distances in \(d\) dimensions, \(O(mkd)\) time; each M step is another weighted pass, \(O(mkd)\). So one iteration costs \(O(mkd)\) time, the same as one k-means iteration, and the memory is \(O(mk + kd)\) for \(Q\) and the centres (the data itself aside). In practice the exponentials are computed after subtracting each row’s largest exponent, so that \(\exp\) of a very negative number does not underflow to 0 for every kind at once.
+
+Here is EM on the unlabelled archive, in one dimension: 140 personal notes around length score 1 and 60 newsletters around 4, with the kinds hidden. The snippet records the log-likelihood before each E step and checks that it never decreases.
+
+```python
+import math, random
+rng = random.Random(4)
+xs = [rng.gauss(1, 1) for _ in range(140)]
+xs += [rng.gauss(4, 1) for _ in range(60)]
+c, mu, lls = [0.5, 0.5], [0.0, 0.5], []
+def joint(x, y):
+    g = math.exp(-(x - mu[y])**2 / 2) / math.sqrt(2 * math.pi)
+    return c[y] * g
+for t in range(40):
+    lls.append(sum(math.log(joint(x, 0) + joint(x, 1)) for x in xs))
+    Q = [[joint(x, y) / (joint(x, 0) + joint(x, 1)) for y in (0, 1)]
+         for x in xs]
+    n = [sum(q[y] for q in Q) for y in (0, 1)]
+    mu = [sum(q[y] * x for q, x in zip(Q, xs)) / n[y] for y in (0, 1)]
+    c = [n[y] / len(xs) for y in (0, 1)]
+print([round(v, 1) for v in lls[:4]], round(lls[-1], 1))
+print(all(b >= a - 1e-9 for a, b in zip(lls, lls[1:])))
+print([round(v, 2) for v in mu], [round(v, 2) for v in c])
+```
+
+It prints the first log-likelihoods climbing, then `True`, then centres and shares close to the hidden truth (1 and 4, 0.7 and 0.3).
+
+**Build it yourself.** In the standard library, for messages in \(\mathbb R^d\):
+
+```python
+import math
+
+X = [(0.0, 0.0), (0.5, 0.2), (0.1, 0.6), (4.0, 4.1),
+     (3.6, 4.4), (4.3, 3.8), (0.3, 0.1), (4.1, 4.0)]
+
+def soft_kmeans(X, mu, c, iters): ...
+def log_likelihood(X, mu, c): ...
+
+if __name__ == "__main__":
+    mu0, c0 = [(1.0, 0.0), (2.0, 3.0)], [0.5, 0.5]
+    lls = []
+    for t in range(1, 21):
+        mu, c = soft_kmeans(X, mu0, c0, t)
+        lls.append(log_likelihood(X, mu, c))
+    assert all(b >= a - 1e-12 for a, b in zip(lls, lls[1:]))
+    assert [round(v, 2) for v in sorted(c)] == [0.5, 0.5]
+    assert round(lls[-1], 2) == -23.17
+```
+
+1. Implement `soft_kmeans` (run `iters` EM iterations from the given start, identity covariances) and `log_likelihood` (the mixture log-likelihood with the \((2\pi)^{d/2}\) constant included).
+2. Start both centres at the same point. What happens, and which line of the monotonicity proof tells you EM can never escape?
+3. Replace the E step by a hard assignment to the most probable kind, and check that you have rebuilt k-means from lesson 22. Does the log-likelihood still never decrease?

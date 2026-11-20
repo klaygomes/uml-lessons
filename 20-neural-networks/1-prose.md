@@ -432,7 +432,7 @@ for n in (10, 20, 30, 40):
     print(n, edges, nodes, m + n + 3)
 ```
 
-It prints `10 90 10 1037`, `20 48902 222 1048599`, `30 34149167 5844 1073741857` and `40 26530891070 162884 1099511627819`. The last column is the size of the depth 2 construction, \((n + 1) + (2^n + 1) + 1\). Every 10 extra bits multiply the lower bound on neurons by about 26 and on edges by about 700: exponential growth, whatever the depth.
+It prints `10 90 10 1037`, `20 48902 222 1048599`, `30 34149167 5844 1073741857` and `40 26530891070 162884 1099511627819`. The last column is the size of the depth 2 construction, \((n + 1) + (2^n + 1) + 1\). Every 10 extra bits multiply the lower bound on neurons by about 27 and on edges by about 700: exponential growth, whatever the depth.
 
 So there is no free universal network. The Fact about efficient programs says the functions you can compute quickly *do* have small networks; this theorem says most functions do not. The same holds for sigmoid networks that approximate smooth functions to a fixed precision, which is the second problem at the end of the lesson.
 
@@ -603,7 +603,7 @@ Two Jacobians we will use. First, a linear map \(f(\mathbf w) = A\mathbf w\), fo
 
 \[ \sigma'(a) = \frac{1}{(1 + e^{a})(1 + e^{-a})} = \sigma(a)\big(1 - \sigma(a)\big). \]
 
-To see the equality, differentiate \(\sigma(a) = (1 + e^{-a})^{-1}\) to get \(e^{-a}/(1 + e^{-a})^2\). Then note \(1 - \sigma(a) = e^{-a}/(1 + e^{-a})\), so \(\sigma(a)(1 - \sigma(a)) = e^{-a}/(1 + e^{-a})^2\) too. And multiplying out \((1 + e^a)(1 + e^{-a}) = 2 + e^a + e^{-a} = (1 + e^{-a})^2 e^{a}\) gives the middle form. In plain words: **the sigmoid’s slope is its value times one minus its value**, largest (\(1/4\)) at \(a = 0\) and tiny far away. At \(a_2 = 1.5847\) it is \(0.8299 \cdot 0.1701 = 0.1412\), the number we used by hand.
+To see the equality, differentiate \(\sigma(a) = (1 + e^{-a})^{-1}\) to get \(e^{-a}/(1 + e^{-a})^2\). Then note \(1 - \sigma(a) = e^{-a}/(1 + e^{-a})\), so \(\sigma(a)(1 - \sigma(a)) = e^{-a}/(1 + e^{-a})^2\) too. And multiplying out \((1 + e^a)(1 + e^{-a}) = 2 + e^a + e^{-a} = (1 + e^{-a})^2 e^{a}\) gives the middle form. In plain words: **the sigmoid’s slope is its value times one minus its value**, largest (\(1/4\)) at \(a = 0\) and tiny far away. At \(a_2 \approx 1.5846\) it is \(0.8299 \cdot 0.1701 = 0.1412\), the number we used by hand.
 
 ```python
 import math
@@ -611,13 +611,13 @@ import math
 def sigma(a):
     return 1 / (1 + math.exp(-a))
 
-for a in (-2.0, 0.0, 1.0, 1.5847):
+for a in (-2.0, 0.0, 1.0, 1.5846):
     left = sigma(a) * (1 - sigma(a))
     right = 1 / ((1 + math.exp(a)) * (1 + math.exp(-a)))
     print(a, round(left, 4), round(right, 4))
 ```
 
-It prints `-2.0 0.105 0.105`, `0.0 0.25 0.25`, `1.0 0.1966 0.1966` and `1.5847 0.1412 0.1412`.
+It prints `-2.0 0.105 0.105`, `0.0 0.25 0.25`, `1.0 0.1966 0.1966` and `1.5846 0.1412 0.1412`.
 
 **The chain rule.** For \(g: \mathbb R^k \to \mathbb R^n\) and \(f: \mathbb R^n \to \mathbb R^m\), the composition \(f \circ g\) (first \(g\), then \(f\)) has Jacobian
 

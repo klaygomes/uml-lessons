@@ -457,13 +457,21 @@ Most of the proof is a chain of short steps. Let’s walk around the circle.
 
 ## Counting labellings: the growth function
 
-We need a name for “how many labellings of \(m\) points, at most”.
+We need a name for “how many labellings of \(m\) points, at most”. For thresholds and two points, every pair of distinct scores gets the same three labellings we found on \(\{0.3, 0.7\}\), so the answer for \(m = 2\) is 3. For a class where the choice of points matters, we take the best choice, the set on which the class is most flexible.
 
 **Definition (growth function).** The **growth function** of \(\mathcal H\) is \(\tau_{\mathcal H}: \mathbb N \to \mathbb N\),
 
 \[ \tau_{\mathcal H}(m) = \max_{C \subset \mathcal X : |C| = m} |\mathcal H_C|. \]
 
-In words: the largest number of distinct labellings that \(\mathcal H\) produces on any set of \(m\) points. Always \(\tau_{\mathcal H}(m) \le 2^m\), and if \(m \le \mathrm{VCdim}(\mathcal H)\), then some set of size \(m\) is shattered, so \(\tau_{\mathcal H}(m) = 2^m\). The interesting question is what happens past the VC dimension. Let’s just count, for thresholds and intervals. On the line, only the order of the points matters, so the points \(0, 1, \dots, m-1\) are as good as any \(m\) distinct scores. The last columns compute a sum of binomial coefficients that will turn out to be the answer:
+From the inside out:
+
+- \(|\mathcal H_C|\) is how many distinct labellings the class produces on the set \(C\).
+- Under \(\max\), the condition \(C \subset \mathcal X : |C| = m\) reads “over every set \(C\) of domain points such that \(C\) has \(m\) points”, and \(\max\) keeps the largest count.
+- \(\tau\) is the Greek letter tau, and \(\tau_{\mathcal H}: \mathbb N \to \mathbb N\) says the growth function takes a whole number of points (\(\mathbb N\), the natural numbers) and returns a whole number of labellings.
+
+In plain words: **\(\tau_{\mathcal H}(m)\) is the largest number of distinct labellings that \(\mathcal H\) produces on any set of \(m\) points.** For thresholds, \(\tau(2) = 3\). In the snippet below, `tau` counts \(|\mathcal H_C|\) on one set; on the line that is already the maximum, as the next paragraph explains. Always \(\tau_{\mathcal H}(m) \le 2^m\), and if \(m \le \mathrm{VCdim}(\mathcal H)\), then some set of size \(m\) is shattered, so \(\tau_{\mathcal H}(m) = 2^m\). The interesting question is what happens past the VC dimension. Let’s just count, for thresholds and intervals. On the line, only the order of the points matters, so the points \(0, 1, \dots, m-1\) are as good as any \(m\) distinct scores.
+
+The snippet also computes one more count, which will turn out to be the answer. The **binomial coefficient** \(\binom{m}{i}\), read “\(m\) choose \(i\)”, is the number of ways to pick \(i\) of \(m\) points: from four messages you can pick two in \(\binom{4}{2} = 6\) ways, one in \(\binom{4}{1} = 4\) ways, none in \(\binom{4}{0} = 1\) way. The sum \(\sum_{i=0}^{d} \binom{m}{i}\) adds those counts for \(i = 0, 1, \dots, d\): the number of ways to pick at most \(d\) of the \(m\) points. With \(m = 4\) and \(d = 1\) it is \(1 + 4 = 5\). In the code, `comb(m, i)` is \(\binom{m}{i}\) and `sauer(m, d)` is the sum:
 
 ```python
 from math import comb
@@ -507,17 +515,36 @@ Read the columns as: \(m\), \(\tau_{\mathrm{thr}}(m)\), \(\sum_{i \le 1} \binom{
 
 \[ \tau_{\mathcal H}(m) \le \sum_{i=0}^{d} \binom{m}{i}. \]
 
-In particular, if \(1 \le d \le m\), then \(\tau_{\mathcal H}(m) \le (em/d)^d\).
+The left side is the growth function, the most labellings the class makes on \(m\) points. The right side counts the ways to pick at most \(d\) of those \(m\) points, \(\binom{m}{i}\) ways for each size \(i\) from 0 to \(d\). In plain words: **a class that shatters no more than \(d\) points can label \(m\) points in no more ways than there are ways to choose at most \(d\) of them.** For intervals, \(d = 2\), and \(m = 8\): \(1 + 8 + 28 = 37\), the last row of the table, against \(2^8 = 256\). The `sauer` function in the table snippet is this right-hand side.
+
+In particular, if \(1 \le d \le m\), then \(\tau_{\mathcal H}(m) \le (em/d)^d\). This simpler bound is a power with fixed exponent \(d\), a polynomial in \(m\), with \(e \approx 2.718\) again; for \(m = 8\) and \(d = 2\) it is \((4e)^2 \approx 118\), looser than 37 but far below 256. The last snippet of this section checks it.
 
 It is also called the Sauer-Shelah-Perles lemma: Sauer, Shelah with Perles, and Vapnik and Chervonenkis each found it independently.
 
-The proof is a beautiful piece of counting, and the trick is to prove something stronger. Instead of counting labellings against a formula, count them against the shattered subsets.
+The proof is a beautiful piece of counting, and the trick is to prove something stronger. Instead of counting labellings against a formula, count them against the shattered subsets. Back to thresholds on \(\{0.3, 0.7\}\): they make 3 labellings. Which parts of the set do they shatter? The **empty set**, written \(\emptyset\), the set with no points, counts as shattered, since its single labelling (the empty one) is produced by any hypothesis. Each single point is shattered. The pair is not. That is 3 shattered subsets, the same as the number of labellings. The stronger claim says the labellings can never outnumber the shattered subsets.
 
 **Stronger claim.** For every class \(\mathcal H\) (non-empty) and every finite set \(C = \{c_1, \dots, c_m\}\),
 
 \[ |\mathcal H_C| \le \left| \{ B \subseteq C : \mathcal H \text{ shatters } B \} \right|. \]
 
-The empty set counts as shattered, since its single labelling (the empty one) is produced by any hypothesis.
+On the left, the number of labellings of \(C\). On the right, the braces collect every subset \(B\) of \(C\) (\(\subseteq\) allows \(B\) to be all of \(C\), or empty) such that the class shatters \(B\), and the outer bars count them. In plain words: **a class labels a set in at most as many ways as the set has shattered pieces.** Here is the count for thresholds on \(\{0.3, 0.7\}\), with one cut-off per gap as before:
+
+```python
+from itertools import combinations
+
+C = [0.3, 0.7]
+H = [lambda x, t=t: int(x > t) for t in (0.0, 0.5, 1.0)]
+HC = {tuple(h(c) for c in C) for h in H}
+
+def shatters(B):
+    labels = {tuple(h(c) for c in B) for h in H}
+    return len(labels) == 2 ** len(B)
+
+subsets = [B for k in range(3) for B in combinations(C, k)]
+print(len(HC), [B for B in subsets if shatters(B)])
+```
+
+It prints `3 [(), (0.3,), (0.7,)]`: three labellings, three shattered subsets, the empty one first.
 
 *Why the stronger claim gives Sauer’s lemma.* If \(\mathrm{VCdim}(\mathcal H) \le d\), no subset of size above \(d\) is shattered, so the shattered subsets of \(C\) are among the subsets of size \(0, 1, \dots, d\), of which there are \(\sum_{i=0}^{d} \binom{m}{i}\). Apply this to the set \(C\) that achieves the maximum in \(\tau_{\mathcal H}(m)\).
 
@@ -531,29 +558,62 @@ The empty set counts as shattered, since its single labelling (the empty one) is
 
 \[ Y_1 = \{ (y_2, \dots, y_m) : (0, y_2, \dots, y_m) \in \mathcal H_C \text{ and } (1, y_2, \dots, y_m) \in \mathcal H_C \}. \]
 
-So \(Y_0\) holds every tail that occurs, and \(Y_1\) the tails that occur with both labels on \(c_1\).
+Both sets are built the same way. Each vector \((y_2, \dots, y_m)\) is a tail, the labels on every point but the first; the condition after the colon asks whether that tail appears in \(\mathcal H_C\) with first label 0, with first label 1, or with both. The only difference is the word: “or” in \(Y_0\), “and” in \(Y_1\). In plain words: **\(Y_0\) holds every tail that occurs, and \(Y_1\) the tails that occur with both labels on \(c_1\).** On \(\{0.3, 0.7\}\), with \(c_1 = 0.3\), the labellings are \((0, 0)\), \((0, 1)\) and \((1, 1)\). The tails are \((0)\) and \((1)\), so \(Y_0\) has both. Only the tail \((1)\) comes with both first labels, from \((0, 1)\) and \((1, 1)\), so \(Y_1 = \{(1)\}\).
 
-*Step 1: \(|\mathcal H_C| = |Y_0| + |Y_1|\).* Group the labellings in \(\mathcal H_C\) by tail. A tail in \(Y_0\) but not \(Y_1\) occurs with exactly one label on \(c_1\), so it accounts for one labelling. A tail in \(Y_1\) accounts for two. Since \(Y_1 \subseteq Y_0\), the total is \(|Y_0 \setminus Y_1| + 2|Y_1| = |Y_0| + |Y_1|\).
+```python
+HC = {(0, 0), (0, 1), (1, 1)}
+Y0 = {v[1:] for v in HC}
+Y1 = {v[1:] for v in HC if (1 - v[0],) + v[1:] in HC}
+print(sorted(Y0), sorted(Y1), len(Y0) + len(Y1))
+```
+
+It prints `[(0,), (1,)] [(1,)] 3`. In the code, `v[1:]` is the tail, and the test for `Y1` asks whether the vector with its first label flipped is also present. The sizes add up to \(|\mathcal H_C| = 3\), which is Step 1.
+
+*Step 1: \(|\mathcal H_C| = |Y_0| + |Y_1|\).* Group the labellings in \(\mathcal H_C\) by tail. A tail in \(Y_0\) but not \(Y_1\) occurs with exactly one label on \(c_1\), so it accounts for one labelling. A tail in \(Y_1\) accounts for two. Since \(Y_1 \subseteq Y_0\), the total is \(|Y_0 \setminus Y_1| + 2|Y_1| = |Y_0| + |Y_1|\). Here \(Y_0 \setminus Y_1\), “\(Y_0\) minus \(Y_1\)”, is the set of tails in \(Y_0\) but not in \(Y_1\); in the example, \(\{(0)\}\), one labelling, plus twice the one tail in \(Y_1\), gives 3.
 
 *Step 2: bound \(Y_0\).* \(Y_0\) is exactly the restriction of \(\mathcal H\) to \(C'\): the tails that occur are the labellings of \(C'\). By the induction hypothesis on \(C'\),
 
 \[ |Y_0| = |\mathcal H_{C'}| \le |\{ B \subseteq C' : \mathcal H \text{ shatters } B \}| = |\{ B \subseteq C : c_1 \notin B,\ \mathcal H \text{ shatters } B \}|. \]
 
-*Step 3: bound \(Y_1\) through a smaller class.* Let \(\mathcal H'\) be the hypotheses that have a **partner**: another hypothesis in \(\mathcal H\) that agrees with it on \(C'\) and disagrees on \(c_1\),
+The notation is the stronger claim’s, applied to \(C'\); the last equality just renames subsets of \(C'\) as subsets of \(C\) that leave out \(c_1\), with \(\notin\) read “is not in”. In the example, \(C' = \{0.7\}\) has two shattered subsets, \(\emptyset\) and \(\{0.7\}\), against \(|Y_0| = 2\).
+
+*Step 3: bound \(Y_1\) through a smaller class.* Let \(\mathcal H'\) be the hypotheses that have a **partner**: another hypothesis in \(\mathcal H\) that agrees with it on \(C'\) and disagrees on \(c_1\). In the example, the cut-off 0.5 labels \((0, 1)\) and the cut-off 0.0 labels \((1, 1)\): same tail, different first label, so each is the other’s partner. The cut-off 1.0 labels \((0, 0)\), and nothing labels \((1, 0)\), so it has no partner. In symbols,
 
 \[ \mathcal H' = \{ h \in \mathcal H : \exists h' \in \mathcal H,\ h'(c_1) = 1 - h(c_1),\ h'(c_i) = h(c_i) \text{ for } i = 2, \dots, m \}. \]
+
+From the inside out: \(h'(c_i) = h(c_i)\) for \(i = 2, \dots, m\) says \(h'\) copies \(h\) on every point of \(C'\); \(h'(c_1) = 1 - h(c_1)\) says it flips the label on \(c_1\), since \(1 - 0 = 1\) and \(1 - 1 = 0\); \(\exists h' \in \mathcal H\) reads “there exists some \(h'\) in the class” with both properties; and the braces keep every \(h\) for which such an \(h'\) exists. In plain words: **\(\mathcal H'\) is the set of rules that have a twin differing only at the first point.**
+
+```python
+C, ts = [0.3, 0.7], (0.0, 0.5, 1.0)
+lab = {t: tuple(int(c > t) for c in C) for t in ts}
+
+def has_partner(t):
+    return any(lab[u][0] == 1 - lab[t][0] and
+               lab[u][1:] == lab[t][1:] for u in ts)
+
+H1 = [t for t in ts if has_partner(t)]
+print(H1, {lab[t][1:] for t in H1})
+```
+
+It prints `[0.0, 0.5] {(1,)}`: two cut-offs have partners, and their tails make exactly \(Y_1\). The `any` is the \(\exists\).
 
 A tail is in \(Y_1\) exactly when it is the tail of a hypothesis with a partner, so \(Y_1 = \mathcal H'_{C'}\). By the induction hypothesis, now applied to the class \(\mathcal H'\) on \(C'\),
 
 \[ |Y_1| = |\mathcal H'_{C'}| \le |\{ B \subseteq C' : \mathcal H' \text{ shatters } B \}|. \]
 
+Same notation as Step 2, now for the partner class. In the example, \(\mathcal H'\) labels 0.7 only as junk, so it shatters only \(\emptyset\): one subset, against \(|Y_1| = 1\).
+
 *Step 4: each set shattered by \(\mathcal H'\) grows by \(c_1\).* Suppose \(\mathcal H'\) shatters \(B \subseteq C'\). Take any labelling of \(B \cup \{c_1\}\). Some \(g \in \mathcal H'\) produces its part on \(B\). The partner \(g'\) of \(g\) agrees with \(g\) on all of \(C'\), hence on \(B\), and gives \(c_1\) the other label; and \(g'\) is itself in \(\mathcal H'\), with \(g\) as its partner. One of \(g, g'\) gives \(c_1\) the label we want. So \(\mathcal H'\) shatters \(B \cup \{c_1\}\), and since \(\mathcal H' \subseteq \mathcal H\), so does \(\mathcal H\). The map \(B \mapsto B \cup \{c_1\}\) is one-to-one from subsets of \(C'\) to subsets of \(C\) that contain \(c_1\), so
 
 \[ |Y_1| \le |\{ B \subseteq C : c_1 \in B,\ \mathcal H \text{ shatters } B \}|. \]
 
+Here \(B \cup \{c_1\}\) is \(B\) with the point \(c_1\) added (\(\cup\) reads “together with”), and \(B \mapsto B \cup \{c_1\}\) is the rule that sends each \(B\) to that bigger set. In the example, \(\mathcal H'\) shatters \(\emptyset\), which grows into \(\{0.3\}\), and thresholds do shatter \(\{0.3\}\): one shattered subset containing \(c_1\), against \(|Y_1| = 1\).
+
 *Step 5: add.* The shattered subsets of \(C\) split into those without \(c_1\) (Step 2) and those with it (Step 4), so
 
 \[ |\mathcal H_C| = |Y_0| + |Y_1| \le |\{ B \subseteq C : \mathcal H \text{ shatters } B \}|. \qquad \blacksquare \]
+
+In the example that is \(3 = 2 + 1 \le 2 + 1 = 3\).
 
 [[diagram:sauer-split]]
 
@@ -580,13 +640,29 @@ for trial in range(2000):
 print(len(HC), len(Y0), len(Y1), n_sh)
 ```
 
-All 2,000 assertions hold, and it prints the last trial, `23 14 9 26`: 23 labellings, which split into 14 tails plus 9 doubled tails, against 26 shattered subsets.
+The `Y0` and `Y1` lines are the same two lines as in the small example above, and `n_sh` counts the right side of the stronger claim. All 2,000 assertions hold, and it prints the last trial, `23 14 9 26`: 23 labellings, which split into 14 tails plus 9 doubled tails, against 26 shattered subsets.
 
 **The polynomial bound.** It remains to show \(\sum_{i=0}^{d} \binom{m}{i} \le (em/d)^d\) when \(1 \le d \le m\). Since \(d/m \le 1\), raising it to a smaller power makes it bigger, so \((d/m)^d \le (d/m)^i\) for every \(i \le d\). Hence
 
 \[ \left(\frac{d}{m}\right)^d \sum_{i=0}^{d} \binom{m}{i} \le \sum_{i=0}^{d} \binom{m}{i} \left(\frac{d}{m}\right)^i \le \sum_{i=0}^{m} \binom{m}{i} \left(\frac{d}{m}\right)^i = \left(1 + \frac{d}{m}\right)^m \le e^d. \]
 
-The second step adds non-negative terms, the third is the binomial theorem, and the last uses \(1 + u \le e^u\). Multiplying both sides by \((m/d)^d\) gives the bound. A quick check over every \(1 \le d \le m < 200\), and a look at the sizes involved for \(d = 2\):
+The second step adds non-negative terms, the third is the binomial theorem, and the last uses \(1 + u \le e^u\). Multiplying both sides by \((m/d)^d\) gives the bound.
+
+Read the chain left to right, writing \(q = d/m\) for the fraction. The first expression is the Sauer sum shrunk by \(q^d\). The second gives each term its own, larger, factor \(q^i\). The third lets \(i\) run past \(d\) all the way to \(m\), so it only adds terms. The **binomial theorem** says that sum is exactly \((1 + q)^m\): multiply out \(m\) copies of \(1 + q\), and choosing \(q\) from \(i\) of the brackets can be done in \(\binom{m}{i}\) ways. Finally \(1 + q \le e^q\), raised to the power \(m\), gives \(e^{qm} = e^d\). In plain words: **shrinking the Sauer sum by \((d/m)^d\) leaves something no bigger than \(e^d\), so the sum is at most \((em/d)^d\).** With the interval numbers \(m = 8\), \(d = 2\), so \(q = 1/4\):
+
+```python
+from math import comb, e
+
+m, d = 8, 2
+q = d / m
+left = q ** d * sum(comb(m, i) for i in range(d + 1))
+mid = sum(comb(m, i) * q ** i for i in range(d + 1))
+full = sum(comb(m, i) * q ** i for i in range(m + 1))
+print(round(left, 4), mid, round(full, 4),
+      round((1 + q) ** m, 4), round(e ** d, 4))
+```
+
+It prints `2.3125 4.75 5.9605 5.9605 7.3891`: each link of the chain in order, the third and fourth equal as the binomial theorem promises. Multiplying 7.39 back by \(4^2 = 16\) gives the 118 from before, against the true 37. A quick check over every \(1 \le d \le m < 200\), and a look at the sizes involved for \(d = 2\):
 
 ```python
 from math import comb, e
@@ -606,31 +682,108 @@ It prints `0.7358`, so the sum never exceeds the bound, and then `10 56 185 4`, 
 
 ## Uniform convergence from a small effective size
 
-Now the second part of the plan. Lesson 4 proved uniform convergence for a finite class by a union bound over its \(|\mathcal H|\) hypotheses, paying \(\log |\mathcal H|\). The idea here is to pay only for the labellings, \(\log \tau_{\mathcal H}\). Throughout, \(\mathcal D\) is a distribution over examples \(z = (x, y) \in \mathcal X \times \{0, 1\}\), the loss is \(\ell(h, z) = \mathbb 1[h(x) \ne y]\), and we assume \(\mathcal X\) has at least \(2m\) points (true for the score line).
+Now the second part of the plan. Lesson 4 proved uniform convergence for a finite class by a union bound over its \(|\mathcal H|\) hypotheses, paying \(\log |\mathcal H|\). The idea here is to pay only for the labellings, \(\log \tau_{\mathcal H}\). Throughout, \(\mathcal D\) is a distribution over examples \(z = (x, y) \in \mathcal X \times \{0, 1\}\), the loss is \(\ell(h, z) = \mathbb 1[h(x) \ne y]\), and we assume \(\mathcal X\) has at least \(2m\) points (true for the score line). The loss \(\ell\) (a script l) is the 0-1 loss as a formula: the indicator of a wrong label. With \(t^\star = 0.6\), the threshold \(h_{0.5}\) on the example \(z = (0.55, 0)\) says junk while the truth says keep, so \(\ell(h_{0.5}, z) = 1\); averaged over \(S\), these losses give \(L_S(h)\).
+
+Two more symbols, both from lesson 2. \(\mathbb E[\cdot]\) is the **expected value**, the long-run average of a random number; with a subscript such as \(\mathbb E_{S \sim \mathcal D^m}\), it says which draw is being averaged over. And \(\sup_{h \in \mathcal H}\), the **supremum**, is the largest value over all rules in the class, or, when no single rule attains it, the value the rules creep up to; for our purposes, read it as “the worst case over the class”. In the uniform-convergence snippet earlier, the `max` over 101 thresholds was a stand-in for a supremum over all of them.
 
 **Theorem (uniform convergence from a small growth function).** For every class \(\mathcal H\), every distribution \(\mathcal D\) and every \(\delta \in (0, 1)\), with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\), every \(h \in \mathcal H\) satisfies
 
 \[ |L_{\mathcal D}(h) - L_S(h)| \le \frac{4 + 2\sqrt{\log \tau_{\mathcal H}(2m)}}{\delta \sqrt{2m}}. \]
 
-The proof bounds the expected worst gap, \(\mathbb E_{S \sim \mathcal D^m}\left[\sup_{h \in \mathcal H} |L_{\mathcal D}(h) - L_S(h)|\right]\), by \((4 + 2\sqrt{\log \tau_{\mathcal H}(2m)})/\sqrt{2m}\), and then converts expectation into probability. It is the deepest proof in the lesson, so let’s take it in seven steps, each saying what changes and why.
+From the inside out. \(\tau_{\mathcal H}(2m)\) is the growth function at twice the training size, the number of labellings that matters; its log, square-rooted, is the price of the class; adding 4 and doubling come from the proof; and the bottom, \(\delta \sqrt{2m}\), shrinks the whole thing as labels grow and inflates it as you demand more confidence. On the left is the gap for one rule, and “every \(h\)” makes it a bound on the worst gap. In plain words: **with probability at least \(1 - \delta\), no rule’s training score is off by more than a quantity that depends on the class only through how many ways it labels \(2m\) points.** For thresholds, \(\tau(2m) = 2m + 1\); with \(m = 200\) and \(\delta = 0.1\):
+
+```python
+from math import log, sqrt
+
+m, delta = 200, 0.1
+tau = 2 * m + 1
+expected = (4 + 2 * sqrt(log(tau))) / sqrt(2 * m)
+print(tau, round(expected, 4), round(expected / delta, 4))
+```
+
+It prints `401 0.4448 4.4483`. The middle number is the bound before dividing by \(\delta\), and the last is the theorem’s bound: 4.45, more than 1, so at 200 labels it says nothing, since a gap between two risks never exceeds 1. The bound shrinks like \(\sqrt{\log m / m}\), so it does bite eventually; the end of the next section finds where.
+
+The proof bounds the expected worst gap, \(\mathbb E_{S \sim \mathcal D^m}\left[\sup_{h \in \mathcal H} |L_{\mathcal D}(h) - L_S(h)|\right]\), by \((4 + 2\sqrt{\log \tau_{\mathcal H}(2m)})/\sqrt{2m}\), the middle number above, and then converts expectation into probability. It is the deepest proof in the lesson, so let’s take it in seven steps, each saying what changes and why.
 
 *Step 1: from expectation to probability.* Let \(Z = \sup_{h} |L_{\mathcal D}(h) - L_S(h)|\), a non-negative random variable. **Markov’s inequality** says that for a non-negative \(Z\) and any \(a > 0\), \(\mathbb P[Z \ge a] \le \mathbb E[Z]/a\). (Proof: \(Z \ge a \cdot \mathbb 1[Z \ge a]\) pointwise; take expectations.) With \(a = \mathbb E[Z]/\delta\), the probability that \(Z \ge \mathbb E[Z]/\delta\) is at most \(\delta\). So a bound on \(\mathbb E[Z]\), divided by \(\delta\), holds with probability at least \(1 - \delta\). (If \(\mathbb E[Z] = 0\), then \(Z = 0\) with probability 1 and there is nothing to prove.) It remains to bound \(\mathbb E[Z]\).
+
+Markov’s inequality, read slowly: \(\mathbb P[Z \ge a]\) is the chance that \(Z\) reaches the level \(a\), and \(\mathbb E[Z]/a\) is its average measured in units of \(a\). In plain words: **a non-negative quantity can rarely be many times its own average.** If a gap averages 0.04, it can reach 0.4 at most a tenth of the time. Here is one rule’s gap, for the threshold \(h_{0.5}\) with \(t^\star = 0.6\), whose true risk is 0.1, over 20,000 training sequences of 30 uniform scores:
+
+```python
+import random
+
+rng, m, delta = random.Random(0), 30, 0.1
+Z = [abs(sum(0.5 < rng.random() <= 0.6 for _ in range(m)) / m
+         - 0.1) for _ in range(20_000)]
+EZ = sum(Z) / len(Z)
+share = sum(z >= EZ / delta for z in Z) / len(Z)
+print(round(EZ, 4), round(EZ / delta, 4), share)
+```
+
+It prints `0.0427 0.4273 0.0`. The gap averages 0.043, Markov allows it to reach ten times that, 0.43, at most 10% of the time, and in fact it never did. Markov is safe but generous, and that generosity is the \(1/\delta\) in the theorem.
 
 *Step 2: a ghost sample.* The trouble with \(L_{\mathcal D}(h)\) is that it involves the whole distribution. Replace it with something that looks like \(L_S\). Imagine a second, independent training sequence \(S' = (z'_1, \dots, z'_m) \sim \mathcal D^m\), a **ghost sample** that nobody ever collects. Each \(\ell(h, z'_i)\) has mean \(L_{\mathcal D}(h)\), so by linearity of expectation \(L_{\mathcal D}(h) = \mathbb E_{S'}[L_{S'}(h)]\). Then
 
 \[ |L_{\mathcal D}(h) - L_S(h)| = \left| \mathbb E_{S'}\left[ L_{S'}(h) - L_S(h) \right] \right| \le \mathbb E_{S'}\left| L_{S'}(h) - L_S(h) \right| \le \mathbb E_{S'}\left[ \sup_{h' \in \mathcal H} |L_{S'}(h') - L_S(h')| \right]. \]
 
-The first inequality is “the absolute value of an average is at most the average of absolute values”. The second holds because the quantity inside the expectation can only grow when we replace it by its supremum over the class. The right side no longer depends on \(h\), so it also bounds the supremum over \(h\) of the left side. Taking \(\mathbb E_S\) of both sides,
+The first inequality is “the absolute value of an average is at most the average of absolute values”. The second holds because the quantity inside the expectation can only grow when we replace it by its supremum over the class. The right side no longer depends on \(h\), so it also bounds the supremum over \(h\) of the left side.
+
+Read the chain once more as a whole. The left is the gap we care about. The first expression rewrites the true risk as the average ghost score, \(\mathbb E_{S'}\) being the average over all the ghost samples you might draw. The prime in \(h'\) only gives the worst-case rule its own name. In plain words: **the gap between true and training risk is at most the average, over imaginary second samples, of the worst gap between two training scores.** For the threshold \(h_{0.5}\) (true risk 0.1) and one real sample of 30 scores:
+
+```python
+import random
+
+rng, m = random.Random(0), 30
+wrong = lambda x: 0.5 < x <= 0.6
+L = lambda xs: sum(map(wrong, xs)) / m
+S = [rng.random() for _ in range(m)]
+ghosts = [L([rng.random() for _ in range(m)])
+          for _ in range(20_000)]
+mean = sum(ghosts) / len(ghosts)
+spread = sum(abs(g - L(S)) for g in ghosts) / len(ghosts)
+print(L(S), round(mean, 4), round(abs(mean - L(S)), 4),
+      round(spread, 4))
+```
+
+It prints `0.1 0.1001 0.0001 0.0427`. The ghost scores average 0.1001, the true risk, as linearity promised; this real sample happens to have no gap at all; and the average absolute gap to a ghost, 0.043, is larger, as the first inequality allows.
+
+Taking \(\mathbb E_S\) of both sides, and writing each score as an average of losses,
 
 \[ \mathbb E_S[Z] \le \mathbb E_{S, S'}\left[ \sup_{h \in \mathcal H} \left| \frac{1}{m} \sum_{i=1}^{m} \left( \ell(h, z'_i) - \ell(h, z_i) \right) \right| \right]. \]
+
+Nothing new here but the notation \(\sum_{i=1}^{m}\), “add up for \(i = 1, 2, \dots, m\)”: \(L_{S'}(h) - L_S(h)\) is the average, over positions \(i\), of the ghost’s loss minus the real loss at that position, and \(\mathbb E_{S, S'}\) averages over both samples.
 
 *Step 3: random signs.* The \(2m\) examples \(z_1, \dots, z_m, z'_1, \dots, z'_m\) are i.i.d. So if we swap \(z_i\) with \(z'_i\) for some indices \(i\), the joint distribution of the \(2m\) examples does not change, and neither does the expectation of any function of them. Swapping at index \(i\) flips the sign of the \(i\)-th term \(\ell(h, z'_i) - \ell(h, z_i)\). So for every sign vector \(\sigma \in \{\pm 1\}^m\),
 
 \[ \mathbb E_{S, S'}\left[ \sup_{h} \left| \frac{1}{m} \sum_{i} \left( \ell(h, z'_i) - \ell(h, z_i) \right) \right| \right] = \mathbb E_{S, S'}\left[ \sup_{h} \left| \frac{1}{m} \sum_{i} \sigma_i \left( \ell(h, z'_i) - \ell(h, z_i) \right) \right| \right]. \]
 
+Here \(\sigma\) (sigma) is a list of \(m\) signs, each \(+1\) or \(-1\), and \(\{\pm 1\}^m\) is the set of all \(2^m\) such lists; \(\sigma_i = -1\) means “swap the real and ghost example at position \(i\)”, which turns \(\ell(h, z'_i) - \ell(h, z_i)\) into its negative. In plain words: **because the real and ghost examples are interchangeable, swapping any of them leaves the average worst gap unchanged.** A world small enough to average exactly: scores 0.55, 0.65 or 0.9, equally likely, \(t^\star = 0.6\), two rules (\(t = 0.5\) and \(t = 0.7\)) and \(m = 2\), so there are four sign vectors:
+
+```python
+from itertools import product
+
+pts, t_star, m = (0.55, 0.65, 0.9), 0.6, 2
+H = [lambda x, t=t: (x > t) != (x > t_star) for t in (0.5, 0.7)]
+
+def value(sigma):
+    total = 0
+    for z in product(pts, repeat=2 * m):
+        S, G = z[:m], z[m:]
+        total += max(abs(sum(s * (h(g) - h(x))
+                             for s, x, g in zip(sigma, S, G))) / m
+                     for h in H)
+    return round(total / len(pts) ** (2 * m), 4)
+
+print([value(s) for s in product((1, -1), repeat=m)])
+```
+
+It prints `[0.4938, 0.4938, 0.4938, 0.4938]`: the same value for every sign vector. Each `h` returns the loss itself, `max` is the supremum over the two rules, and the loop over all \(3^4\) equally likely draws is \(\mathbb E_{S, S'}\).
+
 The right side has the same value for all \(2^m\) sign vectors, so it also equals their average. Draw \(\sigma\) uniformly, each \(\sigma_i\) an independent fair \(\pm 1\) coin. Averaging over the finitely many \(\sigma\) and swapping the order of the two averages (linearity of expectation),
 
 \[ \mathbb E_S[Z] \le \mathbb E_{S, S'}\, \mathbb E_{\sigma}\left[ \sup_{h \in \mathcal H} \left| \frac{1}{m} \sum_{i=1}^{m} \sigma_i \left( \ell(h, z'_i) - \ell(h, z_i) \right) \right| \right]. \]
+
+The only new piece is \(\mathbb E_\sigma\), the average over the fair coin flips, taken inside the average over the two samples; in the small world above it is the average of four equal numbers, 0.4938.
 
 [[diagram:ghost-sample]]
 
@@ -640,13 +793,33 @@ The right side has the same value for all \(2^m\) sign vectors, so it also equal
 
 \[ \theta_h = \frac{1}{m} \sum_{i=1}^{m} \sigma_i c_i, \qquad c_i = \ell(h, z'_i) - \ell(h, z_i) \in \{-1, 0, 1\}. \]
 
-With \(S, S'\) fixed, the \(c_i\) are fixed numbers and only the signs are random. The terms \(\sigma_i c_i\) are independent, each has mean 0, and each lies in \([-1, 1]\). **Hoeffding’s inequality** from lesson 4 says that an average of \(m\) independent variables with values in \([a, b]\) is more than \(\rho\) from its mean with probability at most \(2\exp(-2m\rho^2/(b - a)^2)\). (Lesson 4 stated it for identically distributed variables, but its proof multiplies one bound per variable and never uses that they share a distribution, so it holds for independent ones.) Here \(b - a = 2\), so
+Here \(c_i\) is the loss difference at position \(i\): 1 if \(h\) is wrong on the ghost example and right on the real one, \(-1\) the other way round, 0 if it does the same on both. \(\theta_h\) (theta) multiplies each difference by its random sign and averages. In plain words: **\(\theta_h\) is \(h\)’s ghost-minus-real gap after a fair coin has decided, position by position, which example counts as ghost.** If \(m = 4\), \(c = (1, 0, -1, 1)\) and the signs come up \((+1, -1, -1, +1)\), then \(\theta_h = (1 + 0 + 1 + 1)/4 = 0.75\).
+
+With \(S, S'\) fixed, the \(c_i\) are fixed numbers and only the signs are random. The terms \(\sigma_i c_i\) are independent, each has mean 0, and each lies in \([-1, 1]\). **Hoeffding’s inequality** from lesson 4 says that an average of \(m\) independent variables with values in \([a, b]\) is more than \(\rho\) from its mean with probability at most \(2\exp(-2m\rho^2/(b - a)^2)\), where \(\exp(u)\) is another way to write \(e^u\): the more variables and the narrower their range, the less likely a big miss. (Lesson 4 stated it for identically distributed variables, but its proof multiplies one bound per variable and never uses that they share a distribution, so it holds for independent ones.) Here \(b - a = 2\), so
 
 \[ \mathbb P_\sigma\left[ |\theta_h| > \rho \right] \le 2 \exp\left( -\frac{m \rho^2}{2} \right). \]
 
 A union bound over the at most \(|\mathcal H_C|\) chosen hypotheses gives
 
 \[ \mathbb P_\sigma\left[ \max_{h} |\theta_h| > \rho \right] \le 2 |\mathcal H_C| \exp\left( -\frac{m \rho^2}{2} \right) \quad \text{for every } \rho > 0. \]
+
+Read both displays from the inside out. \(\rho\) (rho) is a level you choose, \(|\theta_h| > \rho\) is the event that the signed gap overshoots it, \(\mathbb P_\sigma\) says only the coins are random. Hoeffding’s \(2\exp(-2m\rho^2/(b - a)^2)\) with \(b - a = 2\) becomes \(2\exp(-m\rho^2/2)\). The union bound then pays once per labelling, the factor \(|\mathcal H_C|\), and \(\max_h\) is the largest over the chosen rules. In plain words: **one rule’s signed gap rarely exceeds \(\rho\), and the chance that any of the \(|\mathcal H_C|\) rules does is at most that many times larger.** For thresholds on 400 scores, \(|\mathcal H_C| = 401\), with \(m = 200\), and the worst-spread case where every \(c_i = 1\):
+
+```python
+import math
+import random
+
+rng, m, n_labellings = random.Random(0), 200, 401
+c = [1] * m
+theta = lambda: sum(rng.choice((-1, 1)) * ci for ci in c) / m
+draws = [abs(theta()) for _ in range(20_000)]
+for rho in (0.2, 0.35):
+    one = 2 * math.exp(-m * rho ** 2 / 2)
+    seen = sum(x > rho for x in draws) / len(draws)
+    print(rho, seen, f"{one:.2g}", f"{n_labellings * one:.2g}")
+```
+
+It prints `0.2 0.0032 0.037 15`, then `0.35 0.0 9.6e-06 0.0038`. At \(\rho = 0.2\) the observed overshoot rate, 0.3%, sits under Hoeffding’s 3.7%, but the union bound over 401 labellings gives 15, which says nothing. At \(\rho = 0.35\) the union bound is down to 0.4%: paying for 401 labellings costs only a modestly higher level, because the exponential falls so fast.
 
 *Step 6: from a tail bound to an expectation.* We need \(\mathbb E_\sigma[\max_h |\theta_h|]\). Here is a small lemma that turns a tail bound of this shape into one.
 

@@ -335,15 +335,46 @@ Consequently, with probability at least \(1 - \delta\),
 
 \[ \forall h \in \mathcal H, \quad L_{\mathcal D}(h) \le L_S(h) + \min_{n : h \in \mathcal H_n} \varepsilon_n(m, w(n) \cdot \delta). \]
 
+This is the confidence budget from “A confidence budget, shared out”, now in symbols. In the first display, \(\varepsilon_n(m, w(n) \cdot \delta)\) is the gap of class \(\mathcal H_n\) computed with its share \(w(n)\delta\) instead of the whole budget. In the second, the upside-down A, \(\forall\), reads “for every”, and \(\min_{n : h \in \mathcal H_n}\) reads “the smallest, over every \(n\) such that \(h\) is in \(\mathcal H_n\)”: a list of size 3 is also in \(\mathcal H_4\), \(\mathcal H_5\) and so on, each class offers it a gap, and it may use the best one. In plain words: **except with probability \(\delta\), every list’s true risk is at most its empirical risk plus the smallest gap among the classes that contain it.** For the three-test list at 300 labels, with empirical risk 40/300, the classes \(\mathcal H_3, \dots, \mathcal H_6\) offer gaps 0.1381, 0.1533, 0.1676 and 0.1812, so the bound is \(0.1333 + 0.1381 = 0.2715\).
+
+```python
+import math
+
+def size_H(n):
+    return 2 * sum(2**k * math.perm(n, k) for k in range(n + 1))
+
+def gap(n, m, delta):
+    budget = 6 / (math.pi**2 * n**2) * delta
+    return math.sqrt(math.log(2 * size_H(n) / budget) / (2 * m))
+
+LS = 40 / 300
+gaps = {n: gap(n, 300, 0.05) for n in range(3, 7)}
+print({n: round(g, 4) for n, g in gaps.items()})
+print(round(LS + min(gaps.values()), 4))
+```
+
+It prints `{3: 0.1381, 4: 0.1533, 5: 0.1676, 6: 0.1812}` and `0.2715`. The dictionary runs over \(n \ge 3\) because those are the classes containing the list, and `min` is the \(\min_{n : h \in \mathcal H_n}\).
+
 *Proof.* Name the bad events. For each \(n\), let \(B_n\) be the set of training sequences \(S\) on which some \(h \in \mathcal H_n\) has \(|L_{\mathcal D}(h) - L_S(h)| > \varepsilon_n(m, w(n)\delta)\).
 
-First, each bad event is unlikely. Apply fact 1 to the class \(\mathcal H_n\) with confidence \(\delta_n = w(n)\delta\): it says exactly that \(\mathcal D^m(B_n) \le w(n)\delta\). (When \(w(n) = 0\), \(B_n\) is empty by our convention, and the inequality holds trivially.)
+First, each bad event is unlikely. Write \(\mathcal D^m(B)\) for the probability that a training sequence drawn from \(\mathcal D^m\) lands in the set \(B\). Apply fact 1 to the class \(\mathcal H_n\) with confidence \(\delta_n = w(n)\delta\): it says exactly that \(\mathcal D^m(B_n) \le w(n)\delta\). (When \(w(n) = 0\), \(B_n\) is empty by our convention, and the inequality holds trivially.)
 
 Second, the union of the bad events is unlikely. For any finite \(N\), the union bound from lesson 2 gives
 
 \[ \mathcal D^m\Big(\bigcup_{n \le N} B_n\Big) \le \sum_{n \le N} \mathcal D^m(B_n) \le \delta \sum_{n \le N} w(n) \le \delta. \]
 
-The sets \(\bigcup_{n \le N} B_n\) grow with \(N\) and their union over all \(N\) is \(\bigcup_n B_n\). A probability measure is continuous along increasing sequences of events, so \(\mathcal D^m(\bigcup_n B_n)\) is the limit of these probabilities as \(N \to \infty\), and a limit of numbers that are all at most \(\delta\) is at most \(\delta\).
+Read it left to right: the chance that at least one of the first \(N\) bad events happens, then the sum of their chances (the union bound), then each chance replaced by its share, then the shares, which never exceed the budget. In plain words: **the first \(N\) classes together fail with probability at most the shares they were given.** With \(\delta = 0.05\), the first class alone may use 0.0304 of it, the first six 0.0453, and the first thousand 0.05 to four decimals:
+
+```python
+import math
+
+delta = 0.05
+for N in (1, 6, 1000):
+    w = sum(6 / (math.pi**2 * n**2) for n in range(1, N + 1))
+    print(N, round(delta * w, 4))
+```
+
+It prints `1 0.0304`, `6 0.0453` and `1000 0.05`. The sets \(\bigcup_{n \le N} B_n\) grow with \(N\) and their union over all \(N\) is \(\bigcup_n B_n\). A probability measure is continuous along increasing sequences of events, so \(\mathcal D^m(\bigcup_n B_n)\) is the limit of these probabilities as \(N \to \infty\), and a limit of numbers that are all at most \(\delta\) is at most \(\delta\).
 
 Third, outside the union, every inequality holds. If \(S\) is in none of the \(B_n\), then for every \(n\) and every \(h \in \mathcal H_n\) the gap is at most \(\varepsilon_n(m, w(n)\delta)\). That event has probability at least \(1 - \delta\), which is the first claim. For the second, a hypothesis \(h\) may sit in several classes, and each of them gives a valid upper bound on \(L_{\mathcal D}(h)\); the smallest of them is still valid. \(\blacksquare\)
 
@@ -351,15 +382,38 @@ Write \(n(h) = \min\{n : h \in \mathcal H_n\}\). For our lists, \(n(h)\) is the 
 
 \[ L_{\mathcal D}(h) \le L_S(h) + \varepsilon_{n(h)}\big(m, w(n(h)) \cdot \delta\big). \]
 
+This reuses the notation just walked through, with the class picked by the list’s own size: **true risk at most empirical risk plus the gap of the list’s own class.** For our lists the gaps grow with \(n\), so the smallest gap is the one at \(n(h)\) and nothing is lost: the three-test list still gets \(0.1333 + 0.1381 = 0.2715\), the first entry of the dictionary above.
+
 **The SRM rule** returns a hypothesis that minimizes this bound:
 
 \[ \mathrm{SRM}(S) \in \operatorname*{argmin}_{h \in \mathcal H} \Big[ L_S(h) + \varepsilon_{n(h)}\big(m, w(n(h)) \cdot \delta\big) \Big]. \]
 
-Unlike ERM, it does not just chase low empirical risk. It trades some of it for a smaller gap, a bias towards classes it can certify, for the sake of a smaller estimation error.
+The square brackets hold the bound of one list. \(\operatorname{argmin}_{h \in \mathcal H}\) reads “the hypotheses \(h\) in \(\mathcal H\) at which the bracket is smallest”: not the smallest value itself, but the lists that achieve it. Several lists can tie, so the argmin is a set, and \(\in\) says SRM returns one of its members. In plain words: **SRM returns a list whose empirical risk plus its own gap is as small as possible.** At 300 labels that is the three-test list, with bound 0.2714 in the SRM table of “A confidence budget, shared out”, whose snippet computes exactly this bracket for the best list of each size.
+
+Unlike ERM, it does not just chase low empirical risk. It trades some of it for a smaller gap, a bias towards classes it can certify. Recall the split from lesson 5: the true risk of the returned list is the **approximation error**, the best true risk in the class it came from, plus the **estimation error**, how far it falls short of that best. SRM gives up a little approximation error for the sake of a smaller estimation error.
 
 **Theorem (SRM is a nonuniform learner).** Let \(\mathcal H = \bigcup_n \mathcal H_n\) with each \(\mathcal H_n\) having the uniform convergence property, and let \(w(n) = 6/(\pi^2 n^2)\). Then \(\mathcal H\) is nonuniformly learnable by the SRM rule, with
 
 \[ m^{\mathrm{NUL}}_{\mathcal H}(\varepsilon, \delta, h) \le m^{\mathrm{UC}}_{\mathcal H_{n(h)}}\Big(\frac{\varepsilon}{2}, \frac{6\delta}{(\pi n(h))^2}\Big). \]
+
+Read it from the inside out. \(6\delta/(\pi n(h))^2\) is \(w(n(h)) \cdot \delta\), the share of the budget given to the list’s size, written out. \(\varepsilon/2\) is half the accuracy, because the proof will pay the gap twice. And \(m^{\mathrm{UC}}_{\mathcal H_{n(h)}}\) is the uniform convergence sample size of the list’s own class, run at that half accuracy and that share. In plain words: **to compete with a list of size \(n\), SRM needs only as many labels as uniform convergence on \(\mathcal H_n\) needs at half the accuracy and the size’s share of the confidence.** For the three-test list, \(\varepsilon = 0.1\) and \(\delta = 0.05\): the share is \(0.05 \times 0.0675 = 0.00338\), \(\log(2 \times 158 / 0.00338) = 11.45\), and divided by \(2 \times 0.05^2 = 0.005\) that is 2,290 labels.
+
+```python
+import math
+
+def size_H(n):
+    return 2 * sum(2**k * math.perm(n, k) for k in range(n + 1))
+
+def m_nul(eps, delta, n):
+    budget = 6 * delta / (math.pi * n) ** 2
+    top = math.log(2 * size_H(n) / budget)
+    return math.ceil(top / (2 * (eps / 2) ** 2))
+
+print([m_nul(0.1, 0.05, n) for n in (1, 3, 5)])
+print([m_nul(0.1, 0.1, n) for n in range(1, 7)])
+```
+
+The first line prints `[1196, 2290, 3371]`: these are the real entries for the made-up dictionary after the definition, for sizes 1, 3 and 5 (“everything is junk”, the three-test list, \(f\)). The second line, at \(\varepsilon = \delta = 0.1\), prints `[1058, 1628, 2151, 2682, 3232, 3802]`; we will need it in the characterization proof.
 
 *Proof.* Fix \(\varepsilon\), \(\delta\), a hypothesis \(h \in \mathcal H\) to compete with, and a distribution \(\mathcal D\). Let \(m \ge m^{\mathrm{UC}}_{\mathcal H_{n(h)}}(\varepsilon/2, w(n(h))\delta)\), and let \(A\) be the SRM rule. The weights sum to exactly 1, so the SRM bound theorem applies: let \(G\) be its good event, on which every \(h' \in \mathcal H\) has \(|L_{\mathcal D}(h') - L_S(h')| \le \varepsilon_{n(h')}(m, w(n(h'))\delta)\). It has probability at least \(1 - \delta\). We now show that on \(G\), \(L_{\mathcal D}(A(S)) \le L_{\mathcal D}(h) + \varepsilon\), in four steps.
 
@@ -381,17 +435,37 @@ In particular: **every countable union of classes with the uniform convergence p
 
 \[ \mathcal H_n = \{h \in \mathcal H : m^{\mathrm{NUL}}_{\mathcal H}(1/10, 1/10, h) \le n\}. \]
 
+In words: **\(\mathcal H_n\) collects the hypotheses that the learner can compete with, to within 1/10 and except with probability 1/10, using at most \(n\) examples.** These are new classes, sorted by how many labels they need rather than by list size. If the learner were SRM on our lists, the second line printed above says sizes 1 and 2 need 1,058 and 1,628 labels, so \(\mathcal H_{2000}\) would hold every list of size at most 2, and \(\mathcal H_{4000}\) every list of size at most 6.
+
 Every \(h\) has some finite value of \(m^{\mathrm{NUL}}\), so it lands in some \(\mathcal H_n\), and \(\mathcal H = \bigcup_n \mathcal H_n\). It remains to show each \(\mathcal H_n\) is agnostic PAC learnable, and by the fundamental theorem it is enough to show its VC dimension is finite. We show it is less than \(2n\).
 
 Suppose not: then \(\mathcal H_n\) shatters some set \(C\) of \(2n\) messages (a subset of a shattered set is shattered). Recall the core of lesson 5’s No-Free-Lunch theorem: for any learner that sees \(m\) examples and any set \(C\) of size \(2m\), there is a labelling \(f_i: C \to \{0, 1\}\) such that, for the distribution \(\mathcal D_i\) that picks a message of \(C\) uniformly and labels it by \(f_i\),
 
 \[ \mathbb E_{S \sim \mathcal D_i^m}\big[L_{\mathcal D_i}(A(S))\big] \ge 1/4. \]
 
+Here \(\mathbb E\) is the **expected value**, the average over all the random training sequences, and its subscript \(S \sim \mathcal D_i^m\) says what is random: \(m\) examples drawn from \(\mathcal D_i\). The subscript \(i\) only numbers the possible labellings of \(C\). In plain words: **for any learner there is a labelling of \(2m\) messages on which, averaged over its \(m\) random examples, it is wrong at least a quarter of the time.** Take the memorizer, guessing keep on anything unseen, with \(m = 5\) examples from 10 messages. It misses on average \(0.9^5 \approx 59\%\) of the messages, and on a random labelling half of those are junk, so its average risk is about 0.295. Averaged over random labellings it is at least 1/4, so some labelling is at least that bad.
+
+```python
+import random
+
+rng = random.Random(0)
+n, trials, total = 5, 20000, 0.0
+C = range(2 * n)
+for _ in range(trials):
+    f = [rng.randint(0, 1) for _ in C]
+    seen = {rng.choice(C) for _ in range(n)}
+    wrong = sum(f[c] != 0 for c in C if c not in seen)
+    total += wrong / len(C)
+print(round(total / trials, 4), 1 / 10 * 1 + 1 * 1 / 10)
+```
+
+It prints `0.2967 0.2`. The first number is the average risk, above 1/4 as promised; the second is the upper bound the next step derives, and the two cannot both hold.
+
 Apply it to \(A\) with \(m = n\). Because \(\mathcal H_n\) shatters \(C\), some \(h \in \mathcal H_n\) agrees with \(f_i\) on all of \(C\), so \(L_{\mathcal D_i}(h) = 0\). Because \(h \in \mathcal H_n\), \(m = n \ge m^{\mathrm{NUL}}(1/10, 1/10, h)\), so with probability at least \(9/10\), \(L_{\mathcal D_i}(A(S)) \le 1/10\). Split the expectation over that event and its complement, and use that a risk is never above 1:
 
 \[ \mathbb E\big[L_{\mathcal D_i}(A(S))\big] \le \tfrac{1}{10} \cdot 1 + 1 \cdot \tfrac{1}{10} = \tfrac{1}{5} < \tfrac{1}{4}. \]
 
-That contradicts No-Free-Lunch. So \(\mathrm{VCdim}(\mathcal H_n) < 2n\), and \(\mathcal H_n\) is agnostic PAC learnable. \(\blacksquare\)
+Each product is a probability times the worst risk on that part: on the good event, probability at most 1, risk at most 1/10; on the bad event, probability at most 1/10, risk at most 1. In plain words: **a learner that is almost always nearly perfect cannot average a quarter of mistakes.** That is the `0.2` the snippet printed. That contradicts No-Free-Lunch. So the VC dimension of \(\mathcal H_n\), written \(\mathrm{VCdim}(\mathcal H_n)\), is less than \(2n\), and \(\mathcal H_n\) is agnostic PAC learnable. \(\blacksquare\)
 
 **Decision lists, settled.** Our \(\mathcal H\) is a countable union of finite classes, each with the uniform convergence property, so it is nonuniformly learnable by SRM. Its VC dimension is infinite, so it is not PAC learnable. Nonuniform learnability is a strict relaxation of agnostic PAC learnability, and your teammate’s class sits exactly in the gap. (The same happens on the real line with polynomial threshold classifiers, the sign of a polynomial: degree \(n\) gives VC dimension \(n + 1\), and all degrees together give infinite VC dimension.)
 
@@ -399,7 +473,7 @@ That contradicts No-Free-Lunch. So \(\mathrm{VCdim}(\mathcal H_n) < 2n\), and \(
 
 \[ \frac{\log(2|\mathcal H_n|/(w(n)\delta))}{2(\varepsilon/2)^2} - \frac{\log(2|\mathcal H_n|/\delta)}{2(\varepsilon/2)^2} = \frac{2 \log(1/w(n))}{\varepsilon^2} = \frac{2\log(\pi^2 n^2/6)}{\varepsilon^2}, \]
 
-which grows only like the logarithm of the size. With \(\varepsilon = 0.1\) and \(\delta = 0.05\):
+which grows only like the logarithm of the size. Read it left to right. Each fraction is the finite-class sample size \(\log(2|\mathcal H_n|/\delta)/(2\varepsilon^2)\) at accuracy \(\varepsilon/2\): the first with the share \(w(n)\delta\), the second with the whole budget. Their numerators differ only inside the logarithm, by the factor \(1/w(n)\), and the log of a product is a sum of logs, so the difference is \(\log(1/w(n))\) over \(2(\varepsilon/2)^2 = \varepsilon^2/2\). The last step writes \(1/w(n) = \pi^2 n^2/6\). In plain words: **not knowing the size costs \(2\log(1/w(n))/\varepsilon^2\) extra labels, the price of the size’s share of the budget.** For \(n = 3\) and \(\varepsilon = 0.1\): \(\log(9\pi^2/6) = 2.695\), times 2, divided by 0.01, is 539 labels. The snippet below computes both sample sizes separately, with the same `size_H` as before; their difference at size 3, \(2{,}290 - 1{,}751\), is that 539. With \(\varepsilon = 0.1\) and \(\delta = 0.05\):
 
 ```python
 import math
@@ -424,25 +498,83 @@ It prints `3 1751 2290`, `5 2628 3371` and `20 12217 13514`. Knowing the size in
 
 ## Lists by the bit: minimum description length
 
-SRM spreads the budget over classes. There is a sharper version: spread it over individual hypotheses. Our \(\mathcal H\) is countable (each list is a finite object), so we can write it as a union of singletons, \(\mathcal H = \bigcup_n \{h_n\}\), and give each hypothesis its own weight \(w(h)\).
+SRM spreads the budget over classes. There is a sharper version: spread it over individual hypotheses. Our \(\mathcal H\) is countable (each list is a finite object), so we can list its members as \(h_1, h_2, \dots\) and write it as a union of one-member classes, \(\mathcal H = \bigcup_n \{h_n\}\). Then each hypothesis gets its own weight \(w(h)\), say 1/128 for the list “unknown sender, junk; otherwise keep”.
 
-A single fixed hypothesis has uniform convergence with no union bound at all: by Hoeffding’s inequality (lesson 4), the losses \(\mathbb 1[h(x_i) \ne y_i]\) are i.i.d. in \([0, 1]\) with mean \(L_{\mathcal D}(h)\), so \(\mathbb P[|L_S(h) - L_{\mathcal D}(h)| > \varepsilon] \le 2e^{-2m\varepsilon^2}\). Setting this to \(\delta\) gives the gap \(\sqrt{\log(2/\delta)/(2m)}\), and the SRM rule becomes
+A single fixed hypothesis has uniform convergence with no union bound at all. Its mistakes are \(\mathbb 1[h(x_i) \ne y_i]\), where the **indicator** \(\mathbb 1[\cdot]\) is 1 when the statement inside is true and 0 when it is false. These are i.i.d. numbers in \([0, 1]\) (the numbers from 0 to 1, ends included) with mean \(L_{\mathcal D}(h)\), so by Hoeffding’s inequality (lesson 4), \(\mathbb P[|L_S(h) - L_{\mathcal D}(h)| > \varepsilon] \le 2e^{-2m\varepsilon^2}\). Here \(\mathbb P\) is the probability over the training sequence, and \(e^{-2m\varepsilon^2}\) is \(e \approx 2.718\) raised to the power \(-2m\varepsilon^2\), which shrinks very fast as \(m\) grows. In plain words: **the chance that one fixed list’s score on \(m\) labels is off by more than \(\varepsilon\) falls exponentially in \(m\varepsilon^2\).** At \(m = 300\) and \(\varepsilon = 0.1\) it is at most \(2e^{-6} = 0.005\). Setting this to \(\delta\) and solving for \(\varepsilon\) gives the gap \(\sqrt{\log(2/\delta)/(2m)}\), which at \(\delta = 0.05\) is \(\sqrt{3.689/600} = 0.078\):
+
+```python
+import math
+
+m, eps, delta = 300, 0.1, 0.05
+print(round(2 * math.exp(-2 * m * eps**2), 5))
+print(round(math.sqrt(math.log(2 / delta) / (2 * m)), 4))
+```
+
+It prints `0.00496` and `0.0784`. Giving the list \(h\) the share \(w(h)\delta\) instead of \(\delta\) turns \(\log(2/\delta)\) into \(\log(2/\delta) - \log w(h)\), and the SRM rule becomes
 
 \[ \operatorname*{argmin}_{h \in \mathcal H} \bigg[ L_S(h) + \sqrt{\frac{-\log w(h) + \log(2/\delta)}{2m}} \bigg]. \]
 
+Read it from the inside out. A weight is below 1, so its logarithm is negative and \(-\log w(h) = \log(1/w(h))\) is a positive cost: the smaller the weight, the bigger the cost. Add the confidence cost \(\log(2/\delta)\), divide by \(2m\), take the square root, and add the empirical risk; the argmin picks the lists where that total is smallest. In plain words: **return a list with the smallest empirical risk plus a gap that grows as its weight shrinks.** With weight 1/128 the cost is \(\log 128 = 4.852\); at 100 labels that list has empirical risk 0.17, so its bracket is \(0.17 + \sqrt{(4.852 + 3.689)/200} = 0.3767\).
+
+```python
+import math
+
+LS, m, delta = 0.17, 100, 0.05
+w = 2.0 ** -7
+inside = -math.log(w) + math.log(2 / delta)
+print(round(-math.log(w), 3), round(math.log(2 / delta), 3))
+print(round(LS + math.sqrt(inside / (2 * m)), 4))
+```
+
+It prints `4.852 3.689` and `0.3767`.
+
 Now the prior knowledge is entirely in the weights. Where do good weights come from? From writing hypotheses down.
 
-**Description languages.** Fix the alphabet \(\Sigma = \{0, 1\}\). A **string** is a finite sequence of symbols, such as \(\sigma = (0, 1, 1, 1, 0)\), of length \(|\sigma| = 5\); the set of all strings is \(\Sigma^*\). A **description language** for \(\mathcal H\) is a function \(d: \mathcal H \to \Sigma^*\) that maps each hypothesis \(h\) to a string \(d(h)\), its description. Its length is written \(|h|\), the **description length** of \(h\). The language is **prefix-free** if for every two distinct \(h, h'\), \(d(h)\) is not a prefix of \(d(h')\): no description is exactly the first \(|h|\) symbols of a longer one.
+**Description languages.** Fix the alphabet \(\Sigma = \{0, 1\}\) (the capital Greek sigma names the set of symbols we may write). A **string** is a finite sequence of symbols, such as \(\sigma = (0, 1, 1, 1, 0)\), of length \(|\sigma| = 5\): around a string, the bars mean its length, a third meaning after “how many” and “absolute value”. The set of all strings, of every finite length, is \(\Sigma^*\), the star meaning “any number of symbols”. A **description language** for \(\mathcal H\) is a function \(d: \mathcal H \to \Sigma^*\) that maps each hypothesis \(h\) to a string \(d(h)\), its description. Its length is written \(|h|\), the **description length** of \(h\). The language is **prefix-free** if for every two distinct \(h, h'\), \(d(h)\) is not a prefix of \(d(h')\): no description is exactly the first \(|h|\) symbols of a longer one.
 
-Here is a prefix-free language for decision lists. First, a code for feature numbers: write \(j\) in binary, with \(b\) digits, and put \(b - 1\) zeros in front. So 1 is `1`, 2 is `010`, 3 is `011`, 4 is `00100`, 5 is `00101`, and feature \(j\) costs \(2\lfloor \log_2 j \rfloor + 1\) bits. A reader can always tell where a feature number ends: count the leading zeros, then read one more digit than that. Then a list is written test by test: a `1` meaning “a test follows”, the feature’s code, and the test’s label bit; and at the end a `0` meaning “no more tests”, followed by the default label bit.
+Here is a prefix-free language for decision lists. First, a code for feature numbers: write \(j\) in binary, with \(b\) digits, and put \(b - 1\) zeros in front. So 1 is `1`, 2 is `010`, 3 is `011`, 4 is `00100`, 5 is `00101`, and feature \(j\) costs \(2\lfloor \log_2 j \rfloor + 1\) bits. Read that inside out: \(\log_2 j\) is the power of 2 that gives \(j\), the brackets \(\lfloor \cdot \rfloor\) round it down to a whole number, and that whole number plus 1 is how many binary digits \(j\) has; doubling it and adding 1 counts the digits plus the leading zeros. In plain words: **a feature number costs twice its binary digit count, minus one.** For \(j = 5\), \(\log_2 5 = 2.32\), rounded down to 2, so \(2 \times 2 + 1 = 5\) bits, and indeed `00101` has five. A reader can always tell where a feature number ends: count the leading zeros, then read one more digit than that. Then a list is written test by test: a `1` meaning “a test follows”, the feature’s code, and the test’s label bit; and at the end a `0` meaning “no more tests”, followed by the default label bit.
 
 The list “unknown sender, junk; otherwise keep”, \(((3, 1); 0)\), is written `1 011 1 0 0`, which is 7 bits. “Everything is junk”, \((();1)\), is `01`, which is 2 bits. The three-test list from the opening takes 15 bits and the five-test list \(f\) takes 29.
 
+```python
+import math
+
+def gamma(j):
+    b = bin(j)[2:]
+    return "0" * (len(b) - 1) + b
+
+def code(tests, default):
+    body = "".join("1" + gamma(j) + str(b) for j, b in tests)
+    return body + "0" + str(default)
+
+for j in range(1, 6):
+    print(j, gamma(j), 2 * math.floor(math.log2(j)) + 1)
+f = [(3, 1), (1, 0), (2, 1), (5, 0), (4, 1)]
+print(code([(3, 1)], 0), code([], 1))
+print(len(code(f[:3], 0)), len(code(f, 0)))
+```
+
+It prints the five feature codes with lengths 1, 3, 3, 5, 5, matching the formula, then `1011100 01` and `15 29`. `bin(j)[2:]` is \(j\) in binary, and `gamma` puts the zeros in front.
+
 Why is this prefix-free? Read any codeword from the left, the way a decoder would. Each flag bit says whether a test follows, each feature code announces its own length, and after the end flag exactly one bit remains. So the decoder knows where the codeword ends from the symbols alone. If one codeword were a proper prefix of another, decoding the longer one would reach that point and stop, so the longer one could have nothing after it, which is a contradiction.
+
+Now give each codeword the weight 1 over 2 to the power of its length: “everything is junk”, 2 bits, gets 1/4; the 7-bit list gets 1/128. Can a prefix-free code overspend, so that these weights add to more than 1? Try the small prefix-free set `0`, `10`, `110`, `111`: \(1/2 + 1/4 + 1/8 + 1/8 = 1\), exactly the whole budget. Shorten any word and you create a prefix. That is the general rule. (In this lemma \(S\) names a set of strings, not a training sequence.)
 
 **Lemma (Kraft inequality).** If \(S \subseteq \{0, 1\}^*\) is a prefix-free set of strings, then
 
 \[ \sum_{\sigma \in S} \frac{1}{2^{|\sigma|}} \le 1. \]
+
+Read it from the inside out: \(|\sigma|\) is the length of the string \(\sigma\), \(1/2^{|\sigma|}\) halves once per symbol, and \(\sum_{\sigma \in S}\) adds that weight over every string in the set. In plain words: **in a prefix-free code, the weights 1/2 per symbol, multiplied along each codeword, add up to at most 1.** Drop prefix-freeness and it fails: `0`, `01`, `1` has `0` as a prefix of `01`, and its sum is \(1/2 + 1/4 + 1/2 = 1.25\).
+
+```python
+S = ["0", "10", "110", "111"]
+clash = any(a != b and b.startswith(a) for a in S for b in S)
+print(clash, sum(1 / 2 ** len(s) for s in S))
+T = ["0", "01", "1"]
+print(sum(1 / 2 ** len(s) for s in T))
+```
+
+It prints `False 1.0` and `1.25`.
 
 *Proof.* Start with a finite \(S\), and let \(L\) be the length of its longest string. Toss a fair coin \(L\) times, with faces 0 and 1. For each \(\sigma \in S\), let \(E_\sigma\) be the event “the first \(|\sigma|\) tosses spell out \(\sigma\)”. The tosses are independent and each matches its symbol with probability 1/2, so \(\mathbb P[E_\sigma] = 2^{-|\sigma|}\).
 
@@ -450,13 +582,15 @@ Now the key step. For two distinct \(\sigma, \sigma' \in S\), the events \(E_\si
 
 \[ \sum_{\sigma \in S} 2^{-|\sigma|} = \mathbb P\Big[\bigcup_{\sigma \in S} E_\sigma\Big] \le 1. \]
 
+This is the lemma’s sum, written with a negative exponent, equal to the chance that some codeword is spelled out by the tosses. For `0`, `10`, `110`, `111`, the toss sequences starting 0, 10, 110 and 111 cover every outcome exactly once, so the chance is 1.
+
 For an infinite \(S\), every finite subset is prefix-free too, so every partial sum of the series is at most 1, and so is the series. \(\blacksquare\)
 
 You can think of the coin as a process: toss until the outcome so far is in \(S\), then stop. Prefix-freeness means the process stops at \(\sigma\) exactly when the tosses follow \(\sigma\), so \(2^{-|\sigma|}\) is the probability of stopping at \(\sigma\), and stopping probabilities add up to at most 1.
 
 [[diagram:kraft-tree]]
 
-Let’s check it on the list code: every list with at most two tests over features 1 to 8.
+Let’s check it on the list code: every list with at most two tests over features 1 to 8. The `gamma` and `code` functions are the ones from the code-length snippet above.
 
 ```python
 import itertools
@@ -476,7 +610,19 @@ clash = any(a != b and b.startswith(a) for a in C for b in C)
 print(len(C), clash, sum(2 ** -len(c) for c in C))
 ```
 
-It prints `546 False 0.8181228637695312`: 546 codewords, no codeword is a prefix of another, and their Kraft sum is about 0.818. Include more features and more tests and the sum creeps up towards 1, and over every list it is exactly 1. The feature code satisfies \(\sum_j 2^{-(2\lfloor \log_2 j \rfloor + 1)} = \sum_{k \ge 0} 2^k \cdot 2^{-(2k+1)} = 1\) (there are \(2^k\) numbers with \(k + 1\) binary digits); one test, with its flag and label bit, then contributes a factor \(2 \cdot \frac14 \cdot 1 = \frac12\); the end contributes \(\frac12\) too; and \(\sum_{k \ge 0} (1/2)^k \cdot \frac12 = 1\). This code wastes no budget at all.
+It prints `546 False 0.8181228637695312`: 546 codewords, no codeword is a prefix of another, and their Kraft sum is about 0.818. Include more features and more tests and the sum creeps up towards 1, and over every list it is exactly 1. Here is why, in three sums. First, the feature code: \(\sum_j 2^{-(2\lfloor \log_2 j \rfloor + 1)} = \sum_{k \ge 0} 2^k \cdot 2^{-(2k+1)} = 1\). The left sum runs over every feature \(j\); the middle one groups the features by \(k + 1\), their number of binary digits. There are \(2^k\) numbers with \(k + 1\) digits (feature 1 alone, then 2 and 3, then 4 to 7), each costing \(2k + 1\) bits, so each group adds \(2^k / 2^{2k+1} = 1/2^{k+1}\): \(1/2 + 1/4 + 1/8 + \cdots = 1\). Second, one test, with its flag bit, its feature code and its label bit, contributes a factor \(2 \cdot \frac14 \cdot 1 = \frac12\): two choices of label, \(\frac14\) for the two single bits, and 1 for the feature code. The end, a flag and a default bit, contributes \(2 \cdot \frac14 = \frac12\) too. Third, a list with \(k\) tests gets \((1/2)^k \cdot \frac12\), and \(\sum_{k \ge 0} (1/2)^k \cdot \frac12 = 1\). In plain words: **the code spends exactly the whole budget: no prefix-free code could make lists any cheaper overall.**
+
+```python
+import math
+
+feature = sum(2.0 ** -(2 * math.floor(math.log2(j)) + 1)
+              for j in range(1, 2**20))
+one_test = 2 * feature * 0.25
+total = sum(one_test**k * 0.5 for k in range(200))
+print(round(feature, 6), round(one_test, 6), round(total, 6))
+```
+
+It prints `0.999999 0.5 0.999999`: features up to about a million already reach 1 within a millionth. This code wastes no budget at all.
 
 So any prefix-free language hands you a weight function for free: \(w(h) = 2^{-|h|}\). Kraft says it sums to at most 1.
 
@@ -484,17 +630,21 @@ So any prefix-free language hands you a weight function for free: \(w(h) = 2^{-|
 
 \[ \forall h \in \mathcal H, \quad L_{\mathcal D}(h) \le L_S(h) + \sqrt{\frac{|h| + \log(2/\delta)}{2m}}. \]
 
+It is the per-hypothesis SRM bound with the weight cost \(-\log w(h)\) replaced by \(|h|\), the description length in bits. In plain words: **except with probability \(\delta\), every list’s true risk is at most its empirical risk plus a gap that grows with the square root of its length in bits.** The 7-bit list at 100 labels, empirical risk 0.17: \(0.17 + \sqrt{(7 + 3.689)/200} = 0.17 + 0.231 = 0.401\). The snippet after the MDL rule below computes this bound as `mdl_bound`.
+
 *Proof.* Distinct hypotheses get distinct descriptions (a string is a prefix of itself, so equal descriptions would break prefix-freeness), so \(\{d(h) : h \in \mathcal H\}\) is a prefix-free set, and the Kraft inequality gives \(\sum_h 2^{-|h|} \le 1\). That also makes \(\mathcal H\) countable, since there are only countably many strings. List its members as \(h_1, h_2, \dots\), take \(\mathcal H_n = \{h_n\}\) and \(w(n) = 2^{-|h_n|}\). Each singleton has the uniform convergence property with gap \(\varepsilon_n(m, \delta) = \sqrt{\log(2/\delta)/(2m)}\), by Hoeffding as above. The SRM bound theorem then says that with probability at least \(1 - \delta\), every \(h\) has
 
 \[ L_{\mathcal D}(h) \le L_S(h) + \sqrt{\frac{\log(2^{|h|}) + \log(2/\delta)}{2m}}. \]
 
-Finally, \(\log(2^{|h|}) = |h| \log 2 < |h|\), because \(\log 2 \approx 0.693\), and making the numerator larger only loosens the bound. \(\blacksquare\)
+Here \(\log(2^{|h|})\) is \(\log(1/w(n))\), the weight cost from before. Finally, \(\log(2^{|h|}) = |h| \log 2 < |h|\), because \(\log 2 \approx 0.693\), and making the numerator larger only loosens the bound. For the 7-bit list, \(7 \log 2 = 4.852\), the cost the earlier snippet printed, and the theorem rounds it up to 7. \(\blacksquare\)
 
 The bound suggests its learner: trade empirical risk against description length. That is the **minimum description length** (MDL) rule:
 
 \[ \mathrm{MDL}(S) \in \operatorname*{argmin}_{h \in \mathcal H} \bigg[ L_S(h) + \sqrt{\frac{|h| + \log(2/\delta)}{2m}} \bigg]. \]
 
-Here is the bound for a list of a given description length. Two lists with the same empirical risk 0.12 at \(m = 300\), one of 15 bits and one of 60; and how many examples a 29-bit list needs before its complexity term drops to 0.05.
+The bracket is the MDL bound of one list, and the argmin, as for SRM, returns one of the lists where it is smallest. In plain words: **MDL ships the list whose fit plus a cost for its length in bits is smallest.** At 100 labels on our stream that is the 7-bit list, with value 0.4012, beating “everything is junk”, whose 2 bits do not make up for its worse fit.
+
+Here is the bound for a list of a given description length; `mdl_bound` is the bracket, term by term. Two lists with the same empirical risk 0.12 at \(m = 300\), one of 15 bits and one of 60; and how many examples a 29-bit list needs before its complexity term drops to 0.05.
 
 ```python
 import math
@@ -508,7 +658,7 @@ need = (29 + math.log(2 / 0.05)) / (2 * 0.05**2)
 print(math.ceil(need))
 ```
 
-It prints `0.2965`, `0.4458` and `6538`. Same fit, very different certificates. On our stream, MDL ships 2 bits (“everything is junk”) at 30 labels, the 7-bit list “unknown sender, junk; otherwise keep” at 100 labels, the 15-bit three-test list at 300 and 1,000 labels, and the 29-bit list \(f\) at 3,000. The same staircase as SRM, with steps in different places, because it is a different prior.
+It prints `0.2965`, `0.4458` and `6538`. The last line sets the complexity term \(\sqrt{(29 + \log 40)/(2m)}\) equal to 0.05 and solves for \(m\). Same fit, very different certificates. On our stream, MDL ships 2 bits (“everything is junk”) at 30 labels, the 7-bit list “unknown sender, junk; otherwise keep” at 100 labels, the 15-bit three-test list at 300 and 1,000 labels, and the 29-bit list \(f\) at 3,000. The same staircase as SRM, with steps in different places, because it is a different prior.
 
 The language need not be ours. Take the class of every filter you could write in some programming language, and describe each program by the bits of its compressed source file. That is a prefix-free description language too, and the MDL bound applies to it: it covers every program you could ever write.
 
@@ -548,7 +698,7 @@ MDL(S, δ):
 
 Both take an argmin over an infinite class. To run them at all, we need a way to stop.
 
-**A stopping rule for SRM.** Suppose the classes are nested and the gap \(g_n = \varepsilon_n(m, w(n)\delta)\) does not decrease with \(n\) (true for our lists: \(|\mathcal H_n|\) grows and \(w(n)\) shrinks). Then the SRM minimum equals \(\min_n \big[\min_{h \in \mathcal H_n} L_S(h) + g_n\big]\). Indeed, for \(h \in \mathcal H_n\) we have \(n(h) \le n\), so \(L_S(h) + g_{n(h)} \le L_S(h) + g_n\): the right-hand side is never smaller than the SRM minimum; and choosing \(n = n(h)\) for the SRM minimizer shows it is never larger. So SRM is “ERM in \(\mathcal H_1\), then in \(\mathcal H_2\), and so on, keeping the best bound”. And since \(L_S \ge 0\), once \(g_n\) reaches the best bound found so far, no larger \(n\) can win, and you can stop.
+**A stopping rule for SRM.** Suppose the classes are nested and the gap \(g_n = \varepsilon_n(m, w(n)\delta)\) does not decrease with \(n\) (true for our lists: \(|\mathcal H_n|\) grows and \(w(n)\) shrinks). Then the SRM minimum equals \(\min_n \big[\min_{h \in \mathcal H_n} L_S(h) + g_n\big]\): for each \(n\), the best empirical risk in \(\mathcal H_n\) plus that class’s gap, then the smallest over \(n\). That is exactly the SRM table at 300 labels, row by row, with its smallest entry 0.2714 at \(n = 3\). Indeed, for \(h \in \mathcal H_n\) we have \(n(h) \le n\), so \(L_S(h) + g_{n(h)} \le L_S(h) + g_n\): the right-hand side is never smaller than the SRM minimum; and choosing \(n = n(h)\) for the SRM minimizer shows it is never larger. So SRM is “ERM in \(\mathcal H_1\), then in \(\mathcal H_2\), and so on, keeping the best bound”. And since \(L_S \ge 0\), once \(g_n\) reaches the best bound found so far, no larger \(n\) can win, and you can stop.
 
 ```
 SRM-nested(S, δ):
@@ -563,7 +713,7 @@ SRM-nested(S, δ):
 
 MDL stops the same way: enumerate hypotheses in order of description length, and stop at the first length \(\ell\) with \(\sqrt{(\ell + \log(2/\delta))/(2m)} \ge\) the best bound so far.
 
-**Cost.** ERM over \(\mathcal H_n\) by brute force evaluates every list on every example; a list of size at most \(n\) is evaluated in \(O(n)\) time per message. So SRM-nested up to the stopping size \(N\) takes \(O(m N \sum_{n \le N} |\mathcal H_n|) = O(m N |\mathcal H_N|)\) time, since the last class dominates the sum, and \(O(m + N)\) space if lists are generated one at a time. MDL up to length \(\ell^*\) examines at most \(2^{\ell^* + 1}\) codewords (there are at most \(2^\ell\) strings of length \(\ell\)), so \(O(m \ell^* 2^{\ell^*})\) time.
+**Cost.** Recall that \(O(\cdot)\) means “grows at most in proportion to”: \(O(m)\) time doubles at most when \(m\) doubles, ignoring constant factors. ERM over \(\mathcal H_n\) by brute force evaluates every list on every example; a list of size at most \(n\) is evaluated in \(O(n)\) time per message. So SRM-nested up to the stopping size \(N\) takes \(O(m N \sum_{n \le N} |\mathcal H_n|) = O(m N |\mathcal H_N|)\) time, since the last class dominates the sum, and \(O(m + N)\) space if lists are generated one at a time. MDL up to length \(\ell^*\) examines at most \(2^{\ell^* + 1}\) codewords (there are at most \(2^\ell\) strings of length \(\ell\)), so \(O(m \ell^* 2^{\ell^*})\) time.
 
 In our simulated stream only features 1 to 6 ever appear, so a list in \(\mathcal H_n\) for \(n > 6\) behaves on the data like a list in \(\mathcal H_6\) (its tests on later features never fire), and stopping at size 6 is exact. The learner on the real stream cannot know that. How far does the stopping rule have to go when it doesn’t?
 

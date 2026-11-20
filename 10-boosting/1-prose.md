@@ -16,12 +16,39 @@ The rules on the team’s shelf have a name. A **decision stump** looks at one f
 
 Before we write one down, one change of convention. Until now a label was 1 for junk and 0 for keep. In this lesson it is convenient to write **junk as \(+1\) and keep as \(-1\)**, so \(\mathcal Y = \{-1, +1\}\). The reason will be clear soon: with labels \(\pm 1\), a hypothesis \(h\) is right on an example \((x, y)\) exactly when \(y\, h(x) = +1\) and wrong exactly when \(y\, h(x) = -1\). That single product does a lot of work in the proofs.
 
-We also need a sign function that never returns 0. Throughout this lesson,
+We also need a sign function that never returns 0. It takes a number and answers only “positive” (\(+1\)) or “not positive” (\(-1\)): 3 gives \(+1\), \(-2\) gives \(-1\), and 0 itself gives \(-1\). Throughout this lesson,
 \[ \operatorname{sign}(u) = \begin{cases} +1 & \text{if } u > 0, \\ -1 & \text{if } u \le 0. \end{cases} \]
+The big brace lists the cases: read each row as “the value on the left, if the condition on the right holds”. In plain words: **sign gives \(+1\) to a positive number and \(-1\) to everything else, zero included.**
+
+A stump is a sign with a shift. “Junk if ‘free’ appears more than 0.5 times” subtracts 0.5 from the “free” count and asks for the sign: a message with one “free” gets \(\operatorname{sign}(1 - 0.5) = +1\), junk; a message with none gets \(\operatorname{sign}(-0.5) = -1\), keep.
 
 **Definition (decision stump).** Let \(\mathcal X = \mathbb R^d\). For a feature index \(j \in [d]\), a threshold \(\theta \in \mathbb R\) and a sign \(b \in \{\pm 1\}\), the decision stump \(h_{j, \theta, b}\) is
 \[ h_{j, \theta, b}(x) = b \cdot \operatorname{sign}(x_j - \theta). \]
-With \(b = +1\) it says junk when count \(j\) exceeds \(\theta\) and keep otherwise; with \(b = -1\) it says the opposite. The class of all of them is \(\mathcal H_{DS} = \{h_{j, \theta, b} : j \in [d],\ \theta \in \mathbb R,\ b \in \{\pm 1\}\}\).
+
+- \(\mathbb R^d\) is the set of lists of \(d\) real numbers; a message \(x\) is such a list, one count per word, so here \(d\) is the number of words.
+- \([d]\) is shorthand for the positions \(\{1, \dots, d\}\), and \(j \in [d]\) reads “\(j\) is one of them”: which word the stump looks at.
+- \(x_j\), with the subscript, is entry \(j\) of the message: its count of word \(j\).
+- \(\theta\) (theta) is the threshold, any real number; \(x_j - \theta\) is positive exactly when the count exceeds it.
+- \(b \in \{\pm 1\}\) is a direction, \(+1\) or \(-1\), and multiplying by it either keeps the answer or flips it.
+- The subscripts on \(h_{j, \theta, b}\) say which of the many stumps we mean: one for each choice of the three.
+
+In plain words: **look at count \(j\), say \(b\) if it exceeds \(\theta\), and say \(-b\) otherwise.** With \(b = +1\) it says junk when count \(j\) exceeds \(\theta\) and keep otherwise; with \(b = -1\) it says the opposite. The class of all of them is \(\mathcal H_{DS} = \{h_{j, \theta, b} : j \in [d],\ \theta \in \mathbb R,\ b \in \{\pm 1\}\}\): the braces collect every stump such that (the colon) \(j\), \(\theta\) and \(b\) range over their allowed values.
+
+Take message \(x = (1, 1)\), one “free” and one “click” (word 1 is “free”, word 2 is “click”). The stump \(h_{1, 0.5, +1}\) computes \(+1 \cdot \operatorname{sign}(1 - 0.5) = +1\): junk. The stump \(h_{2, 3.5, +1}\) computes \(\operatorname{sign}(1 - 3.5) = -1\): keep. Python counts positions from 0, so word 1 is `x[0]` below:
+
+```python
+def sign(u):
+    return 1 if u > 0 else -1
+
+def h(j, theta, b, x):
+    return b * sign(x[j] - theta)
+
+x4, x6 = (1, 1), (1, 4)
+print(h(0, 0.5, 1, x4), h(1, 3.5, 1, x4), h(1, 3.5, 1, x6))
+print(h(1, 3.5, -1, x6), sign(0))
+```
+
+It prints `1 -1 1` and `-1 -1`: the “click” stump keeps \((1, 1)\) and flags \((1, 4)\), flipping \(b\) flips its answer, and the sign of 0 is \(-1\).
 
 [[diagram:stump]]
 

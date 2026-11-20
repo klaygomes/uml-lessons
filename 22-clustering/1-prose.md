@@ -37,7 +37,7 @@ The second difficulty is deeper, and it is the one that hurts in the mail room. 
 
 Before we can build anything, we have to say what goes in and what comes out.
 
-**Input: a distance function.** A clustering method receives a finite set \(\mathcal X\) of messages, and a way to say how far apart two of them are. Formally, a **distance function** is a function
+**Input: a distance function.** A clustering method receives a finite set \(\mathcal X\) of messages, and a way to say how far apart two of them are: messages 1 and 7 are 2 apart, messages 1 and 6 are 5 apart, and every message is 0 away from itself. Formally, a **distance function** is a function
 
 \[ d : \mathcal X \times \mathcal X \to \mathbb R_+ \]
 
@@ -55,7 +55,7 @@ Often, though not always, \(d\) also satisfies the **triangle inequality** \(d(x
 
 Instead of a distance, a method may receive a **similarity function** \(s : \mathcal X \times \mathcal X \to [0, 1]\), symmetric, with \(s(x, x) = 1\): large means alike. Some methods also take a number \(k\), the number of groups wanted.
 
-**Output: a partition.** A **clustering** of \(\mathcal X\) is a partition \(C = (C_1, \dots, C_k)\): a list of sets with
+**Output: a partition.** What comes out is a split of the messages into groups, where every message lands in exactly one group, the way the first engineer put messages 1 to 6 in one group and 7 to 12 in the other. Formally, a **clustering** of \(\mathcal X\) is a partition \(C = (C_1, \dots, C_k)\): a list of sets with
 
 \[ \bigcup_{i=1}^{k} C_i = \mathcal X \quad \text{and} \quad C_i \cap C_j = \emptyset \text{ for all } i \ne j. \]
 
@@ -88,7 +88,7 @@ Two other kinds of output exist. A **soft clustering** gives each message a list
 
 The simplest family of clustering methods works bottom up. Start with every message in its own cluster. Then, round after round, merge the two clusters that are closest to each other. Each round there is one cluster fewer, and if you never stop, everything ends up in one cluster. Methods of this kind are called **agglomerative**, and they leave two decisions open: how to measure the distance between two clusters, and when to stop.
 
-**Three ways to measure the distance between clusters.** We have \(d\) between messages; we need a distance \(D(A, B)\) between two sets of messages \(A\) and \(B\). The three common choices are:
+**Three ways to measure the distance between clusters.** We have \(d\) between messages; we need a distance \(D(A, B)\) between two sets of messages \(A\) and \(B\). Look at every pair made of one message from each cluster. You can then measure the two clusters by their closest such pair, by the average of all such pairs, or by their farthest such pair. With one message at 0 and a cluster of two at 6 and 8, the cross pairs are 6 and 8 apart, so the three answers are 6, 7 and 8. In symbols, the three common choices are:
 
 \[ D_{\text{single}}(A, B) = \min\{ d(x, y) : x \in A,\ y \in B \}, \]
 
@@ -169,7 +169,7 @@ Linkage(X, d, D, stop):
   return clusters, dendrogram
 ```
 
-Done naively, each round compares every pair of clusters, and computing one \(D(A, B)\) from scratch costs \(|A||B|\) distance lookups. The standard trick is to keep an \(m \times m\) table of current cluster distances. Finding the smallest entry costs \(O(m^2)\). After merging \(A\) and \(B\), the new cluster’s distance to any other cluster \(E\) follows from the old ones in \(O(1)\): \(\min\) of the two for single linkage, \(\max\) for max linkage, and the size-weighted average \((|A| D(A, E) + |B| D(B, E))/(|A| + |B|)\) for average linkage. So each of the at most \(m - 1\) rounds costs \(O(m^2)\), and linkage clustering runs in \(O(m^3)\) time and \(O(m^2)\) space, after \(O(m^2 n)\) time to compute the distances of \(m\) messages with \(n\) scores each. Single linkage alone can do better: Prim’s algorithm finds a minimum spanning tree of a complete graph in \(O(m^2)\) time, and by the proposition that is the whole dendrogram.
+Done naively, each round compares every pair of clusters, and computing one \(D(A, B)\) from scratch costs \(|A||B|\) distance lookups. The standard trick is to keep an \(m \times m\) table of current cluster distances. Finding the smallest entry costs \(O(m^2)\). After merging \(A\) and \(B\), the new cluster’s distance to any other cluster \(E\) follows from the old ones in \(O(1)\): \(\min\) of the two for single linkage, \(\max\) for max linkage, and the size-weighted average \((|A| D(A, E) + |B| D(B, E))/(|A| + |B|)\) for average linkage. So each of the at most \(m - 1\) rounds costs \(O(m^2)\), and linkage clustering runs in \(O(m^3)\) time and \(O(m^2)\) space, after \(O(m^2 n)\) time to compute the distances of \(m\) messages with \(n\) scores each. Single linkage alone can do better: Prim’s algorithm (another classic minimum-spanning-tree method, which grows a single tree outward from one vertex, always adding the lightest edge that leaves it) finds a minimum spanning tree of a complete graph in \(O(m^2)\) time, and by the proposition that is the whole dendrogram.
 
 **Build it yourself.** Using only the standard library:
 
@@ -200,7 +200,7 @@ if __name__ == "__main__":
 
 The second family turns clustering into an optimization problem. Fix a **cost function** \(G\) that takes the input \((\mathcal X, d)\) and a proposed clustering \(C = (C_1, \dots, C_k)\) and returns a non-negative number, and look for the clustering with the smallest cost. Now “which grouping is right?” has an answer, at the price of having chosen \(G\).
 
-**The k-means cost.** Suppose the messages live inside a larger space \(\mathcal X'\) where centres can sit (for messages described by \(n\) scores, \(\mathcal X' = \mathbb R^n\), every possible list of \(n\) numbers). Each cluster is represented by one point of \(\mathcal X'\), its **centroid**, and the cost charges every message the squared distance to the centroid of its cluster:
+**The k-means cost.** Suppose the messages live inside a larger space \(\mathcal X'\) where centres can sit (for messages described by \(n\) scores, \(\mathcal X' = \mathbb R^n\), every possible list of \(n\) numbers). Each cluster is represented by one point of \(\mathcal X'\), its **centroid** or centre, and the cost charges every message the squared distance to the centre of its cluster: a message 1.5 away from its centre pays \(1.5^2 = 2.25\), a message 2.5 away pays 6.25. Add the charges up, after placing every centre where the total is smallest:
 
 \[ G_{k\text{-means}}((\mathcal X, d), (C_1, \dots, C_k)) = \min_{\mu_1, \dots, \mu_k \in \mathcal X'} \sum_{i=1}^{k} \sum_{x \in C_i} d(x, \mu_i)^2. \]
 
@@ -212,7 +212,28 @@ Read it from the inside out.
 - \(\sum_{i=1}^k\) adds the clusters together.
 - \(\min_{\mu_1, \dots, \mu_k \in \mathcal X'}\) chooses the \(k\) centres that make the total as small as possible. The cost of a clustering is the total you get with the best centres.
 
-In plain words: **the k-means cost of a grouping is the total squared distance from each message to the centre of its group, with each centre placed as well as possible.** For the bottom row of the opening, messages at \((0,0)\) to \((5,0)\), the best centre turns out to be \((2.5, 0)\), and the squared distances are \(6.25, 2.25, 0.25, 0.25, 2.25, 6.25\), which add to 17.5. The top row is the same, so the first engineer’s grouping costs 35. The second engineer’s halves cost 10 each, 20 in total. By this cost, she wins.
+In plain words: **the k-means cost of a grouping is the total squared distance from each message to the centre of its group, with each centre placed as well as possible.** For the bottom row of the opening, messages at \((0,0)\) to \((5,0)\), the best centre turns out to be \((2.5, 0)\), and the squared distances are \(6.25, 2.25, 0.25, 0.25, 2.25, 6.25\), which add to 17.5. The top row is the same, so the first engineer’s grouping costs 35. The second engineer’s halves cost 10 each, 20 in total. By this cost, she wins. Here is the same computation in code, placing each centre at the cluster’s mean (the next section proves that the mean is the best place):
+
+```python
+from itertools import permutations
+
+P = [(x, 0) for x in range(6)] + [(x, 2) for x in range(6)]
+
+def kmeans_cost(clusters):
+    total = 0
+    for C in clusters:
+        mu = [sum(v) / len(C) for v in zip(*C)]
+        total += sum((a - mu[0])**2 + (b - mu[1])**2
+                     for a, b in C)
+    return total
+
+rows = [P[:6], P[6:]]
+halves = [[p for p in P if p[0] < 3], [p for p in P if p[0] >= 3]]
+sod = sum(abs(x - y) for x, y in permutations([0, 6, 8], 2))
+print(kmeans_cost(rows), kmeans_cost(halves), sod)
+```
+
+It prints `35.0 20.0 32`: the rows cost 35, the halves 20, and the last number is the sum of in-cluster distances for one small cluster, which you will meet in a moment.
 
 The k-means cost has a natural reading in communication. If every message must be sent as one of \(k\) prototypes, the index of the nearest centre, then the k-means cost measures the total distortion of that compression.
 
@@ -231,6 +252,8 @@ adds, for each cluster, the distance of every ordered pair of its messages: no c
 Here is the bad news, stated without proof: finding a clustering that minimizes the k-means cost is NP-hard, and even NP-hard to approximate within some constant factor, and the same holds for most of these costs. (Lesson 8 explained what NP-hard means for learning.) So in practice “k-means” usually names not the cost, but a fast algorithm that tries to lower it. Before we meet it, one small fact about centres.
 
 ## The best centre is the mean
+
+Here is the idea in numbers first. The bottom row’s total squared spread around its mean \((2.5, 0)\) is 17.5. Slide the centre 1.5 to the left, to \((1, 0)\), and the spread becomes 31, which is exactly \(17.5 + 6 \times 1.5^2\): six messages, each charged the squared distance the centre moved. That extra charge is always (number of messages) times (distance moved, squared), and it is zero only if the centre does not move.
 
 **Proposition (the mean minimizes the squared spread).** Let \(C\) be a finite set of points in \(\mathbb R^n\) and let
 
@@ -281,7 +304,7 @@ Here is the algorithm everyone means when they say “k-means”. It is also cal
 
 ```
 KMeans(X ⊂ R^n, k):
-  choose initial centres μ_1, ..., μ_k (for example, k random messages)
+  choose initial centres μ_1, ..., μ_k (say, k random messages)
   repeat until the clusters stop changing:
     assign:  for each i in [k],
              C_i ← {x ∈ X : i = argmin_j ||x − μ_j||}
@@ -326,6 +349,8 @@ print(kmeans(P, [(0, 0), (1, 0)]), kmeans(P, [(0, 0), (0, 2)]))
 ```
 
 It prints `[84, 32.0, 26.0, 23.0, 23.0, 20.0, 20.0] [110, 35.0, 35.0]`: the whole zigzag of the table, and a second run that settles at 35. (This snippet has no ties to break, so it skips the tie rule.)
+
+[[diagram:zigzag]]
 
 Why must the numbers only ever go down? That is the main fact about the algorithm.
 
@@ -389,7 +414,7 @@ Before going further, play with the methods you have. The lab holds a fresh day 
 
 The costs so far concentrate on one half of the intuitive sentence: messages in a cluster should be close to their centre. The next family concentrates on the other half: messages in different clusters should be dissimilar.
 
-**The similarity graph.** Put the \(m\) messages \(x_1, \dots, x_m\) at the vertices of a graph and give the edge between \(x_r\) and \(x_s\) a weight \(W_{r,s} = s(x_r, x_s)\), their similarity. The weights form a symmetric \(m \times m\) matrix \(W\), written \(W \in \mathbb R^{m, m}\). A common choice turns distances into similarities:
+**The similarity graph.** Put the \(m\) messages \(x_1, \dots, x_m\) at the vertices of a graph and give the edge between \(x_r\) and \(x_s\) a weight \(W_{r,s} = s(x_r, x_s)\), their similarity. The weights form a symmetric \(m \times m\) matrix \(W\), written \(W \in \mathbb R^{m, m}\). A common choice turns distances into similarities: identical messages get weight 1, row neighbours a bit more than a third, and messages across the gap almost nothing.
 
 \[ W_{r,s} = \exp\!\left( -\frac{d(x_r, x_s)^2}{\sigma^2} \right). \]
 
@@ -425,7 +450,7 @@ In plain words: **the cut is the total similarity you throw away by separating t
 
 Cutting the bridge costs \(2 \times 0.2 = 0.4\). Cutting off the straggler alone costs \(2 \times 0.15 = 0.3\). Mincut picks the straggler: one message against six. That is not a grouping into kinds; it is an outlier report. Mincut will often do exactly this, slicing off a single weakly attached vertex.
 
-The fix is to charge small clusters for being small:
+The fix is to charge small clusters for being small: divide the weight leaving each cluster by the cluster’s size, so a cluster of one pays its leaving weight in full and a cluster of six pays a sixth.
 
 \[ \operatorname{RatioCut}(C_1, \dots, C_k) = \sum_{i=1}^k \frac{1}{|C_i|} \sum_{r \in C_i,\ s \notin C_i} W_{r,s}. \]
 
@@ -454,7 +479,7 @@ It prints `(0.3, 0.175)` and `(0.4, 0.117)`: mincut prefers the straggler, Ratio
 
 Balancing has a price: minimizing RatioCut is computationally hard. Spectral clustering is a way around that, and it starts from a matrix.
 
-**The graph Laplacian.** The **degree** of vertex \(r\) is the total weight of its edges, \(D_{r,r} = \sum_{s=1}^m W_{r,s}\). The **degree matrix** \(D\) is the diagonal matrix with these degrees on the diagonal and zeros elsewhere, and the **unnormalized graph Laplacian** is
+**The graph Laplacian.** The **degree** of a vertex is the total weight of its edges: vertex 2 touches 0, 1 and 3 with weights 1, 1 and 0.2, so its degree is 2.2. In symbols, the degree of vertex \(r\) is \(D_{r,r} = \sum_{s=1}^m W_{r,s}\). The **degree matrix** \(D\) is the diagonal matrix with these degrees on the diagonal and zeros elsewhere, and the **unnormalized graph Laplacian** is
 
 \[ L = D - W. \]
 
@@ -462,7 +487,7 @@ So \(L_{r,r}\) is the degree of \(r\) minus \(W_{r,r}\) (which is 0 here, since 
 
 (The letter \(D\) has now been used for the between-cluster distance of linkage and for the degree matrix; which is meant is always clear from whether a matrix is in sight. And \(L\) here is a matrix, not a risk \(L_{\mathcal D}\).)
 
-Why this matrix? Because of one identity.
+Why this matrix? Because of one identity. Give every vertex a number, say 1 on the first triangle and 0 everywhere else. Each edge whose two ends got different numbers is a disagreement, and we charge it the edge weight times the squared difference. Here only the bridge disagrees, so the total charge is \(0.2 \times 1^2 = 0.2\). The Laplacian computes exactly this total.
 
 **Proposition (the Laplacian measures disagreement along edges).** For every vector \(v \in \mathbb R^m\),
 
@@ -484,7 +509,9 @@ In the first sum, do the inner sum over \(s\) first: \(\sum_s W_{r,s} = D_{r,r}\
 
 using that \(v^\top D v = \sum_r D_{r,r} v_r^2\) for a diagonal \(D\). \(\blacksquare\)
 
-Two facts fall out at once. Every \(v^\top L v\) is a sum of non-negative terms, so \(v^\top L v \ge 0\). And the all-ones vector \(\mathbf 1\) gives \(v_r - v_s = 0\) on every edge, so \(\mathbf 1^\top L \mathbf 1 = 0\); in fact \(L \mathbf 1 = 0\), since each row of \(L\) adds to 0. In the language of lesson 9: \(\mathbf 1\) is an **eigenvector** of \(L\) with **eigenvalue** 0 (a vector \(u \ne 0\) with \(L u = \lambda u\) is an eigenvector, and the number \(\lambda\) its eigenvalue), and no eigenvalue of \(L\) is negative.
+Two facts fall out at once. Every \(v^\top L v\) is a sum of non-negative terms, so \(v^\top L v \ge 0\). And the all-ones vector \(\mathbf 1\) gives \(v_r - v_s = 0\) on every edge, so \(\mathbf 1^\top L \mathbf 1 = 0\); in fact \(L \mathbf 1 = 0\), since each row of \(L\) adds to 0. Recall from lesson 9 that a nonzero vector \(u\) which a matrix only stretches, \(L u = \lambda u\) for some number \(\lambda\), is an **eigenvector**, and \(\lambda\) its **eigenvalue**. So \(\mathbf 1\) is an eigenvector of \(L\) with eigenvalue 0. And no eigenvalue of \(L\) is negative: if \(L u = \lambda u\) then \(0 \le u^\top L u = \lambda \|u\|^2\).
+
+The same charge, summed over clusters, gives RatioCut. Turn each cluster into a column of numbers: \(1/\sqrt{|C_j|}\) on its members and 0 elsewhere, so the first triangle becomes \(1/\sqrt 3\) on vertices 0, 1, 2. The charge of that column is the bridge weight 0.2 divided by 3, which is exactly the first triangle’s share of RatioCut.
 
 **Proposition (RatioCut as a trace).** Let \(C_1, \dots, C_k\) be a clustering of the \(m\) vertices and let \(H \in \mathbb R^{m, k}\) be the matrix with entries
 
@@ -549,7 +576,7 @@ Why should the rows of \(U\) be easy for k-means? Look at the ideal case. If \(U
 
 *Proof.* RatioCut adds only weights of edges between clusters, all 0 here, so by the trace proposition \(\operatorname{trace}(H^\top L H) = 0\). For any \(H'\) with orthonormal columns, the trace is a sum of quadratic forms \(h'^\top L h' \ge 0\), so it is at least 0. And for each column, \(h_j^\top L h_j = 0\) means every term \(W_{r,s}(h_{r,j} - h_{s,j})^2\) of the identity is 0. Then \((L h_j)_r = \sum_s W_{r,s}(h_{r,j} - h_{s,j})\), the row-\(r\) form of \(L = D - W\), has every term equal to 0 too: wherever \(W_{r,s} > 0\), \(h_{r,j} = h_{s,j}\). So \(L h_j = 0 = 0 \cdot h_j\). \(\blacksquare\)
 
-When the pieces are joined by weak edges, as the triangles are by the bridge, the second-smallest eigenvector is no longer exactly a scaled indicator, but it stays close to one, and its signs give the split. You can watch that happen with a few lines of power iteration: repeatedly multiply by \(cI - L\) (for a large enough \(c\), this turns the smallest eigenvalues of \(L\) into the largest), subtract the part along \(\mathbf 1\), and normalize.
+When the pieces are joined by weak edges, as the triangles are by the bridge, the second-smallest eigenvector is no longer exactly a scaled indicator, but it stays close to one, and its signs give the split. You can watch that happen with a few lines of power iteration: repeatedly multiply by \(cI - L\), where \(I\) is the identity matrix (1 on the diagonal, 0 elsewhere) and \(c = 5\) (for a large enough \(c\), this turns the smallest eigenvalues of \(L\) into the largest), subtract the part along \(\mathbf 1\), and normalize.
 
 ```python
 import math
@@ -586,7 +613,7 @@ The last method on our list comes from information theory, and it fits mail unus
 
 Turn this into probability. Let \(x\) be a message picked uniformly at random, so each has probability \(1/4\), and let \(y\) be a word picked uniformly from that message. A clustering is a third random variable \(C\), the cluster of \(x\), which may even be random: the method chooses the probabilities \(p(C \mid x)\) of each cluster given each message.
 
-To score it we need the **mutual information** of two random variables \(a\) and \(b\):
+To score it we need a measure of how much one random quantity tells you about another. If the cluster is the kind of the message, two kinds, equally likely, then learning which message it was settles the kind completely: one yes/no question’s worth of information, 1 bit. If the cluster were a coin flip unrelated to the message, learning the message would tell you nothing, 0 bits. That measure is the **mutual information** of two random variables \(a\) and \(b\):
 
 \[ I(a; b) = \sum_{\alpha} \sum_{\beta} p(\alpha, \beta) \log_2 \frac{p(\alpha, \beta)}{p(\alpha)\, p(\beta)}. \]
 
@@ -597,7 +624,7 @@ To score it we need the **mutual information** of two random variables \(a\) and
 
 In plain words: **mutual information is how many bits knowing one variable tells you, on average, about the other.** It is 0 when they are independent. If \(C\) is the kind of a uniformly random message, with two equally likely kinds, then knowing \(x\) tells you \(C\) exactly, and \(I(x; C) = 1\) bit.
 
-The **information bottleneck** objective chooses the soft assignment by
+Now the idea. A good grouping should forget as much as possible about which message it was (that is what grouping means), while remembering as much as possible about the words. One cluster for everything forgets all, and tells you nothing about the words; every message in its own cluster remembers all, and compresses nothing. The **information bottleneck** objective balances the two, choosing the soft assignment by
 
 \[ \min_{p(C \mid x)} \; I(x; C) - \beta\, I(C; y), \]
 
@@ -642,6 +669,8 @@ Each line gives the clustering, \(I(x; C)\), \(I(C; y)\) and the objective. It p
 0123 2.0 1.191 -0.382
 ```
 
+[[diagram:bottleneck]]
+
 Read the four lines in order: one cluster for everything (`0000`), the two kinds (`0011`), a mixed pairing (`0101`), and every message alone (`0123`). The kinds cost 1 bit of compression and keep 1 bit about the words, the best value at \(\beta = 2\). The mixed pairing pays the same bit and keeps only 0.191 bits. Keeping every message apart keeps the most, 1.191 bits, but pays 2 bits for it. Turn \(\beta\) up and relevance wins: from \(\beta = 1/0.191 \approx 5.2\) on, the singletons beat the kinds. Turn it below 1 and one cluster for everything wins. So, once again, the answer depends on a number someone has to choose.
 
 The bottleneck generalizes the statistician’s **minimal sufficient statistic**: a summary of the data that keeps everything relevant to the question and nothing else. Solving the optimization is hard in general, and the methods proposed for it resemble the expectation-maximization procedure of lesson 24. We will not build one.
@@ -652,7 +681,7 @@ Step back. We have linkage methods with three linkages and three stopping rules,
 
 Throughout this section, a **clustering function** \(F\) takes any finite set \(\mathcal X\) with a dissimilarity \(d\) on it and returns a partition \(F(\mathcal X, d)\) of \(\mathcal X\). A **dissimilarity** here is a distance function as defined earlier, with one extra requirement: \(d(x, y) > 0\) whenever \(x \ne y\). Three properties sound like plain good sense.
 
-**Scale invariance.** For every \(\mathcal X\), every \(d\) and every \(\alpha > 0\),
+**Scale invariance.** Measuring the twelve messages in tenths or in hundredths multiplies every distance by 10; the groups should not care. Formally, for every \(\mathcal X\), every \(d\) and every \(\alpha > 0\),
 
 \[ F(\mathcal X, d) = F(\mathcal X, \alpha d), \qquad \text{where } (\alpha d)(x, y) = \alpha\, d(x, y). \]
 
@@ -668,6 +697,8 @@ Throughout this section, a **clustering function** \(F\) takes any finite set \(
 Then \(F(\mathcal X, d') = F(\mathcal X, d)\). The two conditions describe a **consistent change** of \(d\) with respect to the clustering \(F(\mathcal X, d)\): members of a cluster move closer together or stay put, members of different clusters move further apart or stay put. In plain words: **if the clusters you found get tighter and further apart, you must find the same clusters.** If the two rows of the opening were found as clusters, pushing the rows from 2 apart to 4 apart must not change them.
 
 Each property is the kind of thing a manager would write into a requirements document without blinking. Scale invariance says units don’t matter. Richness says the data, not the method, decides the grouping. Consistency is the only one that speaks to the intuitive sentence itself: it says that more evidence for a grouping should never overturn it.
+
+Before the theorem, the idea of the proof in one breath. Richness gives one dissimilarity that makes everything a singleton and another that makes something else. Blow the second one up by a scale factor until every pair is at least as far apart as in the first. Scale invariance says the blown-up version still gives the something-else; consistency says that pushing singletons apart keeps them singletons. Both cannot be true.
 
 **Theorem (no clustering function has all three).** There is no clustering function \(F\) that satisfies scale invariance, richness and consistency.
 

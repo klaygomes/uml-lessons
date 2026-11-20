@@ -18,7 +18,7 @@ First, though, we need a shared language. We have been using some of it already.
 
 Most notation in learning theory is either standard or defined on the spot, and a notation table is something you consult, not something you read. But a few conventions will be on every page from here on, so let’s meet them through the mail room.
 
-**Vectors and their entries.** A message with thirty features is a list of thirty answers, each 0 or 1, such as 1, 0, 1, and so on. In symbols it is a vector \(x \in \{0,1\}^{30}\): \(\in\) reads “belongs to”, \(\{0,1\}\) is the set of the two possible answers, and the exponent 30 means “a list of 30 entries, each taken from that set”, just as the tiny world’s messages were lists in \(\{0,1\}^4\). The convention is lowercase letters for scalars and abstract objects, and switches to boldface when it wants to stress that something is a vector. We will keep writing a plain \(x\), as in lesson 1. The \(j\)-th entry is \(x_j\), so \(x_1 = 1\) means the subject says “FREE”. With a whole sequence of messages \(x_1, \dots, x_m\), we write \(x_{i,j}\) for feature \(j\) of the \(i\)-th message. You met that in lesson 1’s pseudocode.
+**Vectors and their entries.** A message with thirty features is a list of thirty answers, each 0 or 1, such as 1, 0, 1, and so on. In symbols it is a vector \(x \in \{0,1\}^{30}\): \(\in\) reads “belongs to”, \(\{0,1\}\) is the set of the two possible answers, and the exponent 30 means “a list of 30 entries, each taken from that set”, just as the tiny world’s messages were lists in \(\{0,1\}^4\). Lowercase letters are scalars and abstract objects, and many texts switch to boldface to stress that something is a vector. We will keep writing a plain \(x\), as in lesson 1. The \(j\)-th entry is \(x_j\), so \(x_1 = 1\) means the subject says “FREE”. With a whole sequence of messages \(x_1, \dots, x_m\), we write \(x_{i,j}\) for feature \(j\) of the \(i\)-th message. You met that in lesson 1’s pseudocode.
 
 **Uppercase means a collection.** Capital letters are sets, sequences or matrices, and context tells you which. \(S\) is a sequence, \(\mathcal H\) is a set of hypotheses. Calligraphic capitals name the big sets of the framework: the domain set \(\mathcal X\), the label set \(\mathcal Y\), and the **examples domain** \(\mathcal Z = \mathcal X \times \mathcal Y\). That last one is the set of all possible message-and-label pairs, and the \(\times\) means exactly that: pair any element of \(\mathcal X\) with any element of \(\mathcal Y\). In the tiny world, 16 messages times 2 labels gives 32 pairs. An example \(z = (x, y)\) is one element of \(\mathcal Z\), such as (1010, junk).
 
@@ -55,15 +55,15 @@ And \(S \sim \mathcal D^m\) means the \(m\) examples are drawn independently fro
 
 **Small tools.** Three pieces of shorthand. The first lists positions: the four features of the tiny world sit at positions 1, 2, 3 and 4, and we write that list of positions as \([4]\); in general \([n]\) is the set \(\{1, \dots, n\}\). The second turns a true-or-false statement into a number, so that “3 is bigger than 2” becomes 1 and “2 is bigger than 3” becomes 0; that is the indicator \(\mathbb 1[\text{statement}]\), 1 when the statement is true and 0 when it is false. The third answers “\(e\) to what power gives this number?”, where \(e \approx 2.718\): for 465 the answer is about 6.14. That is the natural logarithm, and \(\log\) always means it here, base \(e\). That matters today, because the formula we are heading for has a \(\log\) in it.
 
-**The loss function.** One more idea won’t be needed until lesson 3: a score for how badly a hypothesis does on one example. For junk-or-keep the obvious score is one point per mistake. The hypothesis “FREE means junk” earns 1 point on the message 1100 labelled keep, and 0 points on 1010 labelled junk. That score is the **loss function** \(\ell : \mathcal H \times \mathcal Z \to \mathbb R_+\). Its value is a non-negative real number. For our junk-or-keep problem the natural choice is \(\ell(h, (x, y)) = \mathbb 1[h(x) \neq y]\), one point per mistake. The empirical risk is then just the average loss over the examples. Lesson 3 lets the loss be other things, such as a squared distance.
+**The loss function.** One more idea won’t be needed until lesson 3: a score for how badly a hypothesis does on one example. For junk-or-keep the obvious score is one point per mistake: the hypothesis “FREE means junk” earns 1 point on the message 1100 labelled keep, and 0 points on 1010 labelled junk. That score is the **loss function** \(\ell : \mathcal H \times \mathcal Z \to \mathbb R_+\), and for our problem it is \(\ell(h, (x, y)) = \mathbb 1[h(x) \neq y]\). The empirical risk is then just the average loss over the examples. Lesson 3 lets the loss be other things, such as a squared distance.
 
 That line packs in a lot, so take it apart.
 
-- The arrow in \(\ell : \mathcal H \times \mathcal Z \to \mathbb R_+\) announces what goes in and what comes out. What goes in is a pair: a hypothesis from \(\mathcal H\) and an example from \(\mathcal Z\), and the \(\times\) means “one of each”. What comes out is a number in \(\mathbb R_+\), the non-negative reals.
+- The arrow in \(\ell : \mathcal H \times \mathcal Z \to \mathbb R_+\) announces what goes in and what comes out: in goes a pair, one hypothesis from \(\mathcal H\) and one example from \(\mathcal Z\) (the \(\times\) again), and out comes a number in \(\mathbb R_+\), the non-negative reals.
 - In \(\ell(h, (x, y))\) the example is written out as its two halves, the message \(x\) and its label \(y\).
 - Inside, \(h(x) \neq y\) is the yes/no question “does \(h\) get this one wrong?”, and the indicator \(\mathbb 1[\cdot]\) turns the answer into a number: 1 for yes, 0 for no.
 
-In plain words: **the loss of a hypothesis on one example is 1 if it gets that example wrong and 0 if it gets it right.** Write \(h_F\) for “FREE means junk”, as in lesson 1, where \(h_j\) said junk exactly when feature \(j\) is on. On 1100 labelled keep, \(h_F\) says junk, so the loss is 1; on 1010 labelled junk it is right, so the loss is 0. The snippet runs those two examples through the loss, lists \([4]\), and shows that \(\log\) undoes \(e\) to the power: \(\log 465 \approx 6.14\) and \(e^{6.14} \approx 464\), a pair of numbers that comes back near the end of the lesson.
+In plain words: **the loss of a hypothesis on one example is 1 if it gets that example wrong and 0 if it gets it right.** Write \(h_F\) for “FREE means junk”, as in lesson 1, where \(h_j\) said junk exactly when feature \(j\) is on. The snippet runs the two examples above through the loss, lists \([4]\), and shows that \(\log\) undoes \(e\) to the power: \(\log 465 \approx 6.14\) and \(e^{6.14} \approx 464\), a pair of numbers that comes back near the end of the lesson.
 
 ```python
 import math
@@ -77,9 +77,14 @@ print(round(math.log(465), 2), round(math.exp(6.14), 1))
 
 It prints `[1, 2, 3, 4]`, then `1 0`, then `6.14 464.1`. The function `one` is the indicator, and `loss` is \(\ell\) with the example split into `z[0]` and `z[1]`.
 
-**Norms.** A norm measures how big a vector is, and there is more than one fair answer. For the tiny-world message 1101 you could count the features that are on (3), or measure the straight-line distance from 0000 to that corner (the square root of 3, about 1.73), or report the largest entry (1). Each of these gets a symbol. For a vector \(x\), \(\|x\|\) is its Euclidean length, \(\sqrt{\sum_j x_j^2}\). We will also use \(\|x\|_1 = \sum_j |x_j|\), \(\|x\|_\infty = \max_j |x_j|\), and \(\|x\|_0\), the number of nonzero entries. For a yes/no message, \(\|x\|_1\) and \(\|x\|_0\) are both the number of features that are on, and \(\|x\|\) is the square root of that number. Norms start to matter later in the course, when instances become real-valued vectors, as they do for the linear predictors of lesson 9.
+**Norms.** A norm measures how big a vector is, and there is more than one fair answer. For the tiny-world message 1101 you could count the features that are on (3), or measure the straight-line distance from 0000 to that corner (the square root of 3, about 1.73), or report the largest entry (1). Each answer has a symbol:
 
-Here is how to read them. The double bars \(\|\cdot\|\) mean “the size of this vector”, and the subscript after them says which kind of size. \(\sum_j\) means “add up over every feature \(j\)”, and \(|x_j|\) with single bars around a number is its absolute value, the number with its sign dropped. \(\max_j\) picks the largest value over all \(j\). So, from the inside out: \(\|x\|\) squares each entry, adds the squares and takes the square root; \(\|x\|_1\) adds the absolute values; \(\|x\|_\infty\) keeps only the biggest one; \(\|x\|_0\) counts the entries that are not zero. In plain words: **each norm is a different way to say how big a vector is: straight-line length, total size, largest entry, or number of entries in use.** Take the tiny-world message 1101, with F, L and N on:
+- \(\|x\| = \sqrt{\sum_j x_j^2}\), the Euclidean length: square each entry, add the squares, take the square root;
+- \(\|x\|_1 = \sum_j |x_j|\): add up the absolute values, where single bars around a number drop its sign;
+- \(\|x\|_\infty = \max_j |x_j|\): keep only the biggest;
+- \(\|x\|_0\): count the entries that are not zero.
+
+The double bars mean “the size of this vector”, the subscript says which kind, \(\sum_j\) adds up over every feature \(j\), and \(\max_j\) picks the largest value over all \(j\). In plain words: **each norm is a different way to say how big a vector is: straight-line length, total size, largest entry, or number of entries in use.** For a yes/no message, \(\|x\|_1\) and \(\|x\|_0\) both count the features that are on, and \(\|x\|\) is the square root of that count. Norms start to matter when instances become real-valued vectors, as they do for the linear predictors of lesson 9. For 1101:
 
 ```python
 x = [1, 1, 0, 1]
@@ -88,9 +93,9 @@ print(sum(abs(v) for v in x), max(abs(v) for v in x))
 print(sum(v != 0 for v in x))
 ```
 
-It prints `1.7321`, the square root of 3, then `3 1`, then `3`: three features on, so \(\|x\|_1 = \|x\|_0 = 3\), and no entry is bigger than 1.
+It prints `1.7321`, then `3 1`, then `3`: the four answers above.
 
-**Asymptotic notation.** The idea is to describe how fast something grows while ignoring constant factors and small inputs. If a learner checks 465 hypotheses on each of \(m\) examples and spends 10 more steps setting up, it makes \(465m + 10\) evaluations, what matters for large \(m\) is that the count grows in proportion to \(m\); the 465 and the 10 are detail. We will avoid this notation where we can, but it is handy for summarizing results, and its definitions are the ones you know from algorithms. For \(f, g : \mathbb R \to \mathbb R_+\):
+**Asymptotic notation.** The idea is to describe how fast something grows while ignoring constant factors and small inputs. If a learner checks 465 hypotheses on each of \(m\) examples and spends 10 more steps setting up, it makes \(465m + 10\) evaluations. What matters for large \(m\) is that the count grows in proportion to \(m\); the 465 and the 10 are detail. We will avoid this notation where we can, but it is handy for summarizing results, and its definitions are the ones you know from algorithms. For \(f, g : \mathbb R \to \mathbb R_+\):
 
 - \(f = O(g)\) if there are \(x_0, \alpha \in \mathbb R_+\) with \(f(x) \le \alpha g(x)\) for all \(x > x_0\);
 - \(f = \Omega(g)\) is the same with \(\ge\);
@@ -135,14 +140,14 @@ Each example is made in two steps: draw a message \(x_i\) from \(\mathcal D\), t
 
 **How success is measured.** The true risk of \(h\) is the probability that \(h\) gets a fresh message wrong. Take the tiny world you are about to meet, where the truth is “FREE and unknown sender” and all sixteen messages are equally likely. The hypothesis “unknown sender means junk” disagrees with the truth on four of them (the ones with an unknown sender and no FREE), so a fresh message trips it up \(4/16 = 1/4\) of the time. In symbols:
 
-\[ L_{\mathcal D, f}(h) = \mathbb P_{x \sim \mathcal D}\left[ h(x) \neq f(x) \right] = \mathcal D(\{ x : h(x) \neq f(x) \}). \]
+\[ L_{(\mathcal D, f)}(h) = \mathbb P_{x \sim \mathcal D}\left[ h(x) \neq f(x) \right] = \mathcal D(\{ x : h(x) \neq f(x) \}). \]
 
 This is lesson 1’s true risk, now with nothing assumed about \(\mathcal D\). From the inside out:
 
 - \(f(x)\) is the label message \(x\) really deserves, and \(h(x) \neq f(x)\) asks whether \(h\) gets \(x\) wrong.
 - \(\mathbb P_{x \sim \mathcal D}[\dots]\) is the probability of that event when \(x\) is one fresh message drawn from \(\mathcal D\).
 - The right-hand side says the same thing as a mass: collect the set of messages \(x\) such that \(h\) is wrong on them, and ask \(\mathcal D\) how much traffic that set carries.
-- The subscripts \(\mathcal D, f\) on \(L\) record the two hidden objects the number depends on.
+- The subscript \((\mathcal D, f)\) on \(L\) record the two hidden objects the number depends on.
 
 In plain words: **the true risk is the share of all arriving mail that \(h\) mislabels.** For “unknown sender means junk” that share is the four messages 0010, 0011, 0110 and 0111, at \(1/16\) each:
 
@@ -158,7 +163,7 @@ print(wrong, sum(D[x] for x in wrong))
 
 It prints the four messages and `1/4`. The list `wrong` is the set inside \(\mathcal D(\cdot)\), and the sum is its mass. Change any value in `D` and the risk changes with it, which is exactly why the learner, blind to \(\mathcal D\), cannot compute it.
 
-The subscript says the risk depends on both hidden objects. When they are clear we drop it and write \(L_{\mathcal D}(h)\). Other names for it are generalization error, risk and true error. The letter \(L\) is for loss.
+When \(f\) is clear from context we write just \(L_{\mathcal D}(h)\). Other names for it are generalization error, risk and true error. The letter \(L\) is for loss.
 
 Notice what is missing from this list. In lesson 1 we made \(\mathcal D\) uniform, so that true risk was a count out of 16. That was a convenience, and it is gone now. The framework insists that the learner is blind to \(\mathcal D\) and to \(f\), and that the only way it can interact with the world is through \(S\). Any guarantee we prove has to work without knowing what \(\mathcal D\) looks like.
 
@@ -170,7 +175,7 @@ The learner wants a hypothesis with small true risk, but it cannot compute true 
 
 \[ L_S(h) = \frac{\left| \{ i \in [m] : h(x_i) \neq y_i \} \right|}{m}. \]
 
-You met this in lesson 1, so a quick reminder, inside out. \(h(x_i) \neq y_i\) asks whether \(h\) gets example \(i\) wrong. The braces with the colon collect the positions \(i\) in \([m]\) such that it does. The bars \(|\cdot|\) count how many positions that is, and dividing by \(m\) turns the count into a fraction. The subscript \(S\) says the score is taken on the training sequence only. In plain words: **the share of your labelled examples that \(h\) gets wrong.** In the table below, \(h_F\) is wrong on positions \(\{4, 5, 6\}\), three of eight, so \(L_S(h_F) = 3/8\); the line building `L_S` in the Python snippet after that table is this formula, mistakes summed and divided by `len(S)`.
+As in lesson 1: the braces collect the positions \(i\) in \([m]\) where \(h(x_i) \neq y_i\), the bars \(|\cdot|\) count them, and dividing by \(m\) turns the count into a fraction taken on the training sequence \(S\) only. In plain words: **the share of your labelled examples that \(h\) gets wrong.** In the table below, \(h_F\) is wrong on positions 4, 5 and 6, so \(L_S(h_F) = 3/8\), and the line building `L_S` in the snippet after the table is this formula, mistakes summed and divided by `len(S)`.
 
 Other names for it are training error and empirical error.
 
@@ -180,7 +185,7 @@ Let’s run it by hand. We go back to lesson 1’s tiny world of four features, 
 
 \[ \mathcal H_{\le 2} = \{ h_j \} \cup \{ h_{jk} : j < k \}, \qquad h_{jk}(x) = x_j \wedge x_k. \]
 
-Read it piece by piece. \(\{ h_j \}\) is the set of the four one-feature hypotheses, one for each feature \(j\). \(\{ h_{jk} : j < k \}\) is the set of pair hypotheses, one for each pair of features \(j\) and \(k\) such that \(j\) comes before \(k\); the condition \(j < k\) stops us from counting F-with-U and U-with-F twice. The cup \(\cup\) means “union”: put both sets together. On the right, \(x_j \wedge x_k\) is “\(x_j\) and \(x_k\)”, which is 1 only when both features are on. The subscript \(\le 2\) on \(\mathcal H\) is a reminder that each hypothesis looks at two features at most. In plain words: **the class holds every rule of the form “junk when this feature is on” or “junk when these two features are both on”.** So \(h_{FU}\) says “junk exactly when the subject says FREE and the sender is unknown”. That is 4 one-feature hypotheses plus 6 pairs, ten in all, and the truth \(h_{FU}\) is one of them. The Python snippet after the table builds exactly this class: `names` lists the ten, and `h` computes the “and” with `all`, so `h("FU", "1010")` is 1 and `h("FU", "1100")` is 0.
+Read it piece by piece. \(\{ h_j \}\) is the set of the four one-feature hypotheses. \(\{ h_{jk} : j < k \}\) is the set of pair hypotheses, one per pair of features with \(j\) before \(k\), so F-with-U and U-with-F are not counted twice. The cup \(\cup\) means “union”: put both sets together. On the right, \(x_j \wedge x_k\) is “\(x_j\) and \(x_k\)”, 1 only when both features are on, and the subscript \(\le 2\) says each hypothesis looks at two features at most. In plain words: **the class holds every rule of the form “junk when this feature is on” or “junk when these two features are both on”.** That is 4 singles plus 6 pairs, ten in all, and the truth \(h_{FU}\) is one of them. In the snippet after the table, `names` lists the ten, and `h` computes the “and” with `all`, so `h("FU", "1010")` is 1 and `h("FU", "1100")` is 0.
 
 Your users label eight messages.
 
@@ -275,7 +280,7 @@ The fix is the one you met in lesson 1. Before seeing any data, the learner choo
 
 \[ \mathrm{ERM}_{\mathcal H}(S) \in \operatorname*{argmin}_{h \in \mathcal H} L_S(h). \]
 
-Inside out: \(L_S(h)\) is the empirical risk of one hypothesis. The \(\operatorname{argmin}\) with \(h \in \mathcal H\) beneath it runs over every \(h\) in the class and returns not the smallest risk itself but the set of hypotheses that reach it: “the arguments that minimize”. The \(\in\) says ERM returns some member of that set, any one. The subscript \(\mathcal H\) on \(\mathrm{ERM}\) names the class it searches, and the \((S)\) says its answer depends on the training sequence. In plain words: **ERM over \(\mathcal H\) returns one of the hypotheses in \(\mathcal H\) with the fewest training mistakes.** The table above computed exactly this set for \(\mathcal H_{\le 2}\): \(\{h_U, h_{FU}\}\), and the last line of the ERM snippet printed it as `['U', 'FU']`.
+Inside out: \(L_S(h)\) is the empirical risk of one hypothesis. The \(\operatorname{argmin}\) with \(h \in \mathcal H\) beneath it runs over every \(h\) in the class and returns not the smallest risk itself but the set of hypotheses that reach it: “the arguments that minimize”. The \(\in\) says ERM returns some member of that set, any one. The subscript \(\mathcal H\) on \(\mathrm{ERM}\) names the class it searches, and the \((S)\) says its answer depends on the training sequence. In plain words: **ERM over \(\mathcal H\) returns one of the hypotheses in \(\mathcal H\) with the fewest training mistakes.** The last line of the ERM snippet printed this set, `['U', 'FU']`.
 
 Restricting the learner this way biases it toward certain hypotheses, and the restriction is called an **inductive bias**, the same term as in lesson 1. Since \(\mathcal H\) is chosen before any data arrives, it should come from prior knowledge about the problem. For the papayas, a good choice is the class of axis-aligned rectangles in the color-softness plane, and ERM over it does not overfit. (Proving that is problem 3 at the end of this lesson.) The memorizer shows the opposite. A class containing every hypothesis that says “tasty” on a finite set of points is too big for ERM to be safe.
 
@@ -290,11 +295,11 @@ Finite sounds restrictive. It isn’t, really. Think of the class of every hypot
 Here is a menu of finite classes for the thirty-feature mail room.
 
 - **One feature**, \(h_j(x) = x_j\): 30 hypotheses.
-- **One or two features**, \(\mathcal H_{\le 2}\): 30 singles plus \(\binom{30}{2} = 435\) pairs, 465 hypotheses.
+- **One or two features**, \(\mathcal H_{\le 2}\): 30 singles plus \(\binom{30}{2} = 435\) pairs, 465 hypotheses. \(\binom{30}{2}\), read “30 choose 2”, is the number of ways to pick 2 things out of 30 when order doesn’t matter.
 - **Conjunctions of literals**: rules like “FREE and a link and *not* sent at night”, where each feature can be required on, required off, or ignored. That is \(3^{30} + 1 \approx 2.06 \times 10^{14}\) hypotheses (the extra one is the hypothesis that never says junk).
 - **Anything goes**: every function from messages to labels, \(2^{2^{30}}\) hypotheses. The memorizer lives here.
 
-Each count is worth reading once, on the tiny world first. With four features there are six ways to choose a pair, the six pairs of \(\mathcal H_{\le 2}\); \(\binom{4}{2}\), read “4 choose 2”, is the number of ways to pick 2 things out of 4 when order doesn’t matter, and \(\binom{30}{2}\) is the same for 30 features. For conjunctions, each of the four features has three options, so there are \(3 \times 3 \times 3 \times 3 = 3^4 = 81\) rules, plus the one that never says junk: 82. The exponent counts how many independent three-way choices you make. For anything goes, each of the \(2^4 = 16\) messages gets one of two labels, so there are \(2^{16}\) hypotheses: a tower of exponents \(2^{2^4}\), read from the top down. In plain words: **the size of a class is the number of independent choices that pin down one hypothesis, multiplied out.** The same counts in Python, tiny world first and mail room second:
+Each count is worth reading once, on the tiny world first. With four features there are \(\binom{4}{2} = 6\) ways to choose a pair, the six pairs of \(\mathcal H_{\le 2}\). For conjunctions, each of the four features has three options, so there are \(3 \times 3 \times 3 \times 3 = 3^4 = 81\) rules, plus the one that never says junk: 82. The exponent counts how many independent three-way choices you make. For anything goes, each of the \(2^4 = 16\) messages gets one of two labels, so there are \(2^{16}\) hypotheses: a tower of exponents \(2^{2^4}\), read from the top down. In plain words: **the size of a class is the number of independent choices that pin down one hypothesis, multiplied out.** The same counts in Python, tiny world first and mail room second:
 
 ```python
 import math
@@ -328,11 +333,11 @@ print(min(L(c) for c in H), min(L(c) for c in singles))
 
 It prints `0.0 0.25`: a zero for \(\mathcal H_{\le 2}\), so realizability holds there, and a quarter for the one-feature class, so it fails there.
 
-Realizability has an immediate consequence. Since \(h^\star\) errs only on a set of probability zero, a random training sequence almost surely has no example from that set. So \(L_S(h^\star) = 0\) with probability 1. The smallest empirical risk in \(\mathcal H\) is therefore 0, and every hypothesis ERM might return is consistent. From here on we write \(h_S\) for whichever hypothesis \(\mathrm{ERM}_{\mathcal H}\) returns on \(S\) (the memorizer borrowed that name for a moment, because it too was built from \(S\)), and the claim reads \(L_S(h_S) = 0\). (Strictly, this holds with probability 1, and from now on we leave that qualifier out.) The empirical risk of \(h_S\) is settled, then. What we want to know is its true risk.
+Realizability has an immediate consequence. Since \(h^\star\) errs only on a set of probability zero, each of the \(m\) examples lands in that set with chance 0, so the chance that any of them does is at most \(m \times 0 = 0\). So \(L_S(h^\star) = 0\) with probability 1. The smallest empirical risk in \(\mathcal H\) is therefore 0, and every hypothesis ERM might return is consistent. From here on we write \(h_S\) for whichever hypothesis \(\mathrm{ERM}_{\mathcal H}\) returns on \(S\) (the memorizer borrowed that name for a moment, because it too was built from \(S\)), and the claim reads \(L_S(h_S) = 0\). (Strictly, this holds with probability 1, and from now on we leave that qualifier out.) The empirical risk of \(h_S\) is settled, then. What we want to know is its true risk.
 
 The second assumption is about the training sequence. Any guarantee has to depend on how \(S\) relates to \(\mathcal D\). If your users only ever labelled messages from their friends, \(S\) would tell you nothing about junk. The standard assumption is the following.
 
-**The i.i.d. assumption.** The examples are **independently and identically distributed** according to \(\mathcal D\): every \(x_i\) is freshly drawn from \(\mathcal D\), independently of the others, and then labelled by \(f\). Independence makes the chances multiply. In the tiny world, the chance that the first message is 1010 is \(1/16\), and the chance that the second one is also 1010 is again \(1/16\), whatever the first was, so the chance of that exact pair is \(1/16 \times 1/16 = 1/256\). We write this \(S \sim \mathcal D^m\). Here \(\mathcal D^m\) is the probability over \(m\)-tuples of messages that you get by drawing each entry from \(\mathcal D\), independently of the other entries.
+**The i.i.d. assumption.** The examples are **independently and identically distributed** according to \(\mathcal D\): every \(x_i\) is freshly drawn from \(\mathcal D\), independently of the others, and then labelled by \(f\). Independence makes the chances multiply. In the tiny world, the chance that the first message is 1010 is \(1/16\), and the chance that the second one is also 1010 is again \(1/16\), whatever the first was, so the chance of that exact pair is \(1/16 \times 1/16 = 1/256\). We write this \(S \sim \mathcal D^m\).
 
 The notation reads like this. An \(m\)-tuple is an ordered list of \(m\) messages, repeats allowed. The superscript \(m\) on \(\mathcal D^m\) is not a power of a number but a reminder that \(\mathcal D\) is used \(m\) times over, once per entry, and the probability of a whole tuple \((x_1, \dots, x_m)\) is the product \(\mathcal D(\{x_1\}) \times \dots \times \mathcal D(\{x_m\})\). The \(\sim\) reads “is drawn from”, as before. In plain words: **draw \(m\) messages one after another, each fresh from \(\mathcal D\), and multiply their chances to get the chance of the whole sequence.**
 
@@ -369,13 +374,13 @@ So we name two sets. The **bad hypotheses** are the ones with true risk above \(
 
 \[ \mathcal H_B = \{ h \in \mathcal H : L_{(\mathcal D, f)}(h) > \varepsilon \}. \]
 
-The braces collect the hypotheses \(h\) in \(\mathcal H\) such that (the colon) their true risk is above \(\varepsilon\), and the subscript \(B\) is for “bad”. In plain words: **the bad hypotheses are the members of the class that would fail the accuracy target.**
+The braces collect the hypotheses in \(\mathcal H\) whose true risk is above \(\varepsilon\), and \(B\) is for “bad”. In plain words: **the bad hypotheses are the members of the class that would fail the accuracy target.**
 
 And a training sequence is **misleading** if some bad hypothesis is consistent with it. The eight examples of the ERM table are one: \(h_U\) is bad, with true risk 0.25, yet it makes no mistake on them. On a misleading training sequence, a bad hypothesis looks exactly as good as the truth. The labels are fixed by \(f\), so all the randomness is in the messages, which we write \(S|_x = (x_1, \dots, x_m)\): the bar with subscript \(x\) means “\(S\) with the labels stripped off, keeping only the messages”. The misleading set is therefore a set of message tuples:
 
 \[ M = \{ S|_x : \exists h \in \mathcal H_B, \ L_S(h) = 0 \}. \]
 
-Inside out: \(L_S(h) = 0\) says \(h\) is consistent with the training sequence. The symbol \(\exists\) reads “there exists”, so \(\exists h \in \mathcal H_B\) asks for at least one bad hypothesis with that property. The braces collect every tuple of messages \(S|_x\) such that this happens. In plain words: **\(M\) is the set of message tuples on which at least one bad hypothesis makes no mistakes.** You may also see them called misleading samples. The snippet finds the bad hypotheses of the tiny world and tests the eight messages of the table:
+Inside out: \(L_S(h) = 0\) says \(h\) is consistent, \(\exists h \in \mathcal H_B\) asks for at least one bad hypothesis that is, and the braces collect every message tuple where that happens. In plain words: **\(M\) is the set of message tuples on which at least one bad hypothesis makes no mistakes.** You may also see them called misleading samples. The snippet finds the bad hypotheses of the tiny world and tests the eight messages of the table:
 
 ```python
 from itertools import combinations
@@ -419,7 +424,7 @@ The proof rests on a bound for the chance of failure. Picture all possible train
 
 \[ \mathcal D^m(\{ S|_x : L_{(\mathcal D, f)}(h_S) > \varepsilon \}) \le |\mathcal H| \, e^{-\varepsilon m}. \]
 
-Inside out: \(L_{(\mathcal D, f)}(h_S) > \varepsilon\) says ERM’s hypothesis fails the accuracy target. The braces collect the message tuples \(S|_x\) such that this happens. \(\mathcal D^m(\cdot)\) gives the total chance of drawing one of them. On the right, \(e^{-\varepsilon m}\) is \(e\) raised to minus \(\varepsilon m\), which is \(1 / e^{\varepsilon m}\) and shrinks fast as \(m\) grows, and \(|\mathcal H|\) multiplies it. In plain words: **the chance of drawing a training sequence that leads ERM astray is at most the class size times a factor that decays exponentially in the number of examples.** At \(\varepsilon = 0.2\) and \(m = 20\) the right side is \(10 \times e^{-4} = 0.1832\), and worked example 2 below measures the left side at 0.0184; its snippet prints both.
+Inside out: \(L_{(\mathcal D, f)}(h_S) > \varepsilon\) says ERM’s hypothesis fails the accuracy target. The braces collect the message tuples \(S|_x\) such that this happens. \(\mathcal D^m(\cdot)\) gives the total chance of drawing one of them. On the right, \(e^{-\varepsilon m}\) is \(e\) raised to minus \(\varepsilon m\), which is \(1 / e^{\varepsilon m}\) and shrinks fast as \(m\) grows, and \(|\mathcal H|\) multiplies it. In plain words: **the chance of drawing a training sequence that leads ERM astray is at most the class size times a factor that decays exponentially in the number of examples.** At \(\varepsilon = 0.2\) and \(m = 20\) the right side is 0.1832, and the worked example below measures the left side at 0.0184; its snippet prints both.
 
 Fix \(f\), \(\mathcal D\), \(\varepsilon\) and \(m\), and assume realizability.
 
@@ -431,15 +436,15 @@ The symbol \(\subseteq\) reads “is contained in”: every member of the left s
 
 A set can’t have more probability than a set that contains it, so the failure probability is at most \(\mathcal D^m(M)\). Notice that we never asked *which* consistent hypothesis ERM picked. That is why the guarantee holds for every ERM hypothesis, ties included.
 
-**Step 2: split \(M\) by hypothesis.** A tuple is misleading when at least one bad hypothesis survives it, so \(M\) is the union of one set per bad hypothesis. In the tiny world at \(\varepsilon = 0.2\) that means nine sets, one for each of the nine bad hypotheses, and a tuple is misleading if it lies in any of them. In symbols:
+**Step 2: split \(M\) by hypothesis.** A tuple is misleading when at least one bad hypothesis survives it, so \(M\) is the union of one set per bad hypothesis: nine sets in the tiny world at \(\varepsilon = 0.2\). In symbols:
 
 \[ M = \bigcup_{h \in \mathcal H_B} \{ S|_x : L_S(h) = 0 \}. \]
 
-The big cup \(\bigcup\) is the union symbol \(\cup\) made large so it can take a range underneath: \(h \in \mathcal H_B\) says “one set for each bad \(h\)”, and the union of all of them collects every tuple that is in at least one. Each set inside is the set of tuples on which that one \(h\) is consistent. In plain words: **a tuple is misleading exactly when it fools at least one bad hypothesis.** Each set in the union is one oval in the figure. The snippet in step 3 below builds two of these ovals in code, and its `a or b` is a union of two sets. Combining with step 1 gives
+The big cup \(\bigcup\) is \(\cup\) made large to take a range underneath: one set for each bad \(h\), the tuples on which that \(h\) is consistent, and the union collects every tuple in at least one. In plain words: **a tuple is misleading exactly when it fools at least one bad hypothesis.** Each set is one oval in the figure; the snippet in step 3 builds two of them, and its `a or b` is their union. Combining with step 1 gives
 
 \[ \mathcal D^m(\{ S|_x : L_{(\mathcal D, f)}(h_S) > \varepsilon \}) \le \mathcal D^m\Big( \bigcup_{h \in \mathcal H_B} \{ S|_x : L_S(h) = 0 \} \Big). \]
 
-Nothing new in the notation: the left side is the failure chance from the bound we are proving, and the right side is \(\mathcal D^m(M)\) with \(M\) written out as its union.
+Nothing new in the notation: the left side is the failure chance from the bound we are proving, and the right side is \(\mathcal D^m(M)\) with \(M\) written out as its union. In plain words: **failing is no more likely than drawing a misleading tuple.**
 
 **Step 3: the union bound.** The ovals overlap, and working out the exact area of their union is hard. So we overestimate it by adding up their areas, which counts the overlaps more than once. With two ovals, of chances 0.3 and 0.2, the chance of landing in at least one is at most \(0.3 + 0.2 = 0.5\), and less if they overlap.
 
@@ -468,7 +473,7 @@ for _ in range(runs):
 print(round(AorB / runs, 4), round((A + B) / runs, 4))
 ```
 
-It prints `0.4439` and `0.475`. The exact values are 0.4434 and 0.4746, and the gap, 0.0313, is the overlap \(\mathcal D^m(A \cap B) = 0.5^5\), counted twice by the sum.
+It prints `0.4439` and `0.475`. The exact values are 0.4434 and 0.4746, and the gap, 0.0313, is the overlap \(\mathcal D^m(A \cap B) = 0.5^5\) (the cap \(\cap\) keeps the tuples in both), counted twice by the sum.
 
 With the union bound in hand, the failure probability is at most a sum, one term per oval:
 
@@ -508,13 +513,13 @@ print(round((1 - L) ** m, 4), round(math.exp(-L * m), 4))
 
 It prints `0.25`, then about `0.0558` for the simulated chance that \(h_U\) survives, then the product \(0.75^{10} = 0.0563\), then \(e^{-2.5} = 0.0821\), which is where step 6 is heading.
 
-**Step 6: trade the power for an exponential.** A power like \(0.8^m\) is awkward to solve for \(m\), while a power of \(e\) undoes neatly with a logarithm. Luckily \(0.8\) sits just below \(e^{-0.2} \approx 0.819\), and that is no accident. Now we use the inequality
+**Step 6: trade the power for an exponential.** A power like \(0.8^m\) is awkward to solve for \(m\), while a power of \(e\) undoes neatly with a logarithm. So we use the inequality
 
 \[ 1 - \varepsilon \le e^{-\varepsilon}. \]
 
-On the right, \(e \approx 2.718\) is raised to the power \(-\varepsilon\), which means \(1 / e^{\varepsilon}\). In plain words: **taking away \(\varepsilon\) from 1 never leaves more than dividing 1 by \(e^{\varepsilon}\).** At \(\varepsilon = 0.2\) that is \(0.8 \le 0.8187\).
+The right side is \(1 / e^{\varepsilon}\). In plain words: **taking away \(\varepsilon\) from 1 never leaves more than dividing 1 by \(e^{\varepsilon}\).** At \(\varepsilon = 0.2\) that is \(0.8 \le 0.8187\).
 
-It holds for every real number, and the proof is a little calculus. Let \(g(a) = e^{-a} - (1 - a)\), the gap between the two sides. Then \(g(0) = 0\), and its slope, the derivative \(g'(a)\) (read “\(g\) prime of \(a\)”), is \(g'(a) = 1 - e^{-a}\), which is negative for \(a < 0\) and positive for \(a > 0\). So \(g\) falls until 0 and rises after it, its smallest value is \(g(0) = 0\), and \(g(a) \ge 0\) everywhere. Geometrically, the line \(1 - a\) is the tangent to the curve \(e^{-a}\) at \(a = 0\), and the curve bends upward away from it.
+It holds for every real number, and the proof is a little calculus. Let \(g(a) = e^{-a} - (1 - a)\), the gap between the two sides. Then \(g(0) = 0\), and its slope, the derivative \(g'(a)\) (read “\(g\) prime of \(a\)”), is \(g'(a) = 1 - e^{-a}\), because the slope of \(e^{-a}\) is \(-e^{-a}\) and the slope of \(1 - a\) is \(-1\). It is negative for \(a < 0\) and positive for \(a > 0\). So \(g\) falls until 0 and rises after it, its smallest value is \(g(0) = 0\), and \(g(a) \ge 0\) everywhere. Geometrically, the line \(1 - a\) is the tangent to the curve \(e^{-a}\) at \(a = 0\), and the curve bends upward away from it.
 
 A few values make it concrete, and the `assert` checks the inequality at each one, negative \(a\) included.
 
@@ -529,7 +534,7 @@ At \(\varepsilon = 0.05\) it prints 0.95 against 0.9512, and at 0.5 it prints 0.
 
 [[diagram:tangent]]
 
-To raise both sides to the power \(m\), we need both to be non-negative, since \(t \mapsto t^m\) only preserves order for \(t \ge 0\). The right side, \(e^{-\varepsilon}\), always is. The left side is too whenever \(\mathcal H_B\) has any members at all: a bad hypothesis has \(\varepsilon < L_{(\mathcal D, f)}(h) \le 1\), so \(1 - \varepsilon > 0\). (If \(\varepsilon \ge 1\), there are no bad hypotheses and the failure probability is 0.) So for every \(h \in \mathcal H_B\), we get
+To raise both sides to the power \(m\), we need both to be non-negative, since powers keep the order of two numbers only when neither is negative: \(-2 < 1\), yet \((-2)^2 > 1^2\). The right side, \(e^{-\varepsilon}\), always is. The left side is too whenever \(\mathcal H_B\) has any members at all: a bad hypothesis has \(\varepsilon < L_{(\mathcal D, f)}(h) \le 1\), so \(1 - \varepsilon > 0\). (If \(\varepsilon \ge 1\), there are no bad hypotheses and the failure probability is 0.) So for every \(h \in \mathcal H_B\), we get
 
 \[ \mathcal D^m(\{ S|_x : L_S(h) = 0 \}) \le (1 - \varepsilon)^m \le e^{-\varepsilon m}. \]
 
@@ -547,7 +552,7 @@ Each of the \(|\mathcal H_B|\) terms is at most \(e^{-\varepsilon m}\), so their
 
 The double arrow \(\iff\) reads “if and only if”: each statement holds exactly when the next one does, so nothing is lost along the way. The first move uses two rules of the logarithm: the log of a product is the sum of the logs, and \(\log e^{t} = t\), so \(\log(|\mathcal H| e^{-\varepsilon m}) = \log|\mathcal H| - \varepsilon m\). The second move adds \(\varepsilon m - \log \delta\) to both sides, divides by \(\varepsilon\), and uses \(\log a - \log b = \log(a / b)\). In plain words: **the bound drops below \(\delta\) exactly when \(m\) reaches the logarithm of class size over \(\delta\), divided by \(\varepsilon\).** With our numbers, \(\log 465 \approx 6.14\) and \(\log 0.01 \approx -4.61\), so we need \(6.14 - 0.05m \le -4.61\), that is \(m \ge 10.747 / 0.05 \approx 214.9\), so 215 examples.
 
-That is the guarantee’s condition. In code, for the class of 465 hypotheses at \(\varepsilon = 0.05\) and \(\delta = 0.01\), the snippet finds the smallest such \(m\) and checks that it is exactly where the bound drops to \(\delta\):
+That is the guarantee’s condition. The snippet finds the smallest such \(m\) and checks that the bound drops to \(\delta\) exactly there:
 
 ```python
 import math
@@ -565,7 +570,7 @@ Look at what the proof never used. It never asked what \(\mathcal D\) looks like
 
 In one sentence: for large enough \(m\), \(\mathrm{ERM}_{\mathcal H}\) over a finite class is **probably** (with confidence \(1 - \delta\)) **approximately** (up to an error of \(\varepsilon\)) **correct**. The next lesson turns that phrase into a definition.
 
-## Worked example 2: where the slack goes
+## Worked example: where the slack goes
 
 Every step of the proof gave up a little accuracy. Let’s measure how much, in the tiny world, where we can compute everything exactly. The setting is the one from the ERM table: \(\mathcal D\) uniform on the 16 messages, truth \(h_{FU}\), class \(\mathcal H_{\le 2}\) with \(|\mathcal H| = 10\), and \(\varepsilon = 0.2\). Nine hypotheses are bad: six with true risk 0.25, one with 0.375 and two with 0.5.
 
@@ -695,7 +700,7 @@ def labels_needed(size_H, eps, delta): ...
 1. Implement `erm`, where `H` is a list of functions and `S` is a list of `(x, y)` pairs with `x` a tuple of bits. Return every member of the argmin, not just one.
 2. Implement `pair_class(d)`, which returns the singles and pairs, and check that it has 465 members for \(d = 30\).
 3. Reproduce the ERM table of the tiny world, including the tie between \(h_U\) and \(h_{FU}\).
-4. For \(d = 4\), truth \(h_{FU}\), and \(\varepsilon = 0.2\), estimate \(\mathcal D^m(M)\) by simulation for \(m = 5, 10, \dots, 35\), and compare with the “exact” column of worked example 2.
+4. For \(d = 4\), truth \(h_{FU}\), and \(\varepsilon = 0.2\), estimate \(\mathcal D^m(M)\) by simulation for \(m = 5, 10, \dots, 35\), and compare with the “exact” column of the worked example.
 5. Implement `labels_needed` and reproduce the label-cost table. Then make the simulation in step 4 work for \(d = 30\). (A message fits in one integer, and a pair hypothesis is a two-bit mask.) Find the smallest \(m\) at which fewer than 1% of training sequences are misleading. Compare it with the guarantee’s 215.
 
 ## What people get wrong
