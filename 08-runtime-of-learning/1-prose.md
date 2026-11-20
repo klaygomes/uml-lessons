@@ -169,31 +169,7 @@ It prints `10 1390 231 2.4e+05`, `20 3060 370 3.9e+08`, `40 6640 647 7.1e+14` an
 
 ## ERM by brute force
 
-Let’s state the most natural learner precisely, because every algorithm in this lesson is a cleverer version of it. Given a class \(\mathcal H\), a domain \(\mathcal Z\) and a loss \(\ell\), the rule \(\mathrm{ERM}_{\mathcal H}\) is: on a finite input sequence \(S \in \mathcal Z^m\), return some \(h \in \mathcal H\) that minimizes the empirical risk, the average loss of \(h\) over the training examples. For the filter, the loss is 1 for a mistake and 0 otherwise, so the empirical risk is the fraction of training examples \(h\) gets wrong: a rule that misses 2 of 8 examples scores 0.25. As a formula,
-
-\[ L_S(h) = \frac{1}{|S|} \sum_{z \in S} \ell(h, z). \]
-
-Read it from the inside out.
-
-- \(z\) is one example, a message with its label, and \(\ell(h, z)\) is the loss of \(h\) on it.
-- \(\sum_{z \in S}\), the capital sigma, adds that loss over every example \(z\) in the training sequence \(S\).
-- \(|S|\) is how many examples \(S\) holds, the \(m\) from before, and \(1/|S|\) turns the total into an average.
-- The subscript \(S\) in \(L_S\) records that only the training examples are scored.
-
-In plain words: **the empirical risk is the average loss of \(h\) on the training sequence.** Take eight labelled messages over the four mail-room features FLUN (F for “FREE”, L for a link, U for an unknown sender, N for sent at night), and the rule “junk exactly when F”. It says junk to 1001 and 1011, which are keep, and gets the other six right: \(L_S(h) = 2/8 = 0.25\).
-
-```python
-S = [("1100", 1), ("0110", 0), ("1110", 1), ("1001", 0),
-     ("0010", 0), ("1010", 1), ("0101", 0), ("1011", 0)]
-def h(x):
-    return int(x[0] == "1")
-def loss(h, z):
-    x, y = z
-    return int(h(x) != y)
-print(sum(loss(h, z) for z in S) / len(S))
-```
-
-It prints `0.25`. The `sum` is the sigma, `loss` is \(\ell\), and `len(S)` is \(|S|\).
+Let’s state the most natural learner precisely, because every algorithm in this lesson is a cleverer version of it. Given a class \(\mathcal H\), a domain \(\mathcal Z\) and a loss \(\ell\), the rule \(\mathrm{ERM}_{\mathcal H}\) is: on a training sequence \(S\) of \(m\) examples, return some \(h \in \mathcal H\) with the smallest empirical risk \(L_S(h)\), lesson 1’s average loss of \(h\) over the training examples. For the filter the loss is 1 for a mistake and 0 otherwise, so \(L_S(h)\) is the fraction of training examples \(h\) gets wrong: on the eight FLUN messages of the conjunctions section below (F for “FREE”, L for a link, U for an unknown sender, N for sent at night), the rule “junk exactly when F” wrongly says junk to the keep messages 1001 and 1011, so \(L_S(h) = 2/8 = 0.25\).
 
 For binary classification, lesson 6 showed that if learning is possible at all, ERM does it. So the question “how fast can we learn?” starts as “how fast can we run ERM?”.
 
@@ -213,7 +189,7 @@ ExhaustiveERM(H, S):
   return best
 ```
 
-**Time.** If evaluating \(\ell(h, z)\) on one example takes constant time \(k\), the search takes \(k \, |\mathcal H| \, m\). With \(m\) set to the sample complexity, \(k \, |\mathcal H| \log(|\mathcal H|/\delta)/\varepsilon\) under realizability. That is three factors multiplied: the cost \(k\) of one check, the \(|\mathcal H|\) hypotheses, and the realizable count of examples you read earlier. In plain words: **exhaustive search costs one check per hypothesis per example.** With \(k = 1\), 82 hypotheses and 181 examples, it is 14,842 checks, the budget the definition’s snippet printed; the conjunction snippet below multiplies the same three factors as `size * m`. **Space.** \(O(1)\) words beyond the input and one stored hypothesis, if \(\mathcal H\) can be enumerated one member at a time.
+**Time.** One check per hypothesis per example: \(k \, |\mathcal H| \, m\) if one check costs \(k\), which is the \(O(|\mathcal H| \, m_{\mathcal H}(\varepsilon, \delta))\) you read earlier. With \(k = 1\), 82 hypotheses and 181 examples, it is the 14,842 checks the definition’s snippet printed. **Space.** \(O(1)\) words beyond the input and one stored hypothesis, if \(\mathcal H\) can be enumerated one member at a time.
 
 The linear dependence on \(|\mathcal H|\) is the whole problem. Take a sequence with \(\log |\mathcal H_n| = n\), such as C++ programs of at most \(n\) bits: the sample complexity grows like \(n\), the search like \(2^n\). That is exactly the job that would never finish.
 
@@ -349,7 +325,7 @@ TightestBox(S):
 
 Now drop realizability. Users mislabel things, and the band is not perfectly rectangular. ERM must now find the rectangle with the fewest mistakes, not one with none. How hard can that be?
 
-Hard, it turns out, in a precise sense. To say it, we need three standard names from complexity theory. A **decision problem** asks a yes/no question about an input, such as “does this graph have a proper colouring with three colours?”. **P** is the class of decision problems some algorithm answers in time polynomial in the input size. **NP** is the class whose yes answers come with a certificate that can be checked in polynomial time (a colouring, for the graph question). A problem is **NP-hard** when every problem in NP reduces to it in polynomial time, so a polynomial algorithm for it would put all of NP in P. Whether \(P = NP\) is the most famous open question in computer science, and almost everyone believes the answer is no.
+Hard, it turns out, in a precise sense. To say it, we need three standard names from complexity theory. A **decision problem** asks a yes/no question about an input, such as “does this graph have a proper colouring with three colours?”. **P** is the class of decision problems some algorithm answers in time polynomial in the input size. **NP** is the class whose yes answers come with a certificate that can be checked in polynomial time (a colouring, for the graph question). A problem is **NP-hard** when every problem in NP reduces to it in polynomial time (its inputs can be translated quickly into inputs of this problem with the same answer), so a polynomial algorithm for it would put all of NP in P. Whether \(P = NP\) is the most famous open question in computer science, and almost everyone believes the answer is no.
 
 **Fact (agnostic ERM is NP-hard for rectangles).** For many common classes, including axis aligned rectangles, solving the ERM problem in the agnostic setting is NP-hard. In most cases it is NP-hard even to find some \(h \in \mathcal H\) whose empirical risk is at most a constant \(c > 1\) times that of the best. So unless \(P = NP\), no algorithm whose runtime is polynomial in both \(m\) and \(n\) is guaranteed to find an ERM hypothesis.
 
@@ -363,7 +339,7 @@ The idea comes from the tightest box. A box built from a set of points is pinned
 
 Let \(T\) be the set of training messages that \(h\) labels 1 (whatever their labels in \(S\)). If \(T\) is empty, \(h\) labels every training message 0, just like the all-keep hypothesis.
 
-Otherwise let \(B\) be the tightest box around \(T\). Every message in \(T\) lies in \(B\), by the same argument as before, so \(B\) labels it 1, like \(h\). Every message of \(T\) lies inside the rectangle \(h\), so the minimum and maximum of each coordinate over \(T\) lie inside \(h\)’s interval for that coordinate, which means \(B \subseteq h\). A training message not in \(T\) lies outside \(h\), hence outside \(B\), so \(B\) labels it 0, like \(h\).
+Otherwise let \(B\) be the tightest box around \(T\). Every message in \(T\) lies in \(B\), by the same argument as before, so \(B\) labels it 1, like \(h\). Every message of \(T\) lies inside the rectangle \(h\), so the minimum and maximum of each coordinate over \(T\) lie inside \(h\)’s interval for that coordinate, which means \(B \subseteq h\): the box \(B\) lies inside the rectangle \(h\). A training message not in \(T\) lies outside \(h\), hence outside \(B\), so \(B\) labels it 0, like \(h\).
 
 Finally, \(B\) is also the tightest box of a small subset. For each coordinate, pick one message of \(T\) that achieves the minimum and one that achieves the maximum. That is at most \(2n\) messages, call them \(T'\), and the tightest box around \(T'\) has the same \(2n\) bounds as \(B\), so it is \(B\). Since \(T'\) is a subset of the training messages with \(|T'| \le 2n\), \(B\) is on the list. \(\blacksquare\)
 
@@ -697,7 +673,7 @@ for bits in ("0011", "0110", "1001"):
 
 It prints `0011 [0, 1, 0] 1`, `0110 [0, 0, 1] 1` and `1001 [0, 0, 0] 0`: the three terms, then their OR, which is `any`.
 
-**Sample complexity.** Each term is one of at most \(3^n + 1\) conjunctions, so \(|\mathcal H_{3DNF}^n| \le (3^n + 1)^3\) (three independent choices, multiplied), and the same calculation as for conjunctions bounds the sample complexity of ERM in the realizable case by about \(3n \log(3/\delta)/\varepsilon\). Three times the conjunctions, still linear in \(n\). Statistically, this class is no harder than its parts.
+**Sample complexity.** Each term is one of at most \(3^n + 1\) conjunctions, so \(|\mathcal H_{3DNF}^n| \le (3^n + 1)^3\) (three independent choices, multiplied), and the same calculation as for conjunctions bounds the sample complexity of ERM in the realizable case by about \(3n \log(3/\delta)/\varepsilon\). Three times the conjunctions, still linear in \(n\). With thirty features, \(\varepsilon = 0.05\) and \(\delta = 0.01\), the exact bound is 2,070 labels, a number the snippet in “Fix the bug” prints. Statistically, this class is no harder than its parts.
 
 Computationally, it is a different animal. To say how, we need two more definitions.
 
@@ -788,7 +764,7 @@ It prints `512 448` and `0`: 512 clause features, 448 of them satisfied by 1001,
 
 In the new features, a 3-CNF formula is a conjunction. The formula \(\bigwedge (u \vee v \vee w)\) over the triples in the identity says 1 at \(x\) exactly when every one of those coordinates of \(\psi(x)\) is 1. So for every 3-term DNF \(h\) over \(\{0,1\}^n\) there is a conjunction \(g\) over \(\{0,1\}^{(2n)^3}\) with \(g(\psi(x)) = h(x)\) for every \(x\): the same truth table.
 
-That makes the learner almost embarrassing to write. Map every example \((x, y)\) to \((\psi(x), y)\). If the labels come from a 3-term DNF, the mapped examples are labelled by a conjunction, so realizability holds in the new space. Run crossing out literals there, and return \(x \mapsto g(\psi(x))\).
+That makes the learner almost embarrassing to write. Map every example \((x, y)\) to \((\psi(x), y)\). If the labels come from a 3-term DNF, the mapped examples are labelled by a conjunction, so realizability holds in the new space. Run crossing out literals there to get a conjunction \(g\), and return \(x \mapsto g(\psi(x))\), the rule that sends each message \(x\) to \(g(\psi(x))\).
 
 [[diagram:nested]]
 
@@ -943,7 +919,9 @@ print(wins / trials, round(1 / N, 6))
 
 It prints `0.00028 0.000309`: the measured win rate of the guesser, then \(1/N\). The `wins += ...` line is the event inside \(\mathbb P\), and averaging over trials estimates the probability. At this size a search would win outright; a real one-way function is one where no fast attacker does much better than guessing.
 
-**Definition (trapdoor one-way function).** A one-way function \(f\) is a trapdoor function if for some polynomial \(p\), for every \(n\) there is a bit string \(s_n\) of length at most \(p(n)\), the **secret key**, and a polynomial time algorithm that, for every \(n\) and every \(x \in \{0,1\}^n\), on input \((f(x), s_n)\) outputs \(x\). Hard to invert, unless you hold the key; then easy. Such functions are parameterized by their keys.
+A trapdoor function is a one-way function with a back door: hard to invert, unless you hold a short secret, and then easy.
+
+**Definition (trapdoor one-way function).** A one-way function \(f\) is a trapdoor function if for some polynomial \(p\), for every \(n\) there is a bit string \(s_n\) of length at most \(p(n)\), the **secret key**, and a polynomial time algorithm that, for every \(n\) and every \(x \in \{0,1\}^n\), on input \((f(x), s_n)\) outputs \(x\). Such functions are parameterized by their keys.
 
 Here is a toy version, the textbook RSA function on tiny numbers (far too small to be secure, but the shape is right): computing \(f\) is one modular power, inverting with the key is another, and inverting without it is a search.
 

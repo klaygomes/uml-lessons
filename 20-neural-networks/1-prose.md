@@ -64,7 +64,7 @@ Now the names. Each tiny machine is a **neuron**. A neuron receives some numbers
 
 - the **sign** function answers +1 when \(a\) is positive and −1 otherwise, so \(\operatorname{sign}(0.4) = 1\) and \(\operatorname{sign}(0) = -1\) (the same convention as lesson 9);
 - the **threshold** function \(\mathbb 1[a > 0]\) answers 1 when \(a\) is positive and 0 otherwise (recall from lesson 1 that \(\mathbb 1[\text{statement}]\) is 1 when the statement is true and 0 when it is false), so it gives 1 at 0.4;
-- the **sigmoid** function \(\sigma(a) = 1/(1 + e^{-a})\) is a smooth version of the threshold: it climbs from 0 to 1, is exactly \(1/2\) at \(a = 0\), and at \(a = 0.4\) gives \(1/(1 + e^{-0.4}) \approx 0.599\).
+- the **sigmoid** function \(\sigma(a) = 1/(1 + e^{-a})\) is a smooth version of the threshold: it climbs from 0 to 1, is exactly \(1/2\) at \(a = 0\), and at \(a = 0.4\) gives \(1/(1 + e^{-0.4}) \approx 0.599\). It borrows the letter \(\sigma\), so whenever \(\sigma\) gets a formula, it means the sigmoid.
 
 ```python
 import math
@@ -355,7 +355,7 @@ Here \(O(\cdot)\) means “at most a constant times”, as in every complexity s
 
 *Step 2, cut each layer into neurons.* Within layer \(t\), the neurons work side by side, each with its own weights: \(\mathcal H^{(t)} = \mathcal H^{(t,1)} \times \cdots \times \mathcal H^{(t,|V_t|)}\), where \(\mathcal H^{(t,i)}\) holds the functions neuron \(i\) can compute from the layer below. The product lemma gives \(\tau_{\mathcal H^{(t)}}(m) \le \prod_i \tau_{\mathcal H^{(t,i)}}(m)\).
 
-*Step 3, one neuron.* Let \(d_{t,i}\) be the number of edges into neuron \(v_{t,i}\), its **in-degree**. The neuron computes \(\operatorname{sign}(\langle w, z \rangle)\), where \(z\) is the list of the \(d_{t,i}\) outputs wired into it: a homogeneous halfspace in \(\mathbb R^{d_{t,i}}\), whose VC dimension is \(d_{t,i}\) (lesson 9). Sauer’s lemma (lesson 6) bounds its growth function. When \(1 \le d_{t,i} \le m\), it gives \(\tau \le (em/d_{t,i})^{d_{t,i}} \le (em)^{d_{t,i}}\). When \(m < d_{t,i}\), the trivial bound gives \(\tau \le 2^m < e^m \le (em)^{d_{t,i}}\), since \(em \ge e\). When \(d_{t,i} = 0\), as for a constant neuron, the neuron computes one function, so \(\tau = 1 = (em)^0\). In every case,
+*Step 3, one neuron.* Let \(d_{t,i}\) be the number of edges into neuron \(v_{t,i}\), its **in-degree**. The neuron computes \(\operatorname{sign}(\langle w, z \rangle)\), where \(z\) is the list of the \(d_{t,i}\) outputs wired into it: a homogeneous halfspace in \(\mathbb R^{d_{t,i}}\), whose VC dimension is \(d_{t,i}\) (lesson 9). Sauer’s lemma (lesson 6) bounds its growth function. When \(1 \le d_{t,i} \le m\), it gives \(\tau \le (em/d_{t,i})^{d_{t,i}} \le (em)^{d_{t,i}}\). When \(m < d_{t,i}\), the trivial bound gives \(\tau \le 2^m < e^m \le (em)^{d_{t,i}}\): since \(em \ge e\) and \(d_{t,i} > m\), we have \((em)^{d_{t,i}} \ge e^{d_{t,i}} \ge e^m\). When \(d_{t,i} = 0\), as for a constant neuron, the neuron computes one function, so \(\tau = 1 = (em)^0\). In every case,
 
 \[ \tau_{\mathcal H^{(t,i)}}(m) \le (em)^{d_{t,i}}. \]
 
@@ -432,7 +432,7 @@ for n in (10, 20, 30, 40):
     print(n, edges, nodes, m + n + 3)
 ```
 
-It prints `10 90 10 1037`, `20 48902 222 1048599`, `30 34149167 5844 1073741857` and `40 26530891070 162884 1099511627819`. The last column is the size of the depth 2 construction, \((n + 1) + (2^n + 1) + 1\). Every 10 extra bits multiply the lower bound on neurons by about 27 and on edges by about 700: exponential growth, whatever the depth.
+It prints `10 90 10 1037`, `20 48902 222 1048599`, `30 34149167 5844 1073741857` and `40 26530891070 162884 1099511627819`. The last column is the size of the depth 2 construction, \((n + 1) + (2^n + 1) + 1\). Every 10 extra bits multiply the lower bound on neurons by more than 20 and on edges by more than 500: exponential growth, whatever the depth.
 
 So there is no free universal network. The Fact about efficient programs says the functions you can compute quickly *do* have small networks; this theorem says most functions do not. The same holds for sigmoid networks that approximate smooth functions to a fixed precision, which is the second problem at the end of the lesson.
 
@@ -487,7 +487,7 @@ The catch is computation. Recall from lesson 8 that a problem is **NP-hard** whe
 
 The third problem at the end of the lesson asks you to prove it. The key is a class you met in lesson 8’s problems: intersections of \(k\) halfspaces. By the AND lemma, this network contains every intersection of \(k\) halfspaces, and fitting those exactly encodes colouring a graph with \(k\) colours, a classic NP-hard problem. Notice how small the network is: three feature neurons, the triangle architecture itself.
 
-Could we escape? Three natural ideas, and the evidence against each:
+Could we escape? Two natural ideas, and the evidence against each:
 
 - **Settle for nearly the best weights.** Even finding weights whose empirical risk is close to the minimum is known to be computationally infeasible.
 - **Use a bigger network, or another activation.** Lesson 8 showed that a hard class can sometimes be learned through a larger, easier one. But under a widely believed cryptographic assumption, intersections of halfspaces cannot be learned efficiently by *any* learner, whatever hypotheses it outputs. Any network class that contains them inherits the hardness.
@@ -498,7 +498,7 @@ So no efficient algorithm is guaranteed to train a network well in the worst cas
 
 Gradient descent needs a loss that changes smoothly with the weights. The sign activation is no good: nudge a weight a little and the output either does not change at all or jumps. So for training we switch to the sigmoid, its smooth cousin, and to a smooth loss.
 
-Concretely, the network now has \(n\) inputs and \(k\) outputs, and we write \(\mathbf w \in \mathbb R^{|E|}\) for the weights listed as one long vector, so \(h_{\mathbf w}: \mathbb R^n \to \mathbb R^k\) is the function the network computes. On one example \((x, y)\), the network predicts \(h_{\mathbf w}(x)\) and pays the **squared loss**, written \(\Delta\) (capital delta), half the squared distance between prediction and target. On the small network from “The layered graph”, the message \((0.5, -0.5)\) with label \(y = 1\) gets the prediction 0.8299, so the loss is \(\tfrac12 (0.8299 - 1)^2 \approx 0.01448\): the last number that snippet printed. Averaging the loss over the distribution of messages gives the risk of the weights:
+Concretely, the network now has \(n\) inputs and \(k\) outputs, and we write \(\mathbf w \in \mathbb R^{|E|}\) for the weights listed as one long vector, so \(h_{\mathbf w}: \mathbb R^n \to \mathbb R^k\) is the function the network computes. A sigmoid output lies between 0 and 1, so the label goes back to the course’s 1 for junk and 0 for keep. On one example \((x, y)\), the network predicts \(h_{\mathbf w}(x)\) and pays the **squared loss**, written \(\Delta\) (capital delta), half the squared distance between prediction and target. On the small network from “The layered graph”, the message \((0.5, -0.5)\) with label \(y = 1\) gets the prediction 0.8299, so the loss is \(\tfrac12 (0.8299 - 1)^2 \approx 0.01448\): the last number that snippet printed. Averaging the loss over the distribution of messages gives the risk of the weights:
 
 \[ \Delta(h_{\mathbf w}(x), y) = \tfrac12 \|h_{\mathbf w}(x) - y\|^2, \qquad L_{\mathcal D}(\mathbf w) = \mathop{\mathbb E}_{(x,y) \sim \mathcal D} \big[ \Delta(h_{\mathbf w}(x), y) \big]. \]
 
@@ -533,7 +533,7 @@ It prints `0.241`. Training will push that number down.
 
 SGD from lesson 14, in one breath: start somewhere, then repeatedly draw one example, compute the gradient of the loss on it, and take a small step against it. For networks four things change.
 
-**First, start at random, near zero, not at zero.** If every weight starts at 0 in a fully connected layered network, all the hidden neurons of a layer compute the same function, receive the same gradient, and stay identical forever: the layer behaves like a single neuron. Random starting weights break the tie. Here is the trap, run on three hidden neurons:
+**First, start at random, near zero, not at zero.** If every weight starts at 0 in a fully connected layered network, all the hidden neurons of a layer compute the same function, receive the same gradient, and stay identical forever: the layer behaves like a single neuron. Random starting weights break the tie. Here is the trap, run on three hidden neurons, with the label kept short: junk when the message is inside the long edge of the triangle.
 
 ```python
 import math, random
@@ -561,7 +561,7 @@ zero = sgd([[0.0] * 3 for _ in range(3)], [0.0] * 4, 2000, rng)
 print([[round(w, 3) for w in r] for r in zero])
 ```
 
-It prints `[[-2.46, -2.323, 0.377], [-2.46, -2.323, 0.377], [-2.46, -2.323, 0.377]]`: after 2,000 steps, three copies of one neuron. (The update lines are backpropagation, derived in the next section.) The hope with random starts goes further: run SGD several times from different random points, and one of the runs will reach a good local minimum.
+It prints `[[-2.46, -2.323, 0.377], [-2.46, -2.323, 0.377], [-2.46, -2.323, 0.377]]`: after 2,000 steps, three copies of one neuron. (The update lines are backpropagation, derived in the next section.) The hope with random starts goes further. SGD can get stuck in a **local minimum** (lesson 12): weights where every small step raises the loss, although weights far away do better. Run SGD several times from different random points, and one of the runs may reach a good one.
 
 The other three changes:
 
@@ -651,15 +651,30 @@ Both lines print `[[0.235, -0.47], [0.1243, 0.7458]]`.
 
 **Matrices for the layers.** Write layer \(t\) as \(V_t = \{v_{t,1}, \dots, v_{t,k_t}\}\), so \(k_t = |V_t|\). Collect the weights between layers \(t\) and \(t + 1\) into a matrix \(W_t\) with \(k_{t+1}\) rows and \(k_t\) columns, whose entry \(W_{t,i,j}\) is the weight of the edge from \(v_{t,j}\) up to \(v_{t+1,i}\). If that edge is not in \(E\), put a **phantom edge** of weight 0 there. Phantom edges change nothing: a partial derivative freezes every other weight, and a weight that stays 0 contributes nothing to any sum. So we may pretend every pair of neurons in adjacent layers is wired. Now a layer’s inputs are \(\mathbf a_t = W_{t-1} \mathbf o_{t-1}\), and its outputs are \(\mathbf o_t = \sigma(\mathbf a_t)\). (Constant neurons receive no weights and need no gradient; they just sit in \(\mathbf o_{t-1}\) with value 1.)
 
-**The weights of one layer.** Freeze every weight except those in \(W_{t-1}\). Then \(\mathbf o_{t-1}\), the outputs of the layer below, are fixed numbers. Let \(\ell_t\) be the loss as a function of the outputs of layer \(t\): “feed these outputs through the rest of the network and score the result”. The loss, as a function of \(W_{t-1}\) alone, is \(\ell_t(\sigma(W_{t-1}\mathbf o_{t-1}))\). Here is a bookkeeping trick: \(W_{t-1}\mathbf o_{t-1}\) is linear in the weights, and if we list the weights row by row as one long vector \(\mathbf w_{t-1}\), it equals \(O_{t-1}\mathbf w_{t-1}\), where \(O_{t-1}\) is the matrix that has the row \(\mathbf o_{t-1}^\top\) in block \(i\) of row \(i\) and zeros elsewhere. The chain rule twice, with the two Jacobians above, gives
+**The weights of one layer.** Freeze every weight except those in \(W_{t-1}\). Then \(\mathbf o_{t-1}\), the outputs of the layer below, are fixed numbers. Let \(\ell_t\) be the loss as a function of the outputs of layer \(t\): “feed these outputs through the rest of the network and score the result”. The loss, as a function of \(W_{t-1}\) alone, is \(\ell_t(\sigma(W_{t-1}\mathbf o_{t-1}))\). Here is a bookkeeping trick: \(W_{t-1}\mathbf o_{t-1}\) is linear in the weights, and if we list the weights row by row as one long vector \(\mathbf w_{t-1}\), it equals \(O_{t-1}\mathbf w_{t-1}\), where row \(i\) of the matrix \(O_{t-1}\) holds the outputs \(\mathbf o_{t-1}\) in the columns of the weights into neuron \(i\), and zeros elsewhere. In plain words: **neuron \(i\)’s row of \(O_{t-1}\) multiplies only neuron \(i\)’s weights, by the values on their wires.** In the small network, \(\mathbf o_0 = (0.5, -0.5, 1)\) and six weights:
+
+```python
+W0 = [[1.0, -1.0, 0.0], [0.5, 0.5, -0.5]]
+o0 = [0.5, -0.5, 1.0]
+k, n = len(W0), len(o0)
+w = [x for row in W0 for x in row]
+O = [[o0[c - i * n] if i * n <= c < (i + 1) * n else 0.0
+      for c in range(k * n)] for i in range(k)]
+for row in O:
+    print(row)
+print([sum(p * q for p, q in zip(r, w)) for r in O])
+print([sum(p * q for p, q in zip(r, o0)) for r in W0])
+```
+
+It prints the rows `[0.5, -0.5, 1.0, 0.0, 0.0, 0.0]` and `[0.0, 0.0, 0.0, 0.5, -0.5, 1.0]`, then `[1.0, -0.5]` twice: \(O_0\mathbf w_0\) and \(W_0\mathbf o_0\) are the same inputs \(\mathbf a_1\). The chain rule twice, with the two Jacobians above, gives
 
 \[ J_{\mathbf w_{t-1}}(\text{loss}) = J_{\mathbf o_t}(\ell_t)\, \operatorname{diag}(\sigma'(\mathbf a_t))\, O_{t-1}. \]
 
-Name the first factor \(\boldsymbol\delta_t = J_{\mathbf o_t}(\ell_t)\): the row of rates at which the loss changes with each output of layer \(t\). The entry of the product belonging to the weight \(W_{t-1,i,j}\) picks out \(\delta_{t,i}\), then \(\sigma'(a_{t,i})\), then the \(j\)-th entry of \(\mathbf o_{t-1}\):
+Name the first factor \(\boldsymbol\delta_t = J_{\mathbf o_t}(\ell_t)\): the row of rates at which the loss changes with each output of layer \(t\). The entry of the product belonging to the weight \(W_{t-1,i,j}\) picks out \(\delta_{t,i}\), then \(\sigma'(a_{t,i})\), then the \(j\)-th entry of \(\mathbf o_{t-1}\). Writing \(\partial\,\text{loss}/\partial W_{t-1,i,j}\) for the partial derivative of the loss with respect to that one weight,
 
 \[ \frac{\partial\, \text{loss}}{\partial W_{t-1,i,j}} = \delta_{t,i}\; \sigma'(a_{t,i})\; o_{t-1,j}. \]
 
-The symbol \(\partial/\partial W_{t-1,i,j}\) is the partial derivative with respect to that one weight. In plain words: **the slope of a weight is how much the loss cares about the neuron it feeds, times that neuron’s sigmoid slope, times the value travelling along the wire.** The three factors are the three rates we multiplied by hand: \(-0.1701 \cdot 0.1412 \cdot 0.7311\).
+In plain words: **the slope of a weight is how much the loss cares about the neuron it feeds, times that neuron’s sigmoid slope, times the value travelling along the wire.** The three factors are the three rates we multiplied by hand: \(-0.1701 \cdot 0.1412 \cdot 0.7311\).
 
 **The rates, from the top down.** At the top, \(\ell_T(\mathbf u) = \tfrac12\|\mathbf u - y\|^2\), whose gradient is \(\mathbf u - y\), so \(\boldsymbol\delta_T = \mathbf o_T - y\). Below the top, the loss of layer \(t\)’s outputs is the loss of what they produce one layer up: \(\ell_t(\mathbf u) = \ell_{t+1}(\sigma(W_t \mathbf u))\). The chain rule, at \(\mathbf u = \mathbf o_t\), where \(W_t\mathbf o_t = \mathbf a_{t+1}\) and \(\sigma(\mathbf a_{t+1}) = \mathbf o_{t+1}\), gives
 

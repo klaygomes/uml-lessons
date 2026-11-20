@@ -986,7 +986,26 @@ It prints `1.313 1.681 True`. One pair of points is an example, not a proof; her
 
 There is also a statistical reading. Suppose the labels really were drawn with \(\mathbb P[y = +1 \mid \mathbf x] = \varphi_{\text{sig}}(\langle \mathbf w, \mathbf x \rangle)\). By the identity above, the probability of the observed label is \(\varphi_{\text{sig}}(y \langle \mathbf w, \mathbf x \rangle)\) in both cases, so the probability of the whole training sequence, with its examples independent, is \(\prod_i \varphi_{\text{sig}}(y_i \langle \mathbf w, \mathbf x_i \rangle)\). Its negative logarithm is \(\sum_i \log(1 + \exp(-y_i \langle \mathbf w, \mathbf x_i \rangle))\), which is \(m\) times the logistic risk. So minimizing the logistic risk is the same as choosing the \(\mathbf w\) under which the data is most likely, the **maximum likelihood** approach that lesson 24 studies.
 
-Let’s fit it. Your users have now labelled two more messages, and they disagree with themselves: a second “free trial, book a meeting” (\(x = (2, 1)\)) was marked keep, and a second “free lunch at the meeting” (\(x = (1, 2)\)) was marked junk. No halfspace can be consistent with that. As a preview of lesson 14, minimize the logistic risk by plain **gradient descent**: start at \(\mathbf w = \mathbf 0\) and repeatedly step against the gradient, which by the chain rule is \(\frac1m \sum_i -y_i \mathbf x_i \, \varphi_{\text{sig}}(-y_i \langle \mathbf w, \mathbf x_i \rangle)\).
+The notation there needs reading. \(\mathbb P[y = +1 \mid \mathbf x]\) is the probability that the label is junk, where the bar \(\mid\) reads “given”: given that the message is \(\mathbf x\). The capital pi \(\prod_i\) is like \(\sum_i\) but multiplies instead of adds, one factor per example, because the chance of several independent events all happening is the product of their chances. And the negative logarithm turns the product into a sum, since \(\log(ab) = \log a + \log b\). In plain words: **the most likely weights and the lowest logistic risk are the same weights.** With \(\mathbf w = (-1, 2, -2)\) on the eight messages, the probabilities of the true labels multiply to about 0.3195, minus its log is 1.1408, and eight times the average logistic loss is 1.1408 too:
+
+```python
+import math
+
+S = [((3, 0), 1), ((2, 1), 1), ((4, 2), 1), ((1, 0), 1),
+     ((1, 2), -1), ((0, 1), -1), ((2, 3), -1), ((0, 0), -1)]
+w = (-1, 2, -2)
+sigma = lambda z: 1 / (1 + math.exp(-z))
+z = [y * (w[0] + w[1] * x[0] + w[2] * x[1]) for x, y in S]
+like = math.prod(sigma(zi) for zi in z)
+risk = sum(math.log(1 + math.exp(-zi)) for zi in z) / len(S)
+print([round(sigma(zi), 3) for zi in z])
+print(round(like, 4), round(-math.log(like), 4))
+print(round(len(S) * risk, 4))
+```
+
+It prints `[0.993, 0.731, 0.953, 0.731, 0.953, 0.953, 0.953, 0.731]`, then `0.3195 1.1408`, then `1.1408`.
+
+Let’s fit it. Your users have now labelled two more messages, and they disagree with themselves: a second “free trial, book a meeting” (\(x = (2, 1)\)) was marked keep, and a second “free lunch at the meeting” (\(x = (1, 2)\)) was marked junk. No halfspace can be consistent with that. As a preview of lesson 14, minimize the logistic risk by plain **gradient descent**: start at \(\mathbf w = \mathbf 0\) and repeatedly step against the gradient, which by the chain rule is \(\frac1m \sum_i -y_i \mathbf x_i \, \varphi_{\text{sig}}(-y_i \langle \mathbf w, \mathbf x_i \rangle)\). Read it inside out: \(\varphi_{\text{sig}}(-y_i \langle \mathbf w, \mathbf x_i \rangle)\) is the probability the current weights give to the *wrong* label, so it is large on badly handled messages; it scales the vector \(-y_i \mathbf x_i\), the message pointed against its label; and the sum and \(\frac1m\) average over messages. In plain words: **each message pulls the weights towards its own label, harder the more the weights currently doubt it.** At \(\mathbf w = \mathbf 0\) every wrong-label probability is one half, so junk message A contributes \(-\tfrac12 (1, 3, 0)\) before averaging, and stepping against the gradient moves the weights towards A by \(\tfrac{1}{2m}\) of its vector: a softened Perceptron update. In the code, `g` is this gradient and the step size is 1.
 
 ```python
 import math

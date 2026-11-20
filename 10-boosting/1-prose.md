@@ -416,7 +416,7 @@ for x in [(1, 4), (1, 1)]:
     print(x, psi, round(s, 3), 1 if s > 0 else -1)
 ```
 
-It prints `(1, 4) [1, -1, 1] 1.003 1` and `(1, 1) [1, -1, -1] -1.562 -1`. Three stumps, each wrong on two of ten messages, combine into a rule that is wrong on none. Here is the same run in Python, printing \(\varepsilon_t\), \(w_t\), the empirical risk of the vote so far, and the weight of message 4 after the update:
+It prints `(1, 4) [1, -1, 1] 1.003 1` and `(1, 1) [1, -1, -1] -1.562 -1`. Three stumps, each wrong on two of ten messages, combine into a rule that is wrong on none. Here is the same run in Python, printing \(\varepsilon_t\), \(w_t\), the empirical risk of the vote so far, and the weight of message 4 after the update. The line `eps = ...` is \(\varepsilon_t\), `w = ...` is \(w_t\), `u` holds the weights times \(e^{-w_t y_i h_t(x_i)}\), and dividing by `sum(u)` is the normalization:
 
 ```python
 import math
@@ -454,10 +454,23 @@ Now play with it yourself. In the lab, you step AdaBoost round by round, first o
 
 ## Why the empirical risk falls exponentially
 
-Here is the theorem that makes boosting worth doing.
+Here is the theorem that makes boosting worth doing. First the idea in numbers. On the ten messages, the worst round had \(\varepsilon_1 = 0.2\), so every round beat the coin by at least \(\gamma = 0.3\). The theorem says that each such round multiplies a ceiling on the empirical risk by at most \(e^{-2 \cdot 0.3^2} = e^{-0.18} \approx 0.835\), starting from 1. Three rounds give a ceiling of \(0.835^3 \approx 0.583\).
 
 **Theorem (AdaBoost drives the empirical risk down exponentially).** Let \(S\) be a training sequence, and suppose that in every round of AdaBoost the weak learner returns a hypothesis with \(\varepsilon_t \le \tfrac12 - \gamma\). Then the hypothesis \(h_s\) that AdaBoost outputs after \(T\) rounds satisfies
 \[ L_S(h_s) = \frac1m \sum_{i=1}^m \mathbb 1[h_s(x_i) \neq y_i] \le e^{-2\gamma^2 T}. \]
+
+The middle is the empirical risk written out: the indicator counts each mistake of the vote \(h_s\) as 1, the sum adds them, and \(\tfrac1m\) turns the count into a fraction. On the right, the exponent \(-2\gamma^2 T\) is minus twice the squared edge times the number of rounds, so the bound is \(e^{-2\gamma^2}\) multiplied by itself \(T\) times. In plain words: **if every round beats a coin by \(\gamma\), the fraction of examples the vote gets wrong is at most \(e^{-2\gamma^2 T}\), which shrinks by a fixed factor every round.**
+
+```python
+import math
+
+gamma, T, m = 0.5 - 0.2, 3, 10
+print(round(math.exp(-2 * gamma ** 2 * T), 3))
+T0 = math.floor(math.log(m) / (2 * gamma ** 2)) + 1
+print(T0, round(math.exp(-2 * gamma ** 2 * T0), 4))
+```
+
+It prints `0.583`, the ceiling after three rounds, and `13 0.0963`: by round 13 the ceiling would be below \(1/10\), and on ten messages that forces zero mistakes. (Our run got there in three, because its later rounds had bigger edges than 0.3.)
 
 Before the proof, notice how strong this is. The weak learner only promises to beat a coin by \(\gamma\), each round, on whatever weights it is handed. Yet the empirical risk of the vote falls exponentially in the number of rounds. And because the empirical risk is a multiple of \(1/m\), the moment the bound drops below \(1/m\) the empirical risk must be exactly 0.
 
@@ -465,9 +478,26 @@ We also need the rounds to be well defined. If \(\varepsilon_t = 0\), the vote \
 
 *Proof.* We follow the vote as it builds up. For each \(t\), let
 \[ f_t = \sum_{p \le t} w_p h_p, \]
-so \(f_0 \equiv 0\) and AdaBoost outputs \(h_s = \operatorname{sign}(f_T)\). Define
+the score of the vote after \(t\) rounds: \(\sum_{p \le t}\) adds the voted stumps of rounds \(p = 1\) up to \(t\), so \(f_t(x)\) is the number whose sign is the vote. After one round, \(f_1(x) = 0.693\, h_1(x)\). The symbol \(\equiv\) means “equal for every input”, so \(f_0 \equiv 0\) says no rounds give score 0 everywhere, and AdaBoost outputs \(h_s = \operatorname{sign}(f_T)\).
+
+Now the smooth quantity. The product \(y_i f_t(x_i)\) is positive when the score points the right way and negative when it points the wrong way, and its size says how confidently. Feed it through \(e^{-u}\): a confidently right example contributes a small number, a wrong one a number above 1. After round 1, the eight messages the stump gets right have \(y_i f_1(x_i) = 0.693\) and contribute \(e^{-0.693} = 0.5\); messages 4 and 5 have \(-0.693\) and contribute 2. Define
 \[ Z_t = \frac1m \sum_{i=1}^m e^{-y_i f_t(x_i)}. \]
-This \(Z_t\) is the smooth quantity. The plan has four steps: show \(Z_T\) sits above the empirical risk, split \(Z_T\) into a product of per-round ratios, compute each ratio exactly, and bound it.
+In plain words: **the average, over the examples, of \(e\) to the minus signed score.** After round 1 it is \((8 \cdot 0.5 + 2 \cdot 2)/10 = 0.8\):
+
+```python
+import math
+
+X = [(0, 0), (0, 1), (0, 3), (1, 1), (2, 0),
+     (1, 4), (2, 4), (3, 4), (4, 0), (4, 1)]
+y = [-1] * 5 + [1] * 5
+w1 = math.log(2)
+f1 = [w1 * (1 if x[0] > 0.5 else -1) for x in X]
+e = [math.exp(-yi * fi) for yi, fi in zip(y, f1)]
+print([round(v, 2) for v in e])
+print(round(sum(e) / 10, 3), [v / sum(e) for v in e[2:5]])
+```
+
+It prints `[0.5, 0.5, 0.5, 2.0, 2.0, 0.5, 0.5, 0.5, 0.5, 0.5]` and `0.8 [0.0625, 0.25, 0.25]`. The second list, each term divided by the total, is round 2’s weights for messages 3, 4 and 5; Step 3 below proves that this is no accident. This \(Z_t\) is the smooth quantity. The plan has four steps: show \(Z_T\) sits above the empirical risk, split \(Z_T\) into a product of per-round ratios, compute each ratio exactly, and bound it.
 
 **Step 1: the empirical risk is at most \(Z_T\).** Take one example. If \(h_s\) gets it wrong, then \(\operatorname{sign}(f_T(x_i)) \neq y_i\). If \(y_i = +1\), that means \(f_T(x_i) \le 0\); if \(y_i = -1\), it means \(f_T(x_i) > 0\). Either way \(y_i f_T(x_i) \le 0\), so \(e^{-y_i f_T(x_i)} \ge 1\). If \(h_s\) gets it right, the indicator is 0, and an exponential is always positive. So for every example
 \[ \mathbb 1[h_s(x_i) \neq y_i] \le e^{-y_i f_T(x_i)}. \]
