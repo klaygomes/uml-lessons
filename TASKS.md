@@ -29,6 +29,7 @@ All cloned locally under `~/.local/share/klay-learning-ladder/` (2026-11-20). Pi
 - Notation of the book's Section 1.6: \(\mathcal X, \mathcal Y, \mathcal H\), \(S = (z_1, \dots, z_m) \sim \mathcal D^m\), \(\ell: \mathcal H \times Z \to \mathbb R_+\), \(L_{\mathcal D}(h)\), \(L_S(h)\), \(\|x\|\), \(O, \Theta, \tilde O\).
 - Writing: clear and natural, a teacher talking. No robotic short-sentence style, no limited vocabulary. Easy to read, exact on concepts.
 - Read every formula aloud for a learner meeting it for the first time (user, 2026-11-20: "everytime you show complex math, you have to explain as i'm learning it"). After each display formula, and any dense inline one: name every symbol and piece of notation in words (sets and set-builder braces, the colon as "such that", \(|\cdot|\), \([m]\), \(\sim\), \(\mathbb P\), \(\mathbb E\), subscripts, sums, sup, argmin, and so on), read it from the inside out, give the whole formula as one plain sentence in bold, work one tiny number from the story through it, and add a Python snippet that mirrors the formula term by term with its real output. A symbol explained in an earlier lesson still gets a one-line reminder the first time it appears in each lesson. Model: lesson 1, "The formal statements", the empirical and true risk.
+- Concept before symbol (the klay-learning-ladder rule "every term defined before use", "show every idea working before you name it"): introduce each idea in words with a small number from the story before its formula appears, and never use a term, symbol or result, even inline, before it has been explained. The walkthrough after a formula reads the notation; it does not replace explaining the idea first.
 - Never advance to the next unit until the learner has answered the concept check and confirmed mastery.
 
 ## How each lesson is made
@@ -37,7 +38,8 @@ Every lesson runs the same loop. Each lesson under **Status** has one checkbox p
 
 ```mermaid
 flowchart TD
-  P[1. Prose + sheet] --> G1[2. Read-aloud pass + fresh-reader judge]
+  P[1. Prose + sheet] --> RV[1b. Clean-context reviewer: judge, then improve]
+  RV --> G1[2. Read-aloud pass + fresh-reader judge]
   G1 --> R1{3. User reviews prose}
   R1 -->|changes| P
   R1 -->|ok| F[4. Figures: 2-figures/figures.mjs]
@@ -52,6 +54,7 @@ flowchart TD
 ```
 
 1. **Prose and sheet.** `1-prose.md` follows the five-step loop: the problem and motivation (opened as a bug in the mail room), formal definitions and proofs, the algorithm with pseudocode, complexity and a build-it challenge, a concept check of 2 or 3 questions. `1-sheet.md` holds terms, numbers, the lab spec and the concept-check answers. Every number is computed by a script, never guessed.
+1b. **Clean-context reviewer** (user, 2026-11-20: "include a reviewer with clean context to judge and improve"). A fresh agent with only `docs/reviewer-brief.md` reads the prose as the learner, lists every term or symbol used before it is explained, every formula without a walkthrough, every proof gap and every wrong number, then fixes them in `1-prose.md`. Runs after the writer and the formula-walkthrough pass, before the user's review. The lead reruns `_kit/check_prose.py` before ticking.
 2. **Gates.** Book check: parallel agents, one per section range of the PDF, mark every claim correct, not in the book, or wrong; `agent-voice speak` read-aloud pass per section; a fresh-reader subagent with no context; grep the key words for synonyms; grep for em dashes.
 3. **Review stop.** Show the user the prose and the sheet. Nothing else gets built before this.
 4. **Figures.** One per new concept, through diagram-design, colors from `lesson.css`. `node _kit/build-figures.mjs NN-slug/2-figures/figures.mjs`, then `self_check.py` and `verify-geometry.py`; render once per theme.
@@ -588,12 +591,15 @@ Skipped on purpose to keep writing and save CPU (user, 2026-11-20: "keep writing
 - [ ] Lessons 2 to 19: learner judges (step 6), ask before running (CPU)
 - [ ] Lesson 3: align key words with lesson 2 (the lesson 3 writer could not see lesson 2's sheet); lesson 3's Bayes-optimality proof is the writer's own, verify it
 - [ ] Lesson 6: decide whether to split into 06a/06b (about 10,400 words), and verify the claimed book error in the uniform-convergence proof's Hoeffding constant
-- [ ] Lessons 2 to 19 (and any draft written before 2026-11-20 evening): formula walkthrough pass, every formula read aloud as in lesson 1's risks (the learner's rule above); revision writers, then rerun `_kit/check_prose.py`. Lesson 1 done 2026-11-20
+- [ ] Lessons 2 to 19 (and any draft written before 2026-11-20 evening): formula walkthrough pass, every formula read aloud as in lesson 1's risks (the learner's rule above); revision writers, then rerun `_kit/check_prose.py`. Lesson 1 done 2026-11-20; lessons 2 to 7 running (2026-11-20, brief in the session scratchpad as brief-walkthrough.md, a copy of the rule is in docs/writer-brief.md); lessons 5 to 19 next. Writers for 13 and 17, 20 to 25 were told the rule mid-draft
+- [ ] Lessons 1 to 31: clean-context reviewer (step 1b, `docs/reviewer-brief.md`) after each lesson's writer and walkthrough pass. Lesson 1 running (2026-11-20)
 - [ ] Lessons 20 to 31: prose drafts (12 to 19 drafting) (writers; the brief template is `docs/writer-brief.md`)
 - [x] Commit the series repo and publish it: github.com/klaygomes/uml-lessons, Pages at http://www.estacouveflor.com/uml-lessons/ (user asked, 2026-11-20). Push with the klaygomes gh account (`gh auth switch -u klaygomes`), then switch back to cleiton-loiola
 - [ ] Commit the skill changes in ~/dotfiles (when the user asks)
 
 ## Open items
+
+- Load rule (user, 2026-11-20: "you can verify cpu load and manage as you go"): before spawning agents run `python3 -I _kit/load.py`; spawn only on OK (1-minute load under two thirds of the cores and at least 30% memory free), otherwise wait for a running agent to finish. Judges and reviewers are allowed under this rule.
 
 - CPU budget (user, 2026-11-20): spawn writers freely, but no judge agents (learner, diagram or fresh-reader) and no agent-voice read-aloud without asking; they use too much CPU. Learner judge 3 on lesson 1 was already running when this was said.
 

@@ -22,19 +22,75 @@ Most notation in learning theory is either standard or defined on the spot, and 
 
 **Uppercase means a collection.** Capital letters are sets, sequences or matrices, and context tells you which. \(S\) is a sequence, \(\mathcal H\) is a set of hypotheses. Calligraphic capitals name the big sets of the framework: the domain set \(\mathcal X\), the label set \(\mathcal Y\), and the **examples domain** \(\mathcal Z = \mathcal X \times \mathcal Y\). That last one is the set of all possible message-and-label pairs. An example \(z = (x, y)\) is one element of \(\mathcal Z\).
 
-**Distributions and sampling.** \(\mathcal D\) is a distribution over some set, usually \(\mathcal X\) or \(\mathcal Z\). In the mail room, \(\mathcal D\) says how often each of the \(2^{30}\) possible messages arrives. Writing \(z \sim \mathcal D\) means \(z\) is drawn according to \(\mathcal D\). For a yes/no question about \(z\), we write
+**Distributions and sampling.** \(\mathcal D\) is a distribution over some set, usually \(\mathcal X\) or \(\mathcal Z\). In the mail room, \(\mathcal D\) says how often each of the \(2^{30}\) possible messages arrives. Writing \(z \sim \mathcal D\) means \(z\) is drawn according to \(\mathcal D\).
+
+Now ask a yes/no question about a random message, such as “is the FREE feature on?”. The chance of a yes is found by adding up how often each yes-message arrives. In lesson 1’s tiny world of sixteen equally likely messages, eight have F on, each arriving \(1/16\) of the time, so the chance is \(8/16 = 1/2\). Written as a formula, for a yes/no question \(f\) about \(z\):
 
 \[ \mathbb P_{z \sim \mathcal D}[f(z)] = \mathcal D(\{ z : f(z) = \text{true} \}), \]
 
-the probability mass of the set of \(z\) where the answer is yes. \(\mathbb E_{z \sim \mathcal D}[f(z)]\) is the expected value of a number \(f(z)\). And \(S \sim \mathcal D^m\) means the \(m\) examples are drawn independently from the same \(\mathcal D\). We will define \(\mathcal D^m\) properly in a few sections, because a whole proof rests on it.
+the probability mass of the set of \(z\) where the answer is yes. Read it from the inside out.
 
-**Small tools.** \([n]\) is the set \(\{1, \dots, n\}\). The indicator \(\mathbb 1[\text{statement}]\) is 1 when the statement is true and 0 when it is false. And \(\log\) always means the natural logarithm, base \(e\). That matters today, because the formula we are heading for has a \(\log\) in it.
+- \(f(z)\) here is the yes/no question asked about \(z\). It is a placeholder, not yet the true labelling.
+- The braces \(\{ z : f(z) = \text{true} \}\) collect every \(z\) for which the answer is yes. As in lesson 1, read the colon as “such that”: the set of \(z\) such that the answer is yes.
+- \(\mathcal D(\cdot)\) applied to a set gives that set’s probability mass: how much of the arriving traffic lands in it. The masses of all the elements add up to 1.
+- On the left, \(\mathbb P\) is “the probability that”, the subscript \(z \sim \mathcal D\) says where the randomness comes from (one \(z\), drawn from \(\mathcal D\)), and the brackets hold the event.
 
-**The loss function.** One more symbol won't be needed until lesson 3, the **loss function** \(\ell : \mathcal H \times \mathcal Z \to \mathbb R_+\). It scores how badly a hypothesis does on one example. Its value is a non-negative real number. For our junk-or-keep problem the natural choice is \(\ell(h, (x, y)) = \mathbb 1[h(x) \neq y]\), one point per mistake. The empirical risk is then just the average loss over the examples. Lesson 3 lets the loss be other things, such as a squared distance.
+In plain words: **the probability that a random \(z\) answers yes is the total mass that \(\mathcal D\) puts on the yes-answers.** For “is F on?” that is eight masses of \(1/16\), which is \(1/2\).
 
-**Norms.** For a vector \(x\), \(\|x\|\) is its Euclidean length, \(\sqrt{\sum_j x_j^2}\). We will also use \(\|x\|_1 = \sum_j |x_j|\), \(\|x\|_\infty = \max_j |x_j|\), and \(\|x\|_0\), the number of nonzero entries. For a yes/no message, \(\|x\|_1\) and \(\|x\|_0\) are both the number of features that are on, and \(\|x\|\) is the square root of that number. Norms start to matter later in the course, when instances become real-valued vectors, as they do for the linear predictors of lesson 9.
+The expected value is the long-run average of a number attached to each message. Count the features that are on: over the sixteen tiny-world messages, those counts average to exactly 2. In symbols, \(\mathbb E_{z \sim \mathcal D}[f(z)]\) is the expected value of a number \(f(z)\): each possible value weighted by the mass of the \(z\) that produce it, then summed. Both computations, side by side:
 
-**Asymptotic notation.** We will avoid it where we can, but it is handy for summarizing results, and its definitions are the ones you know from algorithms. For \(f, g : \mathbb R \to \mathbb R_+\):
+```python
+from fractions import Fraction
+X = [format(v, "04b") for v in range(16)]
+D = {x: Fraction(1, 16) for x in X}
+q = lambda z: z[0] == "1"
+P = sum(D[z] for z in X if q(z))
+E = sum(D[z] * z.count("1") for z in X)
+print(P, E)
+```
+
+It prints `1/2 2`. The line for `P` adds up mass over the yes-set, and the line for `E` weighs each count by its mass.
+
+And \(S \sim \mathcal D^m\) means the \(m\) examples are drawn independently from the same \(\mathcal D\). We will define \(\mathcal D^m\) properly in a few sections, because a whole proof rests on it.
+
+**Small tools.** Three pieces of shorthand. The first lists positions: the four features of the tiny world sit at positions 1, 2, 3 and 4, and we write that list of positions as \([4]\); in general \([n]\) is the set \(\{1, \dots, n\}\). The second turns a true-or-false statement into a number, so that “3 is bigger than 2” becomes 1 and “2 is bigger than 3” becomes 0; that is the indicator \(\mathbb 1[\text{statement}]\), 1 when the statement is true and 0 when it is false. The third answers “\(e\) to what power gives this number?”, where \(e \approx 2.718\): for 465 the answer is about 6.14. That is the natural logarithm, and \(\log\) always means it here, base \(e\). That matters today, because the formula we are heading for has a \(\log\) in it.
+
+**The loss function.** One more idea won’t be needed until lesson 3: a score for how badly a hypothesis does on one example. For junk-or-keep the obvious score is one point per mistake. The hypothesis “FREE means junk” earns 1 point on the message 1100 labelled keep, and 0 points on 1010 labelled junk. That score is the **loss function** \(\ell : \mathcal H \times \mathcal Z \to \mathbb R_+\). Its value is a non-negative real number. For our junk-or-keep problem the natural choice is \(\ell(h, (x, y)) = \mathbb 1[h(x) \neq y]\), one point per mistake. The empirical risk is then just the average loss over the examples. Lesson 3 lets the loss be other things, such as a squared distance.
+
+That line packs in a lot, so take it apart.
+
+- The arrow in \(\ell : \mathcal H \times \mathcal Z \to \mathbb R_+\) announces what goes in and what comes out. What goes in is a pair: a hypothesis from \(\mathcal H\) and an example from \(\mathcal Z\), and the \(\times\) means “one of each”. What comes out is a number in \(\mathbb R_+\), the non-negative reals.
+- In \(\ell(h, (x, y))\) the example is written out as its two halves, the message \(x\) and its label \(y\).
+- Inside, \(h(x) \neq y\) is the yes/no question “does \(h\) get this one wrong?”, and the indicator \(\mathbb 1[\cdot]\) turns the answer into a number: 1 for yes, 0 for no.
+
+In plain words: **the loss of a hypothesis on one example is 1 if it gets that example wrong and 0 if it gets it right.** Write \(h_F\) for “FREE means junk”, as in lesson 1, where \(h_j\) said junk exactly when feature \(j\) is on. On 1100 labelled keep, \(h_F\) says junk, so the loss is 1; on 1010 labelled junk it is right, so the loss is 0. The snippet runs those two examples through the loss, lists \([4]\), and shows that \(\log\) undoes \(e\) to the power: \(\log 465 \approx 6.14\) and \(e^{6.14} \approx 464\), a pair of numbers that comes back near the end of the lesson.
+
+```python
+import math
+one = lambda s: 1 if s else 0
+h_F = lambda x: one(x[0] == "1")
+loss = lambda h, z: one(h(z[0]) != z[1])
+print(list(range(1, 5)))
+print(loss(h_F, ("1100", 0)), loss(h_F, ("1010", 1)))
+print(round(math.log(465), 2), round(math.exp(6.14), 1))
+```
+
+It prints `[1, 2, 3, 4]`, then `1 0`, then `6.14 464.1`. The function `one` is the indicator, and `loss` is \(\ell\) with the example split into `z[0]` and `z[1]`.
+
+**Norms.** A norm measures how big a vector is, and there is more than one fair answer. For the tiny-world message 1101 you could count the features that are on (3), or measure the straight-line distance from 0000 to that corner (the square root of 3, about 1.73), or report the largest entry (1). Each of these gets a symbol. For a vector \(x\), \(\|x\|\) is its Euclidean length, \(\sqrt{\sum_j x_j^2}\). We will also use \(\|x\|_1 = \sum_j |x_j|\), \(\|x\|_\infty = \max_j |x_j|\), and \(\|x\|_0\), the number of nonzero entries. For a yes/no message, \(\|x\|_1\) and \(\|x\|_0\) are both the number of features that are on, and \(\|x\|\) is the square root of that number. Norms start to matter later in the course, when instances become real-valued vectors, as they do for the linear predictors of lesson 9.
+
+Here is how to read them. The double bars \(\|\cdot\|\) mean “the size of this vector”, and the subscript after them says which kind of size. \(\sum_j\) means “add up over every feature \(j\)”, and \(|x_j|\) with single bars around a number is its absolute value, the number with its sign dropped. \(\max_j\) picks the largest value over all \(j\). So, from the inside out: \(\|x\|\) squares each entry, adds the squares and takes the square root; \(\|x\|_1\) adds the absolute values; \(\|x\|_\infty\) keeps only the biggest one; \(\|x\|_0\) counts the entries that are not zero. In plain words: **each norm is a different way to say how big a vector is: straight-line length, total size, largest entry, or number of entries in use.** Take the tiny-world message 1101, with F, L and N on:
+
+```python
+x = [1, 1, 0, 1]
+print(round(sum(v * v for v in x) ** 0.5, 4))
+print(sum(abs(v) for v in x), max(abs(v) for v in x))
+print(sum(v != 0 for v in x))
+```
+
+It prints `1.7321`, the square root of 3, then `3 1`, then `3`: three features on, so \(\|x\|_1 = \|x\|_0 = 3\), and no entry is bigger than 1.
+
+**Asymptotic notation.** The idea is to describe how fast something grows while ignoring constant factors and small inputs. If an ERM run makes \(465m + 10\) evaluations on \(m\) examples, what matters for large \(m\) is that the count grows in proportion to \(m\); the 465 and the 10 are detail. We will avoid this notation where we can, but it is handy for summarizing results, and its definitions are the ones you know from algorithms. For \(f, g : \mathbb R \to \mathbb R_+\):
 
 - \(f = O(g)\) if there are \(x_0, \alpha \in \mathbb R_+\) with \(f(x) \le \alpha g(x)\) for all \(x > x_0\);
 - \(f = \Omega(g)\) is the same with \(\ge\);
@@ -42,7 +98,19 @@ the probability mass of the set of \(z\) where the answer is yes. \(\mathbb E_{z
 - \(f = \Theta(g)\) means \(f = O(g)\) and \(g = O(f)\);
 - \(f = \tilde O(g)\) means \(f = O(g \log^k g)\) for some \(k \in \mathbb N\): big-O that is allowed to hide logarithmic factors.
 
-One last convention. We write \(\min\) and \(\max\) even where a mathematician would insist on \(\inf\) and \(\sup\), because the minimum might not be reached. The distinction rarely matters in this course. Keep it in mind when a "minimum" looks suspicious.
+The first line carries all the others, so read it slowly. \(f, g : \mathbb R \to \mathbb R_+\) says both are functions that take a real number and return a non-negative one. \(x_0, \alpha \in \mathbb R_+\) are two constants you get to choose: a starting point \(x_0\) and a stretch factor \(\alpha\). The condition \(f(x) \le \alpha g(x)\) “for all \(x > x_0\)” says that once you are past the starting point, \(f\) never rises above \(g\) stretched by \(\alpha\). In plain words: **\(f = O(g)\) means that, far enough out, \(f\) grows no faster than a constant times \(g\).** The other lines change only the direction (\(\ge\) for \(\Omega\)), demand it for every \(\alpha\) however small (\(o\)), ask for both directions (\(\Theta\)), or allow extra powers of \(\log g\), where \(\log^k g\) means \((\log g)^k\) and \(k \in \mathbb N\) is a whole number (\(\tilde O\)). Back to the ERM run with \(f(m) = 465m + 10\) evaluations: \(f = O(m)\), with \(\alpha = 466\) and \(x_0 = 10\), since past 10 the extra 10 is always smaller than one more \(m\).
+
+```python
+f = lambda m: 465 * m + 10
+g = lambda m: m
+alpha, m0 = 466, 10
+print(all(f(m) <= alpha * g(m) for m in range(m0 + 1, 10**5)))
+print([round(f(m) / g(m), 2) for m in (10, 100, 1000, 10**4)])
+```
+
+It prints `True`, then `[466.0, 465.1, 465.01, 465.0]`: the ratio \(f/g\) settles down to a constant, which is all that big-O promises.
+
+One last convention. Some lists of numbers have no smallest member. The risks \(1/2, 1/4, 1/8, \dots\) keep shrinking toward 0 without ever reaching it, so no member is the minimum, yet 0 is clearly the floor they press against. That floor, the largest number that is still at or below every member, is the infimum, written \(\inf\); its mirror image, the smallest number at or above every member, is the supremum, \(\sup\). When a smallest member does exist, it is the infimum, so nothing changes. We write \(\min\) and \(\max\) even where a mathematician would insist on \(\inf\) and \(\sup\), because the minimum might not be reached. The distinction rarely matters in this course. Keep it in mind when a "minimum" looks suspicious.
 
 ## The framework: who knows what
 

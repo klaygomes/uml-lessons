@@ -2,7 +2,7 @@
 
 ## The learner that gave up
 
-Last time you gave the filter a real guarantee. You fixed a finite hypothesis class in advance and ran ERM on it. The finite-class bound told you how many labelled examples to ask for so that, with high probability, the returned hypothesis had small true risk. You shipped it, and for a while the mail room was quiet.
+Last time you gave the filter a real guarantee. You fixed a finite hypothesis class in advance and ran ERM on it: empirical risk minimization, which returns the hypothesis in the class with the fewest mistakes on the labelled examples. The finite-class bound told you how many labelled examples to ask for so that, with high probability, the returned hypothesis had small true risk, meaning a small chance of mislabelling the next message to arrive. You shipped it, and for a while the mail room was quiet.
 
 Then two things happened in the same week.
 
@@ -10,7 +10,7 @@ First, the newsletters. The company's design team signs up for a weekly digest t
 
 Second, the honest mistakes. People label in a hurry. Somebody marks a "FREE" prize draw as keep because they were scrolling past it with their coffee in the other hand. Nobody is lying; they are just people.
 
-The learner from last lesson doesn't cope. Its proof leaned on one assumption, **realizability**: some hypothesis in the class agrees with every example. Now no hypothesis does. Not one of the four one-feature hypotheses. Not even the memorizer: the same message turns up once as junk and once as keep, and a hypothesis has to give it one label. A learner written to return a consistent hypothesis now returns nothing at all. A learner that breaks ties on its own returns something arbitrary.
+The learner from last lesson doesn't cope. Its proof leaned on one assumption, **realizability**: some hypothesis in the class agrees with every example. Now no hypothesis does. Not one of the four one-feature hypotheses. Not even the memorizer: the same message turns up once as junk and once as keep, and a hypothesis has to give it one label. A learner written to return a consistent hypothesis, one with no mistakes on the examples, now returns nothing at all. A learner that breaks ties on its own returns something arbitrary.
 
 So what *should* a learner return when the labels themselves disagree? And, the harder question, what could you possibly promise about it? This lesson answers both, and along the way it turns lesson 2's single result into the definition everything after it is built on.
 
@@ -18,16 +18,29 @@ So what *should* a learner return when the labels themselves disagree? And, the 
 
 Before we break the old promise, let's write it down carefully, because the new one will be built in its image.
 
-Recall the setting of lesson 2. Messages arrive from a distribution \(\mathcal D\) over the domain set \(\mathcal X\). A labelling function \(f: \mathcal X \to \{0, 1\}\) gives each message its true label. The learner sees a training sequence \(S\) of \(m\) examples drawn i.i.d., which we write \(S \sim \mathcal D^m\), and returns a hypothesis. Its true risk is \(L_{(\mathcal D, f)}(h)\), the probability that \(h\) disagrees with \(f\) on a fresh message.
+Recall the setting of lesson 2. Messages arrive from a distribution \(\mathcal D\) over the domain set \(\mathcal X\). A labelling function \(f: \mathcal X \to \{0, 1\}\) gives each message its true label. The learner sees a training sequence \(S\) of \(m\) examples drawn i.i.d. (independently, each from the same distribution), which we write \(S \sim \mathcal D^m\), and returns a hypothesis. (The tilde \(\sim\) reads “is drawn from”, and \(\mathcal D^m\) means \(m\) independent draws from \(\mathcal D\), one per example.) Its true risk is \(L_{(\mathcal D, f)}(h)\), the probability that \(h\) disagrees with \(f\) on a fresh message; the subscript \((\mathcal D, f)\) names the two things that risk depends on, where messages come from and who labels them.
 
-Lesson 2 proved a guarantee for ERM over a finite class \(\mathcal H\) when realizability holds. As soon as \(m \ge \log(|\mathcal H|/\delta)/\varepsilon\), the returned hypothesis has true risk at most \(\varepsilon\), with probability at least \(1 - \delta\). That is two promises nested inside each other, and their names give the whole theory its title.
+Lesson 2 proved a guarantee for ERM over a finite class \(\mathcal H\) when realizability holds. Pick a tolerated true risk, say 0.1, and a tolerated chance of failure, say 0.05. Once the number of examples passed a threshold, 44 for lesson 1’s four one-feature hypotheses, the returned hypothesis had true risk at most 0.1 on all but 5% of training sequences. The threshold grows slowly with the size of the class and quickly as the tolerance shrinks; its exact formula comes back in the next section. Call the tolerated true risk \(\varepsilon\) (the Greek letter epsilon) and the tolerated failure chance \(\delta\) (delta). Then the guarantee reads: true risk at most \(\varepsilon\), with probability at least \(1 - \delta\). That is two promises nested inside each other, and their names give the whole theory its title.
 
 - **Approximately correct.** The returned hypothesis is not required to be perfect, only to have true risk at most \(\varepsilon\). The number \(\varepsilon\) is the **accuracy parameter**.
 - **Probably.** Even that is not promised every time, only with probability at least \(1 - \delta\) over the random draw of the training sequence. The number \(\delta\) is the **confidence parameter**.
 
 Probably approximately correct: **PAC**.
 
+To turn that into a definition, we need one more ingredient: a recipe that, told only \(\varepsilon\) and \(\delta\), answers “how many examples?”. For the one-feature class, the recipe answers 44 when you ask for \(\varepsilon = 0.1\) and \(\delta = 0.05\). The definition calls that recipe \(m_{\mathcal H}\), with the class as a subscript because each class gets its own recipe.
+
 **Definition (PAC learnability).** A hypothesis class \(\mathcal H\) is **PAC learnable** if there exist a function \(m_{\mathcal H}: (0, 1)^2 \to \mathbb N\) and a learning algorithm with the following property. For every \(\varepsilon, \delta \in (0, 1)\), for every distribution \(\mathcal D\) over \(\mathcal X\), and for every labelling function \(f: \mathcal X \to \{0, 1\}\), if the realizability assumption holds with respect to \(\mathcal H\), \(\mathcal D\), \(f\), then when the algorithm runs on \(m \ge m_{\mathcal H}(\varepsilon, \delta)\) i.i.d. examples generated by \(\mathcal D\) and labelled by \(f\), it returns a hypothesis \(h\) such that, with probability at least \(1 - \delta\) over the choice of the examples, \(L_{(\mathcal D, f)}(h) \le \varepsilon\).
+
+The definition is one long sentence, so let’s take its notation apart before its logic.
+
+- \((0, 1)\) is the open interval: every number strictly between 0 and 1. The exponent in \((0, 1)^2\) means a pair of such numbers, here \((\varepsilon, \delta)\).
+- \(\mathbb N\) is the natural numbers \(1, 2, 3, \dots\), the possible counts of examples.
+- The arrow in \(m_{\mathcal H}: (0, 1)^2 \to \mathbb N\) reads “takes … and returns …”: \(m_{\mathcal H}\) takes a pair \((\varepsilon, \delta)\) and returns a whole number of examples.
+- \(\varepsilon, \delta \in (0, 1)\) reads “\(\varepsilon\) and \(\delta\) belong to the open interval”: neither may be 0, neither may be 1.
+- \(m \ge m_{\mathcal H}(\varepsilon, \delta)\) says the learner gets at least as many examples as the function asks for.
+- \(L_{(\mathcal D, f)}(h) \le \varepsilon\) is the “approximately correct” part, and “with probability at least \(1 - \delta\)” wraps it in the “probably” part. That probability is over the random draw \(S \sim \mathcal D^m\).
+
+In plain words: **there is a recipe that turns any accuracy and confidence you ask for into a number of examples, and with that many examples the learner is, on all but a \(\delta\) share of training sequences, within \(\varepsilon\) of perfect, whatever \(\mathcal D\) and \(f\) turn out to be.** With \(\varepsilon = 0.1\) and \(\delta = 0.05\), the recipe for lesson 1’s one-feature class says 44 examples, and the promise reads: at least 95 runs in 100 return a hypothesis whose true risk is at most 0.1. The simulation in the next section runs exactly that test, line by line: `misses` counts the runs where the true risk exceeds \(\varepsilon\), and the final `assert` checks that their share stays at or below \(\delta\).
 
 Read the quantifiers slowly, because they are where the strength lives. The function \(m_{\mathcal H}\) gets to see \(\varepsilon\) and \(\delta\), and nothing else. It is chosen before anyone tells you what \(\mathcal D\) is or which \(f\) labels the messages, and it has to work for all of them. That is the distribution-free ambition from lesson 1, now written as a definition.
 
@@ -45,11 +58,22 @@ With that, lesson 2's result becomes a one-line statement.
 
 \[ m_{\mathcal H}(\varepsilon, \delta) \le \left\lceil \frac{\log(|\mathcal H|/\delta)}{\varepsilon} \right\rceil. \]
 
+Read it from the inside out.
+
+- \(|\mathcal H|\) is how many hypotheses the class has: the vertical bars around a set mean “how many elements”.
+- \(|\mathcal H|/\delta\) divides that count by the allowed failure probability. A smaller \(\delta\) makes this ratio bigger.
+- \(\log\) is the natural logarithm, the power you must raise \(e \approx 2.718\) to in order to get its input. It is what keeps the bound gentle: multiplying the ratio by 10 only adds about 2.3 to its log.
+- Dividing by \(\varepsilon\) scales that up: asking for ten times the accuracy costs ten times the examples.
+- The brackets \(\lceil \cdot \rceil\) are the ceiling, “round up to the next whole number”, because you cannot collect 43.8 examples.
+- \(\le\) says this is an upper bound on the minimal sample complexity, not its exact value.
+
+In plain words: **the number of examples you need is at most the log of “class size over failure chance”, divided by the accuracy, rounded up.** With \(|\mathcal H| = 4\), \(\delta = 0.05\) and \(\varepsilon = 0.1\): the ratio is \(4/0.05 = 80\), its log is about 4.38, divided by 0.1 that is 43.8, and the ceiling makes it 44. The first three lines of the snippet below are this formula term by term, `math.ceil(math.log(H / delta) / eps)`, and the first number it prints is that 44.
+
 *Proof.* Take ERM over \(\mathcal H\) as the algorithm. Lesson 2's bound says that every integer \(m \ge \log(|\mathcal H|/\delta)/\varepsilon\) meets the requirement. The smallest such integer is the ceiling on the right, and the minimal function can only be smaller. \(\blacksquare\)
 
 Put numbers in. In lesson 1's tiny world, the class of one-feature hypotheses has \(|\mathcal H| = 4\). Ask for \(\varepsilon = 0.1\) and \(\delta = 0.05\), and the bound says 44 labelled examples are enough. The real mail system has 30 features, so a one-feature class has 30 members, and the bound grows only to 64. That gentle growth comes from the logarithm: doubling the class adds a fixed number of examples instead of doubling them.
 
-Here is the bound, and then the claim itself, simulated in lesson 1's world. There are four features, all messages are equally likely, and a message is junk exactly when the subject says "FREE". ERM over the one-feature class picks one of its consistent hypotheses at random, as lesson 1's ConsistentFeature did. A miss is a run whose true risk is above \(\varepsilon\); an impostor has true risk 0.5, so every impostor is a miss.
+Here is the bound, and then the claim itself, simulated in lesson 1's world. There are four features, all messages are equally likely, and a message is junk exactly when the subject says "FREE". ERM over the one-feature class picks one of its consistent hypotheses at random, as lesson 1's ConsistentFeature did. A miss is a run whose true risk is above \(\varepsilon\). An impostor, as in lesson 1, is a wrong feature that happens to agree with every example; it has true risk 0.5, so every impostor is a miss.
 
 ```python
 import math, random
@@ -70,7 +94,7 @@ for m in (6, 44):
 assert misses / 20000 <= delta
 ```
 
-It prints 44 and 64. Then come the miss rates over 20,000 runs: 0.023 (about 2.3%) with only 6 examples, and 0.0 with the 44 the bound asks for, well under \(\delta = 0.05\). The bound is safe, and here it is generous: with 44 examples an impostor survives with probability at most \(3 \cdot 2^{-44}\).
+It prints 44 and 64. Then come the miss rates over 20,000 runs: 0.023 (about 2.3%) with only 6 examples, and 0.0 with the 44 the bound asks for, well under \(\delta = 0.05\). The bound is safe, and here it is generous. A wrong feature agrees with the true label on a random message half the time, so it survives 44 examples with chance \(1/2\) multiplied by itself 44 times, written \(2^{-44}\) (about one in 18 trillion). There are 3 wrong features, so an impostor survives with probability at most \(3 \cdot 2^{-44}\).
 
 Finite classes are not the only learnable ones. Some infinite classes are PAC learnable too, such as circles centred at the origin, where a hypothesis says 1 inside the circle. What really decides learnability is not finiteness but a combinatorial measure called the VC dimension, which arrives in lesson 6.
 
@@ -78,7 +102,7 @@ Finite classes are not the only learnable ones. Some infinite classes are PAC le
 
 Now back to the bad week. Here is a training sequence of twelve examples from the mail room, in lesson 1's notation. Each message is four bits FLUN (says "FREE", has a link, unknown sender, sent at night), followed by its label. Three rows deserve a mark. Rows 3 and 6 are the same newsletter, 0110, labelled by two different people. Row 7 is the coffee-in-hand mistake: a "FREE" message labelled keep.
 
-The last four columns grade each one-feature hypothesis, where \(h_j(x) = x_j\). Before reading them, guess which hypothesis will make the fewest mistakes, and whether any will make none.
+The last four columns grade each one-feature hypothesis. The hypothesis \(h_F\) says junk exactly when the F bit is 1, \(h_L\) when the L bit is 1, and so on; in symbols \(h_j(x) = x_j\), “the label is feature \(j\)’s bit”. A cross marks a mistake. Before reading them, guess which hypothesis will make the fewest mistakes, and whether any will make none.
 
 | i | message FLUN | label | \(h_F\) | \(h_L\) | \(h_U\) | \(h_N\) |
 |---|---|---|---|---|---|---|
@@ -95,13 +119,13 @@ The last four columns grade each one-feature hypothesis, where \(h_j(x) = x_j\).
 | 11 | 0111 | junk | ✗ | | | |
 | 12 | 1000 | junk | | ✗ | ✗ | ✗ |
 
-Count the crosses: \(L_S(h_F) = 3/12 = 0.25\), \(L_S(h_U) = 4/12 \approx 0.33\), \(L_S(h_L) = 5/12 \approx 0.42\), \(L_S(h_N) = 6/12 = 0.5\). No hypothesis in the class is consistent.
+A reminder from lesson 1: \(L_S(h)\), the empirical risk, is the fraction of the examples in \(S\) that \(h\) gets wrong, so here it is the number of crosses in a column divided by 12. Count the crosses: \(L_S(h_F) = 3/12 = 0.25\), \(L_S(h_U) = 4/12 \approx 0.33\), \(L_S(h_L) = 5/12 \approx 0.42\), \(L_S(h_N) = 6/12 = 0.5\). No hypothesis in the class is consistent.
 
 It is worse than that. Look at rows 3 and 6. Every hypothesis, of any kind, gives 0110 one label, so it is wrong on one of those two rows. No function from \(\mathcal X\) to \(\{0, 1\}\) has empirical risk below \(1/12\) on this training sequence. Realizability isn't merely false for our small class. It is false for every class.
 
 Here is the encouraging part. ERM, as lesson 2 defined it, never asked for a consistent hypothesis. It asks for one that minimizes \(L_S\), and that still makes sense: it returns \(h_F\), with three mistakes out of twelve. The code fix is one line. Instead of "return a hypothesis with \(L_S(h) = 0\), or fail", write "return a hypothesis with the smallest \(L_S(h)\)".
 
-What breaks is the promise. Lesson 2's proof ran like this. ERM returns a hypothesis with \(L_S(h_S) = 0\), so if \(h_S\) is bad, some bad hypothesis looked perfect on \(S\), and that is unlikely. Every link in that chain needed \(L_S(h_S) = 0\). Now ERM returns a hypothesis with \(L_S(h_S) = 0.25\), and the chain has nothing to hold on to. We need a new account of where labels come from, a new benchmark for what "good" means, and eventually a new proof. This lesson supplies the first two. The proof is the cliffhanger.
+What breaks is the promise. Write \(h_S\) for the hypothesis ERM returns on the training sequence \(S\). Lesson 2's proof ran like this. ERM returns a hypothesis with \(L_S(h_S) = 0\), so if \(h_S\) is bad, some bad hypothesis looked perfect on \(S\), and that is unlikely. Every link in that chain needed \(L_S(h_S) = 0\). Now ERM returns a hypothesis with \(L_S(h_S) = 0.25\), and the chain has nothing to hold on to. We need a new account of where labels come from, a new benchmark for what "good" means, and eventually a new proof. This lesson supplies the first two. The proof is the cliffhanger.
 
 ## Labels from a distribution
 
@@ -117,6 +141,29 @@ For binary labels we'll shorten the second part to one number per message,
 \[ \eta(x) = \mathbb P_{(x, y) \sim \mathcal D}[\, y = 1 \mid x \,], \]
 
 the probability that a message \(x\) gets labelled junk. (Many texts write \(\mathbb P[y = 1 \mid x]\) in full; \(\eta\) just saves ink.)
+
+Read it from the inside out.
+
+- \(\mathcal X \times \mathcal Y\), from the sentence above, is the set of all pairs \((x, y)\): a message together with a label. The \(\times\) reads “paired with”.
+- \(y = 1\) is the event “the label is junk”.
+- The bar \(\mid\) reads “given”: \(y = 1 \mid x\) means “the label is junk, given that the message is \(x\)”. We only look at draws where this particular message arrived.
+- \((x, y) \sim \mathcal D\) says the pair is drawn from the joint distribution, message and label together.
+- \(\mathbb P[\cdot]\) is the probability of the event inside the brackets.
+- \(\eta\) is the Greek letter eta, just a name for this function of \(x\).
+
+In plain words: **\(\eta(x)\) is the share of people who would call message \(x\) junk.** For the newsletter 0110, \(\eta = 0.7\): of ten readers, seven click junk. In Python, a label for \(x\) is a biased coin that comes up 1 with probability \(\eta(x)\), and the share of 1s over many coins comes out close to \(\eta(x)\):
+
+```python
+import random
+def eta(x):
+    return 0.9 if x[0] else (0.7 if x[1] and x[2] else 0.1)
+x = (0, 1, 1, 0)
+rng = random.Random(7)
+labels = [int(rng.random() < eta(x)) for _ in range(10000)]
+print(eta(x), sum(labels) / len(labels))
+```
+
+It prints `0.7 0.6992`: in 10,000 labellings of the newsletter, 69.92% said junk.
 
 Realizability was the special case where \(\eta(x)\) is always exactly 0 or exactly 1: every message has one label, decided by \(f\). Disagreement and honest mistakes are what you get when \(\eta(x)\) sits strictly in between.
 
