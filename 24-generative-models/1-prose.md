@@ -125,3 +125,282 @@ Explore it in a bigger mail room. The lab below has a dictionary of 200 words, e
 [[lab]]
 
 With 100 labelled messages of each kind, about a quarter of fresh messages crash the filter and almost half more get an answer of exactly 0 or exactly 1. Rare words are everywhere in real mail, and every one of them is a trap. To fix this properly, we need to understand what Ines was actually computing. It has a name.
+
+## Which parameter makes the data most likely?
+
+Forget the filter for a moment and look at one word in one pile: “prize” in the four junk messages. Message 1 contains it, message 2 does not, messages 3 and 4 do. Write that as the pattern 1, 0, 1, 1.
+
+Now play a game. Suppose the true probability that a junk message contains “prize” were some number \(\theta\). How likely would it be to see exactly this pattern? Each message is an independent coin, so the chance is \(\theta\) for message 1, times \(1 - \theta\) for message 2, times \(\theta\) twice more. Try a few values:
+
+| \(\theta\) | chance of the pattern 1, 0, 1, 1 |
+|---|---|
+| 0.25 | 0.0117 |
+| 0.50 | 0.0625 |
+| 0.75 | 0.1055 |
+| 0.90 | 0.0729 |
+
+Some values of \(\theta\) make what you actually saw much more plausible than others. A world where “prize” turns up in a quarter of junk would rarely produce three hits out of four; a world where it turns up in three quarters produces them most often of the four we tried. The idea of this section is to choose the parameter that makes the observed data most likely. That is exactly what Ines did, without saying so: \(3/4\) is the winner. Let’s make it precise.
+
+**The model.** We observe one yes/no value per example, \(x \in \{0, 1\}\), and the model says \(x = 1\) with probability \(\theta\), for an unknown \(\theta\) between 0 and 1. Its probability of each value is
+
+\[ P_\theta[x] = \theta^{x} (1 - \theta)^{1 - x}. \]
+
+- \(x\) is one observation: 1 if the word is in the message, 0 if not.
+- \(\theta \in [0, 1]\) is the parameter, the probability of a 1. The symbol \(\in\) reads “is a member of”, and \([0, 1]\) is the set of numbers from 0 to 1, ends included.
+- The subscript in \(P_\theta\) says which parameter the probability is computed under: the same \(x\) gets different probabilities under different \(\theta\).
+- The exponent trick is the one from Ines’s recipe: for \(x = 1\) the right side is \(\theta\), for \(x = 0\) it is \(1 - \theta\).
+
+In one sentence: **under parameter \(\theta\), a 1 has probability \(\theta\) and a 0 has probability \(1 - \theta\).** This distribution is called the **Bernoulli distribution** with parameter \(\theta\). With \(\theta = 0.75\), \(P_\theta[1] = 0.75\) and \(P_\theta[0] = 0.25\).
+
+**The likelihood.** The training sequence is now just the observations, \(S = (x_1, \dots, x_m)\), drawn independently. A reminder from lesson 1: \(m\) is the number of examples, and the examples are i.i.d., each drawn from the same distribution with no draw influencing another. Multiply the per-example probabilities, and collect the factors. If \(k = \sum_{i=1}^m x_i\) is the number of 1s, there are \(k\) factors \(\theta\) and \(m - k\) factors \(1 - \theta\):
+
+\[ P_\theta[S] = \prod_{i=1}^{m} \theta^{x_i} (1 - \theta)^{1 - x_i} = \theta^{k} (1 - \theta)^{m - k}. \]
+
+- \(\prod_{i=1}^m\) multiplies one factor per example, \(i\) from 1 to \(m\). Independence of the examples is what allows the product.
+- \(k = \sum_i x_i\) adds up the observations, so it counts the 1s; \(m - k\) counts the 0s.
+- The right side just groups equal factors: the order of a product does not matter.
+
+In one sentence: **the chance of the whole training sequence under \(\theta\) is \(\theta\) once per 1 times \(1 - \theta\) once per 0.** Seen as a function of \(\theta\) with the data held fixed, \(P_\theta[S]\) is called the **likelihood** of \(\theta\). For the “prize” pattern, \(m = 4\), \(k = 3\), and at \(\theta = 0.75\) the likelihood is \(0.75^3 \cdot 0.25 = 0.1055\), the third row of the table.
+
+Products of many probabilities are tiny numbers, and computers dislike tiny numbers: a product of a thousand factors of about 0.5 is smaller than the smallest positive floating-point number, so it rounds to 0. The fix is to take logarithms, which turn products into sums. Throughout this lesson \(\log\) is the natural logarithm, base \(e\). Because \(\log\) is increasing (a bigger input always gives a bigger output), whichever \(\theta\) maximizes the likelihood also maximizes its logarithm. The **log-likelihood** of \(S\) given \(\theta\) is
+
+\[ L(S; \theta) = \log P_\theta[S] = k \log \theta + (m - k) \log(1 - \theta). \]
+
+- \(L(S; \theta)\) is a number that depends on the data \(S\) and on the parameter \(\theta\); the semicolon separates the data from the parameter. (This \(L\) has no subscript, unlike the risks \(L_S\) and \(L_{\mathcal D}\); the context keeps them apart.)
+- \(\log\) of a product is the sum of the logs, and \(\log a^n = n \log a\), so \(\theta^k\) becomes \(k \log \theta\) and \((1-\theta)^{m-k}\) becomes \((m-k)\log(1-\theta)\).
+- Both logs are of numbers at most 1, so both terms are at most 0: a log-likelihood is never positive for yes/no data.
+
+In one sentence: **the log-likelihood adds \(\log \theta\) for each 1 and \(\log(1 - \theta)\) for each 0.** For “prize”, \(L(S; 0.75) = 3 \log 0.75 + \log 0.25 = -0.863 - 1.386 = -2.249\).
+
+**Definition (maximum likelihood estimator).** The **maximum likelihood estimator** is a parameter that maximizes the log-likelihood,
+
+\[ \hat\theta \in \operatorname*{argmax}_{\theta} L(S; \theta). \]
+
+- \(\operatorname*{argmax}_\theta\) of a function is the set of inputs \(\theta\) at which the function reaches its largest value (“arg” for argument: not the largest value itself, but where it happens).
+- The \(\in\) says \(\hat\theta\) is one of them: if several parameters tie, any of them counts.
+
+In one sentence: **the estimate is whichever parameter makes the training sequence most likely.** We abbreviate it MLE.
+
+```python
+import math
+S = [1, 0, 1, 1]
+def P(S, th):
+    return math.prod(th**x * (1 - th)**(1 - x) for x in S)
+def L(S, th):
+    k, m = sum(S), len(S)
+    return k * math.log(th) + (m - k) * math.log(1 - th)
+for th in (0.25, 0.5, 0.75, 0.9):
+    print(th, round(P(S, th), 4), round(L(S, th), 3))
+grid = [i / 1000 for i in range(1, 1000)]
+print(max(grid, key=lambda th: L(S, th)))
+```
+
+It prints the table above with the log-likelihoods beside it (\(-4.447\), \(-2.773\), \(-2.249\), \(-2.619\)), and then `0.75`: a search over a thousand values of \(\theta\) lands on Ines’s fraction. That is no accident.
+
+**Proposition (the Bernoulli MLE is the average).** For \(S = (x_1, \dots, x_m)\) with \(k\) ones, the maximum likelihood estimator is \(\hat\theta = k/m = \frac{1}{m}\sum_{i=1}^m x_i\).
+
+*Proof.* First the ordinary case, \(0 < k < m\). Then \(L(S; \theta)\) is finite for \(0 < \theta < 1\) and falls to \(-\infty\) at both ends, because \(\log \theta \to -\infty\) as \(\theta \to 0\) and \(\log(1-\theta) \to -\infty\) as \(\theta \to 1\), each multiplied by a positive count. So the maximum is inside the interval, where the derivative is zero. The derivative of \(\log \theta\) is \(1/\theta\), and of \(\log(1 - \theta)\) it is \(-1/(1 - \theta)\), so
+
+\[ \frac{d}{d\theta} L(S; \theta) = \frac{k}{\theta} - \frac{m - k}{1 - \theta}. \]
+
+Here \(\frac{d}{d\theta}\) is the derivative with respect to \(\theta\): the slope of the log-likelihood as \(\theta\) changes. **The slope is the pull of the ones toward bigger \(\theta\) minus the pull of the zeros toward smaller \(\theta\).** At \(\theta = 0.5\) with \(k = 3\), \(m = 4\), it is \(6 - 2 = 4\): still climbing.
+
+Setting the slope to 0 and multiplying both sides by \(\theta(1 - \theta)\) gives \(k(1 - \theta) = (m - k)\theta\), that is \(k - k\theta = m\theta - k\theta\), so \(\theta = k/m\). This is the only point with zero slope. It is a maximum, not a minimum: the second derivative, \(-k/\theta^2 - (m - k)/(1 - \theta)^2\), is negative everywhere, so the slope only ever decreases, from positive before \(k/m\) to negative after it.
+
+The edge cases. If \(k = 0\), the log-likelihood is \(m \log(1 - \theta)\), which is largest at \(\theta = 0\), where it equals 0 (the term \(k \log \theta\) is absent because \(k = 0\); by the usual convention \(0 \cdot \log 0 = 0\)). So \(\hat\theta = 0 = k/m\). If \(k = m\), symmetrically \(\hat\theta = 1 = k/m\). \(\blacksquare\)
+
+Read that edge case again, because it is our bug. When a word never appears among \(m\) junk messages, the most likely world, given only those messages, is one where junk *never* contains it. Maximum likelihood is not making an arithmetic slip: it is answering the question it was asked.
+
+**How accurate is it?** The estimate \(\hat\theta\) is an average of \(m\) independent coins, each equal to 1 with probability \(\theta\). An estimator is **unbiased** when its expected value, averaged over the random training sequence, equals the parameter. This one is: by linearity of expectation, \(\mathbb E_S[\hat\theta] = \frac1m \sum_i \mathbb E[x_i] = \frac1m \cdot m\theta = \theta\). (A reminder: \(\mathbb E\) is the expected value, the probability-weighted average, and the subscript \(S\) says the randomness is in the training sequence.)
+
+Unbiased says the estimate is right on average; it does not say how far one estimate strays. For that, recall Hoeffding’s inequality from lesson 4: for an average \(\bar Z\) of \(m\) i.i.d. variables with values in \([0, 1]\) and mean \(\mu\), \(\mathbb P[|\bar Z - \mu| > \varepsilon] \le 2e^{-2m\varepsilon^2}\). Set the right side equal to a confidence parameter \(\delta\) and solve for \(\varepsilon\): \(2e^{-2m\varepsilon^2} = \delta\) gives \(\varepsilon = \sqrt{\log(2/\delta)/(2m)}\). So with probability at least \(1 - \delta\) over the choice of \(S\),
+
+\[ |\hat\theta - \theta| \le \sqrt{\frac{\log(2/\delta)}{2m}}. \]
+
+- \(|\hat\theta - \theta|\) is the distance between the estimate and the truth; the vertical bars around a number mean its absolute value.
+- \(\delta\) is the confidence parameter of lesson 3: the probability we allow for an unlucky training sequence.
+- Inside the root, \(\log(2/\delta)\) grows only slowly as you demand more confidence, and the \(2m\) in the denominator shrinks the bound as you add examples.
+
+In one sentence: **with probability at least \(1 - \delta\), the counted fraction is within \(\sqrt{\log(2/\delta)/(2m)}\) of the true one.** With \(m = 500\) messages and \(\delta = 0.05\), that is \(\sqrt{\log 40/1000} \approx 0.061\).
+
+```python
+import math, random
+m, delta, theta = 500, 0.05, 0.3
+eps = math.sqrt(math.log(2 / delta) / (2 * m))
+rng, runs, misses = random.Random(0), 2000, 0
+for _ in range(runs):
+    k = sum(rng.random() < theta for _ in range(m))
+    misses += abs(k / m - theta) > eps
+print(round(eps, 3), misses / runs)
+```
+
+It prints `0.061 0.007`: the bound promised at most 5% misses, and the simulation saw 0.7%. Hoeffding is honest, and a little pessimistic.
+
+So for estimating *the frequency of a word*, maximum likelihood is fine: close to the truth with high probability. Keep that in mind. The trouble in Ines’s filter is not that \(\hat\theta\) is far from \(\theta\). It is what happens when a tiny error near 0 gets fed into a logarithm, and we are about to see exactly how.
+
+## Measured values: densities
+
+Not every feature is a yes/no word. The mail room also records numbers: the length of a message, the time it was sent. Take the **length score** of a message, the natural logarithm of its number of characters. It is a real number, and for a real number something odd happens: the probability that a score equals 3.1 exactly, to infinitely many decimals, is 0. So “the probability of the data” is 0 for every parameter, and the likelihood we just defined is useless.
+
+The fix is to use the **density** instead. A density \(p\) is a nonnegative function whose area over any interval is the probability of landing in that interval; near a point \(x\), the probability of landing in a tiny interval of width \(w\) is about \(p(x) \cdot w\). So a density compares how likely different points are, just as probabilities do for yes/no data. For an i.i.d. sample \(S = (x_1, \dots, x_m)\) from a density \(P_\theta\), define the log-likelihood as the sum of the logs of the density values:
+
+\[ L(S; \theta) = \log \prod_{i=1}^{m} P_\theta(x_i) = \sum_{i=1}^{m} \log P_\theta(x_i). \]
+
+- \(P_\theta(x_i)\) is the density of the model with parameter \(\theta\) at the observed value \(x_i\).
+- The product is the joint density of an independent sample, and the log turns it into a sum.
+
+In one sentence: **the log-likelihood of measured data adds up the log of the model’s density at each observed value.** The maximum likelihood estimator is again a maximizer of \(L(S; \theta)\). To keep notation light, from here on we write \(\mathbb P[X = x]\), or \(P_\theta[x]\), for both the probability of \(x\) (yes/no data) and the density at \(x\) (measured data).
+
+**The Gaussian model.** Lengths of keep messages cluster around a typical value, with fewer messages the further you go. The usual model for such a bell-shaped spread is the **Gaussian** (or normal) distribution with parameters \(\theta = (\mu, \sigma)\), whose density is
+
+\[ P_\theta(x) = \frac{1}{\sigma\sqrt{2\pi}} \exp\left(-\frac{(x - \mu)^2}{2\sigma^2}\right). \]
+
+- \(\mu\) (mu) is the centre of the bell, the mean; \(\sigma\) (sigma) is its width, the standard deviation, and \(\sigma^2\) the variance.
+- \((x - \mu)^2\) is the squared distance from the centre; dividing by \(2\sigma^2\) measures that distance in units of the width.
+- \(\exp(u) = e^u\). With a minus sign in front, the density is largest at \(x = \mu\) and falls off quickly with distance.
+- \(\frac{1}{\sigma\sqrt{2\pi}}\) is the constant that makes the total area under the curve equal to 1.
+
+In one sentence: **the Gaussian density is a bell centred at \(\mu\) with width \(\sigma\), falling off with the squared distance from the centre.** At the centre with \(\sigma = 1\), the density is \(1/\sqrt{2\pi} \approx 0.399\).
+
+Take the log of the density, add over the sample, and the log-likelihood is
+
+\[ L(S; \mu, \sigma) = -\frac{1}{2\sigma^2}\sum_{i=1}^{m} (x_i - \mu)^2 - m\log\left(\sigma\sqrt{2\pi}\right). \]
+
+- \(\log\) undoes \(\exp\), so each example contributes \(-(x_i - \mu)^2/(2\sigma^2)\), plus \(\log\) of the constant, which is \(-\log(\sigma\sqrt{2\pi})\).
+- The \(m\) copies of that constant add up to the last term.
+- The first term is a penalty for points far from \(\mu\); the second is a penalty for a wide bell.
+
+In one sentence: **a Gaussian explains the data well when the points are close to its centre and its bell is no wider than it needs to be.** Five keep messages with length scores 3.1, 2.4, 4.0, 3.5 and 2.0 give, for \(\mu = 3\) and \(\sigma = 1\), the log-likelihood \(-\frac12(0.01 + 0.36 + 1 + 0.25 + 1) - 5\log\sqrt{2\pi} = -1.31 - 4.595 = -5.905\).
+
+**Proposition (the Gaussian MLE).** If not all \(x_i\) are equal, the maximum likelihood estimates are the sample mean and the root of the average squared deviation:
+
+\[ \hat\mu = \frac1m \sum_{i=1}^{m} x_i, \qquad \hat\sigma = \sqrt{\frac1m \sum_{i=1}^{m} (x_i - \hat\mu)^2}. \]
+
+- \(\hat\mu\) is the plain average of the observations.
+- \(\hat\sigma^2\) is the average of the squared distances from that average; \(\hat\sigma\) is its square root.
+
+In one sentence: **fit the bell’s centre at the average and its width at the typical distance from the average.** For the five scores, \(\hat\mu = 15/5 = 3.0\) and \(\hat\sigma^2 = 2.62/5 = 0.524\), so \(\hat\sigma \approx 0.724\).
+
+*Proof.* Two steps: first the centre for any fixed width, then the width.
+
+Fix \(\sigma\). Only the first term depends on \(\mu\), and it is largest when \(\sum_i (x_i - \mu)^2\) is smallest. Write \(x_i - \mu = (x_i - \hat\mu) + (\hat\mu - \mu)\) and square:
+
+\[ \sum_{i=1}^{m} (x_i - \mu)^2 = \sum_{i=1}^{m} (x_i - \hat\mu)^2 + 2(\hat\mu - \mu)\sum_{i=1}^{m}(x_i - \hat\mu) + m(\hat\mu - \mu)^2. \]
+
+The middle sum is \(\sum_i x_i - m\hat\mu = 0\), by the definition of \(\hat\mu\). So **the total squared distance to any centre \(\mu\) is the total squared distance to the average plus \(m\) times the squared gap between \(\mu\) and the average.** It is smallest exactly at \(\mu = \hat\mu\), whatever \(\sigma\) is. (With the five scores and \(\mu = 3.5\): \(2.62 + 5 \cdot 0.25 = 3.87\).)
+
+Now put \(\mu = \hat\mu\) and write \(A = \sum_i (x_i - \hat\mu)^2\), which is positive because not all \(x_i\) are equal. The log-likelihood as a function of \(\sigma > 0\) is \(g(\sigma) = -A/(2\sigma^2) - m\log\sigma - m\log\sqrt{2\pi}\), with derivative
+
+\[ g'(\sigma) = \frac{A}{\sigma^3} - \frac{m}{\sigma} = \frac{A - m\sigma^2}{\sigma^3}. \]
+
+**The slope is positive while \(\sigma^2\) is below \(A/m\) and negative after,** so \(g\) climbs and then falls, and its maximum is at \(\sigma^2 = A/m\), which is \(\hat\sigma^2\). \(\blacksquare\)
+
+(Why the condition “not all equal”? If every \(x_i\) is the same, \(A = 0\) and \(g(\sigma) = -m\log\sigma - \text{const}\) grows without limit as \(\sigma \to 0\): an infinitely thin bell on a single point. There is no maximum. Hold on to this; it is the continuous cousin of our zero-probability bug.)
+
+```python
+import math
+xs = [3.1, 2.4, 4.0, 3.5, 2.0]
+def L(mu, sigma):
+    sq = sum((x - mu)**2 for x in xs)
+    c = len(xs) * math.log(sigma * math.sqrt(2 * math.pi))
+    return -sq / (2 * sigma**2) - c
+mu_hat = sum(xs) / len(xs)
+s_hat = math.sqrt(sum((x - mu_hat)**2 for x in xs) / len(xs))
+print(round(L(3, 1), 3), mu_hat, round(s_hat, 3))
+best = max(((L(mu_hat + a / 100, s_hat + b / 100), a, b)
+            for a in range(-20, 21) for b in range(-20, 21)))
+print(round(best[0], 3), best[1:])
+```
+
+It prints `-5.905 3.0 0.724`, then `-5.479 (0, 0)`: around the formulas, nudging the centre or the width in any direction only lowers the log-likelihood.
+
+One more property you will prove yourself at the end of the lesson. The centre estimate \(\hat\mu\) is unbiased. The width estimate is not: on average, \(\hat\sigma^2\) comes out a little too small. Maximum likelihood estimates are not always unbiased.
+
+## Maximum likelihood is ERM in disguise
+
+Here is the surprise this lesson promised. Go back to lesson 3’s general setting: a loss function \(\ell(h, z)\) says how badly hypothesis \(h\) does on example \(z\), the empirical risk is the average loss on the training sequence, and **ERM**, empirical risk minimization, returns the hypothesis with the smallest empirical risk.
+
+Now let the “hypothesis” be a parameter \(\theta\) and the example be an observation \(x\). How badly does \(\theta\) do on \(x\)? A natural answer is: by how *surprised* the model is to see \(x\). If \(P_\theta[x]\) is close to 1, the model expected it, and the loss should be near 0. If \(P_\theta[x]\) is tiny, the model was badly wrong, and the loss should be large. The negative logarithm does exactly this. Under \(\theta = 0.75\) for “prize”, a message with “prize” costs \(-\log 0.75 = 0.288\), and a message without it costs \(-\log 0.25 = 1.386\).
+
+**Definition (log loss).** The **log loss** of parameter \(\theta\) on observation \(x\) is
+
+\[ \ell(\theta, x) = -\log P_\theta[x]. \]
+
+- \(\ell\) is the loss function of lesson 3, now with a parameter in the hypothesis slot and an observation (no label) in the example slot.
+- \(P_\theta[x]\) is the probability (or density) the model gives to what actually happened.
+- The minus sign turns the log, which is negative for probabilities below 1, into a nonnegative cost.
+
+In one sentence: **the log loss is how surprised the model was by what it saw.** A probability of 1 costs 0; a probability of 0 costs \(-\log 0 = +\infty\).
+
+Since the empirical risk with this loss is \(\frac1m\sum_i(-\log P_\theta[x_i]) = -\frac1m L(S;\theta)\), minimizing one is maximizing the other:
+
+\[ \operatorname*{argmin}_{\theta} \sum_{i=1}^{m} \left(-\log P_\theta[x_i]\right) = \operatorname*{argmax}_{\theta} \sum_{i=1}^{m} \log P_\theta[x_i]. \]
+
+- \(\operatorname*{argmin}\) is the set of parameters where the left sum is smallest, just as \(\operatorname*{argmax}\) is where the right sum is largest.
+- The left sum is \(m\) times the empirical risk with the log loss; the right sum is the log-likelihood.
+- A sum and its negative are smallest and largest at the same places.
+
+In one sentence: **the maximum likelihood estimator is exactly ERM with the log loss.** For “prize”, the empirical risk at \(\theta = 0.75\) is \(2.249/4 = 0.562\), and no other \(\theta\) does better. You met one instance of this in lesson 9: logistic regression is maximum likelihood for a model of the label given the message.
+
+```python
+import math
+S = [1, 0, 1, 1]
+def loss(th, x):
+    return -math.log(th if x == 1 else 1 - th)
+def risk_S(th):
+    return sum(loss(th, x) for x in S) / len(S)
+print(round(loss(0.75, 1), 3), round(loss(0.75, 0), 3))
+grid = [i / 1000 for i in range(1, 1000)]
+best = min(grid, key=risk_S)
+print(best, round(risk_S(best), 3))
+```
+
+It prints `0.288 1.386`, then `0.75 0.562`.
+
+**The true risk.** ERM is only as good as the true risk it is chasing, so let’s compute it. Suppose the observations really come from some distribution \(P\), which need not be of the form \(P_\theta\) at all. The true risk of \(\theta\) is its expected log loss on a fresh observation, and it splits into two pieces. First the idea, with numbers. Say the word truly appears with probability 0.3, and the model uses \(\theta = 0.5\). Then the expected surprise is \(0.3 \cdot (-\log 0.5) + 0.7 \cdot (-\log 0.5) = 0.693\). Even the perfect model, \(\theta = 0.3\), would be surprised on average by \(-0.3\log 0.3 - 0.7\log 0.7 = 0.611\): the data is random, and some surprise is unavoidable. The difference, \(0.082\), is the price of using the wrong parameter. In symbols:
+
+\[ \mathbb E_{x \sim P}\left[\ell(\theta, x)\right] = \sum_x P[x]\log\frac{P[x]}{P_\theta[x]} + \sum_x P[x]\log\frac{1}{P[x]} = D_{\mathrm{RE}}(P \,\|\, P_\theta) + H(P). \]
+
+- \(x \sim P\) reads “\(x\) is drawn from \(P\)”, and \(\mathbb E_{x \sim P}\) averages over that draw: each possible \(x\) weighted by its true probability \(P[x]\).
+- The first equality adds and subtracts \(\log P[x]\) inside \(-\log P_\theta[x]\): \(-\log P_\theta[x] = \log\frac{P[x]}{P_\theta[x]} + \log\frac{1}{P[x]}\).
+- \(H(P) = \sum_x P[x]\log\frac{1}{P[x]}\) is the **entropy** of \(P\): the average surprise of the true distribution about itself. It does not depend on \(\theta\). (Lesson 18 used the same quantity in base 2 to choose splits.)
+- \(D_{\mathrm{RE}}(P \| P_\theta) = \sum_x P[x]\log\frac{P[x]}{P_\theta[x]}\) is the **relative entropy** of \(P\) to \(P_\theta\), also called the Kullback–Leibler divergence: the extra surprise from believing \(P_\theta\) when the truth is \(P\). The double bar \(\|\) only separates its two arguments, and the order matters.
+- Terms with \(P[x] = 0\) are left out of both sums: an outcome that never happens costs nothing on average.
+
+In one sentence: **the true risk of a parameter is the unavoidable randomness of the data plus the extra surprise caused by the model being wrong.** In the example, \(0.693 = 0.611 + 0.082\).
+
+The entropy is the floor nobody can go below, as long as the relative entropy is never negative. It isn’t:
+
+**Proposition (relative entropy is nonnegative).** For distributions \(P\) and \(Q\) on a finite set, \(D_{\mathrm{RE}}(P\|Q) \ge 0\), with equality exactly when \(Q = P\).
+
+*Proof.* The engine is a one-line inequality: \(\log t \le t - 1\) for every \(t > 0\), with equality only at \(t = 1\). To see it, let \(g(t) = t - 1 - \log t\). Its derivative \(1 - 1/t\) is negative for \(t < 1\) and positive for \(t > 1\), so \(g\) falls to its minimum at \(t = 1\), where \(g(1) = 0\), and is positive everywhere else.
+
+Now sum over the outcomes with \(P[x] > 0\). If \(Q[x] = 0\) for one of them, the term \(\log(P[x]/Q[x])\) is \(+\infty\), and there is nothing to prove. Otherwise apply the inequality with \(t = Q[x]/P[x]\):
+
+\[ -D_{\mathrm{RE}}(P\|Q) = \sum_{x : P[x] > 0} P[x]\log\frac{Q[x]}{P[x]} \le \sum_{x : P[x] > 0} P[x]\left(\frac{Q[x]}{P[x]} - 1\right) = \sum_{x : P[x] > 0} Q[x] - 1 \le 0. \]
+
+- The colon in \(\sum_{x : P[x] > 0}\) reads “such that”: add over the outcomes \(x\) such that \(P[x] > 0\).
+- The middle step multiplies out: \(P[x] \cdot Q[x]/P[x] = Q[x]\), and the \(P[x]\) add up to 1.
+- The last step holds because \(Q\)’s total over some outcomes is at most its total over all, which is 1.
+
+In one sentence: **minus the relative entropy is at most \(Q\)’s total mass on the outcomes \(P\) can produce, minus 1, which is never positive.** Equality needs both inequalities to be equalities: \(Q[x]/P[x] = 1\) wherever \(P[x] > 0\), and \(Q\) putting no mass elsewhere. That is \(Q = P\). \(\blacksquare\)
+
+```python
+import math
+P = {1: 0.3, 0: 0.7}
+def Q(th):
+    return {1: th, 0: 1 - th}
+def risk(th):
+    return sum(-P[x] * math.log(Q(th)[x]) for x in P)
+H = sum(P[x] * math.log(1 / P[x]) for x in P)
+def D(th):
+    return sum(P[x] * math.log(P[x] / Q(th)[x]) for x in P)
+for th in (0.1, 0.3, 0.5):
+    print(th, round(risk(th), 3), round(H, 3), round(D(th), 3))
+```
+
+It prints `0.1 0.805 0.611 0.194`, `0.3 0.611 0.611 0.0` and `0.5 0.693 0.611 0.082`: in every row the risk is the entropy plus the relative entropy, and the relative entropy vanishes only at the truth.
+
+So the true risk is smallest when \(P_\theta = P\). If the data really has the assumed parametric form, the right parameter brings the risk down to the entropy. If it does not, even the best parameter pays a relative entropy forever, no matter how much data you collect. That is the inductive bias of a generative model, in the sense of lesson 1: the parametric form is a hypothesis class, chosen before seeing any data, and it can miss the truth.
+
+[[diagram:logloss]]

@@ -4,7 +4,7 @@
 
 Since the last lesson, the team has grown up. Nobody pretends any more that one hypothesis will agree with every label: users disagree, people click in a hurry, and the promise you now make is the agnostic one, a true risk close to the best in the class. The mail room this year has the thirty features from lesson 2, and the class the team works with is the simplest one: thirty one-feature hypotheses, \(h_1, \dots, h_{30}\), where \(h_j\) says junk exactly when feature \(j\) is present.
 
-To keep everyone honest, someone built a dashboard. Every Monday, users label a fresh batch of 60 messages. The dashboard has one row per hypothesis, and each row shows that hypothesis’s empirical risk on this week’s 60 examples: the fraction it gets wrong. Then the team does the obvious thing. They ship the hypothesis at the top of the dashboard, the one with the smallest empirical risk. That is ERM, run by hand, every week.
+To keep everyone honest, someone built a dashboard. Every Monday, users label a fresh batch of 60 messages. The dashboard has one row per hypothesis, and each row shows that hypothesis’s empirical risk on this week’s 60 examples: the fraction it gets wrong. Then the team does the obvious thing. They ship the hypothesis at the top of the dashboard, the one with the smallest empirical risk. That is ERM, empirical risk minimization from lesson 2, run by hand, every week.
 
 A month later, production reports back. Production measures the shipped hypothesis on the thousands of messages users labelled after it went live, which is so many that its number is, for all practical purposes, the true risk. And production is disappointed. Not once, but every single week. On average, the dashboard said the shipped hypothesis would be wrong on 18% of messages. Production says 28%.
 
@@ -16,11 +16,20 @@ How can a dashboard where every row is computed correctly be systematically misl
 
 The team cannot see the true risks; that is the whole problem. But we can build a world where we know them, and watch the dashboard from above.
 
-In this world, every message is junk or keep with equal chance, and each of the thirty features is a noisy signal of the label. Feature \(j\) agrees with the label except on a fraction \(r_j\) of messages, and these disagreements happen independently from feature to feature. So the true risk of \(h_j\) is exactly \(r_j\). We set
+In this world, every message is junk or keep with equal chance, and each of the thirty features is a noisy signal of the label. Feature \(j\) agrees with the label except on a fraction \(r_j\) of messages, and these disagreements happen independently from feature to feature. So the true risk of \(h_j\) is exactly \(r_j\). We spread the thirty rows evenly: the first row is wrong on 25% of messages, and each row after it is wrong half a percentage point more often than the one before, so row 2 is at 25.5% and row 3 at 26%. As a formula,
 
-\[ r_j = 0.25 + 0.005\,(j - 1), \qquad j = 1, \dots, 30, \]
+\[ r_j = 0.25 + 0.005\,(j - 1), \qquad j = 1, \dots, 30. \]
 
-so \(h_1\) is the best in the class with true risk 0.25, \(h_{11}\) has 0.30, and \(h_{30}\), the worst, has 0.395. The team does not know any of this. They only see the dashboard.
+Read it from the inside out. The subscript \(j\) is the row number, so \(r_j\) is “the true risk of row \(j\)”, and the list after the comma, \(j = 1, \dots, 30\), says the formula is applied once to each of the thirty rows. Inside the brackets, \(j - 1\) counts how many rows sit above row \(j\). Multiplying by 0.005 turns that count into half a point per row, and adding 0.25 starts the first row at 25%. In plain words: **each row is wrong half a point more often than the row above it, starting from 25%.** For row 11, ten rows sit above it, so \(r_{11} = 0.25 + 0.005 \times 10 = 0.30\).
+
+```python
+r = [0.25 + 0.005 * (j - 1) for j in range(1, 31)]
+print(r[0], round(r[10], 3), round(r[29], 3))
+```
+
+It prints `0.25 0.3 0.395`. Python counts list positions from 0, so `r[10]` is row 11 and `r[29]` is row 30.
+
+So \(h_1\) is the best in the class with true risk 0.25, \(h_{11}\) has 0.30, and \(h_{30}\), the worst, has 0.395. The team does not know any of this. They only see the dashboard.
 
 Before we look at the whole dashboard, let’s look at one row on its own.
 
@@ -41,17 +50,45 @@ Take \(h_{11}\), whose true risk is 0.30, and watch its row for eight weeks. Eac
 
 The row wobbles a lot. Week 6 made \(h_{11}\) look like a 20% hypothesis, and week 2 made it look like a 40% one. But notice which way it wobbles: both ways. Add up the mistakes and you get 144 out of 480 examples, exactly 0.300. A single row has no lean. It is a noisy but fair estimate of its own true risk.
 
-That fairness has a name and a one-line proof, and it is worth having both. Recall from lesson 3 that a **loss function** \(\ell(h, z)\) scores hypothesis \(h\) on one example \(z\). For junk filtering it is the 0-1 loss, \(\mathbb 1[h(x) \ne y]\). The true risk is the expected loss on a fresh example, and the empirical risk is the average loss on the training sequence:
+That fairness has a name and a one-line proof, and it is worth having both. Recall from lesson 3 that a **loss function** \(\ell(h, z)\) scores hypothesis \(h\) on one example \(z\). For junk filtering it is the 0-1 loss: 1 when \(h\) gets the example wrong, 0 when it gets it right. The true risk is the expected loss on a fresh example, the average over every example that could arrive, each weighted by how often it arrives. The empirical risk is the average loss on the training sequence. For \(h_{11}\), a fresh example is a mistake with probability 0.30, so its true risk is 0.30; in week 1 it made 17 mistakes on 60 examples, so its empirical risk was \(17/60 \approx 0.283\). In symbols:
 
 \[ L_{\mathcal D}(h) = \mathbb E_{z \sim \mathcal D}[\ell(h, z)], \qquad L_S(h) = \frac{1}{m} \sum_{i=1}^m \ell(h, z_i). \]
 
-Fix a hypothesis \(h\) before the examples are drawn. Each \(z_i\) is drawn from \(\mathcal D\), so each \(\ell(h, z_i)\) has expectation \(L_{\mathcal D}(h)\). The expectation of a sum is the sum of the expectations (this is **linearity of expectation**, and it needs no independence at all), so
+Read the two halves from the inside out.
+
+- An example is a pair \(z = (x, y)\): a message \(x\) and its label \(y\). The loss \(\ell(h, z)\) is the number that scores \(h\) on that one example.
+- The 0-1 loss is written \(\mathbb 1[h(x) \ne y]\), with the indicator notation of lesson 1: \(\mathbb 1[\text{statement}]\) is 1 when the statement is true and 0 when it is false.
+- \(\mathcal D\) is, as in lesson 1, the distribution of examples: how often each (message, label) pair arrives. \(z \sim \mathcal D\) reads “\(z\) is drawn from \(\mathcal D\)”, and the \(\mathbb E\) in front, the expectation, averages the loss over those draws, weighting each possible example by its probability.
+- On the right, \(z_1, \dots, z_m\) are the \(m\) examples of the training sequence \(S\). The sum \(\sum_{i=1}^m\) adds the loss of example \(i\) for each \(i\) from 1 to \(m\), and \(\frac1m\) turns that total into an average.
+
+In plain words: **the true risk is the average loss on a fresh example, and the empirical risk is the average loss on the examples you have.** Here is week 1 of \(h_{11}\) in Python, with each message shrunk to the one feature bit that \(h_{11}\) reads: 9 false alarms, 8 missed junk messages and 43 correct labels.
+
+```python
+def h(x):
+    return x
+
+def loss(h, z):
+    x, y = z
+    return int(h(x) != y)
+
+S = ([(1, 0)] * 9 + [(0, 1)] * 8
+     + [(1, 1)] * 25 + [(0, 0)] * 18)
+L_S = sum(loss(h, z) for z in S) / len(S)
+L_D = 1 * 0.30 + 0 * 0.70
+print(len(S), round(L_S, 3), L_D)
+```
+
+It prints `60 0.283 0.3`. The last line before the print is the expectation spelled out: each value of the loss times its probability, added up.
+
+Now fix a hypothesis \(h\) before the examples are drawn, and ask what its row shows on average over many weeks. For \(h_{11}\), each of the 60 examples is a mistake with chance 0.30, so on average a week holds \(60 \times 0.30 = 18\) mistakes, and \(18/60 = 0.30\): exactly its true risk. In general, each \(z_i\) is drawn from \(\mathcal D\), so each \(\ell(h, z_i)\) has expectation \(L_{\mathcal D}(h)\). The expectation of a sum is the sum of the expectations (this is **linearity of expectation**, and it needs no independence at all), so
 
 \[ \mathbb E_{S \sim \mathcal D^m}[L_S(h)] = \frac{1}{m} \sum_{i=1}^m \mathbb E[\ell(h, z_i)] = L_{\mathcal D}(h). \]
 
+Here \(S \sim \mathcal D^m\) is lesson 1’s notation for a random training sequence: its \(m\) examples are drawn i.i.d. from \(\mathcal D\), that is, each from the same \(\mathcal D\) and no draw influencing another. \(\mathbb E_{S \sim \mathcal D^m}\) averages over every training sequence that could arrive. Read the chain left to right. The first expression is the row’s dashboard number averaged over all possible weeks. The middle one moves the expectation inside the sum, one example at a time. Each of those \(m\) expectations is \(L_{\mathcal D}(h)\), so the sum is \(m\,L_{\mathcal D}(h)\), and \(\frac1m\) brings it back to \(L_{\mathcal D}(h)\). In plain words: **averaged over all possible weeks, a fixed row shows exactly its true risk.** The eight weeks in the table, 144 mistakes in 480 examples, landed right on it.
+
 An estimate whose expectation equals the thing it estimates is called **unbiased**. Every row of the dashboard, looked at alone, is unbiased.
 
-Here is the same claim run 10,000 times instead of eight. Under the 0-1 loss, the number of mistakes in a week is a sum of 60 independent coin flips that each come up “mistake” with probability 0.30, which Python can draw directly.
+Here is the same claim run 10,000 times instead of eight. Each entry of `seen` below is one week’s \(L_S(h_{11})\), and averaging the list over weeks is the \(\mathbb E_S\) on the left of the chain. Under the 0-1 loss, the number of mistakes in a week is a sum of 60 independent coin flips that each come up “mistake” with probability 0.30, which Python can draw directly.
 
 ```python
 import random
@@ -87,13 +124,13 @@ Nothing here is a coincidence of this particular week. Ranking by empirical risk
 
 [[diagram:winners-curse]]
 
-We can prove the direction of the bias in general. In what follows, \(h_S\) is the hypothesis ERM returns on the training sequence \(S\), so \(L_S(h_S) = \min_{h \in \mathcal H} L_S(h)\).
+We can prove the direction of the bias in general. In what follows, \(\mathcal H\) is the hypothesis class, as in lesson 1, here the thirty rows, and \(h_S\) is the hypothesis ERM returns on the training sequence \(S\), the shipped row. Its dashboard number is the smallest on the dashboard, 0.183 in the typical week, which we write \(L_S(h_S) = \min_{h \in \mathcal H} L_S(h)\): read \(\min_{h \in \mathcal H}\) as “the smallest value, over every \(h\) in \(\mathcal H\), of”.
 
 **Proposition (the winner’s curse).** Let \(\mathcal H\) be a finite class, \(\mathcal D\) any distribution, and \(h_S\) any ERM output on \(S \sim \mathcal D^m\). Then
 
 \[ \mathbb E_S\big[L_S(h_S)\big] \;\le\; \min_{h \in \mathcal H} L_{\mathcal D}(h) \;\le\; \mathbb E_S\big[L_{\mathcal D}(h_S)\big]. \]
 
-In words: on average, the dashboard shows the winner at or below the best true risk in the class, and production finds the winner at or above it.
+Read it from the inside out. In the middle, \(\min_{h \in \mathcal H} L_{\mathcal D}(h)\) is the best true risk in the class, a fixed number that does not change from week to week: 0.25 here, the true risk of \(h_1\). On the left, \(L_S(h_S)\) is the number the dashboard shows for the shipped row, and \(\mathbb E_S\) averages it over all possible weeks. On the right, \(L_{\mathcal D}(h_S)\) is what production finds for the shipped row, averaged the same way. The two \(\le\) signs put the best in the class between them. In words: **on average, the dashboard shows the winner at or below the best true risk in the class, and production finds the winner at or above it.** The typical week already has this order: 0.183 shown, 0.25 best, 0.280 found. The snippet after the proof pushes 10,000 weeks through all three terms.
 
 *Proof.* Start with the left inequality. Pick any fixed hypothesis \(h' \in \mathcal H\). Since \(h_S\) minimizes the empirical risk, \(L_S(h_S) \le L_S(h')\) holds for every training sequence \(S\). An inequality that holds for every outcome survives taking expectations, so \(\mathbb E[L_S(h_S)] \le \mathbb E[L_S(h')]\). The right side is \(L_{\mathcal D}(h')\), because a fixed row is unbiased. This is true for every \(h'\) in the class, so it is true for the one with the smallest true risk.
 
@@ -115,7 +152,7 @@ for _ in range(weeks):
 print(round(shown / weeks, 4), min(r), round(shipped / weeks, 4))
 ```
 
-It prints `0.1791 0.25 0.2755`: the dashboard promises 18%, the best in the class is 25%, and production gets 28%, in the order the proposition says. (The `rng.random()` in the key breaks ties at random, so a tie never quietly favours a better row.)
+It prints `0.1791 0.25 0.2755`: the dashboard promises 18%, the best in the class is 25%, and production gets 28%, in the order the proposition says: `shown` adds up \(L_S(h_S)\), `min(r)` is the middle term, and `shipped` adds up \(L_{\mathcal D}(h_S)\). (The `rng.random()` in the key breaks ties at random, so a tie never quietly favours a better row.)
 
 The proposition tells you which way the dashboard errs. It does not tell you by how much, and it gives you no way to make the error small. For that we need a stronger idea. Before we build it, play with the curse yourself. In the lab, you set how many rows the dashboard has and how many examples each week brings. Predict first: if the team grows the dashboard from 30 rows to 465, still with 60 examples a week, does the winner’s empirical risk go up, go down, or stay the same? And its true risk?
 
@@ -123,21 +160,34 @@ The proposition tells you which way the dashboard errs. It does not tell you by 
 
 ## A dashboard you can trust row by row
 
-Watch what the lab did as you raised the number of examples. The luck in every row shrank, and once every row’s luck was small, the winner’s luck had nowhere to hide. That is the whole idea of this lesson, and it deserves a definition.
+Watch what the lab did as you raised the number of examples. The luck in every row shrank, and once every row’s luck was small, the winner’s luck had nowhere to hide. That is the whole idea of this lesson, and it deserves a definition. Pick a small tolerance, say 0.1, and suppose that this week every row’s luck, the winner’s included, lies between −0.1 and +0.1. Then no row, whichever one you ship, can look more than 0.1 better or worse than it is. We call the tolerance \(\varepsilon\) (the Greek letter epsilon), the accuracy parameter of lesson 3.
 
-**Definition (ε-representative sample).** A training sequence \(S\) is **\(\varepsilon\)-representative** (with respect to a domain \(Z\), a hypothesis class \(\mathcal H\), a loss function \(\ell\) and a distribution \(\mathcal D\)) if
+**Definition (ε-representative sample).** A training sequence \(S\) is **\(\varepsilon\)-representative** (with respect to a domain \(Z\) of examples, a hypothesis class \(\mathcal H\), a loss function \(\ell\) and a distribution \(\mathcal D\)) if
 
 \[ \forall h \in \mathcal H, \quad |L_S(h) - L_{\mathcal D}(h)| \le \varepsilon. \]
 
-In dashboard terms: every row’s luck is between \(-\varepsilon\) and \(+\varepsilon\), at the same time, this week. In the typical week above, the largest luck in absolute value, over all thirty rows, was 0.132 (row \(h_{18}\), which looked much worse than it is), so that training sequence was 0.132-representative but not 0.1-representative.
+Read it from the inside out. \(L_S(h) - L_{\mathcal D}(h)\) is row \(h\)’s luck this week. The bars \(|\cdot|\) around a number mean its absolute value, its size with the sign dropped (around a set, as in lesson 1, the same bars mean how many elements it has; here they wrap a number). So \(|\dots| \le \varepsilon\) says the luck is at most \(\varepsilon\) in either direction. The symbol \(\forall\) reads “for every”, so \(\forall h \in \mathcal H\) demands this of every row at once. In plain words: **this week, no row of the dashboard is off from its true risk by more than \(\varepsilon\).**
+
+In dashboard terms: every row’s luck is between \(-\varepsilon\) and \(+\varepsilon\), at the same time, this week. In the typical week above, the largest luck in absolute value, over all thirty rows, was 0.132 (row \(h_{18}\), which looked much worse than it is), so that training sequence was 0.132-representative but not 0.1-representative. Here are three of that week’s rows in Python: the lucky winner \(h_7\), the lucky \(h_{14}\), and the unlucky \(h_{18}\), each as (mistakes, true risk).
+
+```python
+rows = {7: (11, 0.280), 14: (14, 0.315), 18: (28, 0.335)}
+luck = {j: k / 60 - r for j, (k, r) in rows.items()}
+worst = max(abs(v) for v in luck.values())
+print(round(worst, 3), worst <= 0.1, worst <= 0.15)
+```
+
+It prints `0.132 False True`. The worst luck of the three, which is also the worst of all thirty, is 0.132, so the week fails the test at \(\varepsilon = 0.1\) and passes it at 0.15.
 
 [[diagram:representative]]
 
-Why is this the right condition? Because it survives selection. The winner’s curse happens because the row you pick depends on the luck. A promise about *every* row cannot be dodged that way: whichever row ERM picks, the promise was already made about it.
+Why is this the right condition? Because it survives selection. The winner’s curse happens because the row you pick depends on the luck. A promise about *every* row cannot be dodged that way: whichever row ERM picks, the promise was already made about it. Concretely, if every row is within 0.1 this week, the shipped row’s true risk is at most its dashboard number plus 0.1. And the best row, say at 0.25, shows at most 0.35, so the shipped row shows at most 0.35 too and is truly at most 0.45: within twice the tolerance of the best.
 
 **Lemma (a representative sample makes ERM good).** If \(S\) is \(\varepsilon\)-representative, then every ERM output \(h_S \in \operatorname{argmin}_{h \in \mathcal H} L_S(h)\) satisfies
 
 \[ L_{\mathcal D}(h_S) \le L_S(h_S) + \varepsilon \qquad \text{and} \qquad L_{\mathcal D}(h_S) \le \min_{h \in \mathcal H} L_{\mathcal D}(h) + 2\varepsilon. \]
+
+One piece of notation is new. \(\operatorname{argmin}_{h \in \mathcal H} L_S(h)\) is not the smallest value but the set of hypotheses that achieve it, the rows tied at the top of the dashboard, and \(h_S \in \operatorname{argmin}\) says the shipped row is one of them. Read the first inequality as: production’s number for the shipped row is at most the dashboard’s number plus \(\varepsilon\). Read the second as: it is at most the best true risk in the class plus \(2\varepsilon\). In plain words: **when every row is within \(\varepsilon\), the shipped hypothesis is at most \(\varepsilon\) worse than its row says and at most \(2\varepsilon\) worse than the best.** Take the typical week, which was 0.132-representative. The dashboard showed \(h_7\) at 0.183, so the lemma promises a true risk of at most \(0.183 + 0.132 = 0.315\), and at most \(0.25 + 2 \times 0.132 = 0.513\). Production found 0.280, inside both. The snippet after the proof checks each link.
 
 *Proof.* The first inequality is the definition applied to the row \(h = h_S\). That is legitimate even though \(h_S\) depends on \(S\): the definition quantifies over every \(h \in \mathcal H\), and \(h_S\) is one of them.
 
@@ -147,7 +197,20 @@ For the second, take any \(h \in \mathcal H\) and chain three steps:
 
 The first step is representativeness for \(h_S\). The second holds because \(h_S\) has the smallest empirical risk, so it is at most that of \(h\). The third is representativeness again, this time for \(h\). The chain holds for every \(h \in \mathcal H\), in particular for the one with the smallest true risk. \(\blacksquare\)
 
-Read the two conclusions as two promises the team can finally keep. The first is about the dashboard: production will find the shipped hypothesis at most \(\varepsilon\) worse than the dashboard says. The second is about the choice: the shipped hypothesis is at most \(2\varepsilon\) worse than the best in the class. Equivalently, to be within \(\varepsilon\) of the best, an \(\varepsilon/2\)-representative sample is enough. The factor 2 is honest, too: one \(\varepsilon\) is the winner’s possible luck, the other is the best hypothesis’s possible bad luck, and both can happen in the same week.
+Every symbol in the chain has been met already; the only new habit is reading a row of \(\le\) signs, where each link is one step and the two ends are what you keep. Here is the chain on the typical week, with \(\varepsilon\) the week’s worst luck and \(h\) the best row \(h_1\), which showed 19 mistakes:
+
+```python
+eps = 28 / 60 - 0.335
+LS_hS, LD_hS = 11 / 60, 0.280
+LS_h1, LD_h1 = 19 / 60, 0.250
+chain = [LD_hS, LS_hS + eps, LS_h1 + eps, LD_h1 + 2 * eps]
+print([round(c, 3) for c in chain])
+print(all(a <= b for a, b in zip(chain, chain[1:])))
+```
+
+It prints `[0.28, 0.315, 0.448, 0.513]` and `True`: every link holds, and the two ends are the lemma’s second promise.
+
+Read the two conclusions as two promises the team can finally keep. The first is about the dashboard: production will find the shipped hypothesis at most \(\varepsilon\) worse than the dashboard says. The second is about the choice: the shipped hypothesis is at most \(2\varepsilon\) worse than the best in the class. Equivalently, to be within \(\varepsilon\) of the best, an \(\varepsilon/2\)-representative sample is enough: to ship within 0.05 of the best, make every row accurate to 0.025. The factor 2 is honest, too: one \(\varepsilon\) is the winner’s possible luck, the other is the best hypothesis’s possible bad luck, and both can happen in the same week.
 
 ## The uniform convergence property
 

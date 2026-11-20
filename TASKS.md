@@ -30,6 +30,7 @@ All cloned locally under `~/.local/share/klay-learning-ladder/` (2026-11-20). Pi
 - Writing: clear and natural, a teacher talking. No robotic short-sentence style, no limited vocabulary. Easy to read, exact on concepts.
 - Read every formula aloud for a learner meeting it for the first time (user, 2026-11-20: "everytime you show complex math, you have to explain as i'm learning it"). After each display formula, and any dense inline one: name every symbol and piece of notation in words (sets and set-builder braces, the colon as "such that", \(|\cdot|\), \([m]\), \(\sim\), \(\mathbb P\), \(\mathbb E\), subscripts, sums, sup, argmin, and so on), read it from the inside out, give the whole formula as one plain sentence in bold, work one tiny number from the story through it, and add a Python snippet that mirrors the formula term by term with its real output. A symbol explained in an earlier lesson still gets a one-line reminder the first time it appears in each lesson. Model: lesson 1, "The formal statements", the empirical and true risk.
 - Concept before symbol (the klay-learning-ladder rule "every term defined before use", "show every idea working before you name it"): introduce each idea in words with a small number from the story before its formula appears, and never use a term, symbol or result, even inline, before it has been explained. The walkthrough after a formula reads the notation; it does not replace explaining the idea first.
+- Make every class playful (user, 2026-11-20: "dont forget using the iwrzwr visual archive for lab drawing code and diagram-design to make classes playful"): every new concept gets a diagram-design figure (animated when the idea is a process, still under reduced motion), and every lab's drawing code adapts a named study from the iwrzwr visual archive (the sheet names the study, the code keeps its MIT notice). The learner should poke, drag and watch things move, not read static boxes.
 - Never advance to the next unit until the learner has answered the concept check and confirmed mastery.
 
 ## How each lesson is made
@@ -57,8 +58,8 @@ flowchart TD
 1b. **Clean-context reviewer** (user, 2026-11-20: "include a reviewer with clean context to judge and improve"). A fresh agent with only `docs/reviewer-brief.md` reads the prose as the learner, lists every term or symbol used before it is explained, every formula without a walkthrough, every proof gap and every wrong number, then fixes them in `1-prose.md`. Runs after the writer and the formula-walkthrough pass, before the user's review. The lead reruns `_kit/check_prose.py` before ticking.
 2. **Gates.** Book check: parallel agents, one per section range of the PDF, mark every claim correct, not in the book, or wrong; `agent-voice speak` read-aloud pass per section; a fresh-reader subagent with no context; grep the key words for synonyms; grep for em dashes.
 3. **Review stop.** Show the user the prose and the sheet. Nothing else gets built before this.
-4. **Figures.** One per new concept, through diagram-design, colors from `lesson.css`. `node _kit/build-figures.mjs NN-slug/2-figures/figures.mjs`, then `self_check.py` and `verify-geometry.py`; render once per theme.
-5. **Page.** `3-page/` shell, `lab.html`, `lab-act2.html`, `lab.js`, `build.py`; `python3 3-page/build.py` exits 0.
+4. **Figures.** One per new concept, through diagram-design (never hand-drawn SVG), animated when the idea is a process, colors from `lesson.css`. `node _kit/build-figures.mjs NN-slug/2-figures/figures.mjs`, then `self_check.py` and `verify-geometry.py`; render once per theme.
+5. **Page.** Lab drawing code adapted from a named iwrzwr visual archive study (list them in `~/.local/share/klay-learning-ladder/iwrzwr-visual-archive/`, pick the one whose motion matches the idea, keep the MIT notice); `3-page/` shell, `lab.html`, `lab-act2.html`, `lab.js`, `build.py`; `python3 3-page/build.py` exits 0.
 6. **Learner judge.** A fresh agent walks the page in its own Chrome; fix and judge again until "ready".
 7. **Verification.** Prose, figures and page teach one mental model; fix each mismatch at the earliest rung that has it.
 8. **Delivery.** Mark the row in `series.md`, add glossary terms and the next bug, run `python3 _kit/index.py`.
@@ -279,8 +280,8 @@ Folder: `12-convex-learning/`
 
 Folder: `13-regularization-stability/`
 
-- [ ] 1 prose and sheet (drafting by agent, started 2026-11-20; brief in the session scratchpad, template docs/writer-brief.md)
-- [ ] 2 gates: book check (PDF agents), read-aloud, fresh reader, greps
+- [x] 1 prose and sheet (about 14,600 words with code, 18 snippets run by the lead; the failing fence is the build-it stub; no book references; written with the formula walkthrough rule, 19 plain-words readings; 2026-11-20). Writer's claims to verify: smooth stability rate 24β/(λm) against the book's 48 (sharper, implies the book's); strong-convexity modulus renamed σ; several proofs the writer's own
+- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -472,9 +473,9 @@ Folder: `25-feature-selection/`
 
 ### 26. Ch. 26 Rademacher complexities
 
-Folder: not created yet
+Folder: `26-rademacher-complexity/`
 
-- [ ] 1 prose and sheet
+- [ ] 1 prose and sheet (drafting by agent, started 2026-11-20; brief in the session scratchpad, template docs/writer-brief.md)
 - [ ] 2 gates: book check (PDF agents), read-aloud, fresh reader, greps
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
@@ -487,9 +488,9 @@ Folder: not created yet
 
 ### 27. Ch. 27 covering numbers
 
-Folder: not created yet
+Folder: `27-covering-numbers/`
 
-- [ ] 1 prose and sheet
+- [ ] 1 prose and sheet (drafting by agent, started 2026-11-20; brief in the session scratchpad, template docs/writer-brief.md)
 - [ ] 2 gates: book check (PDF agents), read-aloud, fresh reader, greps
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures

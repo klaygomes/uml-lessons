@@ -332,11 +332,27 @@ Realizability has an immediate consequence. Since \(h^\star\) errs only on a set
 
 The second assumption is about the training sequence. Any guarantee has to depend on how \(S\) relates to \(\mathcal D\). If your users only ever labelled messages from their friends, \(S\) would tell you nothing about junk. The standard assumption is the following.
 
-**The i.i.d. assumption.** The examples are **independently and identically distributed** according to \(\mathcal D\): every \(x_i\) is freshly drawn from \(\mathcal D\), independently of the others, and then labelled by \(f\). We write this \(S \sim \mathcal D^m\). Here \(\mathcal D^m\) is the probability over \(m\)-tuples of messages that you get by drawing each entry from \(\mathcal D\), independently of the other entries.
+**The i.i.d. assumption.** The examples are **independently and identically distributed** according to \(\mathcal D\): every \(x_i\) is freshly drawn from \(\mathcal D\), independently of the others, and then labelled by \(f\). Independence makes the chances multiply. In the tiny world, the chance that the first message is 1010 is \(1/16\), and the chance that the second one is also 1010 is again \(1/16\), whatever the first was, so the chance of that exact pair is \(1/16 \times 1/16 = 1/256\). We write this \(S \sim \mathcal D^m\). Here \(\mathcal D^m\) is the probability over \(m\)-tuples of messages that you get by drawing each entry from \(\mathcal D\), independently of the other entries.
+
+The notation reads like this. An \(m\)-tuple is an ordered list of \(m\) messages, repeats allowed. The superscript \(m\) on \(\mathcal D^m\) is not a power of a number but a reminder that \(\mathcal D\) is used \(m\) times over, once per entry, and the probability of a whole tuple \((x_1, \dots, x_m)\) is the product \(\mathcal D(\{x_1\}) \times \dots \times \mathcal D(\{x_m\})\). The \(\sim\) reads “is drawn from”, as before. In plain words: **draw \(m\) messages one after another, each fresh from \(\mathcal D\), and multiply their chances to get the chance of the whole sequence.**
+
+```python
+import math
+from fractions import Fraction
+from itertools import product
+X = [format(v, "04b") for v in range(16)]
+D = {x: Fraction(1, 16) for x in X}
+Dm = lambda t: math.prod(D[x] for x in t)
+print(Dm(("1010", "1010")), Dm(("1010", "0001", "1111")))
+pairs = list(product(X, repeat=2))
+print(len(pairs), sum(Dm(t) for t in pairs))
+```
+
+It prints `1/256 1/4096`, the chance of one particular pair and of one particular triple, then `256 1`: there are 256 possible pairs, and their chances add up to 1, as the chances of all outcomes must.
 
 A good picture for this is a window. \(S\) is a window through which the learner sees part of \(\mathcal D\) and \(f\), and the larger \(S\) is, the more faithfully it shows them.
 
-Now the uncomfortable part. \(S\) is random, so \(h_S\) is random, so its true risk \(L_{(\mathcal D, f)}(h_S)\) is a random variable. No amount of cleverness makes it certain that \(S\) leads to a good hypothesis, because \(S\) might be wildly unrepresentative. Back to the papayas: suppose 70% of the island's papayas are tasty, and every papaya you happened to taste was not. Then ERM may well return the constant hypothesis "never tasty", which is wrong 70% of the time. Unlucky, yes, but possible: with three random papayas it happens with probability \(0.3^3 = 0.027\).
+Now the uncomfortable part. \(S\) is random, so \(h_S\) is random, so its true risk \(L_{(\mathcal D, f)}(h_S)\) is a random variable. No amount of cleverness makes it certain that \(S\) leads to a good hypothesis, because \(S\) might be wildly unrepresentative. Back to the papayas: suppose 70% of the island's papayas are tasty, and every papaya you happened to taste was not. Then ERM may well return the constant hypothesis "never tasty", which is wrong 70% of the time. Unlucky, yes, but possible: with three random papayas it happens with probability \(0.3^3 = 0.027\), three independent chances of 0.3 multiplied together, exactly as \(\mathcal D^3\) prescribes.
 
 So any promise has to come with two numbers.
 
@@ -349,17 +365,35 @@ The promise we are after reads: with probability at least \(1 - \delta\) over \(
 
 How can ERM fail? Let's catch it in the act. Since \(h_S\) is consistent, a failure means that ERM returned a consistent hypothesis whose true risk is above \(\varepsilon\). For that to happen, such a hypothesis has to exist in the first place.
 
-So we name two sets. The **bad hypotheses** are the ones with true risk above \(\varepsilon\):
+So we name two sets. The **bad hypotheses** are the ones with true risk above \(\varepsilon\). Take \(\varepsilon = 0.2\) in the tiny world: every hypothesis except \(h_{FU}\) is bad, since all nine wrong ones have true risk 0.25 or more. In symbols:
 
 \[ \mathcal H_B = \{ h \in \mathcal H : L_{(\mathcal D, f)}(h) > \varepsilon \}. \]
 
-And a training sequence is **misleading** if some bad hypothesis is consistent with it. The labels are fixed by \(f\), so all the randomness is in the messages, \(S|_x = (x_1, \dots, x_m)\). The misleading set is therefore a set of message tuples:
+The braces collect the hypotheses \(h\) in \(\mathcal H\) such that (the colon) their true risk is above \(\varepsilon\), and the subscript \(B\) is for “bad”. In plain words: **the bad hypotheses are the members of the class that would fail the accuracy target.**
+
+And a training sequence is **misleading** if some bad hypothesis is consistent with it. The eight examples of the ERM table are one: \(h_U\) is bad, with true risk 0.25, yet it makes no mistake on them. On a misleading training sequence, a bad hypothesis looks exactly as good as the truth. The labels are fixed by \(f\), so all the randomness is in the messages, which we write \(S|_x = (x_1, \dots, x_m)\): the bar with subscript \(x\) means “\(S\) with the labels stripped off, keeping only the messages”. The misleading set is therefore a set of message tuples:
 
 \[ M = \{ S|_x : \exists h \in \mathcal H_B, \ L_S(h) = 0 \}. \]
 
-You may also see them called misleading samples. On a misleading training sequence, a bad hypothesis looks exactly as good as the truth.
+Inside out: \(L_S(h) = 0\) says \(h\) is consistent with the training sequence. The symbol \(\exists\) reads “there exists”, so \(\exists h \in \mathcal H_B\) asks for at least one bad hypothesis with that property. The braces collect every tuple of messages \(S|_x\) such that this happens. In plain words: **\(M\) is the set of message tuples on which at least one bad hypothesis makes no mistakes.** You may also see them called misleading samples. The snippet finds the bad hypotheses of the tiny world and tests the eight messages of the table:
 
-The tiny-world table showed one. Take \(\varepsilon = 0.2\). Then every hypothesis except \(h_{FU}\) is bad, since all nine wrong ones have true risk 0.25 or more. And the eight examples above form a misleading sequence, because the bad hypothesis \(h_U\) is consistent with them.
+```python
+from itertools import combinations
+X = [format(v, "04b") for v in range(16)]
+f = lambda x: x[0] == x[2] == "1"
+h = lambda c, x: all(x[j] == "1" for j in c)
+H = [(j,) for j in range(4)] + list(combinations(range(4), 2))
+L_D = lambda c: sum(h(c, x) != f(x) for x in X) / 16
+eps = 0.2
+H_B = [c for c in H if L_D(c) > eps]
+S_x = ["0001", "1010", "1111", "1100",
+       "1000", "1001", "0101", "1110"]
+L_S0 = lambda c: all(h(c, x) == f(x) for x in S_x)
+print(len(H_B), any(L_S0(c) for c in H_B))
+print([c for c in H_B if L_S0(c)])
+```
+
+It prints `9 True`, then `[(2,)]`: nine bad hypotheses, the tuple is in \(M\), and the culprit is feature 2 alone (counting from 0, that is U), which is \(h_U\). The `any` is the \(\exists\), and `S_x` holds the messages without their labels.
 
 [[diagram:misleading]]
 
@@ -371,7 +405,7 @@ Before the proof, get a feel for how big \(M\) is. In the lab, the world has thi
 
 ## The proof: one bad hypothesis at a time
 
-Here is the theorem. Call it **the finite-class guarantee**: it is the first real guarantee in the course.
+Here is the theorem. Call it **the finite-class guarantee**: it is the first real guarantee in the course. Its idea fits in a sentence: if the class is finite and contains the truth, a large enough training sequence makes ERM accurate with high confidence, and “large enough” grows with the logarithm of the class size. In the tiny world, with 10 hypotheses, \(\varepsilon = 0.2\) and \(\delta = 0.01\), large enough turns out to be 35 examples.
 
 **The finite-class guarantee.** Let \(\mathcal H\) be a finite hypothesis class. Let \(\delta \in (0, 1)\) and \(\varepsilon > 0\), and let \(m\) be an integer with
 
@@ -379,9 +413,13 @@ Here is the theorem. Call it **the finite-class guarantee**: it is the first rea
 
 Then for any labelling function \(f\) and any distribution \(\mathcal D\) for which realizability holds, with probability at least \(1 - \delta\) over the choice of an i.i.d. training sequence \(S\) of size \(m\), every ERM hypothesis \(h_S\) satisfies \(L_{(\mathcal D, f)}(h_S) \le \varepsilon\).
 
-We'll prove the bound it rests on, one step at a time:
+Read the condition on \(m\) from the inside out. \(|\mathcal H|\) is how many hypotheses the class has, and \(\delta \in (0, 1)\) says \(\delta\) is strictly between 0 and 1 (round brackets leave the endpoints out). The ratio \(|\mathcal H| / \delta\) grows when the class grows or when you demand more confidence. \(\log\) is the natural logarithm, which tames that ratio into a small number. Dividing by \(\varepsilon\) makes a stricter accuracy target cost more. And \(m \ge\) says the training sequence must be at least that long. In plain words: **the number of examples you need is the logarithm of class size over failure chance, divided by the error you will tolerate.** For the tiny world, \(\log(10 / 0.01) / 0.2 = \log(1000) / 0.2 \approx 6.91 / 0.2 = 34.5\), so 35 examples. For the 465 hypotheses of the mail room’s \(\mathcal H_{\le 2}\) at \(\varepsilon = 0.05\) and \(\delta = 0.01\) it is 215; the snippet at step 8 of the proof computes that number from this very formula.
+
+The proof rests on a bound for the chance of failure. Picture all possible training sequences of \(m\) messages. On some of them ERM returns a hypothesis worse than \(\varepsilon\). The bound says those sequences carry at most \(|\mathcal H|\) times \(e^{-\varepsilon m}\) of the probability; in the tiny world at \(m = 20\) that is \(10 \times e^{-4} \approx 0.18\). We’ll prove it one step at a time:
 
 \[ \mathcal D^m(\{ S|_x : L_{(\mathcal D, f)}(h_S) > \varepsilon \}) \le |\mathcal H| \, e^{-\varepsilon m}. \]
+
+Inside out: \(L_{(\mathcal D, f)}(h_S) > \varepsilon\) says ERM’s hypothesis fails the accuracy target. The braces collect the message tuples \(S|_x\) such that this happens. \(\mathcal D^m(\cdot)\) gives the total chance of drawing one of them. On the right, \(e^{-\varepsilon m}\) is \(e\) raised to minus \(\varepsilon m\), which is \(1 / e^{\varepsilon m}\) and shrinks fast as \(m\) grows, and \(|\mathcal H|\) multiplies it. In plain words: **the chance of drawing a training sequence that leads ERM astray is at most the class size times a factor that decays exponentially in the number of examples.** At \(\varepsilon = 0.2\) and \(m = 20\) the right side is \(10 \times e^{-4} = 0.1832\), and worked example 2 below measures the left side at 0.0184; its snippet prints both.
 
 Fix \(f\), \(\mathcal D\), \(\varepsilon\) and \(m\), and assume realizability.
 
@@ -389,21 +427,25 @@ Fix \(f\), \(\mathcal D\), \(\varepsilon\) and \(m\), and assume realizability.
 
 \[ \{ S|_x : L_{(\mathcal D, f)}(h_S) > \varepsilon \} \subseteq M. \]
 
+The symbol \(\subseteq\) reads “is contained in”: every member of the left set is also a member of \(M\). In plain words: **every training sequence that makes ERM fail is a misleading one.** In the tiny world, the eight examples of the table could lead ERM to \(h_U\), a failure at \(\varepsilon = 0.2\), and the snippet in the previous section confirmed that those eight messages lie in \(M\).
+
 A set can't have more probability than a set that contains it, so the failure probability is at most \(\mathcal D^m(M)\). Notice that we never asked *which* consistent hypothesis ERM picked. That is why the guarantee holds for every ERM hypothesis, ties included.
 
-**Step 2: split \(M\) by hypothesis.** A tuple is misleading when at least one bad hypothesis survives it, so \(M\) is the union of one set per bad hypothesis. In symbols:
+**Step 2: split \(M\) by hypothesis.** A tuple is misleading when at least one bad hypothesis survives it, so \(M\) is the union of one set per bad hypothesis. In the tiny world at \(\varepsilon = 0.2\) that means nine sets, one for each of the nine bad hypotheses, and a tuple is misleading if it lies in any of them. In symbols:
 
 \[ M = \bigcup_{h \in \mathcal H_B} \{ S|_x : L_S(h) = 0 \}. \]
 
-Each set in the union is one oval in the figure. Combining with step 1 gives
+The big cup \(\bigcup\) is the union symbol \(\cup\) made large so it can take a range underneath: \(h \in \mathcal H_B\) says “one set for each bad \(h\)”, and the union of all of them collects every tuple that is in at least one. Each set inside is the set of tuples on which that one \(h\) is consistent. In plain words: **a tuple is misleading exactly when it fools at least one bad hypothesis.** Each set in the union is one oval in the figure. The snippet in step 3 below builds two of these ovals in code, and its `a or b` is a union of two sets. Combining with step 1 gives
 
 \[ \mathcal D^m(\{ S|_x : L_{(\mathcal D, f)}(h_S) > \varepsilon \}) \le \mathcal D^m\Big( \bigcup_{h \in \mathcal H_B} \{ S|_x : L_S(h) = 0 \} \Big). \]
 
-**Step 3: the union bound.** The ovals overlap, and working out the exact area of their union is hard. So we overestimate it by adding up their areas, which counts the overlaps more than once.
+Nothing new in the notation: the left side is the failure chance from the bound we are proving, and the right side is \(\mathcal D^m(M)\) with \(M\) written out as its union.
+
+**Step 3: the union bound.** The ovals overlap, and working out the exact area of their union is hard. So we overestimate it by adding up their areas, which counts the overlaps more than once. With two ovals, of chances 0.3 and 0.2, the chance of landing in at least one is at most \(0.3 + 0.2 = 0.5\), and less if they overlap.
 
 **The union bound.** For any two sets \(A, B\) and any distribution \(\mathcal D\), \(\mathcal D(A \cup B) \le \mathcal D(A) + \mathcal D(B)\).
 
-It is a basic property of probability, and the reason is short. \(A \cup B\) is the disjoint union of \(A\) and \(B \setminus A\), so \(\mathcal D(A \cup B) = \mathcal D(A) + \mathcal D(B \setminus A)\), and \(\mathcal D(B \setminus A) \le \mathcal D(B)\) because \(B \setminus A\) sits inside \(B\).
+\(A \cup B\) is everything in \(A\) or in \(B\) or in both, and \(\mathcal D(\cdot)\) is its probability. In plain words: **the chance of at least one of two events is never more than the sum of their chances.** It is a basic property of probability, and the reason is short. Write \(B \setminus A\), read “\(B\) minus \(A\)”, for the part of \(B\) outside \(A\). Then \(A \cup B\) is the disjoint union of \(A\) and \(B \setminus A\), two pieces with no overlap, so \(\mathcal D(A \cup B) = \mathcal D(A) + \mathcal D(B \setminus A)\), and \(\mathcal D(B \setminus A) \le \mathcal D(B)\) because \(B \setminus A\) sits inside \(B\).
 
 We need it for \(|\mathcal H_B|\) sets, not two. Apply it repeatedly: \(\mathcal D(A_1 \cup \dots \cup A_k) \le \mathcal D(A_1 \cup \dots \cup A_{k-1}) + \mathcal D(A_k)\), and so on down to a single set.
 
@@ -432,17 +474,21 @@ With the union bound in hand, the failure probability is at most a sum, one term
 
 \[ \mathcal D^m(\{ S|_x : L_{(\mathcal D, f)}(h_S) > \varepsilon \}) \le \sum_{h \in \mathcal H_B} \mathcal D^m(\{ S|_x : L_S(h) = 0 \}). \]
 
+The \(\sum\) with \(h \in \mathcal H_B\) underneath means “add up one term for each bad hypothesis”, and each term is the chance of that hypothesis’s oval. In plain words: **the chance of failure is at most the sum, over the bad hypotheses, of the chance that each one survives the training sequence.** In the tiny world at \(m = 20\) the nine terms add up to 0.0191, just above the exact 0.0184; the worked-example snippet computes the sum with `sum((1 - L[c]) ** m for c in H_B)`, using the value of each term that steps 4 and 5 are about to derive.
+
 The problem has shrunk to one bad hypothesis at a time.
 
-**Step 4: one bad hypothesis, through independence.** Fix one \(h \in \mathcal H_B\). It is consistent exactly when it agrees with \(f\) on every message: \(h(x_i) = f(x_i)\) for all \(i\). Under \(\mathcal D^m\) the messages are drawn independently, so the probability that all \(m\) agreements happen is the product of the \(m\) separate probabilities. This is the only place the proof uses the i.i.d. assumption:
+**Step 4: one bad hypothesis, through independence.** Fix one \(h \in \mathcal H_B\). It is consistent exactly when it agrees with \(f\) on every message: \(h(x_i) = f(x_i)\) for all \(i\). Under \(\mathcal D^m\) the messages are drawn independently, so the probability that all \(m\) agreements happen is the product of the \(m\) separate probabilities. For \(h_U\), which agrees with the truth on 12 of the 16 messages, one draw agrees with chance 0.75, and ten independent draws all agree with chance \(0.75\) multiplied by itself ten times, about 0.056. This is the only place the proof uses the i.i.d. assumption:
 
 \[ \mathcal D^m(\{ S|_x : L_S(h) = 0 \}) = \mathcal D^m(\{ S|_x : \forall i, \ h(x_i) = f(x_i) \}) = \prod_{i=1}^m \mathcal D(\{ x_i : h(x_i) = f(x_i) \}). \]
+
+The middle expression rewrites “consistent” with the symbol \(\forall\), read “for all”: \(\forall i, \ h(x_i) = f(x_i)\) says \(h\) agrees with the truth on every example. On the right, the big \(\prod\) is the product sign, the multiplying cousin of \(\sum\): \(\prod_{i=1}^m\) means “multiply one factor for each \(i\) from 1 to \(m\)”. Each factor is the chance that the \(i\)-th draw lands where \(h\) agrees with \(f\). In plain words: **the chance that \(h\) survives all \(m\) examples is the product of its chances of surviving each one.** The simulation after step 5 checks this for \(h_U\) and \(m = 10\): its line `(1 - L) ** m` is the product of ten equal factors.
 
 **Step 5: each factor is small because \(h\) is bad.** One draw agrees with \(f\) exactly when it does not land where \(h\) is wrong, so
 
 \[ \mathcal D(\{ x : h(x) = f(x) \}) = 1 - L_{(\mathcal D, f)}(h) \le 1 - \varepsilon. \]
 
-The inequality holds because \(h \in \mathcal H_B\) means \(L_{(\mathcal D, f)}(h) > \varepsilon\). All \(m\) factors are the same, so the product is at most \((1 - \varepsilon)^m\).
+The equality says the chance of agreeing is 1 minus the chance of disagreeing, which is the true risk. The inequality holds because \(h \in \mathcal H_B\) means \(L_{(\mathcal D, f)}(h) > \varepsilon\). In plain words: **a bad hypothesis survives any single draw with chance at most \(1 - \varepsilon\).** For \(h_U\) at \(\varepsilon = 0.2\): \(1 - 0.25 = 0.75 \le 0.8\). All \(m\) factors are the same, so the product is at most \((1 - \varepsilon)^m\), the factor \(1 - \varepsilon\) multiplied by itself \(m\) times.
 
 Steps 4 and 5 are easy to check by simulation. Take the bad hypothesis \(h_U\) from the tiny world, whose true risk is 0.25, and draw 200,000 training sequences of 10 messages.
 

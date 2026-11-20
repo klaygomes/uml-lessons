@@ -8,11 +8,33 @@ The data team has shipped something you have wanted for a while. Their new scori
 
 Your users label messages as before, and the learner picks \(t\). In testing it behaves beautifully. With a few dozen labels, the line lands within a whisker of where your users would have drawn it themselves.
 
-Then comes the launch review. Since lesson 2, every launch has needed a guarantee: how many labels, and how sure can you be? So you open the finite-class guarantee from lesson 2,
+Then comes the launch review. Since lesson 2, every launch has needed a guarantee: how many labels, and how sure can you be? Lesson 2 answered it for a finite list of rules. Lesson 1’s four one-feature rules, for instance, needed 44 labels to promise a true risk (the chance of mislabelling the next message) of at most 10%, on all but 5% of unlucky training sequences. So you open that finite-class guarantee,
 
 \[ m \ge \frac{\log(|\mathcal H|/\delta)}{\varepsilon}, \]
 
-and you stop. How many hypotheses are in your class? There is one threshold rule for every real number \(t\), so \(|\mathcal H|\) is infinite, and so is \(\log |\mathcal H|\). The agnostic version from lesson 4 needs \(\log(2|\mathcal H|/\delta)/(2\varepsilon^2)\) examples: infinite again. Every guarantee you own says “you need infinitely many labels”, which is a polite way of saying nothing.
+and you stop. First, a reminder of what it says, read from the inside out.
+
+- \(\mathcal H\) is the hypothesis class, the list of rules the learner may choose from, and the bars \(|\mathcal H|\) mean “how many rules it has”.
+- \(\delta\) (delta) is the failure chance you tolerate, 0.05 above, so \(|\mathcal H|/\delta\) grows when the class gets bigger or when you ask to be surer.
+- \(\log\) is the natural logarithm, which turns a huge number into a modest one: \(\log(4/0.05) = \log 80 \approx 4.38\).
+- \(\varepsilon\) (epsilon) is the true risk you tolerate, 0.1 above, and dividing by it says that halving the tolerated risk doubles the labels.
+- \(m\) is the number of labelled examples, and \(\ge\) says any number at least this big will do.
+
+In plain words: **if a class has \(|\mathcal H|\) rules and the truth is one of them, about \(\log(|\mathcal H|/\delta)/\varepsilon\) labels make ERM’s answer \(\varepsilon\)-good with probability at least \(1 - \delta\).** With four rules, \(4.38/0.1 = 43.8\), so 44 labels.
+
+Now the question it asks: how many hypotheses are in your class? There is one threshold rule for every real number \(t\), so \(|\mathcal H|\) is infinite, and so is \(\log |\mathcal H|\). The agnostic version from lesson 4, for labels that no rule fits perfectly, needs \(\log(2|\mathcal H|/\delta)/(2\varepsilon^2)\) examples: the same pieces, with an extra factor 2 inside the log and the tolerance squared below, so halving \(\varepsilon\) now quadruples the labels. With four rules it asks for 254. With infinitely many rules it is infinite again. Here are both, as the class grows:
+
+```python
+from math import ceil, log
+
+eps, delta = 0.1, 0.05
+for size in (4, 2 ** 64, 2 ** 128):
+    realizable = ceil(log(size / delta) / eps)
+    agnostic = ceil(log(2 * size / delta) / (2 * eps ** 2))
+    print(realizable, agnostic)
+```
+
+It prints `44 254`, then `474 2403`, then `918 4621`. Each line is one formula: `size` is \(|\mathcal H|\), and `ceil` rounds up to a whole number of labels. Push the size to infinity and both columns follow it. Every guarantee you own says “you need infinitely many labels”, which is a polite way of saying nothing.
 
 You try the trick from lesson 4. A computer stores \(t\) as a 64-bit number, so in practice the class has at most \(2^{64}\) members, and the finite-class guarantee applies after all:
 
