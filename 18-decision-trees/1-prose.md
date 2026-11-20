@@ -33,6 +33,30 @@ Let’s make it formal. We take the domain to be \(\mathcal X = \{0, 1\}^d\): ev
 
 **Definition (decision tree).** A **decision tree** over \(\{0,1\}^d\) is a finite rooted binary tree in which every internal node is labelled by a feature index \(i \in [d]\) and has exactly two children, a “yes” child and a “no” child, and every leaf is labelled by a value in \(\mathcal Y = \{0, 1\}\). The hypothesis \(h: \mathcal X \to \{0, 1\}\) it defines works like this: start at the root; at an internal node labelled \(i\), go to the “yes” child if \(x_i = 1\) and to the “no” child if \(x_i = 0\); when you reach a leaf, return its label. The test at a node, \(\mathbb 1[x_i = 1]\), is called its **splitting rule**. The **size** of a tree is its number of nodes, \(n\), counting both internal nodes and leaves, and its **depth** is the largest number of internal nodes on a root-to-leaf path.
 
+Let’s read the notation in that definition.
+
+- \(i \in [d]\) reads “\(i\) is one of the feature numbers 1 to \(d\)”: each question is about one feature.
+- \(h: \mathcal X \to \{0, 1\}\) says \(h\) is a function that takes a message and returns a label.
+- \(\mathbb 1[\cdot]\) is the **indicator**: it is 1 when the statement inside the brackets is true and 0 when it is false. So \(\mathbb 1[x_i = 1]\) is just the answer to “is feature \(i\) present?”, written as a bit.
+
+In plain words: **a decision tree labels a message by answering one yes/no question per internal node, starting at the root, until it reaches a leaf, whose label it returns.** Push the message 1110 through the auditor’s tree: the root asks about U, and \(\mathbb 1[x_3 = 1] = 1\), so we go “yes”; the next node asks about F, again 1, “yes” again, and we land on the leaf junk. Here is the same walk in Python, with the tree written as nested triples (question, “yes” child, “no” child) and a leaf as a bare label:
+
+```python
+tree = ("U", ("F", 1, ("L", 1, 0)), 0)
+idx = {"F": 0, "L": 1, "U": 2, "N": 3}
+
+def h(t, x):
+    while not isinstance(t, int):
+        i, yes, no = t
+        t = yes if x[idx[i]] == 1 else no
+    return t
+
+print(h(tree, (1, 1, 1, 0)), h(tree, (0, 1, 1, 1)),
+      h(tree, (1, 1, 0, 0)), h(tree, (0, 0, 1, 0)))
+```
+
+It prints `1 1 0 0`: 1110 is junk by FREE, 0111 is junk by its link, 1100 is kept because the sender is known, and 0010 is kept because it has neither FREE nor a link.
+
 The tree in the picture has three internal nodes (U, F, L) and four leaves, so \(n = 7\), and its depth is 3.
 
 Why insist that every internal node has two children? A node with only one child asks a question and then ignores the answer. You can always replace it by its child without changing what the tree predicts, so we lose nothing by forbidding it, and it makes the counting below much cleaner.

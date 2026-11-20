@@ -231,11 +231,19 @@ The right side no longer mentions \(f\) except through the vectors we stepped al
 
 \[ \sum_{t=1}^T \langle \mathbf w^{(t)} - \mathbf w^\star, \mathbf v_t \rangle \le \frac{\|\mathbf w^\star\|^2}{2\eta} + \frac{\eta}{2} \sum_{t=1}^T \|\mathbf v_t\|^2. \]
 
+- \(\mathbf v_t\) is the direction of step \(t\), whatever it is, and \(\|\mathbf v_t\|^2\) its squared length.
+- \(\langle \mathbf w^{(t)} - \mathbf w^\star, \mathbf v_t \rangle\) is large when the step, which goes along \(-\mathbf v_t\), heads towards \(\mathbf w^\star\): call it the progress of step \(t\).
+- On the right, \(\|\mathbf w^\star\|^2/(2\eta)\) is the squared distance from the start \(\mathbf 0\) to the target, and \(\frac\eta2\sum_t\|\mathbf v_t\|^2\) charges for the length of every step.
+
+In plain words: **whatever directions you step along, the total progress towards any target is at most its squared distance from the start over \(2\eta\), plus \(\frac\eta2\) times the total squared step length.** One step of our walk, with \(\mathbf w^\star \approx (3.102, -3.393)\): the left side is \(\langle -\mathbf w^\star, (-0.092, 0.067) \rangle = 0.513\), and the right side is \(21.14/1 + 0.25 \cdot 0.013 \approx 21.14\). True, with room to spare.
+
 In particular, if \(\|\mathbf v_t\| \le \rho\) for every \(t\), \(\|\mathbf w^\star\| \le B\), and \(\eta = \sqrt{B^2 / (\rho^2 T)} = B/(\rho \sqrt T)\), then
 
 \[ \frac1T \sum_{t=1}^T \langle \mathbf w^{(t)} - \mathbf w^\star, \mathbf v_t \rangle \le \frac{B\rho}{\sqrt T}. \]
 
-*Proof.* The trick is to complete a square, so that each term becomes a difference of squared distances to \(\mathbf w^\star\). For any vectors \(\mathbf a, \mathbf b\), expanding \(\|\mathbf a - \mathbf b\|^2 = \|\mathbf a\|^2 - 2\langle \mathbf a, \mathbf b \rangle + \|\mathbf b\|^2\) gives \(\langle \mathbf a, \mathbf b \rangle = \frac12 \left( \|\mathbf a\|^2 + \|\mathbf b\|^2 - \|\mathbf a - \mathbf b\|^2 \right)\). Apply it with \(\mathbf a = \mathbf w^{(t)} - \mathbf w^\star\) and \(\mathbf b = \eta \mathbf v_t\), after pulling out a factor \(1/\eta\):
+Here \(B\) caps the target’s length and \(\rho\) every step’s length. In plain words: **the average progress per step is at most \(B\rho/\sqrt T\).** With \(B = 5\), \(\rho = 1\) and \(T = 100\) that is \(5/10 = 0.5\), the 0.5 in the first snippet’s last column.
+
+*Proof.* The trick is to complete a square, so that each term becomes a difference of squared distances to \(\mathbf w^\star\). For any vectors \(\mathbf a, \mathbf b\), expanding \(\|\mathbf a - \mathbf b\|^2 = \|\mathbf a\|^2 - 2\langle \mathbf a, \mathbf b \rangle + \|\mathbf b\|^2\) gives \(\langle \mathbf a, \mathbf b \rangle = \frac12 \left( \|\mathbf a\|^2 + \|\mathbf b\|^2 - \|\mathbf a - \mathbf b\|^2 \right)\): an inner product written with lengths only (for \(\mathbf a = (1, 0)\) and \(\mathbf b = (1, 1)\), both sides are 1). Apply it with \(\mathbf a = \mathbf w^{(t)} - \mathbf w^\star\) and \(\mathbf b = \eta \mathbf v_t\), after pulling out a factor \(1/\eta\):
 
 \[ \langle \mathbf w^{(t)} - \mathbf w^\star, \mathbf v_t \rangle = \frac1\eta \langle \mathbf w^{(t)} - \mathbf w^\star, \eta \mathbf v_t \rangle = \frac{1}{2\eta} \left( \|\mathbf w^{(t)} - \mathbf w^\star\|^2 + \eta^2 \|\mathbf v_t\|^2 - \|\mathbf w^{(t)} - \mathbf w^\star - \eta \mathbf v_t\|^2 \right). \]
 
@@ -243,7 +251,7 @@ By the update rule, \(\mathbf w^{(t)} - \eta \mathbf v_t = \mathbf w^{(t+1)}\), 
 
 \[ \langle \mathbf w^{(t)} - \mathbf w^\star, \mathbf v_t \rangle = \frac{1}{2\eta} \left( \|\mathbf w^{(t)} - \mathbf w^\star\|^2 - \|\mathbf w^{(t+1)} - \mathbf w^\star\|^2 \right) + \frac\eta2 \|\mathbf v_t\|^2. \]
 
-This is an equality, true for every \(t\). Now sum over \(t = 1, \dots, T\). The first part is a **telescoping sum**: each squared distance appears once with a plus sign and once with a minus sign, except the very first and the very last, so it collapses to \(\|\mathbf w^{(1)} - \mathbf w^\star\|^2 - \|\mathbf w^{(T+1)} - \mathbf w^\star\|^2\). Hence
+This is an equality, true for every \(t\): **a step’s progress is the drop in squared distance to the target, over \(2\eta\), plus a charge for the step’s length.** Now sum over \(t = 1, \dots, T\). The first part is a **telescoping sum**: each squared distance appears once with a plus sign and once with a minus sign, except the very first and the very last, so it collapses to \(\|\mathbf w^{(1)} - \mathbf w^\star\|^2 - \|\mathbf w^{(T+1)} - \mathbf w^\star\|^2\). With three steps and squared distances 9, 7, 6 and 4, the drops \((9 - 7) + (7 - 6) + (6 - 4)\) add up to \(9 - 4 = 5\). Hence
 
 \[ \sum_{t=1}^T \langle \mathbf w^{(t)} - \mathbf w^\star, \mathbf v_t \rangle = \frac{1}{2\eta} \left( \|\mathbf w^{(1)} - \mathbf w^\star\|^2 - \|\mathbf w^{(T+1)} - \mathbf w^\star\|^2 \right) + \frac\eta2 \sum_{t=1}^T \|\mathbf v_t\|^2. \]
 

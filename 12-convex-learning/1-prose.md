@@ -243,25 +243,15 @@ It prints `0.6931 [0.0, -0.3, 0.1]`. The tangent plane at \(\mathbf w\) is the l
 
 \[ f(\mathbf u) \ge f(\mathbf w) + \langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle. \]
 
-The left side is the true height at \(\mathbf u\); the right side is the tangent plane at \(\mathbf w\) evaluated at \(\mathbf u\), built from the pieces just walked through. In plain words: **the tangent plane at any point is a floor under the whole graph.** From \(\mathbf w = \mathbf 0\), predict the logistic risk at \(\mathbf u = \mathbf w^\circ = (-1, 2, -2)\): the tangent says \(0.6931 + (0 \cdot (-1) - 0.3 \cdot 2 + 0.1 \cdot (-2)) = -0.1069\), and the real risk is above it (the logistic risk is convex, as a later section proves):
+The left side is the true height at \(\mathbf u\); the right side is the tangent plane at \(\mathbf w\) evaluated at \(\mathbf u\), built from the pieces just walked through. In plain words: **the tangent plane at any point is a floor under the whole graph.** From \(\mathbf w = \mathbf 0\), predict the logistic risk at \(\mathbf u = \mathbf w^\circ = (-1, 2, -2)\): the tangent says \(0.6931 + (0 \cdot (-1) - 0.3 \cdot 2 + 0.1 \cdot (-2)) = -0.1069\), and the real risk is above it (the logistic risk is convex, as a later section proves). Append three lines to the gradient snippet:
 
 ```python
-import math
-
-S = [((3, 0), 1), ((2, 1), 1), ((4, 2), 1), ((1, 0), 1),
-     ((1, 2), -1), ((0, 1), -1), ((2, 3), -1), ((0, 0), -1),
-     ((2, 1), -1), ((1, 2), 1)]
-X, Y = [(1,) + x for x, _ in S], [y for _, y in S]
-dot = lambda u, v: sum(a * b for a, b in zip(u, v))
-f = lambda w: sum(math.log(1 + math.exp(-y * dot(w, x)))
-                  for x, y in zip(X, Y)) / 10
-w, u, g = (0, 0, 0), (-1, 2, -2), (0, -0.3, 0.1)
-diff = [a - b for a, b in zip(u, w)]
-tangent = f(w) + dot(g, diff)
+u = (-1, 2, -2)
+tangent = f(w) + dot(grad, [a - b for a, b in zip(u, w)])
 print(round(f(u), 4), round(tangent, 4), f(u) >= tangent)
 ```
 
-It prints `0.5503 -0.1069 True`.
+They print `0.5503 -0.1069 True`.
 
 *Proof.* For \(\alpha \in (0, 1]\), convexity with the points \(\mathbf u\) and \(\mathbf w\) gives \(f(\mathbf w + \alpha(\mathbf u - \mathbf w)) \le (1 - \alpha) f(\mathbf w) + \alpha f(\mathbf u)\). Subtract \(f(\mathbf w)\) and divide by \(\alpha\):
 

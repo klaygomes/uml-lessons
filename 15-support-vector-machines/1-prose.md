@@ -150,7 +150,9 @@ Now the measure of room. For a training sequence \(S = ((\mathbf x_1, y_1), \dot
 
 \[ y_i (\langle \mathbf w, \mathbf x_i \rangle + b) > 0 \quad \text{for all } i \in [m]. \]
 
-Every such halfspace has empirical risk 0, so every one of them is an ERM hypothesis. The **margin** of a hyperplane with respect to \(S\) is the smallest distance between a training message and the hyperplane. By the claim, for a separating \((\mathbf w, b)\) with \(\|\mathbf w\| = 1\), it is \(\min_i |\langle \mathbf w, \mathbf x_i \rangle + b|\), and since every signed score is positive, that is the same as \(\min_i y_i (\langle \mathbf w, \mathbf x_i \rangle + b)\). The Perceptron’s hyperplane has margin 0.243 on our eight messages, set by G.
+Here \([m]\) is the list of positions \(\{1, \dots, m\}\), and \(y_i\) is example \(i\)’s label, \(+1\) or \(-1\). Multiplying the score by the label gives the **signed score**: positive exactly when the score has the label’s sign, that is, when the halfspace gets example \(i\) right. In plain words: **some halfspace gives every training message a positive signed score.** For G under the Perceptron’s line, the score is \(-1\) and the label \(-1\), so the signed score is \(+1\): right. The first snippet’s loop tests exactly this, `y * score(w, x) <= 0`, and stops when no message fails it.
+
+Every such halfspace has **empirical risk** 0 (the fraction of training messages it gets wrong, lesson 1), so every one of them is an ERM hypothesis. The **margin** of a hyperplane with respect to \(S\) is the smallest distance between a training message and the hyperplane. By the claim, for a separating \((\mathbf w, b)\) with \(\|\mathbf w\| = 1\), it is \(\min_i |\langle \mathbf w, \mathbf x_i \rangle + b|\), and since every signed score is positive, that is the same as \(\min_i y_i (\langle \mathbf w, \mathbf x_i \rangle + b)\). The subscript in \(\min_i\) says what varies: compute the expression for each example \(i\) and keep the smallest. In plain words: **the margin is the signed score of the worst-placed message, once \(\mathbf w\) is a unit vector.** The Perceptron’s hyperplane has margin 0.243 on our eight messages, set by G: the smallest entry of the first snippet’s second line, which divides by \(\|\mathbf w\|\) to make the vector unit.
 
 Why care about the margin? Because a hyperplane with a large margin still separates the training messages after you perturb each one a little: every message can move by anything less than the margin, in any direction, without crossing. A grazing hyperplane survives almost no perturbation at all. Later in this lesson we will also see that a large margin buys a small true risk, regardless of the dimension. That is the real prize.
 
@@ -164,6 +166,8 @@ When \(S\) is separable, this is the same as dropping the constraint and maximiz
 
 and proving that the two agree is this lesson’s first problem. We will work with the second form.
 
+Read it from the inside out. The inner part, \(\min_{i \in [m]} y_i (\langle \mathbf w, \mathbf x_i \rangle + b)\), is the margin of one candidate, as above. The subscript under \(\operatorname{argmax}\) says which candidates compete: every pair \((\mathbf w, b)\) such that \(\mathbf w\) is a unit vector. And \(\operatorname{argmax}\) returns not the largest value but the candidate that achieves it. In plain words: **among all unit halfspaces, return the one whose worst-placed message is as far as possible.** The Perceptron’s unit pair, \((4, -1, -3)/\sqrt{17}\), scores 0.243 in this contest. The snippet after the next lemma runs the whole contest by brute force.
+
 “Maximize a minimum over a sphere” is an awkward thing to hand a computer. The standard trick is to fix the scale differently: instead of fixing \(\|\mathbf w\| = 1\) and maximizing the smallest score, fix the smallest score at 1 and minimize \(\|\mathbf w\|\). A **quadratic program** is an optimization problem whose objective is a convex quadratic function and whose constraints are linear inequalities; solvers for them are standard and run in polynomial time.
 
 ```
@@ -175,13 +179,15 @@ Hard-SVM(S):
   return ŵ = w0 / ||w0||,  b̂ = b0 / ||w0||
 ```
 
+The program reads: among all pairs \((\mathbf w, b)\) such that every signed score is at least 1, find one with the smallest squared length \(\|\mathbf w\|^2\) (squaring removes the square root and changes nothing about which pair is shortest); then rescale it to unit length, the hats on \(\hat{\mathbf w}, \hat b\) marking the returned pair. For the pair \(\mathbf w_0 = (\tfrac23, -\tfrac13)\), \(b_0 = -1\) that we will meet shortly, \(\|\mathbf w_0\|^2 = \tfrac49 + \tfrac19 = \tfrac59\).
+
 Why should the shortest \(\mathbf w\) give the widest margin? Think of the constraint as demanding a score of at least 1 from every message. The score of \(\mathbf x\) is its distance to the hyperplane times \(\|\mathbf w\|\), so a short \(\mathbf w\) can only reach a score of 1 on every message if every message is far away. Minimizing the length of \(\mathbf w\) pushes the messages as far from the hyperplane as they can be.
 
 **Lemma (hard-SVM finds the widest separator).** Suppose \(S\) is separable and contains both labels, and let \((\mathbf w_0, b_0)\) solve the quadratic program. Then for every \((\mathbf w, b)\) with \(\|\mathbf w\| = 1\) and \(\gamma = \min_i y_i (\langle \mathbf w, \mathbf x_i \rangle + b) > 0\),
 
 \[ \min_{i} y_i (\langle \hat{\mathbf w}, \mathbf x_i \rangle + \hat b) \ge \gamma. \]
 
-So \((\hat{\mathbf w}, \hat b)\) has the largest margin of any separating halfspace: it solves the max-min problem.
+Here \(\gamma\) (gamma) is the margin of a competitor, and the left side is the margin of hard-SVM’s output. In plain words: **no separating unit halfspace has a wider margin than the one hard-SVM returns.** With the Perceptron as the competitor, \(\gamma = 0.243\), and the left side will turn out to be 1.342. So \((\hat{\mathbf w}, \hat b)\) has the largest margin of any separating halfspace: it solves the max-min problem.
 
 *Proof.* First, \(\mathbf w_0 \ne \mathbf 0\), so the output is defined: if \(\mathbf w_0 = \mathbf 0\), the constraints would read \(y_i b_0 \ge 1\) for all \(i\), forcing every \(y_i\) to have the sign of \(b_0\), but \(S\) contains both labels.
 
@@ -189,13 +195,13 @@ Now take any unit \((\mathbf w, b)\) with smallest signed score \(\gamma > 0\). 
 
 \[ y_i \left( \left\langle \frac{\mathbf w}{\gamma}, \mathbf x_i \right\rangle + \frac{b}{\gamma} \right) \ge 1 \quad \text{for all } i, \]
 
-so the pair \((\mathbf w / \gamma, b / \gamma)\) satisfies the program’s constraints. The program’s solution has the smallest norm among all pairs that do, so \(\|\mathbf w_0\| \le \|\mathbf w / \gamma\| = 1/\gamma\).
+so the pair \((\mathbf w / \gamma, b / \gamma)\) satisfies the program’s constraints. (For the Perceptron’s unit pair, dividing by 0.243 stretches its length from 1 to about 4.12, and G’s signed score from 0.243 to exactly 1.) The program’s solution has the smallest norm among all pairs that do, so \(\|\mathbf w_0\| \le \|\mathbf w / \gamma\| = 1/\gamma\).
 
 Finally, the output is \((\mathbf w_0, b_0)\) divided by \(\|\mathbf w_0\|\), so for every \(i\),
 
 \[ y_i (\langle \hat{\mathbf w}, \mathbf x_i \rangle + \hat b) = \frac{y_i (\langle \mathbf w_0, \mathbf x_i \rangle + b_0)}{\|\mathbf w_0\|} \ge \frac{1}{\|\mathbf w_0\|} \ge \gamma. \]
 
-The first inequality is the program’s constraint, the second is the bound we just proved. Since \(\|\hat{\mathbf w}\| = 1\), this says the output’s margin is at least the margin of every separating unit halfspace. \(\blacksquare\)
+The first inequality is the program’s constraint, the second is the bound we just proved (on our messages, \(1/\|\mathbf w_0\| = 1.342 \ge 0.243\)). Since \(\|\hat{\mathbf w}\| = 1\), this says the output’s margin is at least the margin of every separating unit halfspace. \(\blacksquare\)
 
 Notice what the proof also tells you: the largest margin is exactly \(1 / \|\mathbf w_0\|\). On our eight messages the program’s solution turns out to be \(\mathbf w_0 = (\tfrac23, -\tfrac13)\), \(b_0 = -1\), the score \((2x_1 - x_2)/3 - 1\). Let’s check that it satisfies every constraint, read off its margin, and compare it with a brute-force search over every direction of \(\mathbf w\). For a unit direction \(\mathbf u\), the best bias term puts the hyperplane halfway between the lowest-scoring junk message and the highest-scoring keep message, so the best margin in that direction is half the gap between them.
 

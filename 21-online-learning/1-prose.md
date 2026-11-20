@@ -1104,7 +1104,7 @@ It prints `28 28 100`. With \(\mathbf w^\star = \mathbf u/\gamma\), every messag
 
 [[diagram:surrogate]]
 
-The bound is honest about its price. The Perceptron can still make many mistakes on a sequence that some halfspace labels perfectly, because the Littlestone dimension is infinite; the theorem only helps when the comparison vector’s total hinge shortfall is not too large. Margin is the assumption that replaces realizability.
+Margin is the assumption that replaces realizability: a halfspace that labels every message correctly but with a tiny margin still leaves the Perceptron open to many mistakes, because the Littlestone dimension is infinite.
 
 ## The learners as code
 

@@ -624,7 +624,7 @@ It prints `0.273 0.437`: the exact product, and the looser bound from the edges,
 
 ## When the weak learner fails
 
-The theorem assumed that the weak learner succeeded in every round. A \(\gamma\)-weak learner only promises success with probability at least \(1 - \delta\), and AdaBoost calls it \(T\) times. By the union bound (the chance that at least one of several events happens is at most the sum of their chances), the probability that it fails in at least one of the \(T\) rounds is at most \(\delta T\), so the theorem’s conclusion holds with probability at least \(1 - \delta T\). With \(\delta = 0.001\) per call and \(T = 100\) rounds, that is \(1 - 0.1 = 0.9\). That is not a real obstacle. The sample complexity of a learner can always be made to depend on \(\delta\) only through \(\log(1/\delta)\) (run the learner on several independent chunks of examples and keep the one that does best on a final chunk), so asking each call for a tiny \(\delta\) is cheap. Better still, the weak learner here only ever sees distributions over the training sequence, and it can often be built to never fail at all. ERM over stumps is such a learner: it minimizes the weighted risk exactly, so it has \(\delta = 0\).
+The theorem assumed that the weak learner succeeded in every round. A \(\gamma\)-weak learner only promises success with probability at least \(1 - \delta\), and AdaBoost calls it \(T\) times. By the union bound (the chance that at least one of several events happens is at most the sum of their chances), the probability that it fails in at least one of the \(T\) rounds is at most \(\delta T\), so the theorem’s conclusion holds with probability at least \(1 - \delta T\). With \(\delta = 0.001\) per call and \(T = 100\) rounds, that is \(1 - 0.1 = 0.9\). That is not a real obstacle: a learner’s sample complexity can always be made to depend on \(\delta\) only through \(\log(1/\delta)\) (run it on several independent chunks and keep the one that does best on a final chunk), so a tiny \(\delta\) per call is cheap. Better still, ERM over stumps minimizes the weighted risk exactly and never fails: \(\delta = 0\).
 
 What it cannot do is promise an edge that isn’t there. The theorem needs an edge of at least \(\gamma\) on *every* reweighting AdaBoost produces. In the lab, on the twenty thousand messages, the weighted risks \(\varepsilon_t\) creep up toward \(\tfrac12\) as the rounds go on: around 0.37 in the first rounds, around 0.45 by round 100. The edge shrinks, so the constant-\(\gamma\) bound is pessimistic, and the product above is the honest one.
 
@@ -655,9 +655,9 @@ if __name__ == "__main__":
 
 ## What the vote can express
 
-AdaBoost does not return a stump. It returns a vote of \(T\) stumps, and that vote lives in a bigger class. For a base class \(B\), define
+AdaBoost does not return a stump. It returns a vote of \(T\) stumps, like the three-stump vote that got all ten messages right, and that vote lives in a bigger class. For a base class \(B\), define
 \[ L(B, T) = \left\{ x \mapsto \operatorname{sign}\!\left( \sum_{t=1}^T w_t h_t(x) \right) : w \in \mathbb R^T,\ h_1, \dots, h_T \in B \right\}. \]
-The braces collect every function of that shape such that the votes \(w = (w_1, \dots, w_T)\) are any \(T\) real numbers (\(w \in \mathbb R^T\)) and the \(h_t\) are any \(T\) members of \(B\). In plain words: **every vote of \(T\) base hypotheses, with any votes you like.** The three-round vote on the ten messages is one member of \(L(B, 3)\).
+The braces collect every function of that shape such that the votes \(w = (w_1, \dots, w_T)\) are any \(T\) real numbers (\(w \in \mathbb R^T\)) and the \(h_t\) are any \(T\) members of \(B\). In plain words: **every vote of \(T\) base hypotheses, with any votes you like.** The three-stump vote is one member of \(L(B, 3)\).
 
 Read it in two stages. First, the \(T\) base hypotheses turn a message \(x\) into a vector of \(T\) labels, \(\psi(x) = (h_1(x), \dots, h_T(x)) \in \{\pm 1\}^T\) (psi; \(\{\pm 1\}^T\) is the set of lists of \(T\) entries, each \(\pm 1\)). Message 6 became \(\psi = (1, -1, 1)\) in the snippet above. Then a homogeneous halfspace from lesson 9, the hypothesis \(\operatorname{sign}(\langle w, \psi \rangle)\) that multiplies entries pairwise, adds, and takes the sign, labels that vector; \(0.693 - 0.973 + 1.282 = 1.003\) was exactly that. A vote of stumps is a halfspace on top of stumps.
 
@@ -704,7 +704,7 @@ It prints `h equals g for T = 1, ..., 7`. (The sign of \(w_1\) matters. With \(w
 
 [[diagram:staircase]]
 
-So \(T\) stumps can draw a staircase with \(T\) steps. That has a consequence for the VC dimension. Take any \(T\) distinct points on the line. Every one of the \(2^T\) labellings of them is a piecewise constant hypothesis with at most \(T\) pieces, one piece per point, so on those points it is a vote of \(T\) stumps. Hence
+So \(T\) stumps can draw a staircase with \(T\) steps. That has a consequence for the VC dimension. Take any \(T\) distinct points on the line and any of their \(2^T\) labellings. Cut between neighbours whose labels differ: that gives at most \(T\) pieces whose labels alternate. If the first piece is \(-1\), the staircase with that many stumps draws it; if it is \(+1\), flip the sign of every vote; and any stumps left over get vote 0. So on those points every labelling is a vote of \(T\) stumps. Hence
 \[ \operatorname{VCdim}(L(B, T)) \ge T. \]
 \(\operatorname{VCdim}(\cdot)\) is the VC dimension of the class in the brackets. In plain words: **votes of \(T\) stumps on the line can label some \(T\) points in every possible way.** Three stumps can label any three points on the line in all \(2^3 = 8\) ways. The exact value turns out to depend on the parity of \(T\): it is \(T + 1\) when \(T\) is odd and \(T\) when \(T\) is even. You will see why in a moment, and it is a nice puzzle on its own. What matters is the trend: every extra round buys the vote more expressive power.
 
@@ -712,7 +712,9 @@ That power is a double-edged sword, and lesson 5 named both edges. A richer clas
 
 ## How big the class gets
 
-**Lemma (the VC dimension of a vote).** Let \(B\) be a base class with \(d = \operatorname{VCdim}(B)\), and assume \(T \ge 3\) and \(d \ge 3\). Then
+Each round adds one base hypothesis, with its own \(d\) degrees of freedom, plus one vote, so expect about \(T(d + 1)\), a little more for the logarithm.
+
+**Lemma (the VC dimension of a vote).** Let \(B\) be a base class with \(d = \operatorname{VCdim}(B)\) (a VC dimension, not the number of words), and assume \(T \ge 3\) and \(d \ge 3\). Then
 \[ \operatorname{VCdim}(L(B, T)) \le T(d + 1)\big(3 \log(T(d + 1)) + 2\big). \]
 Inside the big brackets, \(T(d + 1)\) is the number of rounds times one more than the base class’s VC dimension; the logarithm of that number, times 3, plus 2, multiplies it. In plain words: **up to the logarithm, the VC dimension of the vote is at most \(T\) times that of the base class.** With \(d = 3\) and \(T = 10\), \(T(d+1) = 40\) and the bound is \(40 \cdot (3 \log 40 + 2) \approx 523\); the snippet after the proof prints it.
 
