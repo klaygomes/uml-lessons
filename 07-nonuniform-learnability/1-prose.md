@@ -13,7 +13,7 @@ otherwise:                     keep
 
 Her point is that nobody knows how long the right list is. Three tests? Five? Twelve? So her learner may use lists of any length, over any feature in the catalogue, and the catalogue keeps growing: the team adds a new feature most weeks. Whatever the junk looks like, some list will describe it.
 
-The reviewer blocks the change, and for a reason you already know. Lists of any length can fit any labels at all on as many messages as you like, so the class has infinite VC dimension, and the fundamental theorem of lesson 6 says flatly that a class with infinite VC dimension is not PAC learnable. No number of labels gives a guarantee that holds for every hypothesis in the class and every distribution. Rejected.
+The reviewer blocks the change, and for a reason you already know. Lists of any length can fit any labels at all on as many messages as you like. Recall from lesson 6 that a class **shatters** a set of messages when, for every way of labelling them, some hypothesis in the class produces exactly those labels, and that its **VC dimension** is the largest number of messages it can shatter. A class that can fit any labels on as many messages as you like has infinite VC dimension. Recall too that a class is **PAC learnable** (lesson 3) when one number of labels, fixed before you see any data, is enough to make the learner nearly as good as the best hypothesis in the class with high probability, whatever the mail stream looks like. The fundamental theorem of lesson 6 says flatly that a class with infinite VC dimension is not PAC learnable. No number of labels gives a guarantee that holds for every hypothesis in the class and every distribution. Rejected.
 
 Your teammate is not wrong either, though, and that is the bug. Common sense says something the theorem does not seem to allow. A three-test list that fits a thousand labelled messages well deserves your trust. A forty-test list that fits thirty labelled messages perfectly deserves none. Short lists should be easy to trust, long ones should need more evidence, and nothing should be ruled out forever. The fundamental theorem gives one sample size for the whole class. What we want is a guarantee whose price depends on the hypothesis.
 
@@ -25,29 +25,75 @@ Let’s set up the world carefully, because the details matter here.
 
 Features are numbered in the order the team added them. You know the first four from lesson 1: feature 1 is F (the subject says “FREE”), feature 2 is L (it has a link), feature 3 is U (the sender is unknown) and feature 4 is N (it was sent at night). Feature 5 is A (it has an attachment) and feature 6 is R (it is a reply in a thread you started). There is no last feature. A message is the infinite bit sequence \(x = (x_1, x_2, x_3, \dots)\) with \(x_j = 1\) when feature \(j\) is present, and every message has only finitely many features present. So the domain set \(\mathcal X\) is infinite, but countable: you could list every message one after another.
 
-A decision list with \(k\) tests is written \(h = ((j_1, b_1), \dots, (j_k, b_k); b_0)\), where each \(j_i\) is a feature number and each \(b_i \in \{0, 1\}\) is a label (1 for junk, 0 for keep). It labels a message like this:
+A decision list is written as its tests in order, each test a pair (feature number, label), then a semicolon and the default label. The list in the opening tests feature 3 and says junk, then feature 1 and says keep, then feature 2 and says junk, and otherwise says keep, so it is written \(((3, 1), (1, 0), (2, 1); 0)\). In general a list with \(k\) tests is written \(h = ((j_1, b_1), \dots, (j_k, b_k); b_0)\), where each \(j_i\) is a feature number and each \(b_i \in \{0, 1\}\) is a label (1 for junk, 0 for keep). It labels a message like this:
 
 \[ h(x) = \begin{cases} b_i & \text{if } i \text{ is the first test with } x_{j_i} = 1, \\ b_0 & \text{if no test fires.} \end{cases} \]
 
-The list in the opening is \(((3, 1), (1, 0), (2, 1); 0)\).
+Read it from the inside out. The subscript \(i\) numbers the tests from the top, so \(j_i\) is the feature that test \(i\) looks at and \(b_i\) is the label it hands out; \(b_0\) is the default, numbered 0 because it comes after every test. A subscript on a subscript, \(x_{j_i}\), means “bit number \(j_i\) of the message \(x\)”, so \(x_{j_i} = 1\) says “test \(i\) fires on \(x\)”. The big left brace with two rows is a **case split**: the value is whatever the first row says when its condition holds, and the second row’s otherwise. In plain words: **go down the tests, and the first one whose feature is present decides the label; if none fires, the default decides.** Take a message with “FREE” and a link but a known sender, so \(x_1 = 1\), \(x_2 = 1\), \(x_3 = 0\). Test 1 looks at \(x_3 = 0\) and does not fire. Test 2 looks at \(x_1 = 1\) and fires, so \(h(x) = b_2 = 0\): keep.
 
-Now we sort lists by how big they are. Let \(\mathcal H_n\) be the decision lists with at most \(n\) tests, each on a different feature among features \(1, \dots, n\). Call this the class of lists of **size** at most \(n\). The **size** of a list is the smallest \(n\) for which it belongs to \(\mathcal H_n\): its number of tests or its highest feature number, whichever is larger (and at least 1). The opening list has size 3. These classes are nested, \(\mathcal H_1 \subseteq \mathcal H_2 \subseteq \cdots\), and your teammate’s class is their union,
+```python
+def predict(tests, default, x):
+    for j, b in tests:
+        if x[j - 1]:
+            return b
+    return default
+
+h = [(3, 1), (1, 0), (2, 1)]
+for x in [(1, 1, 0, 0), (1, 1, 1, 0), (0, 0, 0, 1)]:
+    print(x, predict(h, 0, x))
+```
+
+It prints `(1, 1, 0, 0) 0`, `(1, 1, 1, 0) 1` and `(0, 0, 0, 1) 0`. The loop is the “first test that fires” and the final `return default` is the second row. Python counts positions from 0, which is why feature \(j\) sits at `x[j - 1]`. The last message has only N present, which no test looks at, so the default answers.
+
+Now we sort lists by how big they are. Let \(\mathcal H_n\) be the decision lists with at most \(n\) tests, each on a different feature among features \(1, \dots, n\). Call this the class of lists of **size** at most \(n\). The **size** of a list is the smallest \(n\) for which it belongs to \(\mathcal H_n\): its number of tests or its highest feature number, whichever is larger (and at least 1). The opening list has three tests and its highest feature is 3, so it has size 3. The one-test list “feature 7 present, junk; otherwise keep”, \(((7, 1); 0)\), has one test but uses feature 7, so it has size 7. The empty list “everything is junk”, \((();1)\), has size 1. Every list of size 3 also counts as a list of size at most 4, at most 5, and so on, so each class contains the one before: \(\mathcal H_1 \subseteq \mathcal H_2 \subseteq \cdots\), where \(\subseteq\) reads “is contained in”. Your teammate’s class is all of them put together, their union:
 
 \[ \mathcal H = \bigcup_{n \in \mathbb N} \mathcal H_n. \]
 
-Why tie the features a list may use to its size? Because without that, even one-test lists would be hopeless: a single test “feature \(j\) is present” can pick out any subset of \(k\) messages if the messages are allowed to carry many features, so one-test lists over an unbounded catalogue would already have infinite VC dimension. With the tie, every \(\mathcal H_n\) is a finite class, and you can count it. A list in \(\mathcal H_n\) has some number \(k \le n\) of tests, an ordered choice of \(k\) distinct features out of \(n\), a label for each test and a default label, so
+The big cup \(\bigcup\) means “put together everything in any of these sets”, and the subscript \(n \in \mathbb N\) says which sets: one for each \(n\) in \(\mathbb N = \{1, 2, 3, \dots\}\), the positive whole numbers. In plain words: **a list belongs to your teammate’s class when it belongs to some \(\mathcal H_n\), that is, when it has some finite size.** The opening list is in it because it is in \(\mathcal H_3\).
+
+```python
+def size(tests):
+    features = [j for j, b in tests]
+    return max([1, len(tests)] + features)
+
+print(size([(3, 1), (1, 0), (2, 1)]))
+print(size([(7, 1)]), size([]))
+```
+
+It prints `3`, then `7 1`: the size is the larger of the test count and the highest feature number, never below 1, and that is the first \(\mathcal H_n\) the list lands in.
+
+Why tie the features a list may use to its size? Because without that, even one-test lists would be hopeless: a single test “feature \(j\) is present” can pick out any subset of \(k\) messages if the messages are allowed to carry many features, so one-test lists over an unbounded catalogue would already have infinite VC dimension. With the tie, every \(\mathcal H_n\) is a finite class, and you can count it. Try \(n = 1\) by hand. A list in \(\mathcal H_1\) has no tests, and then only a default, 0 or 1: two lists. Or it has one test, on feature 1, with a label and a default: \(2 \times 2 = 4\) lists. That makes 6. In general a list in \(\mathcal H_n\) has some number \(k \le n\) of tests, an ordered choice of \(k\) distinct features out of \(n\), a label for each test and a default label, so
 
 \[ |\mathcal H_n| = 2 \sum_{k=0}^{n} 2^k \frac{n!}{(n-k)!}. \]
 
-That gives 6 lists of size at most 1, 26 of size at most 2, 158 of size at most 3, and then it explodes: 151,946 of size at most 6.
+Read it from the inside out. The vertical bars \(|\cdot|\) around a set mean “how many elements it has”, so \(|\mathcal H_n|\) is the number of lists. The exclamation mark is the **factorial**, \(n! = 1 \times 2 \times \cdots \times n\), and \(n!/(n-k)! = n(n-1)\cdots(n-k+1)\) counts the ordered ways to pick \(k\) different features out of \(n\): \(n\) choices for the first test, \(n - 1\) for the second, and so on. The factor \(2^k\) is a junk-or-keep label for each of the \(k\) tests. The **sum** \(\sum_{k=0}^{n}\) adds the term up for every test count \(k\) from 0 to \(n\), and the 2 in front is the default label. In plain words: **for each possible number of tests, count the ordered features times the labels, add over all test counts, and double for the default.** For \(n = 2\) the terms are 1 (no tests), \(2 \times 2 = 4\) (one test, on feature 1 or 2) and \(4 \times 2 = 8\) (two tests, in either order), which sum to 13 and double to 26.
 
-Each \(\mathcal H_n\) is finite, so its VC dimension is finite (shattering \(d\) messages takes \(2^d\) different hypotheses, so \(d \le \log_2 |\mathcal H_n|\)). The union is another story. Here is the reviewer’s argument, made exact.
+```python
+import itertools
+import math
+
+def size_H(n):
+    terms = [2**k * math.perm(n, k) for k in range(n + 1)]
+    return terms, 2 * sum(terms)
+
+def brute(n):
+    return sum(2 ** (k + 1) for k in range(n + 1)
+               for _ in itertools.permutations(range(n), k))
+
+for n in (1, 2, 3):
+    terms, total = size_H(n)
+    print(n, terms, total, brute(n), round(math.log2(total), 2))
+```
+
+It prints `1 [1, 2] 6 6 2.58`, `2 [1, 4, 8] 26 26 4.7` and `3 [1, 6, 24, 48] 158 158 7.3`. `math.perm(n, k)` is \(n!/(n-k)!\), and `brute` lists every ordered choice of features one by one and gets the same totals. So there are 6 lists of size at most 1, 26 of size at most 2, 158 of size at most 3, and then it explodes: 151,946 of size at most 6.
+
+Each \(\mathcal H_n\) is finite, so its VC dimension is finite. Shattering \(d\) messages means producing all \(2^d\) labellings of them, which takes at least \(2^d\) different hypotheses, so \(2^d \le |\mathcal H_n|\). Taking the base-2 logarithm, \(\log_2\), which asks “2 to what power gives this number?”, turns that into \(d \le \log_2 |\mathcal H_n|\). The last column above is that logarithm: the 6 lists of \(\mathcal H_1\) can shatter at most 2 messages, since \(2^3 = 8\) labellings would need 8 lists. The union is another story. Here is the reviewer’s argument, made exact.
 
 **The union has infinite VC dimension.** Fix any \(k\), and let \(e_i\) be the message with feature \(i\) present and nothing else, for \(i = 1, \dots, k\). Take any labelling \(y_1, \dots, y_k\) of these \(k\) messages. The list \(((1, y_1), (2, y_2), \dots, (k, y_k); 0)\) is in \(\mathcal H_k\), and on \(e_i\) its first \(i - 1\) tests do not fire (those features are absent) while test \(i\) does, so it returns \(y_i\). Every labelling is realized, so \(\mathcal H\) shatters \(\{e_1, \dots, e_k\}\). Since \(k\) was arbitrary, the VC dimension of \(\mathcal H\) is infinite. \(\blacksquare\)
 
 [[diagram:decision-list]]
 
-You can watch the shattering happen for \(k = 5\): all 32 labellings, each fitted by its own list.
+You can watch the shattering happen for \(k = 5\): all 32 labellings, each fitted by its own list. The `predict` function is the one from the case split above; `E` holds the five messages \(e_1, \dots, e_5\).
 
 ```python
 import itertools
@@ -67,7 +113,7 @@ for y in itertools.product((0, 1), repeat=k):
 print(hits, 2**k)
 ```
 
-It prints `32 32`. So the reviewer is right, and lesson 6 settles it: \(\mathcal H\) is not PAC learnable. No single sample size \(m_{\mathcal H}(\varepsilon, \delta)\) works for every list and every distribution. Hold that thought, and let’s look at what actually happens on data.
+It prints `32 32`. So the reviewer is right, and lesson 6 settles it: \(\mathcal H\) is not PAC learnable. Recall the two dials of a PAC guarantee: the **accuracy** \(\varepsilon\), how close to the best hypothesis you want to get (say within 0.1), and the **confidence** \(\delta\), the chance you allow for the guarantee to fail (say 0.05). A PAC learnable class comes with a **sample size** \(m_{\mathcal H}(\varepsilon, \delta)\), a number of labels that depends only on those two dials. For decision lists no such number works for every list and every distribution. Hold that thought, and let’s look at what actually happens on data.
 
 ## Thirty labels, six sizes
 
@@ -75,9 +121,28 @@ To have something concrete, here is the mail stream we’ll use for the whole le
 
 \[ f = ((3, 1), (1, 0), (2, 1), (5, 0), (4, 1); 0), \]
 
-and then, as in lesson 3’s noisy mail room, 10% of the labels are flipped because users disagree. So the best any hypothesis can do is a true risk of 0.10, and \(f\) achieves it. A list that differs from \(f\) on a fraction \(p\) of messages has true risk \(0.1 + 0.8p\).
+Read in words, \(f\) says: unknown sender, junk; “FREE”, keep; link, junk; attachment, keep; sent at night, junk; otherwise keep. Then, as in lesson 3’s noisy mail room, 10% of the labels are flipped because users disagree. Recall that the **true risk** \(L_{\mathcal D}(h)\) of a list is the chance that it mislabels the next message to arrive, where \(\mathcal D\) is the distribution of the mail stream. So the best any hypothesis can do is a true risk of 0.10, and \(f\) achieves it.
 
-Your users label \(m = 30\) messages, drawn i.i.d. from this stream. For each size cap \(n\), run ERM over \(\mathcal H_n\): find the lists in \(\mathcal H_n\) with the smallest empirical risk. Before you look at the table, guess: as the cap grows, what happens to the best empirical risk, and what happens to the true risk of the lists that achieve it?
+What about a list that disagrees with \(f\) on a fraction \(p\) of messages? Where it agrees with \(f\), it is wrong only when the label was flipped, 10% of the time. Where it disagrees, it is wrong unless the label was flipped, 90% of the time. So its true risk is \((1 - p) \cdot 0.1 + p \cdot 0.9\), which simplifies to \(0.1 + 0.8p\): **the noise floor of 0.1, plus 0.8 for every unit of disagreement with \(f\).** “Everything is junk” disagrees with \(f\) on the 22 of the 64 combinations of features 1 to 6 that \(f\) calls keep, so \(p = 22/64 = 0.34375\) and its true risk is \(0.1 + 0.8 \times 0.34375 = 0.375\).
+
+```python
+import itertools
+
+def predict(tests, default, x):
+    for j, b in tests:
+        if x[j - 1]:
+            return b
+    return default
+
+f = [(3, 1), (1, 0), (2, 1), (5, 0), (4, 1)]
+X = list(itertools.product((0, 1), repeat=6))
+p = sum(predict(f, 0, x) != 1 for x in X) / len(X)
+print(p, (1 - p) * 0.1 + p * 0.9, round(0.1 + 0.8 * p, 4))
+```
+
+It prints `0.34375 0.375 0.375`: the two-case sum and the simplified form agree.
+
+Your users label \(m = 30\) messages, drawn **i.i.d.** from this stream: independently, each from the same distribution \(\mathcal D\). Recall that the **empirical risk** \(L_S(h)\) is the fraction of the labelled messages, the training sequence \(S\), that \(h\) gets wrong, and that **ERM** (empirical risk minimization, lesson 2) returns a hypothesis with the smallest empirical risk in its class. For each size cap \(n\), run ERM over \(\mathcal H_n\): find the lists in \(\mathcal H_n\) with the smallest empirical risk. Before you look at the table, guess: as the cap grows, what happens to the best empirical risk, and what happens to the true risk of the lists that achieve it?
 
 | cap \(n\) | \(\lvert\mathcal H_n\rvert\) | smallest \(L_S\) | lists tied at it | their true risks |
 |---|---|---|---|---|
@@ -90,11 +155,11 @@ Your users label \(m = 30\) messages, drawn i.i.d. from this stream. For each si
 
 Read it top to bottom. The empirical risk can only go down, because each class contains the one before. The true risk does not follow. At cap 3, ERM lands on lists with true risk 0.125 or 0.175, which is decent. At cap 4 the empirical risk improves to 0.133 and the true risk gets worse. At cap 6, 720 lists tie for the best empirical risk, and their true risks run from the best possible, 0.100, to 0.425, worse than labelling everything junk. Thirty examples simply cannot tell those 720 lists apart. That is lesson 1’s 256 consistent hypotheses all over again, on a bigger stage.
 
-How much can thirty, or three hundred, examples certify for each class? Lesson 4 answered that for a finite class: by Hoeffding’s inequality and the union bound, with probability at least \(1 - \delta\), every \(h \in \mathcal H_n\) has
+How much can thirty, or three hundred, examples certify for each class? Lesson 4 answered that for a finite class, with two tools. **Hoeffding’s inequality** says that the average of \(m\) independent mistakes-or-not rarely strays far from its expected value, so for one fixed list the empirical risk is close to the true risk. The **union bound** says that the chance that at least one of several bad events happens is at most the sum of their chances, so the guarantee can be stretched to every list in the class at once, at the price of a factor \(|\mathcal H_n|\). Together they say that with probability at least \(1 - \delta\), every \(h \in \mathcal H_n\) has
 
 \[ |L_{\mathcal D}(h) - L_S(h)| \le \sqrt{\frac{\log(2|\mathcal H_n|/\delta)}{2m}}. \]
 
-(Throughout, \(\log\) is the natural logarithm.) Here is that gap at \(m = 300\) and \(\delta = 0.05\), for each cap:
+Throughout, \(\log\) is the natural logarithm, the power of \(e \approx 2.718\) that gives the number. Read it from the inside out. On the left, the bars mean something different from the bars around a set: around a number they are the **absolute value**, the distance from zero, so \(|L_{\mathcal D}(h) - L_S(h)|\) is how far the score on the labels is from the true risk, in either direction. On the right, \(2|\mathcal H_n|/\delta\) grows with the number of lists and with how sure you want to be; the logarithm tames it; dividing by \(2m\) shrinks it as labels come in; and the square root \(\sqrt{\cdot}\) turns the result into a distance on the same scale as a risk. We call that right-hand side the **gap**. In plain words: **with probability at least \(1 - \delta\), no list in \(\mathcal H_n\) has an empirical risk that is off from its true risk by more than the gap.** For \(n = 3\), \(m = 300\) and \(\delta = 0.05\): \(2 \times 158 / 0.05 = 6{,}320\), its logarithm is 8.751, divided by 600 that is 0.01459, and the square root is 0.121. Here is that gap at \(m = 300\) and \(\delta = 0.05\), for each cap, with the function `eps` doing those four steps in one line:
 
 ```python
 import math
@@ -119,13 +184,31 @@ Now try it yourself. In the lab, pick a label count and a size cap, and watch th
 
 Here is the way out. Look again at the gap formula. The \(\delta\) in it is a **confidence budget**: the probability you allow for the guarantee to fail. Lesson 4 spent the whole budget on one class. Nothing forces you to do that. You can split it.
 
-Give size 1 a share \(\delta_1\), size 2 a share \(\delta_2\), and so on, with \(\delta_1 + \delta_2 + \cdots \le \delta\). For each \(n\) separately, the finite-class bound with confidence \(\delta_n\) fails with probability at most \(\delta_n\). By the union bound, the probability that any of them fails is at most \(\sum_n \delta_n \le \delta\). So with probability at least \(1 - \delta\), all of them hold at once: every list of size \(n\), for every \(n\), is within its own gap of its true risk.
+Say your budget is \(\delta = 0.05\). Give size 1 a share of 0.03, size 2 a share of 0.0076, size 3 a share of 0.0034, and so on, shares that never add up to more than 0.05. In symbols, size \(n\) gets a share \(\delta_n\), with \(\delta_1 + \delta_2 + \cdots \le \delta\); the dots mean the sum goes on forever, one share per size. For each \(n\) separately, the finite-class bound with confidence \(\delta_n\) fails with probability at most \(\delta_n\). By the union bound, the probability that any of them fails is at most \(\sum_n \delta_n \le \delta\), where \(\sum_n\) is the sum over every size \(n\): the shares together, never more than the budget. So with probability at least \(1 - \delta\), all of them hold at once: every list of size \(n\), for every \(n\), is within its own gap of its true risk.
 
-It is convenient to write the shares as \(\delta_n = w(n) \cdot \delta\), where the **weight function** \(w: \mathbb N \to [0, 1]\) satisfies \(\sum_n w(n) \le 1\). A weight says how much you believe in a size before seeing any data. If there were only finitely many sizes, say \(N\) of them, you could give each the same weight \(1/N\): no preference at all. With infinitely many sizes that is impossible (equal positive weights would sum to infinity), so you must lean towards some sizes. Two standard choices are
+It is convenient to write each share as a fraction of the budget: size 3’s share of 0.0034 is about 6.8% of 0.05. So write \(\delta_n = w(n) \cdot \delta\), where \(w(n)\) is the fraction of the budget that size \(n\) gets. The **weight function** \(w: \mathbb N \to [0, 1]\) takes a size \(n\) (the arrow reads “maps each element of \(\mathbb N\) to a number in”) and returns a number between 0 and 1, and the fractions must satisfy \(\sum_n w(n) \le 1\). A weight says how much you believe in a size before seeing any data. If there were only finitely many sizes, say \(N\) of them, you could give each the same weight \(1/N\): no preference at all. With infinitely many sizes that is impossible (equal positive weights would sum to infinity), so you must lean towards some sizes. Two standard choices are
 
 \[ w(n) = \frac{6}{\pi^2 n^2} \qquad \text{and} \qquad w(n) = 2^{-n}. \]
 
-The first sums to exactly 1 because \(\sum_n 1/n^2 = \pi^2/6\). We’ll use it from now on. It gives size 1 about 61% of the budget, size 3 about 6.8%, size 6 about 1.7%, and every size something.
+Read the first from the inside out: \(n^2\) is the size squared, so the weight falls off with the square of the size; \(\pi \approx 3.1416\) is the circle constant, and \(6/\pi^2 \approx 0.608\) is just the scaling that makes the weights add up to exactly 1, because \(\sum_n 1/n^2 = 1 + 1/4 + 1/9 + \cdots = \pi^2/6\). In the second, a negative exponent means “one over”, \(2^{-n} = 1/2^n\), so each size gets half the weight of the one before, and \(1/2 + 1/4 + 1/8 + \cdots = 1\). In plain words: **the first gives size \(n\) a share proportional to \(1/n^2\), the second a share proportional to \(1/2^n\), and both spend exactly the whole budget.** For size 3, the first gives \(0.608 / 9 = 0.0675\), so a share \(0.0675 \times 0.05 = 0.0034\) of the budget; the second gives \(1/8 = 0.125\).
+
+```python
+import math
+
+def w_pi(n):
+    return 6 / (math.pi**2 * n**2)
+
+def w_two(n):
+    return 2.0 ** -n
+
+for n in (1, 2, 3, 6):
+    share = w_pi(n) * 0.05
+    print(n, round(w_pi(n), 4), w_two(n), round(share, 5))
+print(round(sum(w_pi(n) for n in range(1, 10**6)), 6))
+print(sum(w_two(n) for n in range(1, 60)))
+```
+
+It prints `1 0.6079 0.5 0.0304`, `2 0.152 0.25 0.0076`, `3 0.0675 0.125 0.00338` and `6 0.0169 0.015625 0.00084`, then `0.999999` and `1.0`: a million terms of the first already sum to 1 within a millionth, and the second reaches 1 to machine precision. We’ll use the first from now on. It gives size 1 about 61% of the budget, size 3 about 6.8%, size 6 about 1.7%, and every size something; the second starves the long sizes faster, giving size 6 only 1.6% and size 20 less than a millionth of a percent.
 
 [[diagram:budget]]
 

@@ -404,3 +404,281 @@ It prints `0.1 0.805 0.611 0.194`, `0.3 0.611 0.611 0.0` and `0.5 0.693 0.611 0.
 So the true risk is smallest when \(P_\theta = P\). If the data really has the assumed parametric form, the right parameter brings the risk down to the entropy. If it does not, even the best parameter pays a relative entropy forever, no matter how much data you collect. That is the inductive bias of a generative model, in the sense of lesson 1: the parametric form is a hypothesis class, chosen before seeing any data, and it can miss the truth.
 
 [[diagram:logloss]]
+
+## How well does maximum likelihood generalize?
+
+Lesson 2 asked of every learner: trained on a finite training sequence, how good is its true risk? For a generative model the natural yardstick is the one we just built, the expected log loss. Since the entropy is a floor nobody can beat, what matters is the **excess risk**: the true risk of the estimate minus the true risk of the best parameter. Let’s compute it for two models, one where maximum likelihood behaves beautifully and one where it fails outright.
+
+**A well-behaved case: the centre of a bell.** Suppose the length scores of keep messages really are Gaussian with width \(\sigma = 1\) and an unknown centre \(\mu^\star\) (the star marks the true value). We estimate the centre by \(\hat\mu\), the average. If the estimate is off by 0.2, how much extra surprise does that cost on a fresh message? Intuition says something like the square of the miss, and the exact answer is \(\tfrac12 \cdot 0.2^2 = 0.02\). Here is the calculation, with \(\ell(\mu, x) = -\log P_\mu(x)\) the log loss of the unit-width Gaussian:
+
+\[ \begin{aligned} \mathbb E_{x \sim N(\mu^\star, 1)}\left[\ell(\hat\mu, x) - \ell(\mu^\star, x)\right] &= \mathbb E\left[-\tfrac12 (x - \mu^\star)^2 + \tfrac12 (x - \hat\mu)^2\right] \\ &= \mathbb E\left[x(\mu^\star - \hat\mu) + \tfrac12\hat\mu^2 - \tfrac12(\mu^\star)^2\right] \\ &= \mu^\star(\mu^\star - \hat\mu) + \tfrac12\hat\mu^2 - \tfrac12(\mu^\star)^2 = \tfrac12(\hat\mu - \mu^\star)^2. \end{aligned} \]
+
+- \(N(\mu^\star, 1)\) is the Gaussian with centre \(\mu^\star\) and width 1, and \(x \sim N(\mu^\star, 1)\) is a fresh score drawn from it. The estimate \(\hat\mu\) is held fixed: it was computed from the training sequence, and the fresh \(x\) is independent of it.
+- First line: \(\ell(\hat\mu, x) - \ell(\mu^\star, x) = \log P_{\mu^\star}(x) - \log P_{\hat\mu}(x)\). Both densities have the same constant \(\frac{1}{\sqrt{2\pi}}\), which cancels, leaving the two exponents.
+- Second line: expand both squares. The \(x^2\) terms cancel, \(-\tfrac12(-2x\mu^\star) + \tfrac12(-2x\hat\mu) = x(\mu^\star - \hat\mu)\), and the constants are \(\tfrac12\hat\mu^2 - \tfrac12(\mu^\star)^2\).
+- Third line: the only random thing left is \(x\), and \(\mathbb E[x] = \mu^\star\). Collect: \(\tfrac12\hat\mu^2 - \hat\mu\mu^\star + \tfrac12(\mu^\star)^2\) is \(\tfrac12(\hat\mu - \mu^\star)^2\).
+
+In one sentence: **using a centre that is off by some amount costs, on every fresh message on average, half the square of that amount.** And how far off is \(\hat\mu\)? It is an average of \(m\) independent scores of variance 1, and lesson 4 showed that such an average has variance \(1/m\). Since \(\hat\mu\) is unbiased, its variance *is* \(\mathbb E[(\hat\mu - \mu^\star)^2]\), so **the expected excess risk is exactly \(1/(2m)\).** With Chebyshev’s inequality from lesson 4, \(\mathbb P[(\hat\mu - \mu^\star)^2 \ge 1/(m\delta)] \le \delta\), so with probability at least \(1 - \delta\) the excess risk is below \(1/(2m\delta)\). Ten messages give an expected excess of \(0.05\).
+
+```python
+import random
+rng, mu_star, m, runs = random.Random(1), 3.0, 10, 20000
+total = 0.0
+for _ in range(runs):
+    mu_hat = sum(rng.gauss(mu_star, 1) for _ in range(m)) / m
+    total += 0.5 * (mu_hat - mu_star)**2
+print(round(total / runs, 3), 1 / (2 * m))
+```
+
+It prints `0.05 0.05`.
+
+**A failing case: a rare word.** Now the yes/no model, for a word that junk messages contain with a small probability \(\theta^\star\). Say “winner” is in one junk message out of 500, so \(\theta^\star = 0.002\), and you have \(m = 200\) junk messages. What is the chance that “winner” appears in none of them? Each message misses it with probability 0.998, independently, so the chance is \(0.998^{200} \approx 0.67\). Two times out of three, maximum likelihood sets \(\hat\theta = 0\).
+
+And then the true risk is infinite. The next junk message contains “winner” with probability \(\theta^\star\), and when it does, the log loss is \(-\log \hat\theta = -\log 0 = +\infty\):
+
+\[ \mathbb E_{x \sim \theta^\star}\left[\ell(\hat\theta, x)\right] = \theta^\star \log\frac{1}{\hat\theta} + (1 - \theta^\star)\log\frac{1}{1 - \hat\theta} = \theta^\star \log\frac10 = \infty. \]
+
+- \(x \sim \theta^\star\) is shorthand for “\(x\) is drawn from the Bernoulli distribution with parameter \(\theta^\star\)”.
+- The two terms are the two possible observations, each weighted by its true probability: a 1 with probability \(\theta^\star\), costing \(\log(1/\hat\theta)\), and a 0 with probability \(1 - \theta^\star\), costing \(\log(1/(1 - \hat\theta))\).
+- With \(\hat\theta = 0\), the second term is \(\log 1 = 0\), and the first is a positive number times \(\log(1/0) = +\infty\).
+
+In one sentence: **an estimate of exactly 0 for something that does happen makes the expected surprise infinite.** It does not matter that \(\hat\theta = 0\) is within 0.002 of the truth, a superb estimate by Hoeffding’s standards. The log loss magnifies errors near 0 without limit.
+
+How often does this happen? The chance that all \(m\) observations are 0 is \((1 - \theta^\star)^m\). A clean lower bound: for \(0 \le \theta \le 1/2\),
+
+\[ (1 - \theta^\star)^m \ge e^{-2\theta^\star m}. \]
+
+- \(e^{-2\theta^\star m}\) is easier to reason about than the power: it says the chance shrinks exponentially in the number of examples, at rate \(2\theta^\star\).
+
+In one sentence: **the chance of never seeing a rare word is at least \(e\) to the minus twice the expected number of times you would see it.** To prove it, take logs: we need \(m\log(1 - \theta) \ge -2\theta m\), so it is enough that \(h(\theta) = \log(1 - \theta) + 2\theta \ge 0\). At \(\theta = 0\), \(h(0) = 0\), and its derivative \(-1/(1 - \theta) + 2\) is nonnegative while \(1 - \theta \ge 1/2\), so \(h\) only grows on \([0, 1/2]\).
+
+Now ask when the bound is at least a half: \(e^{-2\theta^\star m} \ge 1/2\) exactly when \(m \le \log 2/(2\theta^\star)\). **Whenever the training sequence has at most \(\log 2/(2\theta^\star)\) examples, maximum likelihood has infinite true risk with probability at least one half.** For “winner”, that is any \(m\) up to 173.
+
+```python
+import math
+theta, m = 0.002, 200
+p_zero = (1 - theta)**m
+print(round(p_zero, 3), round(math.exp(-2 * theta * m), 3))
+print(math.floor(math.log(2) / (2 * theta)))
+print(round((1 - theta)**173, 3))
+```
+
+It prints `0.67 0.449`, then `173` and `0.707`: at 173 examples the all-zero chance is still 71%.
+
+This is Ines’s bug, now as a theorem. A dictionary has thousands of rare words. For each one, the counts say 0 with substantial probability, and each such 0 is a factor that can wipe out a whole producer’s probability. Maximum likelihood **overfits**, in exactly the sense of lesson 2: it fits the training sequence perfectly (it makes the observed data as likely as possible) while its true risk is as bad as it can be.
+
+[[diagram:zero]]
+
+## The fix: pseudo-counts
+
+Lesson 13 cured overfitting with a regularizer, a penalty that pulls the learner away from extreme answers. Let’s do the same here, in the most down-to-earth way possible. Before counting, pretend you have already seen \(\alpha\) junk messages that contain the word and \(\alpha\) that do not. These imaginary messages are **pseudo-counts**. With \(\alpha = 1\), the estimate for “winner” in the four junk messages becomes \((0 + 1)/(4 + 2) = 1/6\) instead of 0, and the estimate for “free” becomes \((3 + 1)/6 = 2/3\) instead of \(3/4\). No word can ever get an estimate of 0 or 1 again.
+
+**Definition (the add-\(\alpha\) estimator).** For \(\alpha \ge 0\) and a training sequence with \(k\) ones among \(m\) observations,
+
+\[ \hat\theta_\alpha = \frac{k + \alpha}{m + 2\alpha}. \]
+
+- \(k + \alpha\) is the number of ones, real and imaginary; \(m + 2\alpha\) is the number of observations, real and imaginary.
+- \(\alpha = 0\) gives back maximum likelihood, \(k/m\). \(\alpha = 1\) is called **add-one smoothing**, or **Laplace’s rule**.
+- Whatever the data, \(\hat\theta_\alpha\) lies between \(\alpha/(m + 2\alpha)\) (no ones at all) and \((m + \alpha)/(m + 2\alpha)\) (all ones).
+
+In one sentence: **estimate the frequency as if you had also seen \(\alpha\) imaginary examples of each kind.** With \(m = 4\), \(k = 0\), \(\alpha = 1\): \(1/6 \approx 0.167\).
+
+This is regularized maximum likelihood, not just a hack. Add to the empirical log loss a penalty that charges the parameter for being near 0 or near 1:
+
+\[ \frac1m\sum_{i=1}^{m}\log\frac{1}{P_\theta[x_i]} + \frac{\alpha}{m}\left(\log\frac1\theta + \log\frac{1}{1-\theta}\right). \]
+
+- The first part is the empirical risk with the log loss, as before.
+- The penalty \(\log(1/\theta) + \log(1/(1-\theta))\) is exactly the log loss of \(\theta\) on two imaginary observations, one 1 and one 0; it is huge near either end.
+- The weight \(\alpha/m\) says how much the penalty counts, relative to one real example.
+
+In one sentence: **the regularized objective is the average log loss on the real examples plus \(\alpha\) imaginary ones and \(\alpha\) imaginary zeros.** Multiply it by \(m\): you get \(-(k + \alpha)\log\theta - (m - k + \alpha)\log(1 - \theta)\), the negative log-likelihood of a sequence with \(k + \alpha\) ones and \(m - k + \alpha\) zeros. For \(\alpha > 0\) both counts are positive, and the proof of the Bernoulli MLE (which used only that the counts are positive numbers, never that they are whole) puts the unique minimizer at \((k + \alpha)/(m + 2\alpha)\). So the add-\(\alpha\) estimator is ERM with a regularizer, the pattern of lesson 13.
+
+```python
+import math
+k, m, alpha = 0, 4, 1
+def objective(th):
+    real = -(k * math.log(th) + (m - k) * math.log(1 - th))
+    fake = alpha * (math.log(1 / th) + math.log(1 / (1 - th)))
+    return (real + fake) / m
+grid = [i / 1000 for i in range(1, 1000)]
+print(min(grid, key=objective), round((k + alpha) / (m + 2 * alpha), 3))
+```
+
+It prints `0.167 0.167`.
+
+What does this buy? Here is the guarantee, the heart of the fix. It has three parts: the estimate stays accurate, the expected excess risk becomes finite, and without pseudo-counts it cannot be.
+
+**Theorem (the pseudo-count guarantee).** Let \(x_1, \dots, x_m\) be i.i.d. Bernoulli with parameter \(\theta^\star \in [0, 1]\), and let \(\hat\theta = \hat\theta_\alpha\). Write the excess risk of a parameter \(q\) as \(\Delta(q) = \mathbb E_{x \sim \theta^\star}[\ell(q, x)] - \mathbb E_{x \sim \theta^\star}[\ell(\theta^\star, x)]\).
+
+(a) For every \(\alpha \ge 0\) and \(\delta \in (0, 1)\), with probability at least \(1 - \delta\),
+
+\[ |\hat\theta - \theta^\star| \le \sqrt{\frac{\log(2/\delta)}{2m}} + \frac{\alpha}{m + 2\alpha}. \]
+
+(b) For every \(\alpha > 0\),
+
+\[ \mathbb E_S\left[\Delta(\hat\theta)\right] \le \frac{m\theta^\star(1-\theta^\star) + \alpha^2}{\alpha(m + \alpha)} \le \frac{m/4 + \alpha^2}{\alpha(m + \alpha)}. \]
+
+(c) For \(\alpha = 0\) and \(0 < \theta^\star < 1\), \(\mathbb P_S[\Delta(\hat\theta) = \infty] \ge (1 - \theta^\star)^m > 0\), so \(\mathbb E_S[\Delta(\hat\theta)] = \infty\).
+
+Let’s read the three formulas before proving them.
+
+- In (a), the first term is Hoeffding’s accuracy from before; the second, \(\alpha/(m + 2\alpha)\), is the most the imaginary examples can drag the estimate. **The estimate is within the usual Hoeffding distance of the truth, plus a small pull from the pseudo-counts that fades as \(m\) grows.** With \(m = 600\), \(\delta = 0.05\), \(\alpha = 1\): \(0.0554 + 0.0017 = 0.0571\).
+- In (b), \(\mathbb E_S\) averages over the random training sequence, and \(\Delta(\hat\theta)\) is the extra expected log loss of the estimate on a fresh observation. The numerator grows with how random the word is (\(\theta^\star(1-\theta^\star)\) is largest at \(1/2\), where it equals \(1/4\), which gives the second bound); the denominator grows with \(\alpha\). **With pseudo-counts, the expected excess risk is finite for every word, however rare, and we can say how big it can be.** For “winner” (\(\theta^\star = 0.002\), \(m = 200\), \(\alpha = 1\)): \((0.399 + 1)/201 \approx 0.007\).
+- In (c), \(\mathbb P_S\) is the probability over the training sequence. **Without pseudo-counts, every word that is neither impossible nor certain has infinite expected excess risk.**
+
+*Proof of (a).* Write \(\bar x = k/m\) for the plain average, so \(\hat\theta = (m\bar x + \alpha)/(m + 2\alpha)\). The trick is to compare \(\hat\theta\) with its own expectation, then the expectation with the truth.
+
+The expectation: \(\mathbb E[k] = m\theta^\star\), so \(\mathbb E[\hat\theta] = (m\theta^\star + \alpha)/(m + 2\alpha)\). Its distance from the truth, the **bias**, is
+
+\[ \mathbb E[\hat\theta] - \theta^\star = \frac{m\theta^\star + \alpha - (m + 2\alpha)\theta^\star}{m + 2\alpha} = \frac{\alpha(1 - 2\theta^\star)}{m + 2\alpha}, \]
+
+and since \(|1 - 2\theta^\star| \le 1\), its size is at most \(\alpha/(m + 2\alpha)\). **The pseudo-counts pull the average estimate toward \(1/2\), by at most \(\alpha/(m + 2\alpha)\).** For “winner” with \(m = 200\), \(\alpha = 1\): \(0.996/202 \approx 0.0049\).
+
+The fluctuation: \(\hat\theta - \mathbb E[\hat\theta] = \frac{m}{m + 2\alpha}(\bar x - \theta^\star)\), and the factor \(m/(m + 2\alpha)\) is at most 1, so \(|\hat\theta - \mathbb E\hat\theta| \le |\bar x - \theta^\star|\), which Hoeffding bounds by \(\sqrt{\log(2/\delta)/(2m)}\) with probability at least \(1 - \delta\).
+
+Put them together with the triangle inequality, \(|a + b| \le |a| + |b|\), applied to \(\hat\theta - \theta^\star = (\hat\theta - \mathbb E\hat\theta) + (\mathbb E\hat\theta - \theta^\star)\). \(\blacksquare\)
+
+*Proof of (b).* Three steps: the excess risk is a relative entropy, the relative entropy is at most a squared distance divided by \(q(1-q)\), and the pseudo-counts keep \(q(1-q)\) away from 0.
+
+Step 1. By the decomposition of the previous section, the true risk of \(q\) is \(H + D_{\mathrm{RE}}(\theta^\star\|q)\), and of \(\theta^\star\) itself it is \(H + 0\). So \(\Delta(q) = D_{\mathrm{RE}}(\theta^\star \| q)\), where for yes/no distributions we write the parameters in place of the distributions.
+
+Step 2. Fix \(p = \theta^\star\) and look at the true risk as a function of the parameter, \(f(q) = -p\log q - (1-p)\log(1-q)\) for \(0 < q < 1\). Its derivatives are
+
+\[ f'(q) = -\frac{p}{q} + \frac{1-p}{1-q} = \frac{q - p}{q(1-q)}, \qquad f''(q) = \frac{p}{q^2} + \frac{1-p}{(1-q)^2} \ge 0. \]
+
+- \(f'(q)\) is the slope of the true risk as the parameter moves; over a common denominator, the numerator \(-p(1 - q) + (1 - p)q\) simplifies to \(q - p\).
+- \(f''(q)\), the second derivative, is a sum of nonnegative terms.
+
+In one sentence: **the true risk slopes toward the truth, and it curves upward everywhere.** A function whose second derivative is nonnegative is convex, and lesson 12 showed that a differentiable convex function lies above each of its tangent lines: \(f(p) \ge f(q) + f'(q)(p - q)\). (If \(p\) is 0 or 1, \(f\) is still defined there by continuity and the same holds.) Rearranged,
+
+\[ \Delta(q) = f(q) - f(p) \le f'(q)(q - p) = \frac{(q - p)^2}{q(1 - q)}. \]
+
+**The excess risk of a parameter is at most its squared distance from the truth, divided by \(q(1-q)\).** For \(p = 0.3\), \(q = 0.5\): the excess is \(0.082\), and the bound is \(0.04/0.25 = 0.16\). Notice the denominator: near 0 or 1 it collapses, which is the whole story of the bug.
+
+Step 3. With pseudo-counts, \(q = \hat\theta\) lies in the interval from \(a = \alpha/(m + 2\alpha)\) to \(1 - a\). The function \(t(1 - t)\) is a downward parabola, so on an interval it is smallest at an end, and both ends give \(a(1-a) = \alpha(m + \alpha)/(m + 2\alpha)^2\). So, for every training sequence,
+
+\[ \Delta(\hat\theta) \le \frac{(\hat\theta - \theta^\star)^2 (m + 2\alpha)^2}{\alpha(m + \alpha)}. \]
+
+Now average over \(S\). The expected squared distance splits into variance plus squared bias: writing \(\hat\theta - \theta^\star = (\hat\theta - \mathbb E\hat\theta) + (\mathbb E\hat\theta - \theta^\star)\) and squaring, the cross term has expectation 0 because \(\mathbb E[\hat\theta - \mathbb E\hat\theta] = 0\). The variance of \(\hat\theta = (k + \alpha)/(m + 2\alpha)\) is \(\operatorname{Var}[k]/(m + 2\alpha)^2 = m\theta^\star(1 - \theta^\star)/(m + 2\alpha)^2\), since \(k\) is a sum of \(m\) independent coins, each of variance \(\theta^\star(1 - \theta^\star)\). The squared bias is \(\alpha^2(1 - 2\theta^\star)^2/(m + 2\alpha)^2 \le \alpha^2/(m + 2\alpha)^2\). So
+
+\[ \mathbb E_S\left[(\hat\theta - \theta^\star)^2\right] \le \frac{m\theta^\star(1-\theta^\star) + \alpha^2}{(m + 2\alpha)^2}, \]
+
+and multiplying by \((m + 2\alpha)^2/(\alpha(m + \alpha))\) gives the first bound in (b). The second uses \(\theta^\star(1 - \theta^\star) \le 1/4\). \(\blacksquare\)
+
+*Proof of (c).* With \(\alpha = 0\), \(\hat\theta = 0\) whenever all \(m\) observations are 0, which has probability \((1 - \theta^\star)^m\), positive because \(\theta^\star < 1\). On that event the excess risk is infinite, as computed for “winner”, because \(\theta^\star > 0\). An expectation that puts positive probability on \(+\infty\) is \(+\infty\). \(\blacksquare\)
+
+Let’s check (b) for “winner” by computing the expectation exactly, adding over every possible count \(k\) weighted by its binomial probability:
+
+```python
+import math
+def D(p, q):
+    if q in (0, 1):
+        return math.inf
+    return p * math.log(p / q) + (1 - p) * math.log((1 - p) / (1 - q))
+def expected_excess(p, m, a):
+    return sum(math.comb(m, k) * p**k * (1 - p)**(m - k)
+               * D(p, (k + a) / (m + 2 * a)) for k in range(m + 1))
+p, m = 0.002, 200
+for a in (0, 1):
+    bound = (m * p * (1 - p) + a * a) / (a * (m + a)) if a else math.inf
+    print(a, round(expected_excess(p, m, a), 4), round(bound, 4))
+```
+
+It prints `0 inf inf` and `1 0.0015 0.007`: no pseudo-counts, infinite risk; one pseudo-count each way, an expected excess of 0.0015 nats, safely under the bound of 0.007.
+
+[[diagram:pseudocounts]]
+
+There is a price, and (a) shows it. The pull \(\alpha/(m + 2\alpha)\) is a bias toward \(1/2\). One pseudo-count is a whisper next to 600 real messages; a hundred pseudo-counts would drown a rare word’s real frequency. And (b) shows that too few pseudo-counts are dangerous in the other direction: as \(\alpha\) shrinks toward 0, the bound \((m/4 + \alpha^2)/(\alpha(m + \alpha))\) grows like \(1/(4\alpha)\). Remember this when you fix the filter: the guarantee needs both halves.
+
+## A second road to the same place: Bayesian reasoning
+
+Add-one smoothing has a second, independent justification, and it comes from a different philosophy of what a parameter is.
+
+So far we have treated \(\theta\) as a fixed number that we simply do not know. This is the **frequentist** view. The **Bayesian** view says: if we are uncertain about \(\theta\), let’s describe that uncertainty with probabilities too. Before seeing any data, the learner chooses a **prior distribution** \(\mathbb P[\theta]\) over the possible parameter values, saying how plausible it finds each. For example, before reading any mail you might say every frequency of “winner” in junk, from 0 to 1, is equally plausible: the **uniform prior**, with density 1 on \([0, 1]\).
+
+Given \(\theta\), the observations are generated as before: \(\mathbb P[X = x \mid \theta] = \theta^x(1-\theta)^{1-x}\). Together, prior and model give a complete distribution over a single observation \(X\): first draw \(\theta\) from the prior, then \(X\) given \(\theta\). Under the uniform prior, how likely is a 1? Averaging \(\theta\) over the prior gives \(1/2\). In general,
+
+\[ \mathbb P[X = x] = \sum_\theta \mathbb P[\theta]\,\mathbb P[X = x \mid \theta], \qquad \text{or} \qquad \mathbb P[X = x] = \int \mathbb P[\theta]\,\mathbb P[X = x \mid \theta]\,d\theta. \]
+
+- The sum runs over the possible parameter values, each weighted by its prior probability; when \(\theta\) is continuous, the prior is a density and the sum becomes an integral \(\int \dots d\theta\), the area under the curve.
+- \(\mathbb P[\theta]\,\mathbb P[X = x \mid \theta]\) is the probability of “the parameter is \(\theta\) and the observation is \(x\)”, by the definition of conditional probability.
+
+In one sentence: **before any data, the chance of an observation is the model’s chance averaged over the prior.** Under the uniform prior, \(\mathbb P[X = 1] = \int_0^1 \theta\,d\theta = 1/2\).
+
+Here is the twist. For a frequentist, the training sequence and a fresh observation are independent: they are separate draws from one fixed distribution. For a Bayesian, they are *not*, because both depend on the same random \(\theta\). Seeing many 0s makes small \(\theta\) more plausible, which makes the next observation more likely to be 0 too. They are independent only **conditionally on \(\theta\)**: once \(\theta\) is fixed, the draws do not influence each other. So the Bayesian’s question is: given the training sequence \(S\), what is the probability of the next observation? Split by the value of \(\theta\):
+
+\[ \mathbb P[X = x \mid S] = \sum_\theta \mathbb P[X = x \mid \theta, S]\,\mathbb P[\theta \mid S] = \sum_\theta \mathbb P[X = x \mid \theta]\,\mathbb P[\theta \mid S]. \]
+
+- \(\mathbb P[\theta \mid S]\) is the **posterior distribution**: how plausible each parameter is after seeing \(S\).
+- The first equality is the law of total probability, applied inside the world where \(S\) is known: average over the possible \(\theta\).
+- The second drops \(S\) from \(\mathbb P[X = x \mid \theta, S]\), because given \(\theta\), the fresh \(X\) is independent of \(S\).
+
+In one sentence: **the prediction is the model’s prediction averaged over how plausible each parameter is after the data.** This is called the **predictive probability**.
+
+The posterior comes from Bayes’ rule, the same identity Ines used for labels, now applied to parameters:
+
+\[ \mathbb P[\theta \mid S] = \frac{\mathbb P[S \mid \theta]\,\mathbb P[\theta]}{\mathbb P[S]} = \frac{1}{\mathbb P[S]}\prod_{i=1}^{m}\mathbb P[X = x_i \mid \theta]\;\mathbb P[\theta]. \]
+
+- \(\mathbb P[S \mid \theta]\) is the likelihood of \(\theta\), which factors into a product because the observations are independent given \(\theta\).
+- \(\mathbb P[S]\) is the total probability of the data, averaged over the prior; it does not depend on \(\theta\), so it only rescales the posterior to total 1.
+
+In one sentence: **after the data, each parameter’s plausibility is its prior plausibility times its likelihood, rescaled.** For a word seen in 0 of 4 junk messages, under the uniform prior, the posterior density is proportional to \((1 - \theta)^4\): a parameter of 0.1 is now \(0.9^4/0.5^4 \approx 10.5\) times as plausible as 0.5.
+
+Now the payoff. Put the uniform prior in, with \(k\) ones among \(m\) observations, and compute the predictive probability of a 1.
+
+**Proposition (Laplace’s rule from a uniform prior).** Under the uniform prior, \(\mathbb P[X = 1 \mid S] = \dfrac{k + 1}{m + 2}\).
+
+*Proof.* Combining the last two displays, with \(\mathbb P[\theta] = 1\),
+
+\[ \mathbb P[X = 1 \mid S] = \frac{\int_0^1 \theta \cdot \theta^k(1-\theta)^{m-k}\,d\theta}{\int_0^1 \theta^k(1-\theta)^{m-k}\,d\theta} = \frac{I(k + 1, m - k)}{I(k, m - k)}, \]
+
+where \(I(a, b) = \int_0^1 \theta^a(1 - \theta)^b\,d\theta\). The denominator is \(\mathbb P[S]\), the integral of prior times likelihood. **The predictive probability of a 1 is the likelihood-weighted average of \(\theta\).**
+
+So we need \(I(a, b)\) for whole numbers \(a, b \ge 0\). **Claim:** \(I(a, b) = \dfrac{a!\,b!}{(a + b + 1)!}\), where \(n! = 1 \cdot 2 \cdots n\) and \(0! = 1\). For instance \(I(0, 0) = 1\), the area of the unit square, and \(I(1, 1) = \int_0^1 \theta(1-\theta)\,d\theta = 1/6\), which the formula gives as \(1 \cdot 1/3! = 1/6\).
+
+Integration by parts, with \(u = (1 - \theta)^b\) and \(dv = \theta^a d\theta\), so \(v = \theta^{a+1}/(a + 1)\), gives for \(b \ge 1\):
+
+\[ I(a, b) = \left[\frac{\theta^{a+1}}{a+1}(1-\theta)^b\right]_0^1 + \frac{b}{a + 1}\int_0^1 \theta^{a+1}(1-\theta)^{b-1}\,d\theta = \frac{b}{a+1}\,I(a + 1, b - 1). \]
+
+The bracket is 0 at both ends (at 1 because of \((1-\theta)^b\) with \(b \ge 1\), at 0 because of \(\theta^{a+1}\)). **Each step moves one power from \(1 - \theta\) to \(\theta\), at the price of the factor \(b/(a + 1)\).** Repeat \(b\) times: \(I(a, b) = \frac{b}{a+1}\cdot\frac{b-1}{a+2}\cdots\frac{1}{a+b}\,I(a + b, 0) = \frac{a!\,b!}{(a+b)!}\cdot\frac{1}{a+b+1}\), since \(I(a+b, 0) = 1/(a + b + 1)\). That proves the claim.
+
+Finally, \(\dfrac{I(k+1, m-k)}{I(k, m-k)} = \dfrac{(k+1)!\,(m-k)!}{(m+2)!}\cdot\dfrac{(m+1)!}{k!\,(m-k)!} = \dfrac{k+1}{m+2}\). \(\blacksquare\)
+
+That is add-one smoothing, exactly. A word never seen in 200 junk messages gets predictive probability \(1/202 \approx 0.00495\), not 0. The pseudo-counts that we introduced as a regularizer are what a Bayesian with a uniform prior predicts. The prior biases the prediction toward its own average, \(1/2\), and the data overwhelms it as \(m\) grows.
+
+```python
+import math
+def I(a, b, n=100000):
+    h = 1 / n
+    return sum(((i + .5) * h)**a * (1 - (i + .5) * h)**b
+               for i in range(n)) * h
+print(round(I(1, 1), 5), round(1 / math.factorial(3), 5))
+k, m = 0, 200
+print(round(I(k + 1, m - k) / I(k, m - k), 5),
+      round((k + 1) / (m + 2), 5))
+```
+
+It prints `0.16667 0.16667` and `0.00495 0.00495`: a numerical integral (the midpoint rule with 100,000 slices) agrees with the formula.
+
+**Maximum a posteriori.** Integrals like these rarely have closed forms. A popular shortcut keeps a single parameter: the one that maximizes the posterior,
+
+\[ \hat\theta_{\mathrm{MAP}} \in \operatorname*{argmax}_\theta \mathbb P[\theta \mid S] = \operatorname*{argmax}_\theta \left(\log \mathbb P[S \mid \theta] + \log \mathbb P[\theta]\right). \]
+
+- The equality drops \(\mathbb P[S]\), which does not depend on \(\theta\), and takes logs, which keeps the maximizer.
+- So MAP is maximum likelihood plus a bonus \(\log\mathbb P[\theta]\) from the prior: a regularizer once more.
+
+In one sentence: **the maximum a posteriori estimate is the parameter that best balances fitting the data against the prior’s preferences.** With a uniform prior the bonus is constant, and MAP is plain maximum likelihood. With a strong prior, it can overrule weak data. Suppose the security team believes junk makes up more than half of all mail, and encodes this as a prior on the junk share \(\theta\) with density 1.6 for \(\theta \ge 0.5\) and 0.4 below: four times as dense on the upper half, total area \(0.5 \cdot 1.6 + 0.5 \cdot 0.4 = 1\). With 3 junk messages out of 10, maximum likelihood says 0.3. MAP compares \(0.4 \cdot 0.3^3 \cdot 0.7^7 \approx 0.00089\), the best below one half, with \(1.6 \cdot 0.5^{10} \approx 0.00156\), the best at or above one half, and answers 0.5. With 30 out of 100, the data wins and MAP says 0.3.
+
+```python
+def prior(th):
+    return 1.6 if th >= 0.5 else 0.4
+def posterior(th, k, m):
+    return prior(th) * th**k * (1 - th)**(m - k)
+grid = [i / 1000 for i in range(1, 1000)]
+for k, m in ((3, 10), (30, 100)):
+    print(k, m, max(grid, key=lambda th: posterior(th, k, m)))
+```
+
+It prints `3 10 0.5` and `30 100 0.3`.
+
+[[diagram:bayes]]

@@ -12,7 +12,47 @@ So here is the question this lesson settles. Is there a **universal learner**: o
 
 ## Where we stand
 
-A one-paragraph recap of the tools we already own, since the proof will lean on them. Since lesson 3 a **learning task** is a distribution \(\mathcal D\) over pairs \((x, y)\) in \(\mathcal X \times \{0, 1\}\), the **true risk** of a hypothesis is \(L_{\mathcal D}(h) = \mathbb P_{(x,y) \sim \mathcal D}[h(x) \neq y]\), and the training sequence \(S = ((x_1, y_1), \dots, (x_m, y_m))\) is drawn i.i.d., written \(S \sim \mathcal D^m\). Counting a mistake as 1 and a correct label as 0 is the **0-1 loss**, the only loss in this lesson. Lesson 2 showed that ERM over a finite class \(\mathcal H\) that contains the truth reaches true risk at most \(\varepsilon\) with probability at least \(1 - \delta\) once \(m \ge \log(|\mathcal H|/\delta)/\varepsilon\). Lesson 3 called that being **PAC learnable**. Lesson 4 dropped the assumption that the class contains the truth: with \(m \ge 2\log(2|\mathcal H|/\delta)/\varepsilon^2\) examples, ERM comes within \(\varepsilon\) of the **best in the class**, \(\min_{h \in \mathcal H} L_{\mathcal D}(h)\). Every one of those guarantees starts with “fix a class”. Theo’s question is whether we needed to.
+A short recap of the tools we already own, since the proof will lean on every one of them, and since this lesson uses their symbols on almost every line, we read each formula again.
+
+Since lesson 3 a **learning task** is the way labelled mail arrives: some messages come often, some rarely, and each comes with its label. Formally it is a distribution \(\mathcal D\) over pairs \((x, y)\) in \(\mathcal X \times \{0, 1\}\). Here \(\mathcal X\) is the **domain**, the set of every message that could ever arrive, and \(\mathcal X \times \{0, 1\}\) is the set of all pairs of a message and a label, with 1 for junk and 0 for keep. The **true risk** of a hypothesis \(h\) is the chance that it mislabels the next pair to arrive:
+
+\[ L_{\mathcal D}(h) = \mathbb P_{(x,y) \sim \mathcal D}[h(x) \neq y]. \]
+
+Read it from the inside out.
+
+- \(h(x) \neq y\) is the event that \(h\)’s label for the message \(x\) differs from its true label \(y\): a mistake.
+- \((x,y) \sim \mathcal D\) reads “the pair \((x, y)\) is drawn from \(\mathcal D\)”: a fresh labelled message arrives at random.
+- \(\mathbb P[\dots]\) is the probability of the event inside the brackets, and its subscript says what is random.
+- \(L\) stands for loss, and the subscript \(\mathcal D\) in \(L_{\mathcal D}\) says the score is taken over everything \(\mathcal D\) can send, not over the examples we happen to hold.
+
+In plain words: **the true risk of \(h\) is the probability that \(h\) gets a fresh, randomly drawn example wrong.** Take the four-message world of the next section: the messages 00, 01, 10 and 11, each equally likely, labelled junk exactly when the first bit (FREE) is on. Let \(h\) say junk exactly when the second bit (a link) is on. The two disagree on 01 and 10, two of the four, so \(L_{\mathcal D}(h) = 2/4 = 0.5\).
+
+Counting a mistake as 1 and a correct label as 0 is the **0-1 loss**, the only loss in this lesson. The training sequence \(S = ((x_1, y_1), \dots, (x_m, y_m))\) is \(m\) labelled examples drawn **i.i.d.**, independently and identically distributed: each from the same \(\mathcal D\), and no draw influencing another. We write that as \(S \sim \mathcal D^m\), where the power \(m\) on \(\mathcal D\) names the whole \(m\)-fold draw.
+
+Lesson 2 studied **ERM**, the learner that returns a hypothesis with the fewest mistakes on \(S\). Run over a finite class \(\mathcal H\) that contains the truth, ERM reaches true risk at most \(\varepsilon\) with probability at least \(1 - \delta\) once
+
+\[ m \ge \frac{\log(|\mathcal H|/\delta)}{\varepsilon}. \]
+
+Here \(|\mathcal H|\) is how many hypotheses the class holds, \(\varepsilon\) is the error we are willing to tolerate, \(\delta\) is the chance of failure we are willing to tolerate, and \(\log\) is the natural logarithm, base \(e \approx 2.718\). Read from the inside: divide the class size by \(\delta\), take the log, and divide by \(\varepsilon\). In plain words: **enough examples means the log of the class size over the failure chance, divided by the tolerated error.** Lesson 3 called a class with a guarantee of this kind **PAC learnable**. Lesson 4 dropped the assumption that the class contains the truth: with
+
+\[ m \ge \frac{2\log(2|\mathcal H|/\delta)}{\varepsilon^2} \]
+
+examples, ERM comes within \(\varepsilon\) of the **best in the class**, \(\min_{h \in \mathcal H} L_{\mathcal D}(h)\). The \(\min\) with a subscript reads “the smallest value as \(h\) ranges over \(\mathcal H\)”, so this is the smallest true risk any member of the class achieves. The new formula has the same log, a 2 inside it and a 2 in front, and a square on \(\varepsilon\). In plain words: **without the truth in the class, getting within \(\varepsilon\) of the best member costs about \(1/\varepsilon^2\) examples instead of \(1/\varepsilon\).** For the class of all 16 labellings of the four messages, with \(\varepsilon = \delta = 0.1\), the first formula asks for 51 examples and the second for 1,154. Here are the true risk and both formulas in Python:
+
+```python
+import math
+
+C = ["00", "01", "10", "11"]
+f = dict(zip(C, (0, 0, 1, 1)))
+h = dict(zip(C, (0, 1, 0, 1)))
+L_D = sum(h[x] != f[x] for x in C) / len(C)
+size, eps, delta = 2 ** 4, 0.1, 0.1
+m_realizable = math.log(size / delta) / eps
+m_agnostic = 2 * math.log(2 * size / delta) / eps ** 2
+print(L_D, math.ceil(m_realizable), math.ceil(m_agnostic))
+```
+
+It prints `0.5 51 1154`. Every one of those guarantees starts with “fix a class”. Theo’s question is whether we needed to.
 
 ## A duel on four messages
 
@@ -30,6 +70,8 @@ The memorizer’s weakness is its default. It says keep for every unseen message
 | two different messages, like (01, 10) | 12 | 2 | 2/4 |
 
 Averaging over the 16, the expected true risk is \((4 \cdot \tfrac34 + 12 \cdot \tfrac24)/16 = 9/16 = 0.5625\). Worse than a coin.
+
+Read that from the inside out. Each fraction is a true risk from the table, and the number in front of it is how many training sequences produce it, so \(4 \cdot \tfrac34 + 12 \cdot \tfrac24\) adds up the true risk over all 16 sequences, 3 plus 6, which is 9. Dividing by 16 turns that total into an average, and since the 16 sequences are equally likely, that average is the expected value. In plain words: **the memorizer’s expected true risk on this target is its true risk averaged over the 16 equally likely training sequences.** The snippet a little further down computes exactly this average in its function `expected_risk`, which loops over the 16 sequences and the four messages and divides by \(16 \cdot 4\).
 
 Theo shrugs and patches it. His second learner fills in unseen messages by majority: if most of the labels it has seen are junk, it says junk for the unseen ones, and otherwise keep. Against “everything is junk” it is now perfect, since it sees two junk labels and copies them everywhere. So you change targets. Try “junk exactly when the subject says FREE”: 00 and 01 are keep, 10 and 11 are junk. Now whenever both training messages share a label, majority copies that label onto the unseen messages of the other kind, and gets them wrong. The bookkeeping is a little longer, so let Python do it. The snippet scores both learners on all 16 possible targets, writing a target as the tuple \((f(00), f(01), f(10), f(11))\), and prints each learner’s average over the targets, its worst score, and the target that achieves it.
 
@@ -97,7 +139,11 @@ Second, **the maximum is at least the average**. If the average over targets is 
 
 [[diagram:averaging]]
 
-The quarter is a floor, not the exact value. The exact average is half the expected fraction of unseen messages, and when each of the \(m\) draws is uniform over \(2m\) messages, a given message is missed by all of them with probability \((1 - \tfrac{1}{2m})^m\). Let’s check that against brute force, using the memorizer as the learner, for domains of 2, 4, 6 and 8 messages.
+The quarter is a floor, not the exact value. The exact average is half the expected fraction of unseen messages, so let’s work that fraction out. In the duel, one draw lands on the message 01 with chance \(1/4\) and misses it with chance \(3/4\). The two draws are independent, so the chance that both miss it is \(3/4 \cdot 3/4 = 9/16\). Every message has that same chance of going unseen, so on average a fraction \(9/16\) of the four messages is unseen, and half of that is \(9/32 = 0.28125\), the duel’s average. In general, when each of the \(m\) draws is uniform over \(2m\) messages, a given message is missed by all of them with probability
+
+\[ \left(1 - \frac{1}{2m}\right)^m. \]
+
+Read it from the inside out. \(\frac{1}{2m}\) is the chance that one uniform draw lands on the given message, so \(1 - \frac{1}{2m}\) is the chance that it misses. The power \(m\) multiplies that chance by itself once per draw, which is how independent chances combine. In plain words: **the chance that a given message is never drawn is the chance that one draw misses it, multiplied together over all \(m\) draws.** With \(m = 2\) it is \((3/4)^2 = 0.5625\), as above. In the snippet below, `formula` is this expression divided by 2, and `average_over_targets` is the brute force it should match. Let’s check them against each other, using the memorizer as the learner, for domains of 2, 4, 6 and 8 messages.
 
 ```python
 import itertools
@@ -127,13 +173,15 @@ It prints
 0.3033
 ```
 
-The brute force matches the formula: 0.28125 is the four-message duel and 0.2931 is the lab. As \(m\) grows the average climbs toward \(e^{-1/2}/2 \approx 0.3033\), never below a quarter. A learner that has seen half the domain is, averaged over all the ways the world could be, wrong on more than a quarter of it.
+The brute force matches the formula: 0.28125 is the four-message duel and 0.2931 is the lab. As \(m\) grows the average climbs toward \(e^{-1/2}/2 \approx 0.3033\), never below a quarter. Here \(e \approx 2.718\) is the base of the natural logarithm, and \(e^{-1/2} = 1/\sqrt e \approx 0.6065\) is where \((1 - \frac{1}{2m})^m\) settles as \(m\) grows: a miss chance that creeps toward 1, raised to a power that grows just as fast, tends to this fixed number. In plain words: **when the sample and the domain grow together, the average over targets settles at half of \(e^{-1/2}\).** The last line of the snippet computes exactly that, \(0.5 \cdot 2.718281828^{-0.5}\), and prints 0.3033. A learner that has seen half the domain is, averaged over all the ways the world could be, wrong on more than a quarter of it.
 
 This is the **No-Free-Lunch theorem**, which lesson 1 promised. Let’s state it properly and prove it properly.
 
 ## The formal statements
 
-**Setting.** We are doing binary classification with the 0-1 loss over a domain \(\mathcal X\). A learning task is a distribution \(\mathcal D\) over \(\mathcal X \times \{0, 1\}\), and \(L_{\mathcal D}(h) = \mathbb P_{(x,y) \sim \mathcal D}[h(x) \neq y]\). A learner \(A\) is a deterministic algorithm: it maps each training sequence \(S\) to a hypothesis \(A(S): \mathcal X \to \{0, 1\}\), so the same \(S\) always gives the same hypothesis. A **universal learner** would be a learner \(A\) and a training sequence size \(m\) such that for every task \(\mathcal D\), given \(S \sim \mathcal D^m\), \(A(S)\) has small true risk with high probability.
+**Setting.** We are doing binary classification with the 0-1 loss over a domain \(\mathcal X\). A learning task is a distribution \(\mathcal D\) over \(\mathcal X \times \{0, 1\}\), and \(L_{\mathcal D}(h) = \mathbb P_{(x,y) \sim \mathcal D}[h(x) \neq y]\). A learner \(A\) is a deterministic algorithm: it maps each training sequence \(S\) to a hypothesis \(A(S): \mathcal X \to \{0, 1\}\), so the same \(S\) always gives the same hypothesis. The notation \(A(S): \mathcal X \to \{0, 1\}\) reads “\(A(S)\) is a function that takes a message in \(\mathcal X\) and returns 0 or 1”: the arrow points from what goes in to what comes out. A **universal learner** would be a learner \(A\) and a training sequence size \(m\) such that for every task \(\mathcal D\), given \(S \sim \mathcal D^m\), \(A(S)\) has small true risk with high probability.
+
+Before the statement, here is what it says in words. The averaging argument found, for every learner, a target that pushes its expected true risk to at least a quarter. An expectation is a statement about all training sequences at once, and you only ever get one. So the theorem trades the quarter for a pair of numbers about the one sequence you get: with a chance of at least one in seven, the learner is wrong on at least an eighth of the mail. Step 7 of the proof shows where the \(1/8\) and the \(1/7\) come from.
 
 **No-Free-Lunch theorem.** Let \(A\) be any learner for binary classification with the 0-1 loss over a domain \(\mathcal X\), and let \(m\) be any training sequence size smaller than \(|\mathcal X|/2\). Then there is a distribution \(\mathcal D\) over \(\mathcal X \times \{0, 1\}\) such that:
 
@@ -142,15 +190,69 @@ This is the **No-Free-Lunch theorem**, which lesson 1 promised. Let’s state it
 
 Read the order of the quantifiers carefully, because it carries the whole meaning. The learner comes first; the task is then chosen to defeat it. The task is perfectly realizable, since \(f\) labels it with zero error, so a different learner (ERM over the one-hypothesis class \(\{f\}\), which simply returns \(f\)) would solve it with no examples at all. What fails is not the task. It is the attempt to solve every task with one learner.
 
+Now read the statement symbol by symbol.
+
+- \(|\mathcal X|\) is how many messages the domain holds, so \(m < |\mathcal X|/2\) says the training sequence is shorter than half the domain. With the lab’s eight messages, \(m\) can be 1, 2 or 3.
+- \(f: \mathcal X \to \{0, 1\}\) is a labelling of every message, and \(L_{\mathcal D}(f) = 0\) says it never makes a mistake under \(\mathcal D\): the task is **realizable**, perfectly solved by one function.
+- \(A(S)\) is the hypothesis the learner returns on the training sequence \(S\), and \(L_{\mathcal D}(A(S)) \ge 1/8\) is the event that it is wrong on at least an eighth of the mail.
+- “With probability at least \(1/7\) over the choice of \(S \sim \mathcal D^m\)” says that, weighting each training sequence by its chance of being drawn, at least a seventh of the weight sits on sequences where that event happens.
+
+In plain words: **for every learner and every sample shorter than half the domain, there is a task that one labelling solves perfectly, on which the learner is wrong on at least an eighth of the mail at least one time in seven.** The duel shows it in miniature. Its \(m = 2\) is exactly half of its four messages, the boundary case that the proof itself works with, since all the proof needs is \(2m\) messages to spread the tasks over. Against the memorizer, the target “everything is junk” leaves at least two of the four messages unseen on every training sequence, so the true risk is at least \(1/2\), far above \(1/8\), every time:
+
+```python
+import itertools
+
+C, m = ["00", "01", "10", "11"], 2
+f = dict(zip(C, (1, 1, 1, 1)))
+
+def memorizer(S):
+    return lambda x: dict(S).get(x, 0)
+
+hits = 0
+for xs in itertools.product(C, repeat=m):
+    h = memorizer([(x, f[x]) for x in xs])
+    risk = sum(h(c) != f[c] for c in C) / len(C)
+    hits += risk >= 1 / 8
+print(hits / len(C) ** m, hits / len(C) ** m >= 1 / 7)
+```
+
+It prints `1.0 True`: the bad event has probability 1, comfortably at least \(1/7\).
+
 *Proof.* We go in seven steps. Steps 1 and 2 set up a family of tasks; steps 3 to 6 show that, on average over that family, the learner’s expected true risk is at least \(1/4\); step 7 turns that average into the probability statement.
 
-**Step 1: a family of tasks on a finite piece of the domain.** Since \(m < |\mathcal X|/2\), the domain has at least \(2m\) elements, so we can pick a subset \(C \subseteq \mathcal X\) with \(|C| = 2m\). The intuition is the one from the lab: a learner that observes at most half of \(C\) has no information about the labels of the rest. There are \(T = 2^{2m}\) functions from \(C\) to \(\{0, 1\}\); call them \(f_1, \dots, f_T\). For each \(i\), let \(\mathcal D_i\) be the distribution over \(C \times \{0, 1\}\) given by
+**Step 1: a family of tasks on a finite piece of the domain.** Since \(m < |\mathcal X|/2\), the domain has at least \(2m\) elements, so we can pick a subset \(C \subseteq \mathcal X\) with \(|C| = 2m\) (the symbol \(\subseteq\) reads “is a subset of”). The intuition is the one from the lab: a learner that observes at most half of \(C\) has no information about the labels of the rest. There are \(T = 2^{2m}\) functions from \(C\) to \(\{0, 1\}\), since each of the \(2m\) messages gets one of two labels; call them \(f_1, \dots, f_T\). In the duel, \(C\) is the four messages and \(T = 2^4 = 16\), the 16 targets of the first snippet.
+
+Each target becomes a task in the simplest possible way: pick a message uniformly from \(C\), and label it by the target. For the duel’s target “junk exactly when FREE”, that task sends the pair (10, junk) a quarter of the time and never sends (10, keep). Written out, for each \(i\), let \(\mathcal D_i\) be the distribution over \(C \times \{0, 1\}\) given by
 
 \[ \mathcal D_i(\{(x, y)\}) = \begin{cases} 1/|C| & \text{if } y = f_i(x), \\ 0 & \text{otherwise.} \end{cases} \]
 
-In words: draw \(x\) uniformly from \(C\), then label it by \(f_i\). Clearly \(L_{\mathcal D_i}(f_i) = 0\). Under \(\mathcal D_i\), the true risk of any \(h\) is the fraction of \(C\) on which \(h\) disagrees with \(f_i\):
+- \(\mathcal D_i(\{(x, y)\})\) is the probability that task \(i\) sends exactly the pair \((x, y)\).
+- The large brace lists **cases**: use the top line when its condition holds, and the bottom line otherwise.
+- \(1/|C|\) is one message’s share when all \(|C|\) messages are equally likely, and \(y = f_i(x)\) says the pair carries the label the target gives it.
+
+In plain words: **task \(i\) sends every message of \(C\) equally often, always with the label \(f_i\) gives it.** Clearly \(L_{\mathcal D_i}(f_i) = 0\). Under \(\mathcal D_i\), a hypothesis \(h\) makes a mistake exactly when the message drawn is one where \(h\) and \(f_i\) disagree, so its true risk is the fraction of \(C\) on which they disagree:
 
 \[ L_{\mathcal D_i}(h) = \frac{1}{2m} \sum_{x \in C} \mathbb 1[h(x) \neq f_i(x)]. \]
+
+- \(\mathbb 1[\cdot]\), the indicator from lesson 2, is 1 when the statement inside is true and 0 when it is false, so \(\mathbb 1[h(x) \neq f_i(x)]\) is 1 exactly when \(h\) gets \(x\) wrong.
+- \(\sum_{x \in C}\) adds that up over every message \(x\) in \(C\), which counts the disagreements.
+- \(\frac{1}{2m}\) divides the count by the number of messages, \(|C| = 2m\).
+
+In plain words: **under task \(i\), the true risk of \(h\) is the fraction of the \(2m\) messages on which \(h\) and \(f_i\) disagree.** With \(f_i\) “junk exactly when FREE” and \(h\) “junk exactly when there is a link”, they disagree on 01 and 10, so the risk is \(2/4 = 0.5\), the number from the recap. The snippet builds \(\mathcal D_i\) as a table of probabilities, then computes the risk twice: by adding the probabilities of the pairs \(h\) gets wrong, and by the counting formula.
+
+```python
+C, m = ["00", "01", "10", "11"], 2
+f_i = dict(zip(C, (0, 0, 1, 1)))
+h = dict(zip(C, (0, 1, 0, 1)))
+D_i = {(x, y): (1 / len(C) if y == f_i[x] else 0)
+       for x in C for y in (0, 1)}
+print(sum(D_i.values()), D_i[("10", 1)], D_i[("10", 0)])
+by_pairs = sum(p for (x, y), p in D_i.items() if h[x] != y)
+by_count = sum(h[x] != f_i[x] for x in C) / (2 * m)
+print(by_pairs, by_count)
+```
+
+It prints `1.0 0.25 0` and `0.5 0.5`: the probabilities add up to 1, (10, junk) gets a quarter and (10, keep) nothing, and the two ways of computing the risk agree.
 
 **Step 2: the expectation is an average over sequences.** There are \(k = (2m)^m\) sequences of \(m\) messages from \(C\); call them \(S_1, \dots, S_k\). If \(S_j = (x_1, \dots, x_m)\), write \(S_j^i = ((x_1, f_i(x_1)), \dots, (x_m, f_i(x_m)))\) for the same messages labelled by \(f_i\). When the task is \(\mathcal D_i\), the training sequence is always one of \(S_1^i, \dots, S_k^i\). Each \(x_t\) is uniform on \(C\) and the draws are independent, so the probability of any particular sequence of messages is the product \((1/2m)^m = 1/k\): all \(k\) are equally likely. An expectation over finitely many equally likely outcomes is their plain average, so
 

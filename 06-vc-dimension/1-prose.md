@@ -20,7 +20,7 @@ and you stop. First, a reminder of what it says, read from the inside out.
 - \(\varepsilon\) (epsilon) is the true risk you tolerate, 0.1 above, and dividing by it says that halving the tolerated risk doubles the labels.
 - \(m\) is the number of labelled examples, and \(\ge\) says any number at least this big will do.
 
-In plain words: **if a class has \(|\mathcal H|\) rules and the truth is one of them, about \(\log(|\mathcal H|/\delta)/\varepsilon\) labels make ERM’s answer \(\varepsilon\)-good with probability at least \(1 - \delta\).** With four rules, \(4.38/0.1 = 43.8\), so 44 labels.
+In plain words: **if a class has \(|\mathcal H|\) rules and the truth is one of them, about \(\log(|\mathcal H|/\delta)/\varepsilon\) labels make the rule with the fewest training mistakes have true risk at most \(\varepsilon\), with probability at least \(1 - \delta\).** With four rules, \(4.38/0.1 = 43.8\), so 44 labels.
 
 Now the question it asks: how many hypotheses are in your class? There is one threshold rule for every real number \(t\), so \(|\mathcal H|\) is infinite, and so is \(\log |\mathcal H|\). The agnostic version from lesson 4, for labels that no rule fits perfectly, needs \(\log(2|\mathcal H|/\delta)/(2\varepsilon^2)\) examples: the same pieces, with an extra factor 2 inside the log and the tolerance squared below, so halving \(\varepsilon\) now quadruples the labels. With four rules it asks for 254. With infinitely many rules it is infinite again. Here are both, as the class grows:
 
@@ -47,7 +47,7 @@ by_threshold_argument = ceil(log(2 / delta) / eps)
 print(by_bits, by_threshold_argument)
 ```
 
-It prints `948 74`. Ignore the second number for now; it is where this lesson is heading. The first says 948 labels buy a true risk of at most 5% with probability at least 95%.
+It prints `948 74`. The line for `by_bits` is the finite-class formula with \(|\mathcal H| = 2^{64}\), written using \(\log 2^{64} = 64 \log 2\) and \(\log(a/\delta) = \log a + \log(1/\delta)\). Ignore the second number for now; it is where this lesson is heading. The first says 948 labels buy a true risk of at most 5% with probability at least 95%.
 
 The reviewer is not impressed, for two reasons. The first: if the machine moved to 128-bit numbers, your guarantee would double, while the rule, the users and the messages stayed exactly the same. A number that changes with the hardware is measuring the hardware, not the problem. The second reason is sharper. Lesson 5 proved that the class of all functions on an infinite domain cannot be learned at all, by any learner, from any number of examples. That class is infinite too. So infinitely many hypotheses *can* make learning impossible, and you have no tool that tells your infinite class apart from that one. Launch blocked, until you can say why your class is different.
 
@@ -57,33 +57,70 @@ Yet you have watched thresholds learn. So something about a class matters other 
 
 First let’s show that the reviewer is wrong about thresholds in particular, by proving a guarantee directly.
 
-Here is the setting, in the language of lessons 2 and 3. A message is now represented by its spam score, so the domain set is \(\mathcal X = [0, 1]\). For each real number \(t\), the **threshold** hypothesis is
+Here is the setting, in the language of lessons 2 and 3. A message is now represented by its spam score, so the domain set, the set of all possible inputs, is \(\mathcal X = [0, 1]\): every number from 0 to 1, both ends included. Pick a cut-off, say 0.6. A message scoring 0.75 is above it, so it is junk; one scoring 0.3 is below, so it is kept; one scoring exactly 0.6 is not above, so it is kept too. Written as a formula, for each real number \(t\), the **threshold** hypothesis is
 
-\[ h_t(x) = \mathbb 1[x > t], \]
+\[ h_t(x) = \mathbb 1[x > t]. \]
 
-which says junk (1) when the score is above \(t\) and keep (0) otherwise. The class of thresholds is \(\mathcal H_{\mathrm{thr}} = \{ h_t : t \in \mathbb R \}\). We assume realizability: the true labelling is \(f = h_{t^\star}\) for some unknown \(t^\star\). Recall from lesson 3 that a class is **PAC learnable** when some learner, given at least \(m_{\mathcal H}(\varepsilon, \delta)\) i.i.d. examples from any distribution, labelled by any \(f\) the class realizes, returns a hypothesis with true risk at most \(\varepsilon\) with probability at least \(1 - \delta\). We need one mild assumption about the scores: no single score value carries positive probability. A score computed from a whole message is a continuous quantity, so this is a fair assumption, and it lets us cut the score line into pieces of exactly the probability we want.
+- \(x\) is a message’s score and \(t\) is the cut-off; the subscript in \(h_t\) says which cut-off this rule uses.
+- \(x > t\) is a yes/no question: is the score above the cut-off?
+- \(\mathbb 1[\cdot]\) is the **indicator**: it turns “yes” into 1 and “no” into 0.
 
-**Claim (thresholds are PAC learnable).** Let \(\varepsilon, \delta \in (0, 1)\). Every ERM learner for \(\mathcal H_{\mathrm{thr}}\), given
+In plain words: **\(h_t\) says junk (1) when the score is above \(t\) and keep (0) otherwise.** With \(t = 0.6\):
+
+```python
+t = 0.6
+h_t = lambda x: int(x > t)
+print([h_t(x) for x in (0.3, 0.6, 0.75)])
+```
+
+It prints `[0, 0, 1]`, the three messages above; `int(...)` plays the indicator.
+
+The class of thresholds is \(\mathcal H_{\mathrm{thr}} = \{ h_t : t \in \mathbb R \}\). Read the braces and colon as “the set of all \(h_t\) such that”, and \(t \in \mathbb R\) as “\(t\) is any real number”: one rule per cut-off, infinitely many rules. We assume realizability: the true labelling is \(f = h_{t^\star}\) for some unknown cut-off \(t^\star\) (read “t star”), the one your users carry in their heads.
+
+A reminder of the scores we judge a rule by. The true risk \(L_{\mathcal D}(h)\) is the chance that \(h\) mislabels the next message drawn from the distribution \(\mathcal D\) of arriving mail, and the training sequence \(S\) is the list of \(m\) labelled examples, drawn i.i.d. (independently, each from the same \(\mathcal D\)). ERM, empirical risk minimization, returns a rule with the fewest mistakes on \(S\); we write \(h_S\) for the rule it returns. Recall from lesson 3 that a class is **PAC learnable** when some learner, given at least \(m_{\mathcal H}(\varepsilon, \delta)\) i.i.d. examples from any distribution, labelled by any \(f\) the class realizes, returns a hypothesis with true risk at most \(\varepsilon\) with probability at least \(1 - \delta\). Here \(m_{\mathcal H}(\varepsilon, \delta)\), the **sample complexity**, is a number of labels that depends only on the two tolerances, never on \(\mathcal D\) or \(f\). For lesson 1’s four rules at \(\varepsilon = 0.1\), \(\delta = 0.05\), it was 44.
+
+We need one mild assumption about the scores: no single score value carries positive probability. A score computed from a whole message is a continuous quantity, so this is a fair assumption, and it lets us cut the score line into pieces of exactly the probability we want.
+
+What should we expect? With tolerances \(\varepsilon = \delta = 0.1\), we will see that 30 labels are enough for thresholds, whatever the mail looks like, and with \(\varepsilon = \delta = 0.05\), 74. Here is the general statement.
+
+**Claim (thresholds are PAC learnable).** Let \(\varepsilon, \delta \in (0, 1)\), that is, both strictly between 0 and 1. Every ERM learner for \(\mathcal H_{\mathrm{thr}}\), given
 
 \[ m \ge \frac{\log(2/\delta)}{\varepsilon} \]
 
 examples, returns a hypothesis with \(L_{\mathcal D}(h_S) \le \varepsilon\) with probability at least \(1 - \delta\). So \(m_{\mathcal H_{\mathrm{thr}}}(\varepsilon, \delta) \le \lceil \log(2/\delta)/\varepsilon \rceil\).
 
+Compare it with the finite-class formula: \(|\mathcal H|\) has been replaced by 2, as if the infinite class of thresholds were a class of two rules. The ceiling brackets \(\lceil \cdot \rceil\) round up to the next whole number. In plain words: **about \(\log(2/\delta)/\varepsilon\) labels give any ERM threshold a true risk of at most \(\varepsilon\), with probability at least \(1 - \delta\).** At \(\varepsilon = \delta = 0.1\): \(\log 20 \approx 3.00\), divided by 0.1 is 29.96, rounded up to 30. The line computing `m` in the simulation after the proof is this formula, and so is `by_threshold_argument` in the first snippet, which gave 74 at 0.05.
+
 Before the proof, a picture of where the mistakes can live. Draw the score line with \(t^\star\) marked. Just to the left of \(t^\star\) lies a strip of scores that carries probability exactly \(\varepsilon\); just to the right lies another. If the training sequence puts at least one example in each strip, the learner’s threshold is trapped between them, and every mistake it can make lies inside one strip.
 
 [[diagram:strips]]
 
+Two pieces of notation for the proof. A strip of scores is written with brackets: \((a, b]\) means every score above \(a\) and up to \(b\), the round bracket saying the end is left out and the square one that it is kept in, so with \(t^\star = 0.6\) the strip \((0.5, 0.6]\) holds 0.55 and 0.6 but not 0.5. And \(\mathbb P_{x \sim \mathcal D}[x \in (a, b]]\), read “the probability that a score \(x\) drawn from \(\mathcal D\) lands in the strip”, is the share of arriving mail whose score falls there; for uniform scores it is just the strip’s width, 0.1 here.
+
 *Proof.* Choose \(a_0 < t^\star\) so that \(\mathbb P_{x \sim \mathcal D}[x \in (a_0, t^\star]] = \varepsilon\), and \(a_1 > t^\star\) so that \(\mathbb P[x \in (t^\star, a_1]] = \varepsilon\). Such points exist because no single score carries probability, so the probability of \((a, t^\star]\) moves continuously as \(a\) slides. If all the scores below \(t^\star\) together carry probability at most \(\varepsilon\), set \(a_0 = -\infty\) instead, and similarly \(a_1 = +\infty\).
 
-Now look at what ERM returns. Let \(b_0\) be the largest score among the keep examples in \(S\), and \(b_1\) the smallest score among the junk examples (\(b_0 = -\infty\) if there is no keep example, \(b_1 = +\infty\) if there is no junk example). Under realizability, \(h_{t^\star}\) has empirical risk 0, so ERM returns some consistent \(h_t\), and \(h_t\) is consistent exactly when every keep score is at most \(t\) and every junk score is above \(t\): that is, \(b_0 \le t < b_1\).
+Now look at what ERM returns. Let \(b_0\) be the largest score among the keep examples in \(S\), and \(b_1\) the smallest score among the junk examples (\(b_0 = -\infty\) if there is no keep example, \(b_1 = +\infty\) if there is no junk example). Under realizability, \(h_{t^\star}\) has empirical risk 0 (no mistakes on \(S\)), so ERM returns some **consistent** \(h_t\), one that also makes no mistakes on \(S\), and \(h_t\) is consistent exactly when every keep score is at most \(t\) and every junk score is above \(t\): that is, \(b_0 \le t < b_1\).
 
 Where can \(h_t\) be wrong? It disagrees with the truth exactly on the scores between \(t\) and \(t^\star\): on \((t, t^\star]\) if \(t < t^\star\), and on \((t^\star, t]\) if \(t \ge t^\star\). Suppose \(S\) has an example in each strip. An example in \((a_0, t^\star]\) is a keep example, so \(b_0 > a_0\), so \(t > a_0\), and when \(t < t^\star\) the mistakes lie in \((a_0, t^\star]\), probability at most \(\varepsilon\). An example in \((t^\star, a_1]\) is a junk example, so \(b_1 \le a_1\), so \(t < a_1\), and when \(t \ge t^\star\) the mistakes lie in \((t^\star, a_1]\), probability at most \(\varepsilon\). (If a strip was set to infinity, the same conclusion holds for free, since all the scores on that side carry at most \(\varepsilon\).) So \(L_{\mathcal D}(h_S) > \varepsilon\) can only happen if some strip is empty.
 
-What is the chance that the left strip receives no example? Each of the \(m\) scores misses it with probability \(1 - \varepsilon\), and they are drawn independently, so all of them miss it with probability \((1 - \varepsilon)^m \le e^{-\varepsilon m}\), using \(1 - \varepsilon \le e^{-\varepsilon}\) from lesson 2. The same holds for the right strip. By the union bound,
+What is the chance that the left strip receives no example? Each of the \(m\) scores misses it with probability \(1 - \varepsilon\), and they are drawn independently, so all of them miss it with probability \((1 - \varepsilon)^m \le e^{-\varepsilon m}\), using \(1 - \varepsilon \le e^{-\varepsilon}\) from lesson 2. Here \(e \approx 2.718\) is Euler’s number, and the power \((1 - \varepsilon)^m\) multiplies \(m\) copies of the miss chance together, one per independent example; with \(\varepsilon = 0.1\) and \(m = 30\) it is \(0.9^{30} \approx 0.042\), under \(e^{-3} \approx 0.050\). The same holds for the right strip. The **union bound** from lesson 2 says that the chance that at least one of several bad events happens is at most the sum of their chances. Here the bad events are “left strip empty” and “right strip empty”, so
 
 \[ \mathbb P_{S \sim \mathcal D^m}\left[ L_{\mathcal D}(h_S) > \varepsilon \right] \le 2 e^{-\varepsilon m}, \]
 
 and \(2e^{-\varepsilon m} \le \delta\) exactly when \(m \ge \log(2/\delta)/\varepsilon\). \(\blacksquare\)
+
+Read the last display from the inside out. \(L_{\mathcal D}(h_S) > \varepsilon\) is the bad event: the rule ERM returned is worse than tolerated. The subscript \(S \sim \mathcal D^m\) on \(\mathbb P\) says where the randomness lives: the whole training sequence, \(m\) examples drawn i.i.d. from \(\mathcal D\), which is what \(\mathcal D^m\) means. On the right, the 2 counts the strips and \(e^{-\varepsilon m}\) is the bound for one strip. In plain words: **the chance of training on an unlucky sequence is at most twice the chance that one given strip stays empty.** Taking logs, \(2e^{-\varepsilon m} \le \delta\) is the same as \(\varepsilon m \ge \log(2/\delta)\), which is the claim. With \(\varepsilon = 0.1\) and \(m = 30\):
+
+```python
+from math import exp
+
+eps, m = 0.1, 30
+one_strip = (1 - eps) ** m
+print(round(one_strip, 4), round(exp(-eps * m), 4),
+      round(2 * exp(-eps * m), 4))
+```
+
+It prints `0.0424 0.0498 0.0996`: one strip stays empty with chance about 4.2%, the exponential bound rounds that up to 5%, and the union bound doubles it to just under \(\delta = 10\%\).
 
 Let’s watch it happen, and take the worst learner the claim allows: among all the consistent thresholds, it always returns the one with the largest true risk. With \(t^\star = 0.6\), uniform scores and \(\varepsilon = \delta = 0.1\):
 
@@ -112,13 +149,21 @@ Notice what the proof never did. It never counted hypotheses. It used one fact a
 
 ## What a class can do to a few messages
 
-Take a small set of scores, say \(C = \{0.3, 0.7\}\), and ask: in how many different ways can thresholds label these two messages? Each hypothesis gives a pair of labels, one per score. Different thresholds may give the same pair, and we only care about the distinct pairs.
+Take a small set of scores, say \(C = \{0.3, 0.7\}\), and ask: in how many different ways can thresholds label these two messages? Each hypothesis gives a pair of labels, one per score. Different thresholds may give the same pair, and we only care about the distinct pairs. A cut-off of 0.5 gives (keep, junk), or \((0, 1)\); a cut-off of 0.1 gives \((1, 1)\); a cut-off of 0.9 gives \((0, 0)\); and 0.55 or 0.4 give \((0, 1)\) again, nothing new. The collection of distinct pairs is what we want to name.
 
-**Definition (restriction).** Let \(\mathcal H\) be a class of functions from \(\mathcal X\) to \(\{0, 1\}\), and let \(C = \{c_1, \dots, c_m\} \subset \mathcal X\). The **restriction** of \(\mathcal H\) to \(C\) is the set of label vectors that hypotheses in \(\mathcal H\) produce on \(C\):
+**Definition (restriction).** Let \(\mathcal H\) be a class of functions from \(\mathcal X\) to \(\{0, 1\}\), and let \(C = \{c_1, \dots, c_m\} \subset \mathcal X\), a set of \(m\) points of the domain (\(\subset\) reads “is a subset of”). The **restriction** of \(\mathcal H\) to \(C\) is the set of label vectors that hypotheses in \(\mathcal H\) produce on \(C\):
 
 \[ \mathcal H_C = \{ (h(c_1), \dots, h(c_m)) : h \in \mathcal H \} \subseteq \{0, 1\}^m. \]
 
-Each vector in \(\mathcal H_C\) is a **labelling** of \(C\). There are \(2^m\) possible labellings of \(m\) points, so \(|\mathcal H_C| \le 2^m\), however many hypotheses \(\mathcal H\) has. Here it is in Python for thresholds:
+From the inside out:
+
+- \((h(c_1), \dots, h(c_m))\) is one hypothesis’s answers on the \(m\) points, written in order as a vector of 0s and 1s.
+- The braces with the colon, \(\{ \dots : h \in \mathcal H \}\), collect that vector for every hypothesis \(h\) in the class. A set keeps each distinct vector once, so repeats vanish.
+- \(\{0, 1\}^m\) is the set of all vectors of \(m\) zeros and ones, and \(\subseteq\) says the restriction sits inside it.
+
+In plain words: **\(\mathcal H_C\) is the list of different ways the class can label the points of \(C\).** For \(C = \{0.3, 0.7\}\) and thresholds it is \(\{(0, 0), (0, 1), (1, 1)\}\), three vectors out of the four in \(\{0, 1\}^2\).
+
+Each vector in \(\mathcal H_C\) is a **labelling** of \(C\). There are \(2^m\) possible labellings of \(m\) points, so \(|\mathcal H_C| \le 2^m\), however many hypotheses \(\mathcal H\) has. Here it is in Python for thresholds; the set comprehension in `restriction` is the braces of the formula, one tuple per hypothesis, duplicates dropped:
 
 ```python
 def threshold(t):
@@ -149,6 +194,8 @@ And look at which one is missing: \((1, 0)\), junk at 0.3 and keep at 0.7. No th
 
 **Definition (shattering).** A class \(\mathcal H\) **shatters** a finite set \(C \subset \mathcal X\) when its restriction to \(C\) contains every labelling: \(|\mathcal H_C| = 2^{|C|}\).
 
+Read the equation as a count. \(|C|\) is how many points \(C\) has, \(2^{|C|}\) is how many labellings those points have in all (two choices per point), and \(|\mathcal H_C|\) is how many of them the class actually produces. In plain words: **the class shatters \(C\) when it can label the points of \(C\) in every possible way.** The snippet above already did the count: on \(\{0.3\}\) thresholds produce 2 of \(2^1 = 2\) labellings, so they shatter it; on \(\{0.3, 0.7\}\) they produce 3 of \(2^2 = 4\), so they do not.
+
 Thresholds shatter every single point \(\{c\}\): take \(t = c - 1\) for junk and \(t = c + 1\) for keep. They shatter no set of two points \(c_1 < c_2\), because \((1, 0)\) is always missing.
 
 [[diagram:restriction]]
@@ -159,6 +206,8 @@ In the PAC model, though, the adversary is restricted: it may only use labelling
 
 **Corollary (shattering defeats every learner).** Let \(\mathcal H\) be a class of functions from \(\mathcal X\) to \(\{0, 1\}\), and \(m\) a training sequence size. If some set \(C \subset \mathcal X\) of size \(2m\) is shattered by \(\mathcal H\), then for every learner \(A\) there exist a distribution \(\mathcal D\) over \(\mathcal X \times \{0, 1\}\) and a hypothesis \(h \in \mathcal H\) with \(L_{\mathcal D}(h) = 0\), such that with probability at least \(1/7\) over \(S \sim \mathcal D^m\), \(L_{\mathcal D}(A(S)) \ge 1/8\).
 
+Here \(\mathcal X \times \{0, 1\}\) is the set of pairs (score, label), so \(\mathcal D\) chooses both the message and its label, and \(A(S)\) is the rule learner \(A\) returns after training on \(S\). In plain words: **if the class can label some \(2m\) messages in every way, then for any learner there is a world the class fits perfectly in which, at least one time in seven, \(m\) labels leave the learner wrong on at least one message in eight.** The class of all rules on lesson 1’s sixteen tiny-world messages labels those sixteen in every way, so with \(m = 8\) labels every learner can be pushed into that trap.
+
 *Proof idea.* Run the No-Free-Lunch construction on the shattered set \(C\). Each of its labellings \(f_i: C \to \{0,1\}\) equals the restriction of some \(h_i \in \mathcal H\), because \(\mathcal H\) shatters \(C\), and \(h_i\) has true risk 0 under the distribution built from \(f_i\). So every distribution the adversary uses is realizable by \(\mathcal H\), and the theorem’s conclusion applies to it unchanged. \(\blacksquare\)
 
 There is an old saying behind this: an explanation that can explain anything explains nothing. If the class can label half the set any way at all and the other half any way at all, then the labels you have seen say nothing about the labels you have not.
@@ -167,7 +216,9 @@ There is an old saying behind this: an explanation that can explain anything exp
 
 So the question to ask of a class is not “how many hypotheses?” but “how large a set can it shatter?”
 
-**Definition (VC dimension).** The **VC dimension** of a class \(\mathcal H\), written \(\mathrm{VCdim}(\mathcal H)\), is the largest size of a set \(C \subset \mathcal X\) that \(\mathcal H\) shatters. If \(\mathcal H\) shatters sets of every finite size, its VC dimension is infinite.
+**Definition (VC dimension).** The **VC dimension** of a class \(\mathcal H\), written \(\mathrm{VCdim}(\mathcal H)\), is the largest size of a set \(C \subset \mathcal X\) that \(\mathcal H\) shatters. If \(\mathcal H\) shatters sets of every finite size, its VC dimension is infinite, written \(\infty\).
+
+In plain words: **the VC dimension is the most points the class can label in every possible way.** Thresholds shattered \(\{0.3\}\) but not \(\{0.3, 0.7\}\); and we saw that no pair works, because \((1, 0)\) is always missing, so their VC dimension is 1.
 
 The name honours Vladimir Vapnik and Alexey Chervonenkis, who discovered this characterization in 1970. An immediate consequence of the corollary:
 

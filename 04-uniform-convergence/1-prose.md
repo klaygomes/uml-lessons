@@ -214,13 +214,24 @@ Read the two conclusions as two promises the team can finally keep. The first is
 
 ## The uniform convergence property
 
-The lemma is about one fixed training sequence. But the training sequence is random. So the real question is: how many examples do we need so that, with high probability, the sample we get is representative?
+The lemma is about one fixed training sequence. But the training sequence is random. So the real question is: how many examples do we need so that, with high probability, the sample we get is representative? For instance: how many examples a week make the 30-row dashboard 0.05-representative in at least 95 weeks out of 100, whatever the world looks like? The 5 bad weeks in 100 we are willing to tolerate are written \(\delta = 0.05\) (the Greek letter delta), the confidence parameter of lesson 3.
 
 **Definition (uniform convergence).** A hypothesis class \(\mathcal H\) has the **uniform convergence property** (with respect to a domain \(Z\) and a loss function \(\ell\)) if there exists a function \(m^{\mathrm{UC}}_{\mathcal H}: (0, 1)^2 \to \mathbb N\) such that for every \(\varepsilon, \delta \in (0, 1)\) and for every probability distribution \(\mathcal D\) over \(Z\), if \(S\) is a training sequence of \(m \ge m^{\mathrm{UC}}_{\mathcal H}(\varepsilon, \delta)\) examples drawn i.i.d. from \(\mathcal D\), then with probability at least \(1 - \delta\), \(S\) is \(\varepsilon\)-representative.
+
+This is the densest sentence in the lesson, so let’s take it apart.
+
+- \(m^{\mathrm{UC}}_{\mathcal H}\) is a function. The superscript UC stands for uniform convergence, and the subscript says which class it belongs to.
+- \((0, 1)^2 \to \mathbb N\) is its type: it takes a pair of numbers, each strictly between 0 and 1 (that is what \((0, 1)^2\) means), and returns a natural number, an element of \(\mathbb N = \{1, 2, 3, \dots\}\), here a count of examples. The pair is \((\varepsilon, \delta)\).
+- “For every probability distribution \(\mathcal D\) over \(Z\)”: \(Z\) is the domain of examples, all the (message, label) pairs, and the same function must work whichever \(\mathcal D\) the world uses.
+- “Drawn i.i.d.” is the \(S \sim \mathcal D^m\) of before, and “with probability at least \(1 - \delta\)” is over that random draw.
+
+In plain words: **there is a recipe that turns \((\varepsilon, \delta)\) into a number of examples, and that many examples make every row \(\varepsilon\)-accurate in all but a \(\delta\) fraction of weeks, whatever the world.** For the 30-row dashboard and \(\varepsilon = \delta = 0.05\), this lesson will show that 1,419 examples are enough, so \(m^{\mathrm{UC}}_{\mathcal H}(0.05, 0.05) \le 1{,}419\). The last snippet of “From one row to every row” runs exactly this definition on our world: it draws 10,000 weeks of 1,419 examples and counts the weeks that are not 0.05-representative.
 
 Like the sample complexity of lesson 3, \(m^{\mathrm{UC}}_{\mathcal H}\) is taken to be the minimal such function: how many examples you need to make the whole dashboard trustworthy, probably. And the word **uniform** carries two meanings at once. One sample size works for all members of \(\mathcal H\) together, and it works for every distribution \(\mathcal D\), which nobody tells you in advance.
 
 Recall the target from lesson 3. A class is **agnostic PAC learnable** with a loss \(\ell\) if there are a function \(m_{\mathcal H}\) and an algorithm such that, for every \(\varepsilon, \delta\) and every \(\mathcal D\) over \(Z\), on \(m \ge m_{\mathcal H}(\varepsilon, \delta)\) i.i.d. examples the algorithm returns \(h \in \mathcal H\) with \(L_{\mathcal D}(h) \le \min_{h' \in \mathcal H} L_{\mathcal D}(h') + \varepsilon\), with probability at least \(1 - \delta\).
+
+The symbols are lesson 3’s: \(m_{\mathcal H}\), without the UC, is the sample complexity of learning, \(h\) is what the algorithm returns, and \(\min_{h' \in \mathcal H} L_{\mathcal D}(h')\) is the best in the class, written with \(h'\) so it doesn’t collide with the returned \(h\). In plain words: **enough examples let the algorithm return, in all but a \(\delta\) fraction of weeks, a hypothesis at most \(\varepsilon\) worse than the best.** With \(\varepsilon = 0.1\) in our world, that means a shipped true risk of at most \(0.25 + 0.1 = 0.35\). The same last snippet counts the weeks where the shipped row misses such a promise, in its variable `worse`.
 
 **Corollary (uniform convergence is enough for learning).** If \(\mathcal H\) has the uniform convergence property with a function \(m^{\mathrm{UC}}_{\mathcal H}\), then \(\mathcal H\) is agnostic PAC learnable with sample complexity
 
@@ -228,37 +239,99 @@ Recall the target from lesson 3. A class is **agnostic PAC learnable** with a lo
 
 and ERM is a successful agnostic PAC learner for \(\mathcal H\).
 
+The display compares two functions at different arguments. On the left is the number of examples learning needs at accuracy \(\varepsilon\); on the right is the number uniform convergence needs at the tighter accuracy \(\varepsilon/2\), with the same \(\delta\). In plain words: **to learn within \(\varepsilon\) of the best, make every row accurate to \(\varepsilon/2\).** For the 30-row dashboard with \(\varepsilon = \delta = 0.05\), that means rows accurate to 0.025, which the formula later in this lesson prices at 5,673 examples, the second column of the `m_uc` snippet there.
+
 *Proof.* Fix \(\varepsilon\) and \(\delta\), and draw \(m \ge m^{\mathrm{UC}}_{\mathcal H}(\varepsilon/2, \delta)\) examples. By uniform convergence, the event “\(S\) is \(\varepsilon/2\)-representative” has probability at least \(1 - \delta\). On that event, the lemma with \(\varepsilon/2\) in place of \(\varepsilon\) gives \(L_{\mathcal D}(h_S) \le \min_{h \in \mathcal H} L_{\mathcal D}(h) + \varepsilon\). So the good outcome contains an event of probability at least \(1 - \delta\), and therefore has probability at least \(1 - \delta\) itself. This holds for every \(\mathcal D\), with ERM as the algorithm. \(\blacksquare\)
 
 So learning has been reduced to a question about averages: how fast do all the rows of a dashboard settle down at once? We answer it in two steps, the same two steps as lesson 2’s proof. First, how far can a single row stray? Then, how do we pay for all the rows together?
 
 ## How far can one average stray?
 
-A single row is an average of \(m\) independent, identically distributed numbers: \(L_S(h) = \frac{1}{m}\sum_i \theta_i\) with \(\theta_i = \ell(h, z_i)\). You may know the **law of large numbers**: as \(m\) goes to infinity, such an average converges to its expectation. True, and useless to the team. It is an asymptotic statement, so it says nothing about the gap at \(m = 60\) or at any other finite \(m\). We need a **measure concentration inequality**: a bound on the probability that an average lands far from its expectation, valid at every finite \(m\).
+A single row is an average of \(m\) independent, identically distributed numbers, the losses of its \(m\) examples: \(L_S(h) = \frac{1}{m}\sum_i \theta_i\), where \(\theta_i = \ell(h, z_i)\) (the Greek letter theta) is just a short name for example \(i\)’s loss. You may know the **law of large numbers**: as \(m\) goes to infinity, such an average converges to its expectation. True, and useless to the team. It is an asymptotic statement, so it says nothing about the gap at \(m = 60\) or at any other finite \(m\). We need a **measure concentration inequality**: a bound on the probability that an average lands far from its expectation, valid at every finite \(m\).
 
-A few words first. A **random variable** is a number whose value depends on chance, like the number of mistakes this week. Its **variance** is \(\operatorname{Var}[Z] = \mathbb E[(Z - \mathbb E[Z])^2]\), the average squared distance from its mean. We build three inequalities, each from the one before, and each much stronger than the last.
+A few words first. A **random variable** is a number whose value depends on chance, like the number of mistakes this week. Its **variance** measures how widely it spreads around its mean: take how far each outcome lands from the mean, square it, and average. One 0-1 loss of \(h_{11}\) is 1 with probability 0.3 and 0 with probability 0.7, so its mean is 0.3; it misses the mean by 0.7 with probability 0.3 and by 0.3 with probability 0.7, so its variance is \(0.7^2 \times 0.3 + 0.3^2 \times 0.7 = 0.147 + 0.063 = 0.21\). In symbols, \(\operatorname{Var}[Z] = \mathbb E[(Z - \mathbb E[Z])^2]\). Read it from the inside out: \(\mathbb E[Z]\) is the mean, \(Z - \mathbb E[Z]\) is how far this outcome lands from it, squaring makes every distance positive, and the outer \(\mathbb E\) averages the squares. In plain words: **variance is the average squared miss.**
+
+```python
+p = 0.3
+mean = 1 * p + 0 * (1 - p)
+var = (1 - mean)**2 * p + (0 - mean)**2 * (1 - p)
+print(round(mean, 2), round(var, 2))
+```
+
+It prints `0.3 0.21`.
+
+We build three inequalities, each from the one before, and each much stronger than the last. The first uses only the mean. If \(h_{11}\) averages 18 mistakes a week, it cannot have 24 or more in more than three weeks out of four, because those weeks alone would push the average above \(\frac34 \times 24 = 18\).
 
 **Markov’s inequality.** If \(Z \ge 0\) and \(a > 0\), then \(\mathbb P[Z \ge a] \le \mathbb E[Z]/a\).
 
+Here \(Z \ge 0\) says the variable is never negative, \(a\) is any positive threshold, \(\mathbb P[Z \ge a]\) is the probability that \(Z\) reaches it, and \(\mathbb E[Z]/a\) is the mean divided by the threshold. In plain words: **a variable that is never negative reaches a threshold \(a\) at most a fraction mean-over-\(a\) of the time.** With \(Z\) the week’s mistakes, mean 18 and \(a = 24\), the bound is \(18/24 = 0.75\). The exact binomial answer is much smaller:
+
+```python
+from math import comb
+
+m, p, a = 60, 0.3, 24
+def pmf(k):
+    return comb(m, k) * p**k * (1 - p)**(m - k)
+EZ = sum(k * pmf(k) for k in range(m + 1))
+tail = sum(pmf(k) for k in range(a, m + 1))
+print(round(EZ, 6), round(tail, 4), round(EZ / a, 4))
+```
+
+It prints `18.0 0.0632 0.75`: the mean computed from the distribution itself, the exact chance of 24 or more mistakes, and Markov’s bound. Markov knows only the mean, so it is crude, but it is the seed of everything below.
+
 *Proof.* Compare two random variables outcome by outcome: \(a \cdot \mathbb 1[Z \ge a] \le Z\). When \(Z \ge a\), the left side is \(a\), which is at most \(Z\). Otherwise the left side is 0, which is at most \(Z\) because \(Z \ge 0\). Take expectations of both sides: the expectation of an indicator is the probability of its event, so \(a\,\mathbb P[Z \ge a] \le \mathbb E[Z]\). Divide by \(a\). \(\blacksquare\)
+
+The second inequality also uses the spread. A variable with a small variance rarely strays far in either direction: a week of \(h_{11}\) seldom misses its mean of 18 by 6 mistakes or more.
 
 **Chebyshev’s inequality.** For any \(Z\) with finite variance and any \(a > 0\), \(\mathbb P[|Z - \mathbb E Z| \ge a] \le \operatorname{Var}[Z]/a^2\).
 
+Here \(\mathbb E Z\) is shorthand for \(\mathbb E[Z]\), \(|Z - \mathbb E Z|\) is the distance from the mean in either direction, and \(\operatorname{Var}[Z]/a^2\) is the variance over the squared distance. In plain words: **a variable lands at least \(a\) away from its mean with probability at most its variance over \(a^2\).** The week’s mistake count has variance \(60 \times 0.21 = 12.6\) (the next paragraph shows why variances of independent draws add up), so missing the mean by 6 or more, which is 0.1 in empirical risk, has probability at most \(12.6/36 = 0.35\).
+
+```python
+from math import comb
+
+m, p, a = 60, 0.3, 6
+def pmf(k):
+    return comb(m, k) * p**k * (1 - p)**(m - k)
+mu = m * p
+var = sum((k - mu)**2 * pmf(k) for k in range(m + 1))
+tail = sum(pmf(k) for k in range(m + 1) if abs(k - mu) >= a)
+print(round(var, 4), round(tail, 4), round(var / a**2, 4))
+```
+
+It prints `12.6 0.12 0.35`: the variance, the exact chance of missing the mean by 6 or more, and Chebyshev’s bound. Since 24 or more mistakes is one way of missing the mean by 6, Chebyshev’s 0.35 also covers Markov’s event, and beats its 0.75, because it knows the variance too.
+
 *Proof.* The events \(|Z - \mathbb E Z| \ge a\) and \((Z - \mathbb E Z)^2 \ge a^2\) are the same event. Apply Markov to the non-negative variable \((Z - \mathbb E Z)^2\) with threshold \(a^2\); its expectation is \(\operatorname{Var}[Z]\). \(\blacksquare\)
 
-For an average of \(m\) i.i.d. variables \(Z_1, \dots, Z_m\) with mean \(\mu\), the variance shrinks like \(1/m\). Expand \(\operatorname{Var}[\sum_i Z_i] = \sum_{i,j} \mathbb E[(Z_i - \mu)(Z_j - \mu)]\). For \(i \ne j\), independence lets the expectation of the product split into a product of expectations, \(\mathbb E[Z_i - \mu]\,\mathbb E[Z_j - \mu] = 0 \cdot 0\). Only the \(m\) diagonal terms survive, so \(\operatorname{Var}[\sum_i Z_i] = m \operatorname{Var}[Z_1]\), and dividing the sum by \(m\) divides the variance by \(m^2\):
+Averaging calms a variable down. One loss of \(h_{11}\) has variance 0.21, but the average of a week’s 60 losses has variance only \(0.21/60 = 0.0035\). In general, for an average of \(m\) i.i.d. variables \(Z_1, \dots, Z_m\) with mean \(\mu\) (the Greek letter mu), the variance shrinks like \(1/m\). Expand \(\operatorname{Var}[\sum_i Z_i] = \sum_{i,j} \mathbb E[(Z_i - \mu)(Z_j - \mu)]\). For \(i \ne j\), independence lets the expectation of the product split into a product of expectations, \(\mathbb E[Z_i - \mu]\,\mathbb E[Z_j - \mu] = 0 \cdot 0\). Only the \(m\) diagonal terms survive, so \(\operatorname{Var}[\sum_i Z_i] = m \operatorname{Var}[Z_1]\), and dividing the sum by \(m\) divides the variance by \(m^2\):
 
 \[ \operatorname{Var}\Big[\frac{1}{m}\sum_{i=1}^m Z_i\Big] = \frac{\operatorname{Var}[Z_1]}{m}, \qquad \mathbb P\Big[\Big|\frac{1}{m}\sum_{i=1}^m Z_i - \mu\Big| \ge \varepsilon\Big] \le \frac{\operatorname{Var}[Z_1]}{m \varepsilon^2}. \]
+
+Read the first identity from the inside out: \(\sum_{i=1}^m Z_i\) adds the \(m\) variables, \(\frac1m\) makes the sum an average, and \(\operatorname{Var}\) measures how much that average wobbles. In the expansion just before it, \(\sum_{i,j}\) ran over every pair of positions \((i, j)\), \(m^2\) pairs in all, and only the \(m\) pairs with \(i = j\) survived. The second display is Chebyshev applied to the average, with \(a = \varepsilon\) and the shrunken variance. In plain words: **averaging \(m\) independent draws divides the variance by \(m\), so the chance of being \(\varepsilon\) off falls like \(1/m\).**
+
+```python
+import random
+
+rng, m, p, weeks = random.Random(0), 60, 0.3, 100_000
+avgs = [rng.binomialvariate(m, p) / m for _ in range(weeks)]
+mean = sum(avgs) / weeks
+var = sum((v - mean)**2 for v in avgs) / weeks
+print(round(var, 5), round(p * (1 - p) / m, 5))
+```
+
+It prints `0.00351 0.0035`: the variance of 100,000 simulated weekly averages, against the formula. The second display is the `chebyshev` column of the snippet after Hoeffding’s inequality.
 
 For our row \(h_{11}\), each loss is 1 with probability 0.3, so its variance is \(0.3 \times 0.7 = 0.21\). With \(m = 60\) and \(\varepsilon = 0.1\), Chebyshev says the row is off by 0.1 or more with probability at most \(0.21/0.6 = 0.35\).
 
 That bound shrinks like \(1/m\). For one row, fine. For a dashboard, it is the wrong shape, as you’ll see when we add up the rows: we will need a bound that shrinks *exponentially* in \(m\). That is Hoeffding’s inequality, and its engine is a small lemma about one bounded variable.
 
+The lemma looks not at a variable itself but at \(e\), the number 2.718…, raised to a multiple of it. Here is why we want that strange-looking quantity: powers turn a sum into a product, as in \(e^{2 + 3} = e^2 \cdot e^3\), and products of independent variables are easy to take expectations of. Hold that thought. The lemma says that if a variable averages 0 and stays inside a range, the average of \(e\) to a multiple of it cannot be large, and only the width of the range matters. Take the loss of \(h_{11}\) minus its mean 0.3: it is 0.7 with probability 0.3 and −0.3 with probability 0.7, so it averages 0 and lives in a range of width 1. The average of \(e\) to that value is \(0.3\,e^{0.7} + 0.7\,e^{-0.3} \approx 1.1227\), and the lemma caps it at \(e^{1/8} \approx 1.1331\).
+
 **Hoeffding’s lemma.** Let \(X\) take values in \([a, b]\) with \(\mathbb E[X] = 0\). Then for every \(\lambda > 0\),
 
 \[ \mathbb E\big[e^{\lambda X}\big] \le e^{\lambda^2 (b - a)^2 / 8}. \]
 
-The quantity \(\mathbb E[e^{\lambda X}]\) looks strange at first. Here is why we want it: it turns a sum into a product, \(e^{\lambda(x_1 + x_2)} = e^{\lambda x_1} e^{\lambda x_2}\), and products of independent variables are easy to take expectations of. Hold that thought; the lemma comes first.
+Read it from the inside out. \(X\) is a centred variable, with mean 0, and \([a, b]\) is the interval it lives in, so \(b - a\) is the width of its range. \(\lambda\) (the Greek letter lambda) is a positive dial that multiplies \(X\); we will tune it later. \(e^{\lambda X}\) is \(e\) raised to the power \(\lambda X\), and \(\mathbb E\) averages it over the outcomes of \(X\). The right side is \(e\) raised to \(\lambda^2 (b-a)^2/8\), which depends only on the dial and the width. In plain words: **for a centred variable with a range of width \(b - a\), the average of \(e^{\lambda X}\) is at most \(e^{\lambda^2 (b-a)^2/8}\).** The example above is \(\lambda = 1\), \(a = -0.3\), \(b = 0.7\). The first snippet after the proof computes both sides for five values of \(\lambda\).
 
 *Proof.* If \(a = b\), then \(X = 0\) and both sides equal 1, so assume \(a < b\). Since \(X\) has mean 0 and lives in \([a, b]\), we have \(a \le 0 \le b\).
 
@@ -266,9 +339,26 @@ The quantity \(\mathbb E[e^{\lambda X}]\) looks strange at first. Here is why we
 
 \[ e^{\lambda x} \le \frac{b - x}{b - a}\, e^{\lambda a} + \frac{x - a}{b - a}\, e^{\lambda b}. \]
 
+The two fractions are weights that add up to 1: \(\frac{b - x}{b - a}\) grows as \(x\) moves toward \(a\), and \(\frac{x - a}{b - a}\) as it moves toward \(b\), so the right side is the straight line from the curve’s value at \(a\) to its value at \(b\). In plain words: **between \(a\) and \(b\), the curve \(e^{\lambda x}\) stays below the straight line joining its two ends.** With \(a = -0.3\), \(b = 0.7\) and \(\lambda = 1\), at \(x = 0\) the curve is \(e^0 = 1\) and the line is \(0.7\,e^{-0.3} + 0.3\,e^{0.7} \approx 1.1227\).
+
+```python
+from math import exp
+
+a, b, lam = -0.3, 0.7, 1.0
+def chord(x):
+    w = (b - x) / (b - a)
+    return w * exp(lam * a) + (1 - w) * exp(lam * b)
+for x in (-0.3, 0.0, 0.7):
+    print(x, round(exp(lam * x), 4), round(chord(x), 4))
+```
+
+It prints `-0.3 0.7408 0.7408`, `0.0 1.0 1.1227` and `0.7 2.0138 2.0138`: curve and line meet at the two ends, and the line is above in between.
+
 *Step 2, take expectations.* This holds for every value \(X\) can take, so it holds in expectation. The right side is linear in \(x\), and \(\mathbb E[X] = 0\), so
 
 \[ \mathbb E\big[e^{\lambda X}\big] \le \frac{b}{b - a}\, e^{\lambda a} - \frac{a}{b - a}\, e^{\lambda b}. \]
+
+This is the chord evaluated at the mean of \(X\), which is 0. Our centred loss only ever sits at an end, where curve and line meet, so for it the bound is exact: 1.1227 again.
 
 *Step 3, change variables.* Let \(p = \frac{-a}{b - a} \in [0, 1]\) and \(h = \lambda (b - a)\). Then \(1 - p = \frac{b}{b - a}\) and \(\lambda a = -hp\), so the right side equals \(e^{-hp}(1 - p + p e^{h})\), which is \(e^{L(h)}\) with
 
@@ -276,9 +366,11 @@ The quantity \(\mathbb E[e^{\lambda X}]\) looks strange at first. Here is why we
 
 (Check the second term: \(p\,e^{-hp} e^{h} = p\,e^{\lambda a + \lambda(b - a)} = p\,e^{\lambda b}\), and \(p = \frac{-a}{b - a}\).) It remains to show \(L(h) \le h^2/8\), because then \(e^{L(h)} \le e^{\lambda^2 (b - a)^2/8}\).
 
+Here \(\log\) is the natural logarithm, the inverse of raising \(e\) to a power, so \(e^{L(h)}\) undoes it. This \(h\) is a plain number, not a hypothesis; the letter is borrowed for the proof only. For our loss, \(p = 0.3\), and at \(h = 1\) we get \(L(1) \approx 0.116\), below \(1/8 = 0.125\). The second snippet after the proof scans \(h^2/8 - L(h)\) across a grid and finds it never negative.
+
 *Step 4, three facts about \(L\).* First, \(L(0) = 0 + \log 1 = 0\). Second, with \(q(h) = \frac{p e^h}{1 - p + p e^h}\), the derivative is \(L'(h) = -p + q(h)\), and \(q(0) = p\), so \(L'(0) = 0\). Third, differentiating \(q\) by the quotient rule gives \(q'(h) = q(h)\big(1 - q(h)\big)\), so \(L''(h) = q(1 - q)\). Since \(q \in [0, 1]\), and a product \(q(1 - q)\) of two non-negative numbers summing to 1 is at most \(1/4\), we get \(L''(h) \le 1/4\) for every \(h\).
 
-*Step 5, Taylor.* Taylor’s theorem with the Lagrange remainder says that for some \(\xi\) between 0 and \(h\),
+*Step 5, Taylor.* Taylor’s theorem with the Lagrange remainder says that a smooth function equals its value at 0, plus its slope at 0 times \(h\), plus half its curvature somewhere along the way times \(h^2\). With \(L'\) the slope, \(L''\) the curvature, and \(\xi\) (the Greek letter xi) a point between 0 and \(h\) that the theorem promises without naming,
 
 \[ L(h) = L(0) + L'(0)\,h + \tfrac12 L''(\xi)\,h^2 \le 0 + 0 + \tfrac12 \cdot \tfrac14\, h^2 = \frac{h^2}{8}. \qquad \blacksquare \]
 
@@ -309,9 +401,13 @@ print(round(gap, 6))
 
 It prints `0.0`: the gap is never negative, and it touches zero only at \(h = 0\), where both sides are 0.
 
+Now the payoff. Hoeffding’s inequality says that when an average is built from \(m\) independent draws that each stay inside a range of width 1, the chance that it misses its mean by more than \(\varepsilon\) is at most twice \(e^{-2m\varepsilon^2}\). For \(h_{11}\)’s row at 60 examples and \(\varepsilon = 0.1\), that is at most \(2e^{-1.2} \approx 0.60\), and every extra example multiplies the bound by the same factor \(e^{-0.02}\).
+
 **Hoeffding’s inequality.** Let \(Z_1, \dots, Z_m\) be i.i.d. random variables with \(\mathbb E[Z_i] = \mu\) and \(\mathbb P[a \le Z_i \le b] = 1\). Then for every \(\varepsilon > 0\),
 
 \[ \mathbb P\Big[\Big|\frac{1}{m}\sum_{i=1}^m Z_i - \mu\Big| > \varepsilon\Big] \le 2 \exp\big(-2 m \varepsilon^2 / (b - a)^2\big). \]
+
+Read it from the inside out. \(\frac{1}{m}\sum_{i=1}^m Z_i\) is the average of the \(m\) draws, a row of the dashboard when \(Z_i\) is example \(i\)’s loss. Subtracting \(\mu\) and taking \(|\cdot|\) gives how far the average lands from its mean, and the event inside \(\mathbb P[\dots]\) is that this distance exceeds \(\varepsilon\). The condition \(\mathbb P[a \le Z_i \le b] = 1\) just says every draw lands in \([a, b]\). On the right, \(\exp(t)\) is another way to write \(e^t\), used when the exponent is too long to sit up high, and dividing by \((b - a)^2\) rescales for ranges wider or narrower than 1. In plain words: **the chance that an average of \(m\) bounded i.i.d. draws misses its mean by more than \(\varepsilon\) is at most \(2e^{-2m\varepsilon^2}\), once the range is scaled to width 1.** The 0.60 above is the `hoeffding` column of the snippet after the proof, which sets it next to the exact answer and Chebyshev’s.
 
 *Proof.* Centre the variables: \(X_i = Z_i - \mu\), and \(\bar X = \frac1m \sum_i X_i\). Each \(X_i\) has mean 0 and lives in \([a - \mu, b - \mu]\), an interval of the same width \(b - a\).
 
@@ -319,21 +415,41 @@ It prints `0.0`: the gap is never negative, and it touches zero only at \(h = 0\
 
 \[ \mathbb P[\bar X \ge \varepsilon] = \mathbb P\big[e^{\lambda \bar X} \ge e^{\lambda \varepsilon}\big] \le e^{-\lambda \varepsilon}\, \mathbb E\big[e^{\lambda \bar X}\big]. \]
 
+Here \(\bar X\), read “X bar”, is the average of the centred variables, so \(\bar X \ge \varepsilon\) is the upper half of the event we want. The display is Markov with \(Z = e^{\lambda \bar X}\) and threshold \(e^{\lambda \varepsilon}\), and \(e^{-\lambda\varepsilon}\) is one over that threshold.
+
 *Step 2, independence turns the sum into a product.* We have \(e^{\lambda \bar X} = \prod_i e^{\lambda X_i / m}\). Each factor is a function of \(Z_i\) alone, and functions of independent variables are independent, so the expectation of the product is the product of the expectations:
 
 \[ \mathbb E\big[e^{\lambda \bar X}\big] = \prod_{i=1}^m \mathbb E\big[e^{(\lambda/m) X_i}\big]. \]
 
 This is the step that uses independence, and the only one.
 
+The symbol \(\prod_{i=1}^m\) is the product counterpart of \(\sum\): it multiplies the \(m\) factors instead of adding them. In plain words: **for independent draws, the average of a product is the product of the averages.** With two centred losses of \(h_{11}\) and \(\lambda = 1\), there are four outcomes to average over, and Python can check both sides:
+
+```python
+from itertools import product
+from math import exp
+
+p, lam, m = 0.3, 1.0, 2
+X = {1 - p: p, 0 - p: 1 - p}
+one = sum(q * exp(lam / m * x) for x, q in X.items())
+both = sum(X[x1] * X[x2] * exp(lam * (x1 + x2) / m)
+           for x1, x2 in product(X, repeat=2))
+print(round(both, 6), round(one**m, 6))
+```
+
+It prints `1.057228 1.057228`: averaging over all four outcomes gives the same number as squaring the one-draw average.
+
 *Step 3, Hoeffding’s lemma on each factor*, with \(\lambda/m\) in place of \(\lambda\): each factor is at most \(e^{\lambda^2 (b - a)^2/(8 m^2)}\). Multiplying \(m\) of them,
 
 \[ \mathbb P[\bar X \ge \varepsilon] \le \exp\Big(-\lambda \varepsilon + \frac{\lambda^2 (b - a)^2}{8m}\Big). \]
 
-*Step 4, choose \(\lambda\).* The bound holds for every \(\lambda > 0\), so pick the one that makes the exponent smallest. It is a parabola in \(\lambda\), minimized at \(\lambda = 4 m \varepsilon/(b - a)^2\). Substituting, the exponent becomes \(-\frac{4m\varepsilon^2}{(b-a)^2} + \frac{2m\varepsilon^2}{(b-a)^2} = -\frac{2m\varepsilon^2}{(b-a)^2}\).
+The exponent is step 1’s \(-\lambda\varepsilon\) plus \(m\) copies of \(\lambda^2(b-a)^2/(8m^2)\), since multiplying powers of \(e\) adds their exponents.
+
+*Step 4, choose \(\lambda\).* The bound holds for every \(\lambda > 0\), so pick the one that makes the exponent smallest. It is a parabola in \(\lambda\), minimized at \(\lambda = 4 m \varepsilon/(b - a)^2\). Substituting, the exponent becomes \(-\frac{4m\varepsilon^2}{(b-a)^2} + \frac{2m\varepsilon^2}{(b-a)^2} = -\frac{2m\varepsilon^2}{(b-a)^2}\). For \(h_{11}\)’s row, with \(m = 60\), \(\varepsilon = 0.1\) and width 1, the best dial is \(\lambda = 24\) and the exponent is \(-2.4 + 1.2 = -1.2\).
 
 *Step 5, the lower tail.* The variables \(-Z_i\) are also i.i.d., with mean \(-\mu\), in an interval of width \(b - a\). The same four steps give \(\mathbb P[\bar X \le -\varepsilon] \le e^{-2m\varepsilon^2/(b-a)^2}\).
 
-*Step 6, combine.* The event \(|\bar X| > \varepsilon\) is contained in the union of \(\bar X \ge \varepsilon\) and \(\bar X \le -\varepsilon\). By the union bound from lesson 2, its probability is at most the sum of the two, \(2e^{-2m\varepsilon^2/(b-a)^2}\). \(\blacksquare\)
+*Step 6, combine.* The event \(|\bar X| > \varepsilon\) is contained in the union of \(\bar X \ge \varepsilon\) and \(\bar X \le -\varepsilon\). By the union bound from lesson 2 (the chance that at least one of several events happens is at most the sum of their chances), its probability is at most the sum of the two, \(2e^{-2m\varepsilon^2/(b-a)^2}\). \(\blacksquare\)
 
 Let’s compare the two bounds with the truth for our row, \(p = 0.3\) and \(\varepsilon = 0.1\). For the 0-1 loss, the number of mistakes is binomial, so the exact probability of being off by more than 0.1 is a finite sum we can compute with fractions, no rounding.
 

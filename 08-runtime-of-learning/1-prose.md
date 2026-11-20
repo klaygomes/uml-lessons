@@ -6,9 +6,23 @@ Lesson 7 ended with a filter that, on paper, does everything right. Your teammat
 
 Then the operations team ran the same training job on the real mail stream, where hundreds of features are in use, and it never finished.
 
-You already know why, because lesson 7 did the sum. SRM’s stopping rule runs ERM over the lists of size at most 1, then size at most 2, and so on, and it may stop only once the gap for the next size reaches the best bound found so far. With 1,000 labels the best bound was 0.1938, and the gap does not reach it before size 22. The class \(\mathcal H_{22}\) holds about \(1.55 \times 10^{28}\) decision lists. On a toy stream with six features the rule could stop at size 6; on the real stream it cannot know that no later feature matters.
+You already know why, because lesson 7 did the sum. SRM’s stopping rule runs ERM (empirical risk minimization, lesson 2’s rule: return a hypothesis with the fewest mistakes on the training examples) over the lists of size at most 1, then size at most 2, and so on, and it may stop only once the gap for the next size reaches the best bound found so far. With 1,000 labels the best bound was 0.1938, and the gap does not reach it before size 22. As in lesson 7, \(\mathcal H_n\) is the class of decision lists of size at most \(n\), so \(\mathcal H_{22}\) is every list with at most 22 tests, each on a different one of features 1 to 22, and it holds about \(1.55 \times 10^{28}\) of them. On a toy stream with six features the rule could stop at size 6; on the real stream it cannot know that no later feature matters.
 
-How long is “never”? Suppose the job does the simplest thing, checking every list of each size against every one of the 1,000 examples, on a machine that does a billion such checks a second. Here is the cost of finishing every size up to \(n\), with lesson 7’s count of lists, \(|\mathcal H_n| = 2 \sum_{k=0}^{n} 2^k \, n!/(n-k)!\).
+How long is “never”? Suppose the job does the simplest thing, checking every list of each size against every one of the 1,000 examples, on a machine that does a billion such checks a second. To price that, we need lesson 7’s count of lists, so here it is again, read slowly:
+
+\[ |\mathcal H_n| = 2 \sum_{k=0}^{n} 2^k \, \frac{n!}{(n-k)!}. \]
+
+Read it from the inside out.
+
+- \(k\) is the number of tests in a list, and the sum adds up the lists of each length \(k\) from 0 to \(n\).
+- \(n!/(n-k)!\) is \(n \times (n-1) \times \dots \times (n-k+1)\), the number of ways to choose \(k\) different features in order: \(n\) choices for the first test, \(n-1\) for the second, and so on. The exclamation mark is the factorial, \(n! = 1 \times 2 \times \dots \times n\).
+- \(2^k\) is the label each of the \(k\) tests outputs when it fires, junk or keep, two choices per test.
+- The factor 2 in front is the default label at the end of the list.
+- The bars \(|\cdot|\) mean “how many”: \(|\mathcal H_n|\) is the number of lists in the class.
+
+In plain words: **the number of decision lists of size at most \(n\) is the sum, over every length, of the ways to order the tests times the ways to label them, doubled for the default.** With \(n = 2\) features: one empty list, \(2 \times 2 = 4\) lists of one test, \(4 \times 2 = 8\) lists of two, so \(2 \times (1 + 4 + 8) = 26\) lists. In the snippet below, `size_H(n)` is this formula term by term, with `math.perm(n, k)` standing for \(n!/(n-k)!\); `size_H(2)` returns 26.
+
+Here is the cost of finishing every size up to \(n\).
 
 ```python
 import math
@@ -32,13 +46,51 @@ Every hypothesis class has two prices. The first is the one you have been paying
 
 How do you measure time without a stopwatch? The seconds an algorithm takes depend on the machine: the clock rate of its processor, its memory, the language. So computer science measures time asymptotically. When we say merge sort sorts \(n\) items in time \(O(n \log n)\), we mean this: on any machine that implements some accepted abstract model of computation, there are constants \(c\) and \(n_0\), which may depend on the machine, such that for every \(n > n_0\), sorting any \(n\) items takes at most \(c \, n \log n\) seconds. The machine changes the constant and nothing else.
 
-A task is called **feasible**, or **efficiently computable**, when some algorithm does it in time \(O(p(n))\) for a polynomial \(p\). Polynomial is the line between “buy a faster machine” and “no machine will do”. Doubling \(n\) multiplies \(n^3\) by 8. It multiplies \(2^n\) by \(2^n\).
+That sentence is dense, so let’s take it apart.
+
+- \(O(\cdot)\), read “big O of”, names a growth rate and hides the constant in front.
+- \(n\) is the number of items, and \(\log n\) is its logarithm (base 2 here; another base only changes \(c\)), so \(n \log n\) grows a little faster than \(n\).
+- \(c\) is the constant a particular machine brings: a slow machine has a large \(c\), a fast one a small \(c\).
+- \(n_0\) is a threshold: the promise only has to hold for inputs larger than \(n_0\), because small inputs are cheap anyway.
+- “For every \(n > n_0\)” and “any \(n\) items” say the bound holds for every large size and for the worst arrangement of that size.
+
+In plain words: **past some size, the time never exceeds a fixed multiple of \(n \log n\).** For 8 items, \(8 \log_2 8 = 24\), and merge sort makes at most 24 comparisons. Here is merge sort counting its comparisons against \(n \log_2 n\), with \(c = 1\).
+
+```python
+import math, random
+def sort(a, count):
+    if len(a) < 2:
+        return a
+    half = len(a) // 2
+    left, right = sort(a[:half], count), sort(a[half:], count)
+    out = []
+    while left and right:
+        count[0] += 1
+        side = left if left[0] <= right[0] else right
+        out.append(side.pop(0))
+    return out + left + right
+for n in (8, 1000, 10000):
+    count = [0]
+    sort(random.Random(0).sample(range(n), n), count)
+    print(n, count[0], round(n * math.log2(n)))
+```
+
+It prints `8 15 24`, `1000 8709 9966` and `10000 120501 132877`: the comparisons, then \(n \log_2 n\), and the first never passes the second.
+
+A task is called **feasible**, or **efficiently computable**, when some algorithm does it in time \(O(p(n))\) for a polynomial \(p\), a sum of powers of \(n\) with constant coefficients and exponents, such as \(n^3\) or \(5n^2 + n\). Polynomial is the line between “buy a faster machine” and “no machine will do”. Doubling \(n\) multiplies \(n^3\) by 8. It multiplies \(2^n\) by \(2^n\).
+
+```python
+n = 10
+print((2 * n) ** 3 // n ** 3, 2 ** (2 * n) // 2 ** n)
+```
+
+It prints `8 1024`: going from 10 to 20 features multiplies \(n^3\) by 8 and \(2^n\) by \(2^{10} = 1024\).
 
 All of that assumes we know what \(n\), the input size, is. For sorting it is obvious: the length of the list, or the number of bits it takes to write down. For learning it is not obvious at all, and this is the first real subtlety of the lesson.
 
-Why not the number of examples \(m\)? Because that would be pointless. Give a learner far more examples than its sample complexity, and it can simply ignore the extra ones. A larger training sequence never makes learning harder, so the time we allow a learner should not grow just because we handed it more data. Measuring runtime against \(m\) would reward a learner for wasting examples.
+Why not the number of examples \(m\), the length of the training sequence? Because that would be pointless. Give a learner far more examples than its sample complexity, and it can simply ignore the extra ones. A larger training sequence never makes learning harder, so the time we allow a learner should not grow just because we handed it more data. Measuring runtime against \(m\) would reward a learner for wasting examples.
 
-Instead, we measure runtime against the natural parameters of the problem: the accuracy \(\varepsilon\), the confidence \(\delta\), the number of features, and measures of how complex the hypothesis class is. To get an asymptotic question at all, we build a **sequence of problems**. Take axis aligned rectangles, which you will meet properly in a moment. Fix \(\varepsilon\) and \(\delta\) and let the dimension run through \(n = 2, 3, 4, \dots\): that is one sequence. Or fix the dimension and \(\delta\), and let the accuracy run through \(\varepsilon = 1/2, 1/3, \dots\): that is another. Once you fix the sequence, you can ask how the runtime grows along it.
+Instead, we measure runtime against the natural parameters of the problem: the accuracy \(\varepsilon\) (as since lesson 3, the extra true risk we tolerate above the best in the class, such as 0.05), the confidence \(\delta\) (the chance we allow the guarantee to fail, such as 0.01), the number of features, and measures of how complex the hypothesis class is. To get an asymptotic question at all, we build a **sequence of problems**. Take axis aligned rectangles, which you will meet properly in a moment. Fix \(\varepsilon\) and \(\delta\) and let the dimension run through \(n = 2, 3, 4, \dots\): that is one sequence. Or fix the dimension and \(\delta\), and let the accuracy run through \(\varepsilon = 1/2, 1/3, \dots\): that is another. Once you fix the sequence, you can ask how the runtime grows along it.
 
 ## A learner that cheats
 
