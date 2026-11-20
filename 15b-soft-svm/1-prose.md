@@ -56,7 +56,8 @@ signed = [y * dot(w0, x) for x, (_, y) in zip(X, S)]
 print([str(s) for s in signed])
 gamma = min(signed) / math.sqrt(dot(w0, w0))
 rho = max(math.sqrt(dot(x, x)) for x in X)
-print(round(gamma, 4), round(rho, 4), round((rho / gamma) ** 2, 2))
+ratio2 = (rho / gamma) ** 2
+print(round(gamma, 4), round(rho, 4), round(ratio2, 2))
 ```
 
 It prints `['5/3', '1', '4/3', '5/3', '1', '4/3', '1', '4/3']`, then `0.8018 5.4772 46.67`. Every signed score is at least 1, three of them exactly 1 (B, E and G), and the difficulty ratio \((\rho/\gamma)^2\) is 46.67. Now add I and J, and all of this breaks.
@@ -134,6 +135,10 @@ It prints `0.475 [0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 2.0, 1.5]` and then `0
 Read the slacks of the soft-SVM solution. A, B, C, D, F, G and H pay nothing. E, lifted \((1, 0, 0)\) with label \(-1\), has signed score \(\tfrac12\) and pays 0.5: it is on the right side but inside the margin. I pays 2 and J pays 1.5: both are on the wrong side. Total hinge \(4/10 = 0.4\), plus \(0.1 \times \|\mathbf w\|^2 = 0.1 \times 0.75 = 0.075\), gives 0.475. The old hard-SVM separator has no slack on the eight original messages, but its longer \(\mathbf w\) (\(\|\mathbf w\|^2 = 14/9\)) costs \(0.156\) and its slacks on I and J cost 0.367, for 0.522. Soft-SVM accepts a little violation on E to buy a shorter vector.
 
 [[diagram:slack]]
+
+Before going further, try it with your hands. In the lab below you have the ten messages and a slider for \(\lambda\). Watch the line, the slack on each message, the two parts of the objective and the lifted margin \(1/\|\mathbf w\|\) move as you slide.
+
+[[lab]]
 
 ## What soft-SVM costs in labels
 
@@ -329,7 +334,7 @@ For a number \(t\) with \(0 < t \le 1\), consider \(\mathbf w_t = \mathbf w_0 - 
 
 \[ \|\mathbf w_t\|^2 = \|\mathbf w_0\|^2 - 2t \langle \mathbf w_0, \mathbf r \rangle + t^2 \|\mathbf r\|^2. \]
 
-This is the same square-of-a-sum expansion as in the distance proof, with \(\mathbf w_0\) and \(-t\mathbf r\). Since \(\mathbf p\) lies in \(V\) and \(\mathbf r\) is perpendicular to every vector of \(V\), \(\langle \mathbf p, \mathbf r \rangle = 0\), so \(\langle \mathbf w_0, \mathbf r \rangle = \langle \mathbf p + \mathbf r, \mathbf r \rangle = \|\mathbf r\|^2\). Hence \(\|\mathbf w_t\|^2 = \|\mathbf w_0\|^2 - (2t - t^2) \|\mathbf r\|^2\), and for \(0 < t \le 1\) we have \(2t - t^2 = t(2 - t) > 0\), so \(\|\mathbf w_t\|^2 < \|\mathbf w_0\|^2\). A feasible vector shorter than the minimizer is a contradiction, so \(\mathbf r = \mathbf 0\) and \(\mathbf w_0 = \mathbf p \in V\). \(\blacksquare\)
+This is the square of a sum of two arrows, \(\|\mathbf a + \mathbf c\|^2 = \|\mathbf a\|^2 + \|\mathbf c\|^2 + 2\langle \mathbf a, \mathbf c \rangle\), the vector form of \((a + c)^2\) that lesson 15a used for the distance to a hyperplane, with \(\mathbf a = \mathbf w_0\) and \(\mathbf c = -t\mathbf r\). Since \(\mathbf p\) lies in \(V\) and \(\mathbf r\) is perpendicular to every vector of \(V\), \(\langle \mathbf p, \mathbf r \rangle = 0\), so \(\langle \mathbf w_0, \mathbf r \rangle = \langle \mathbf p + \mathbf r, \mathbf r \rangle = \|\mathbf r\|^2\). Hence \(\|\mathbf w_t\|^2 = \|\mathbf w_0\|^2 - (2t - t^2) \|\mathbf r\|^2\), and for \(0 < t \le 1\) we have \(2t - t^2 = t(2 - t) > 0\), so \(\|\mathbf w_t\|^2 < \|\mathbf w_0\|^2\). A feasible vector shorter than the minimizer is a contradiction, so \(\mathbf r = \mathbf 0\) and \(\mathbf w_0 = \mathbf p \in V\). \(\blacksquare\)
 
 One edge case falls out for free: \(I\) cannot be empty. If it were, \(V = \{\mathbf 0\}\) and the theorem would give \(\mathbf w_0 = \mathbf 0\), which violates every constraint.
 
@@ -432,7 +437,7 @@ primal, dual = dot(w, w) / 2, sum(alpha) - dot(w, w) / 2
 print(round(primal, 4), round(dual, 4))
 ```
 
-It prints `[0.0, 0.2778, 0.0, 0.0, 1.1111, 0.0, 0.1667, 0.0]`, then `[-1.0, 0.6667, -0.3333]`, then `0.7778 0.7778`. The coefficients are \(\tfrac{5}{18}\), \(\tfrac{10}{9}\) and \(\tfrac16\) on B, E and G and zero elsewhere, exactly the support vectors; the weight vector is the hard-SVM solution of the homogeneous section; and primal and dual values agree at \(\tfrac79\), as strong duality promises.
+It prints `[0.0, 0.2778, 0.0, 0.0, 1.1111, 0.0, 0.1667, 0.0]`, then `[-1.0, 0.6667, -0.3333]`, then `0.7778 0.7778`. The coefficients are \(\tfrac{5}{18}\), \(\tfrac{10}{9}\) and \(\tfrac16\) on B, E and G and zero elsewhere, exactly the support vectors; the weight vector is the homogeneous hard-SVM solution of lesson 15a; and primal and dual values agree at \(\tfrac79\), as strong duality promises.
 
 The same method solves soft-SVM, with one change. Repeating the derivation for the soft-SVM program with its slack variables gives a dual whose only difference is a ceiling: each coefficient must stay between 0 and \(1/(2\lambda m)\), so the update clips at both ends. That is the solver behind the soft-SVM solution \((-\tfrac12, \tfrac12, -\tfrac12)\) we quoted for the ten messages.
 
@@ -615,10 +620,6 @@ It is the right side of the soft-SVM theorem, exactly what `soft_svm_bound` comp
 
 ## What people get wrong
 
-**“Every consistent halfspace is as good as any other.”** They all have empirical risk 0, but they are not equally robust, and they do not carry the same guarantee. The Perceptron’s line on our eight messages left 0.243; hard-SVM’s left 1.342. The three keep messages that a one-word nudge sends to junk under the Perceptron’s line all stay keep under hard-SVM.
-
-**“A bigger margin is always better, so rescale the data.”** Multiplying every message by 10 multiplies the margin by 10 and changes nothing real. The meaningful quantity is \(\rho/\gamma\), or \(\rho B\), which scaling leaves alone. That is why the radius is part of every margin bound.
-
 **“The margin bound beats the VC bound.”** It scales better when \(\rho^2 B^2\) is much smaller than \(d\), as for short documents over a large dictionary. It can be worse on mail that is separable only with a narrow margin, and the hinge loss in its approximation term can exceed the 0-1 error. Preferring a large margin is an inductive bias, with the usual price.
 
 **“Every message on the margin pulls on the separator.”** The weight vector is a combination of messages whose constraints are tight (for soft-SVM, messages on or inside the margin), but being on the margin does not force a nonzero coefficient. In the ten-message soft-SVM example, message A sits exactly at score 1, yet its dual coefficient is 0: removing it would change nothing.
@@ -627,30 +628,23 @@ It is the right side of the soft-SVM theorem, exactly what `soft_svm_bound` comp
 
 ## Recap and the next bug
 
-1. The **margin** of a separating hyperplane is the distance from it to the closest training message; for a unit \(\mathbf w\) that distance is \(|\langle \mathbf w, \mathbf x \rangle + b|\). A large margin means the separator survives perturbations of every message.
-2. **Hard-SVM** returns the separating halfspace with the largest margin. It is the quadratic program “minimize \(\|\mathbf w\|^2\) subject to every signed score being at least 1”, and the largest margin is \(1/\|\mathbf w_0\|\).
-3. Margins only mean something relative to the radius \(\rho\) of the messages. If the distribution is separable with a \((\gamma, \rho)\)-margin, hard-SVM needs a number of examples that grows with \((\rho/\gamma)^2\), with no dependence on the dimension.
-4. **Soft-SVM** allows violations through slack variables, and is exactly regularized loss minimization with the **hinge loss**. Because the hinge loss is convex and \(\rho\)-Lipschitz, its expected 0-1 true risk is at most the best hinge risk of norm \(B\) plus \(\sqrt{8\rho^2 B^2/m}\), again with no \(d\).
-5. The hard-SVM weight vector is a combination of the **support vectors**, the messages on the margin. The **dual problem** finds the coefficients and involves the messages only through their inner products.
-6. Soft-SVM is solved by SGD in \(O(Td)\) time: a Perceptron-like update \(\boldsymbol\theta \leftarrow \boldsymbol\theta + y_i \mathbf x_i\) whenever the signed score is below 1, with weights \(\boldsymbol\theta/(\lambda t)\), averaged.
+1. **Soft-SVM** allows violations through slack variables, and is exactly regularized loss minimization with the **hinge loss**. Because the hinge loss is convex and \(\rho\)-Lipschitz, its expected 0-1 true risk is at most the best hinge risk of norm \(B\) plus \(\sqrt{8\rho^2 B^2/m}\), again with no \(d\).
+2. The hard-SVM weight vector is a combination of the **support vectors**, the messages on the margin. The **dual problem** finds the coefficients and involves the messages only through their inner products.
+3. Soft-SVM is solved by SGD in \(O(Td)\) time: a Perceptron-like update \(\boldsymbol\theta \leftarrow \boldsymbol\theta + y_i \mathbf x_i\) whenever the signed score is below 1, with weights \(\boldsymbol\theta/(\lambda t)\), averaged.
 
-The filter ships with its certificate, and the facilities team gets its lunch invitations. Then the data team brings you something unsettling. They took a month of junk your users labelled and looked at the words, and junk is often marked not by single words but by combinations: “free” alone is innocent, “meeting” alone is innocent, but “free” together with “click” and without “meeting” is almost always junk. No halfspace on word counts can express “this word and that word, but not that one”. The obvious repair is to add a feature for every pair of words. But with 50,000 words that is about 1.25 billion pairs, every message becomes a vector in a space of over a billion dimensions, and just writing one down is out of the question. The margin bound does not care about the dimension, so statistically you could afford that space. But can a linear method work in that space without ever building it? That is the next lesson.
+The filter ships with its certificate, and the nightly job stops coming back empty-handed. Then the data team brings you something unsettling. They took a month of junk your users labelled and looked at the words, and junk is often marked not by single words but by combinations: “free” alone is innocent, “meeting” alone is innocent, but “free” together with “click” and without “meeting” is almost always junk. No halfspace on word counts can express “this word and that word, but not that one”. The obvious repair is to add a feature for every pair of words. But with 50,000 words that is about 1.25 billion pairs, every message becomes a vector in a space of over a billion dimensions, and just writing one down is out of the question. The margin bound does not care about the dimension, so statistically you could afford that space. But can a linear method work in that space without ever building it? That is the next lesson.
 
 ## Concept check
 
 Write your answers down before moving on to the next lesson, with your reasoning, not just the answer.
 
-1. A colleague multiplies every lifted message vector (including the constant 1) by 10, “to make the margin bigger”. For homogeneous hard-SVM on our eight messages, what happens to the margin, to the radius \(\rho\), to the hypothesis returned (as a labelling of messages), and to the bound of the hard-SVM sample-complexity theorem? Then explain why the definition of separability with a \((\gamma, \rho)\)-margin needs \(\rho\) at all.
-2. In the proof of the support-vector theorem, the vector \(\mathbf w_t = \mathbf w_0 - t\mathbf r\) must stay feasible. Why must \(t\) be small, and where exactly does the proof use the fact that there are finitely many examples? Why does the proof need \(t \le 1\) rather than any positive \(t\)? And why can the set of support vectors never be empty?
-3. Messages have radius \(\rho = 5\), and some separator \(\mathbf u\) of norm \(B = 2\) has hinge risk 0.04. With \(m = 20{,}000\) labels, which \(\lambda\) does the soft-SVM theorem tell you to use, and what expected 0-1 true risk does it certify? How many labels would you need to certify 0.15?
+1. In the proof of the support-vector theorem, the vector \(\mathbf w_t = \mathbf w_0 - t\mathbf r\) must stay feasible. Why must \(t\) be small, and where exactly does the proof use the fact that there are finitely many examples? Why does the proof need \(t \le 1\) rather than any positive \(t\)? And why can the set of support vectors never be empty?
+2. Messages have radius \(\rho = 5\), and some separator \(\mathbf u\) of norm \(B = 2\) has hinge risk 0.04. With \(m = 20{,}000\) labels, which \(\lambda\) does the soft-SVM theorem tell you to use, and what expected 0-1 true risk does it certify? How many labels would you need to certify 0.15?
 
 ## Problems
 
 Once the concept check is done, try these. Hints come one at a time in the chat, and no full solutions.
 
-- **Problem 1 (two forms of hard-SVM).** Show that, on a separable training sequence, the rule
-\[ \operatorname*{argmax}_{(\mathbf w, b) : \|\mathbf w\| = 1} \; \min_{i \in [m]} |\langle \mathbf w, \mathbf x_i \rangle + b| \quad \text{subject to} \quad y_i (\langle \mathbf w, \mathbf x_i \rangle + b) > 0 \text{ for all } i \]
-is the same as \(\operatorname{argmax}_{(\mathbf w, b) : \|\mathbf w\| = 1} \min_{i \in [m]} y_i (\langle \mathbf w, \mathbf x_i \rangle + b)\). Start from the set \(G = \{(\mathbf w, b) : y_i (\langle \mathbf w, \mathbf x_i \rangle + b) > 0 \text{ for all } i\}\).
-- **Problem 2 (hard versus soft).** Prove or refute: there is a \(\lambda > 0\) such that for every sample \(S\) of \(m > 1\) examples that is separable by homogeneous halfspaces, hard-SVM and soft-SVM with parameter \(\lambda\) return exactly the same weight vector.
-- **Problem 3 (weak duality).** Prove that for any function \(f\) of two variables \(x \in \mathcal X\) and \(y \in \mathcal Y\),
+- **Problem 1 (hard versus soft).** Prove or refute: there is a \(\lambda > 0\) such that for every sample \(S\) of \(m > 1\) examples that is separable by homogeneous halfspaces, hard-SVM and soft-SVM with parameter \(\lambda\) return exactly the same weight vector.
+- **Problem 2 (weak duality).** Prove that for any function \(f\) of two variables \(x \in \mathcal X\) and \(y \in \mathcal Y\),
 \[ \min_{x \in \mathcal X} \max_{y \in \mathcal Y} f(x, y) \ge \max_{y \in \mathcal Y} \min_{x \in \mathcal X} f(x, y). \]

@@ -48,7 +48,8 @@ Every lesson of the course, delivered or not. `_kit/index.py` reads this table f
 | 18 | Decision trees | How do you grow a readable rule from questions, and when do you stop? |
 | 19 | Nearest neighbour | Can you label a message just by looking at the most similar ones you have seen? |
 | 20 | Neural networks | Can the filter learn its own features from raw messages? |
-| 21 | Online learning | What if the mail arrives one message at a time and an adversary picks it? |
+| 21a | Online mistake bounds | If an adversary picks every message but some rule in the class is perfect, how few mistakes can a filter promise? |
+| 21b | Online regret | When no rule is perfect and the adversary reads every decision, how can a filter promise to be nearly as good as the best rule? |
 | 22 | Clustering | How do you group messages when nobody has labelled any of them? |
 | 23 | Dimensionality reduction | How do you squeeze thousands of features into a few without losing what matters? |
 | 24 | Generative models | What if you model how each kind of message is produced, then ask which one made this? |

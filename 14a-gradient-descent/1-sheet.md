@@ -71,9 +71,9 @@ End-of-chapter problem (Section 14.8, PDF p. 201). In the prose it appears as th
 Next bug: the auditor of lesson 13b signed a certificate for lesson 13’s regularized filter on the audited training sequence (two million messages kept on file), not for the streaming filter; she will sign any filter provably close to the minimum of that objective, and the exact solver takes six hours. Can SGD solve a fixed objective on a fixed training sequence, and how fast? Lesson 14b: projection, variable step size, strongly convex rate, smooth losses, SGD for RLM.
 
 Checks:
-- `python3 -I _kit/check_prose.py 14a-gradient-descent` (2026-11-20): 12,848 words, 16 python fences, failing [19] (the build-it starter, which fails as a stub by design), lines>66 0, book refs 0, em dashes 0, \epsilon 0. About 11,000 words outside code blocks.
+- `python3 -I _kit/check_prose.py 14a-gradient-descent` (2026-11-20): 12,848 words, 16 python fences, failing [19] (the build-it starter, which fails as a stub by design), lines>66 0, book refs 0, em dashes 0, epsilon 0. About 11,000 words outside code blocks.
 - The split copied the original prose up to the end of “Fix the bug” word for word, except the title and one sentence in “Stochastic gradient descent as code”, which now explains the projection in words with the \((3, 4) \mapsto (0.6, 0.8)\) example instead of pointing to “Variants”. “What people get wrong”, the recap items 1 to 5, the concept check and Problem 1 (the original Problem 2) are the original text; the cliffhanger is new and leads into lesson 14b.
-- No `\epsilon`, no em dashes, no straight quotes outside code and math, no book, chapter, section, theorem or page numbers in the prose.
+- No `epsilon` macro, no em dashes, no straight quotes outside code and math, no book, chapter, section, theorem or page numbers in the prose.
 - Not run (CPU rule): read-aloud, fresh reader, PDF book-check agents.
 
 Assumptions:
