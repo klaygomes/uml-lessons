@@ -160,11 +160,27 @@ So the bias has not disappeared. It has moved out of a hypothesis class and into
 
 ## Where it works and where it fails
 
-Let’s reproduce the bug. Here is the secret behind both kinds of mail, the one I promised in the opening. A message is a point \(x \in [0, 1]^{30}\) with every score drawn independently and uniformly, and the probability that users label it junk depends only on the payment score and the sender score:
+Let’s reproduce the bug. Here is the secret behind both kinds of mail, the one I promised in the opening. A message is a point \(x \in [0, 1]^{30}\), thirty scores, with every score drawn independently and uniformly between 0 and 1. Users do not all agree: show the same invoice to ten of them and perhaps seven click “junk”. Call the chance that a message \(x\) gets labelled junk \(\eta(x)\) (the Greek letter eta); for that invoice \(\eta(x) = 0.7\). In this world it depends only on the payment score \(x_1\) and the sender score \(x_2\):
 
 \[ \eta(x) = \min\{1, \max\{0,\; 2x_1 + 2x_2 - 1.5\}\}. \]
 
-So a message with low payment and sender scores (\(x_1 + x_2 \le 0.75\)) is always keep, one with high scores (\(x_1 + x_2 \ge 1.25\)) is always junk, and in between there is a band where users disagree. The other twenty-eight scores carry no information about the label at all.
+- Inside: \(2x_1 + 2x_2 - 1.5\) grows with both scores, and can fall below 0 or rise above 1.
+- \(\max\{0, \cdot\}\) takes the larger of 0 and that number, so anything negative becomes 0.
+- \(\min\{1, \cdot\}\) takes the smaller of 1 and the result, so anything above 1 becomes 1. Together they **clip** the number into \([0, 1]\), as a probability must be.
+
+In plain words: **the chance of junk rises in a straight line with the payment and sender scores, held between 0 and 1.** A message at payment 0.6 and sender 0.5 gives \(1.2 + 1.0 - 1.5 = 0.7\), nothing to clip, so \(\eta = 0.7\); one at (0.2, 0.3) gives \(-0.5\), clipped to 0; one at (0.9, 0.8) gives 1.9, clipped to 1.
+
+```python
+def eta(x):
+    t = 2 * x[0] + 2 * x[1] - 1.5
+    return min(1.0, max(0.0, t))
+
+for x in [(0.2, 0.3), (0.6, 0.5), (0.9, 0.8)]:
+    t = 2 * x[0] + 2 * x[1] - 1.5
+    print(x, round(t, 2), round(eta(x), 2))
+```
+
+It prints `(0.2, 0.3) -0.5 0.0`, `(0.6, 0.5) 0.7 0.7` and `(0.9, 0.8) 1.9 1.0`. So a message with low payment and sender scores (\(x_1 + x_2 \le 0.75\)) is always keep, one with high scores (\(x_1 + x_2 \ge 1.25\)) is always junk, and in between there is a band where users disagree. The other twenty-eight scores carry no information about the label at all.
 
 Now run the copy-your-neighbours filter twice on the same 1,000 labelled messages: once comparing only the first two scores, as the parcel team did, and once comparing all thirty, as the invoice team did.
 
@@ -196,21 +212,53 @@ In the lab below you control the number of labelled messages \(m\), the number o
 
 ## Labels that change slowly
 
-To prove anything, we have to say what “nearby messages have similar labels” means. Recall from lesson 3 that the labels need not be a function of the message: users disagree. A distribution \(\mathcal D\) over \(\mathcal X \times \mathcal Y\), with \(\mathcal Y = \{0, 1\}\), has a marginal \(\mathcal D_x\) over messages, and a **conditional probability of junk**
+To prove anything, we have to say what “nearby messages have similar labels” means. Recall from lesson 3 that the labels need not be a function of the message: users disagree. Examples come from a **distribution** \(\mathcal D\) over \(\mathcal X \times \mathcal Y\), with \(\mathcal Y = \{0, 1\}\): a rule saying how likely each (message, label) pair is. Ignoring the labels leaves its **marginal** \(\mathcal D_x\), how likely each message is. And for each message there is the **conditional probability of junk**, the \(\eta\) we just used:
 
 \[ \eta(x) = \mathbb P[y = 1 \mid x]. \]
 
-The **Bayes optimal predictor** \(f_{\mathcal D}\) says junk exactly when \(\eta(x) \ge 1/2\), and lesson 3 proved that no hypothesis has smaller true risk. Its true risk, the **Bayes risk**, is
+\(\mathbb P[\cdot]\) is the probability of the event inside, here “the label \(y\) is 1, junk”. The vertical bar reads “given”: we look only at examples whose message is \(x\). In plain words: **\(\eta(x)\) is the fraction of users who would call message \(x\) junk.** At (0.6, 0.5) it is 0.7, and drawing ten thousand labels for that one message shows it:
 
-\[ L_{\mathcal D}(f_{\mathcal D}) = \mathbb E_{x \sim \mathcal D_x}\big[ \min\{\eta(x), 1 - \eta(x)\} \big], \]
+```python
+import random
 
-because on a message \(x\) it says the more likely label and is wrong with the less likely probability.
+def eta(x):
+    return min(1.0, max(0.0, 2 * x[0] + 2 * x[1] - 1.5))
 
-Now the assumption. A function \(\eta: \mathcal X \to [0, 1]\) is **c-Lipschitz**, for a constant \(c > 0\), if for all \(x, x' \in \mathcal X\),
+rng, x = random.Random(6), (0.6, 0.5)
+ys = [int(rng.random() < eta(x)) for _ in range(10_000)]
+print(round(eta(x), 2), round(sum(ys) / len(ys), 3))
+```
+
+It prints `0.7 0.701`.
+
+What is the best any filter could do on that message? Saying junk, it is wrong whenever the user says keep, 30% of the time; saying keep, it is wrong 70% of the time. The best choice is the more likely label, and it still errs with the less likely probability, 0.3. The **Bayes optimal predictor** \(f_{\mathcal D}\) makes that best choice everywhere: it says junk exactly when \(\eta(x) \ge 1/2\), and lesson 3 proved that no hypothesis has smaller true risk. Recall that the **true risk** \(L_{\mathcal D}(h)\) of a hypothesis \(h\) is the chance that it mislabels a fresh example drawn from \(\mathcal D\). The true risk of \(f_{\mathcal D}\), the **Bayes risk**, is
+
+\[ L_{\mathcal D}(f_{\mathcal D}) = \mathbb E_{x \sim \mathcal D_x}\big[ \min\{\eta(x), 1 - \eta(x)\} \big]. \]
+
+- \(\min\{\eta(x), 1 - \eta(x)\}\) is the smaller of the two label probabilities at \(x\): the error of the best choice there.
+- \(x \sim \mathcal D_x\) reads “\(x\) is drawn from \(\mathcal D_x\)”: a fresh message arrives at random.
+- \(\mathbb E[\cdot]\), the **expectation**, is the average of the bracket over that random message, each message weighted by how likely it is.
+
+In plain words: **the Bayes risk is the unavoidable error, averaged over all messages.** At (0.6, 0.5) the unavoidable error is \(\min\{0.7, 0.3\} = 0.3\). Messages are uniform on the square here, so the expectation is a plain average over a fine grid of messages:
+
+```python
+def eta(x):
+    return min(1.0, max(0.0, 2 * x[0] + 2 * x[1] - 1.5))
+
+n = 400
+grid = [((i + 0.5) / n, (j + 0.5) / n)
+        for i in range(n) for j in range(n)]
+risk = [min(eta(x), 1 - eta(x)) for x in grid]
+print(round(sum(risk) / len(risk), 4), round(11 / 96, 4))
+```
+
+It prints `0.1146 0.1146`: the invoice world’s Bayes risk is \(11/96\), a number we will use often.
+
+Now the assumption. In the invoice world, nudge the message at (0.6, 0.5) to (0.62, 0.52). The distance moved is \(\sqrt{0.02^2 + 0.02^2} \approx 0.028\), and \(\eta\) moves from 0.70 to 0.78, a change of 0.08: about 2.83 times the distance. Close messages, close probabilities of junk, with a fixed exchange rate between the two. That exchange rate is the constant in the definition. A function \(\eta: \mathcal X \to [0, 1]\) is **c-Lipschitz**, for a constant \(c > 0\), if for all \(x, x' \in \mathcal X\),
 
 \[ |\eta(x) - \eta(x')| \le c\, \|x - x'\|. \]
 
-In words: if two messages are close, their probabilities of junk are close. Moving a distance \(r\) through the domain can change \(\eta\) by at most \(cr\). A small \(c\) means junk changes gently from message to message; a large \(c\) means a tiny change in the scores can flip the odds. Lesson 12 used the same word for losses; here it is a property of the world, not of anything we choose.
+The single bars \(|\cdot|\) are the absolute value, the size of a change ignoring its sign; the double bars are the distance from before. In plain words: **if two messages are close, their probabilities of junk are close: moving a distance \(r\) through the domain changes \(\eta\) by at most \(cr\).** A small \(c\) means junk changes gently from message to message; a large \(c\) means a tiny change in the scores can flip the odds. Lesson 12 used the same word for losses; here it is a property of the world, not of anything we choose.
 
 [[diagram:lipschitz]]
 

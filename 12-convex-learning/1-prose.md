@@ -425,13 +425,13 @@ In the lab you saw the 0-1 risk as terraces and the hinge risk as a bowl, on a s
 
 ## Lipschitzness: losses that cannot change too fast
 
-Convexity says the landscape has one valley. It says nothing about how steep the walls are, and steepness turns out to matter for learning. We measure it with the Euclidean norm.
+Convexity says the landscape has one valley. It says nothing about how steep the walls are, and steepness turns out to matter for learning. The absolute value \(|x|\) never climbs faster than slope 1: from 3 to \(-1\) the input moves 4 and the output only 2. That cap on the slope is the property we want, measured with the Euclidean norm.
 
 **Definition (Lipschitzness).** Let \(C \subseteq \mathbb R^d\). A function \(f : \mathbb R^d \to \mathbb R^k\) is **\(\rho\)-Lipschitz** over \(C\) if for every \(\mathbf w_1, \mathbf w_2 \in C\),
 
 \[ \| f(\mathbf w_1) - f(\mathbf w_2) \| \le \rho \, \| \mathbf w_1 - \mathbf w_2 \|. \]
 
-\(C \subseteq \mathbb R^d\) says \(C\) is a subset of \(\mathbb R^d\), and \(f : \mathbb R^d \to \mathbb R^k\) allows the output to be a vector of \(k\) numbers, which is why the left side uses the length \(\|\cdot\|\) too (for one number it is just the absolute value). The left side is how far apart the outputs are; the right side is \(\rho\) times how far apart the inputs are. In plain words: **the output never moves more than \(\rho\) times as far as the input.** For \(f(x) = |x|\) with \(\rho = 1\), take \(x_1 = 3\) and \(x_2 = -1\): the outputs differ by \(|3 - 1| = 2\), the inputs by 4, and \(2 \le 1 \cdot 4\). Intuitively, a Lipschitz function cannot change too fast: moving the input by a distance \(t\) moves the output by at most \(\rho t\). For a differentiable \(f : \mathbb R \to \mathbb R\) there is an easy sufficient condition. The mean value theorem gives \(f(w_1) - f(w_2) = f'(u)(w_1 - w_2)\) for some \(u\) between \(w_1\) and \(w_2\), so if \(|f'| \le \rho\) everywhere, \(f\) is \(\rho\)-Lipschitz.
+\(C \subseteq \mathbb R^d\) says \(C\) is a subset of \(\mathbb R^d\), and \(f : \mathbb R^d \to \mathbb R^k\) allows the output to be a vector of \(k\) numbers, which is why the left side uses the length \(\|\cdot\|\) too (for one number it is just the absolute value). The left side is how far apart the outputs are; the right side is \(\rho\) times how far apart the inputs are. In plain words: **the output never moves more than \(\rho\) times as far as the input.** For \(|x|\) with \(\rho = 1\), the pair \(3, -1\) above gives \(2 \le 1 \cdot 4\). For a differentiable \(f : \mathbb R \to \mathbb R\) there is an easy sufficient condition. The mean value theorem gives \(f(w_1) - f(w_2) = f'(u)(w_1 - w_2)\) for some \(u\) between \(w_1\) and \(w_2\), so if \(|f'| \le \rho\) everywhere, \(f\) is \(\rho\)-Lipschitz.
 
 Four examples, each a small proof.
 
@@ -501,13 +501,13 @@ It prints `(1, 4, 2) 4.58 4.58` and `(1, 0, 0) 1.0 1.0`: the steepest observed r
 
 ## Smoothness: gradients that cannot change too fast
 
-Lipschitzness bounds how fast the loss changes. Smoothness bounds how fast its *slope* changes.
+Lipschitzness bounds how fast the loss changes. Smoothness bounds how fast its *slope* changes. Softplus has slope \(1/2\) at 0 and \(0.7311\) at 1: over a distance of 1 its slope changed by \(0.2311\), and as we will see it never changes faster than \(1/4\) per unit of distance.
 
 **Definition (smoothness).** A differentiable function \(f : \mathbb R^d \to \mathbb R\) is **\(\beta\)-smooth** if its gradient is \(\beta\)-Lipschitz: for all \(\mathbf v, \mathbf w\),
 
 \[ \|\nabla f(\mathbf v) - \nabla f(\mathbf w)\| \le \beta \|\mathbf v - \mathbf w\|. \]
 
-It is the Lipschitz definition with the gradient \(\nabla f\) in place of \(f\) and \(\beta\) in place of \(\rho\). In plain words: **the slope never changes more than \(\beta\) times as fast as the point moves.** Softplus has slope \(1/2\) at 0 and \(0.7311\) at 1, a change of \(0.2311\) over a distance of 1, within \(\beta = 1/4\); the first line of the softplus snippet below takes the largest such ratio over a grid.
+It is the Lipschitz definition with the gradient \(\nabla f\) in place of \(f\) and \(\beta\) in place of \(\rho\). In plain words: **the slope never changes more than \(\beta\) times as fast as the point moves.** Softplus’s \(0.2311 \le \frac14 \cdot 1\) is one instance; the first line of the softplus snippet below takes the largest such ratio over a grid.
 
 Why care? Because smoothness puts a ceiling over the function, just as convexity put a floor under it.
 

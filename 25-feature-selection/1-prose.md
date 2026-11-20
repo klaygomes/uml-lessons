@@ -278,7 +278,7 @@ fit = [1 * a + 2 * b for a, b in zip(link, old)]
 print(fit == y)
 ```
 
-It prints `link 0.0`, `old 0.7071`, `bangs 0.5`, and `True`. Link has correlation exactly zero, so the filter method keeps old and bangs, and the best line on those two still has square loss \(3/7 \approx 0.43\) on average. Meanwhile link together with old fits every label perfectly. No predictor can do well here without link, and the filter ranks it last.
+It prints `link 0.0`, `old 0.7071`, `bangs 0.5`, and `True`. Link has correlation exactly zero, so the filter method keeps old and bangs, and the best least-squares fit on those two, \(w_{\text{old}}\cdot\text{old} + w_{\text{bangs}}\cdot\text{bangs}\), still has average square loss \(3/7 \approx 0.43\) (you will reproduce it in the build-it challenge). Meanwhile link together with old fits every label perfectly. No predictor can do well here without link, and the filter ranks it last.
 
 [[diagram:filter-blind]]
 
@@ -424,7 +424,7 @@ for j, Xj in X.items():
 
 It prints `1 1.1538 1.1538` and `3 1.7143 1.7143`: the refitted loss and the formula agree for both candidates, and feature 1 wins round 2, bringing the loss from 2.4 down to about 1.15.
 
-Here is OMP as pseudocode. For numerical safety, implementations often rebuild the orthonormal basis each round with a stable factorization such as the singular value decomposition instead of the step-by-step subtraction above, which can lose accuracy over many rounds; the choices are the same.
+Here is OMP as pseudocode. The step-by-step subtraction can lose accuracy in floating point over many rounds, so implementations often rebuild the basis with a more stable method; the choices are the same.
 
 ```
 OMP(X, y, T):
@@ -474,7 +474,7 @@ print(round(R0, 4), round(beta, 4))
 
 It prints `1 -1.0 0.15 0.5`, `2 -2.0 0.6 0.6`, `3 -1.0 0.15 0.5`, then `1.0 3.3333`. Each row is the slope, the guaranteed decrease and the actual best decrease along that coordinate (in average loss, so divide the earlier totals by 6). The steepest coordinate is feature 2, the same choice forward greedy made, and for it the guarantee is tight. For features 1 and 3 the guarantee is loose, because \(\beta\) was set by feature 2’s larger curvature. The gradient rule costs one gradient evaluation, \(O(dm)\), per round.
 
-If this “pick the best coordinate, then step” loop feels familiar, it should. AdaBoost from lesson 10 is exactly a forward greedy selection, over a dictionary of weak hypotheses, of the risk \(R(\mathbf w) = \log \sum_{i=1}^m \exp\left(-y_i \sum_j w_j h_j(x_i)\right)\). The second problem at the end of this lesson walks you through why.
+If this “pick the best coordinate, then step” loop feels familiar, it should. AdaBoost from lesson 10 is exactly this greedy rule, run over a list of weak hypotheses \(h_1, \dots, h_d\) treated as features, on the risk \(R(\mathbf w) = \log \sum_{i=1}^m \exp\left(-y_i \sum_j w_j h_j(x_i)\right)\). Inside, \(\sum_j w_j h_j(x_i)\) is the weighted vote on example \(i\); multiplied by the label \(y_i = \pm1\), it is positive when the vote is right, so each \(\exp(\cdot)\) is below 1 for an example voted right and above 1 for one voted wrong, and the log of the sum is a smooth count of the mistakes. With all weights 0, every term is \(e^0 = 1\) and \(R = \log m\). The second problem at the end of this lesson walks you through why.
 
 ## Backward elimination
 
@@ -489,7 +489,7 @@ BackwardElimination(X, y, k):
   return I
 ```
 
-In the cancelling world, backward elimination with \(k = 2\) drops bangs and then the noise feature, and ends at link and old: at every round, removing either of those two would destroy the perfect fit, while the others cost nothing. It sees interactions from the start, since every feature is in the fit. The price is steep: the first round fits \(d\) problems with \(d - 1\) columns, about \(O(d \cdot (md^2 + d^3))\), so the full run is roughly \(O(d^5)\) when \(m\) is comparable to \(d\). Fine for fifty features, out of the question for twenty thousand. Many variants exist, including methods that alternate forward and backward steps.
+In the cancelling world with a fourth, pure-noise feature added (as in the build-it starter below), backward elimination with \(k = 2\) drops bangs and the noise feature and ends at link and old: at every round, removing either of those two would destroy the perfect fit, while the others cost nothing. It sees interactions from the start, since every feature is in the fit. The price is steep: the first round fits \(d\) problems with \(d - 1\) columns, about \(O(d \cdot (md^2 + d^3))\), which is \(O(d^4)\) when \(m\) is comparable to \(d\), and there are up to \(d\) rounds, so the full run is roughly \(O(d^5)\). Fine for fifty features, out of the question for twenty thousand. Many variants exist, including methods that alternate forward and backward steps.
 
 ## Sparsity-inducing norms
 
@@ -604,7 +604,7 @@ Linear regression with the square loss and the \(\ell_1\) price has a name, the 
 
 In plain words: **least squares, plus a price for every unit of weight, so that features not worth their price get weight zero.** Under suitable assumptions on the distribution and on \(\lambda\), the LASSO is known to find the right sparse set of features; we will not prove that here. A low \(\ell_1\) norm has a second payoff, which lesson 26 makes precise: it controls the estimation error directly.
 
-How do you compute it? The one-dimensional result suggests an algorithm, which is not the only one but is the simplest: **coordinate descent**. Hold every weight fixed except \(w_j\), and solve for \(w_j\) exactly. Write \(\mathbf r_j = \mathbf y - \sum_{i \ne j} w_i X_i\) for the labels minus what the other features already predict. As a function of \(w_j\) alone, the objective is \(\frac1{2m}\|w_j X_j - \mathbf r_j\|^2 + \lambda|w_j| + \text{const}\), which is the one-feature problem with \(z_j = \|X_j\|^2/m\) in front of \(\tfrac12 w_j^2\). Dividing by \(z_j\) and applying soft thresholding gives the update
+How do you compute it? The one-dimensional result suggests an algorithm, which is not the only one but is the simplest: **coordinate descent**. Hold every weight fixed except \(w_j\), and solve for \(w_j\) exactly. Write \(\mathbf r_j = \mathbf y - \sum_{i \ne j} w_i X_i\) for the labels minus what the other features already predict. As a function of \(w_j\) alone, the objective is \(\frac1{2m}\|w_j X_j - \mathbf r_j\|^2 + \lambda|w_j| + \text{const}\). Expanding the square as before, this is \(\tfrac12 z_j w_j^2 - c_j w_j + \lambda|w_j| + \text{const}\), with \(z_j = \|X_j\|^2/m\) and \(c_j = \langle X_j, \mathbf r_j \rangle/m\). Factor out \(z_j\): it becomes \(z_j\big(\tfrac12 w_j^2 - (c_j/z_j)w_j + (\lambda/z_j)|w_j|\big)\), the soft-thresholding objective with \(x = c_j/z_j\) and price \(\lambda/z_j\), whose minimizer is \(\operatorname{soft}(c_j/z_j, \lambda/z_j) = \operatorname{soft}(c_j, \lambda)/z_j\) (shrinking both numbers by the same positive factor shrinks the answer by it too). That is the update
 
 \[ w_j \leftarrow \frac{\operatorname{soft}\!\left(\langle X_j, \mathbf r_j \rangle/m, \ \lambda\right)}{\|X_j\|^2/m}, \]
 

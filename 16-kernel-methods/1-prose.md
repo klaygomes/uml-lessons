@@ -525,11 +525,11 @@ In plain words: **the inner product of two combinations is the kernel summed ove
 
 \[ \langle f, K(\cdot, x) \rangle = \sum_i \alpha_i K(x_i, x) = f(x). \]
 
-The second is the Cauchy–Schwarz inequality \(|\langle f, g \rangle| \le \sqrt{\langle f, f \rangle} \sqrt{\langle g, g \rangle}\), which holds for any symmetric bilinear form with \(\langle h, h \rangle \ge 0\). (For every real \(t\), \(0 \le \langle f + t g, f + t g \rangle = \langle f, f \rangle + 2t \langle f, g \rangle + t^2 \langle g, g \rangle\). If \(\langle g, g \rangle > 0\), a quadratic in \(t\) that never goes negative has discriminant \(4\langle f, g \rangle^2 - 4 \langle f, f \rangle \langle g, g \rangle \le 0\). If \(\langle g, g \rangle = 0\), the expression is linear in \(t\) and stays nonnegative for all \(t\) only if \(\langle f, g \rangle = 0\).) Put them together:
+In plain words: **to evaluate \(f\) at \(x\), take its inner product with \(K(\cdot, x)\).** The second is the Cauchy–Schwarz inequality \(|\langle f, g \rangle| \le \sqrt{\langle f, f \rangle} \sqrt{\langle g, g \rangle}\), which holds for any symmetric bilinear form with \(\langle h, h \rangle \ge 0\). (For every real \(t\), \(0 \le \langle f + t g, f + t g \rangle = \langle f, f \rangle + 2t \langle f, g \rangle + t^2 \langle g, g \rangle\). If \(\langle g, g \rangle > 0\), a quadratic in \(t\) that never goes negative has discriminant \(4\langle f, g \rangle^2 - 4 \langle f, f \rangle \langle g, g \rangle \le 0\). If \(\langle g, g \rangle = 0\), the expression is linear in \(t\) and stays nonnegative for all \(t\) only if \(\langle f, g \rangle = 0\).) Put them together:
 
 \[ |f(x)| = |\langle f, K(\cdot, x) \rangle| \le \sqrt{\langle f, f \rangle} \sqrt{K(x, x)}. \]
 
-If \(\langle f, f \rangle = 0\), then \(f(x) = 0\) for every \(x\), so \(f\) is the zero function.
+So **a function of length 0 is 0 everywhere.** If \(\langle f, f \rangle = 0\), then \(f(x) = 0\) for every \(x\), so \(f\) is the zero function.
 
 So \(V\) is an inner product space, and by construction
 
@@ -569,7 +569,7 @@ We could hand the \(\boldsymbol\alpha\) form of Soft-SVM to a quadratic-programm
 
 \[ \min_{\mathbf w} \; \frac{\lambda}{2} \|\mathbf w\|^2 + \frac{1}{m} \sum_{i=1}^m \max\{0, 1 - y_i \langle \mathbf w, \mathbf x_i \rangle\} \]
 
-(note the \(\frac{\lambda}{2}\), a convenience of SGD; it is the \(\lambda \|\mathbf w\|^2\) form with \(\lambda\) halved) using SGD in this shape:
+(note the \(\frac{\lambda}{2}\), a convenience of SGD; it is the \(\lambda \|\mathbf w\|^2\) form with \(\lambda\) halved, so the two line vectors from the representer section now cost \(1.3\) and \(0.0909 + 0.325 = 0.4159\)) using SGD, lesson 14’s stochastic gradient descent, which steps along the gradient of one random example at a time, in this shape (\([m]\) is the positions \(1, \dots, m\)):
 
 ```
 SGD-SoftSVM(S, λ, T):
@@ -584,7 +584,7 @@ SGD-SoftSVM(S, λ, T):
 
 Look at the only thing that ever gets added to \(\boldsymbol\theta\): a training vector, times \(\pm 1\). Run it on the image sequence, with \(\psi(x_i)\) in place of \(\mathbf x_i\), and \(\boldsymbol\theta\) is always a combination of \(\psi(x_1), \dots, \psi(x_m)\), so it can be stored as \(m\) coefficients. The representer theorem promised that a solution lives in the span; SGD never even leaves it.
 
-So keep two vectors in \(\mathbb R^m\): \(\boldsymbol\beta^{(t)}\), the coefficients of \(\boldsymbol\theta^{(t)} = \sum_j \beta_j^{(t)} \psi(x_j)\), and \(\boldsymbol\alpha^{(t)}\), the coefficients of \(\mathbf w^{(t)} = \sum_j \alpha_j^{(t)} \psi(x_j)\).
+So keep two vectors in \(\mathbb R^m\), where a superscript \((t)\) marks the value at step \(t\): \(\boldsymbol\beta^{(t)}\), the coefficients of \(\boldsymbol\theta^{(t)} = \sum_j \beta_j^{(t)} \psi(x_j)\), and \(\boldsymbol\alpha^{(t)}\), the coefficients of \(\mathbf w^{(t)} = \sum_j \alpha_j^{(t)} \psi(x_j)\).
 
 ```
 KernelSGD-SoftSVM(S, K, λ, T):
@@ -598,7 +598,7 @@ KernelSGD-SoftSVM(S, K, λ, T):
   return ᾱ      (predict on x by the sign of Σ_j ᾱ_j K(x_j, x))
 ```
 
-Every other coordinate of \(\boldsymbol\beta\) stays as it was. The output stands for \(\bar{\mathbf w} = \sum_j \bar\alpha_j \psi(x_j)\), with \(\bar{\boldsymbol\alpha} = \frac1T \sum_{t=1}^T \boldsymbol\alpha^{(t)}\).
+Every other coordinate of \(\boldsymbol\beta\) stays as it was. The output stands for \(\bar{\mathbf w} = \sum_j \bar\alpha_j \psi(x_j)\), with \(\bar{\boldsymbol\alpha} = \frac1T \sum_{t=1}^T \boldsymbol\alpha^{(t)}\), the bar marking an average over the \(T\) steps.
 
 [[diagram:kernel-sgd]]
 
@@ -612,13 +612,13 @@ Suppose it holds at step \(t\). The two algorithms set \(\mathbf w^{(t)} = \bold
 
 \[ y_i \langle \mathbf w^{(t)}, \psi(x_i) \rangle = y_i \Big\langle \sum_j \alpha_j^{(t)} \psi(x_j), \psi(x_i) \Big\rangle = y_i \sum_{j=1}^m \alpha_j^{(t)} K(x_j, x_i), \]
 
-which is exactly the kernel test, so both algorithms take the same branch. If neither updates, both sides of the claim are unchanged. If both update,
+which is exactly the kernel test, by the same pass-through-the-sum step as in the kernel trick: **the two tests compute the same number**, so both algorithms take the same branch. If neither updates, both sides of the claim are unchanged. If both update,
 
 \[ \boldsymbol\theta^{(t+1)} = \boldsymbol\theta^{(t)} + y_i \psi(x_i) = \sum_{j} \beta_j^{(t)} \psi(x_j) + y_i \psi(x_i) = \sum_j \beta_j^{(t+1)} \psi(x_j), \]
 
-since \(\boldsymbol\beta^{(t+1)}\) differs from \(\boldsymbol\beta^{(t)}\) only by \(y_i\) in coordinate \(i\). That completes the induction. It follows that \(\mathbf w^{(t)} = \sum_j \alpha_j^{(t)} \psi(x_j)\) for every \(t\), and averaging over \(t\), by linearity, \(\hat{\mathbf w} = \frac1T \sum_t \mathbf w^{(t)} = \sum_j \bar\alpha_j \psi(x_j) = \bar{\mathbf w}\). \(\blacksquare\)
+since \(\boldsymbol\beta^{(t+1)}\) differs from \(\boldsymbol\beta^{(t)}\) only by \(y_i\) in coordinate \(i\): **adding \(y_i \psi(x_i)\) to \(\boldsymbol\theta\) is adding \(y_i\) to coefficient \(i\).** That completes the induction. It follows that \(\mathbf w^{(t)} = \sum_j \alpha_j^{(t)} \psi(x_j)\) for every \(t\), and averaging over \(t\), by linearity, \(\hat{\mathbf w} = \frac1T \sum_t \mathbf w^{(t)} = \sum_j \bar\alpha_j \psi(x_j) = \bar{\mathbf w}\). \(\blacksquare\)
 
-Let’s watch the two runs side by side on the line example, with \(\psi(x) = (1, x, x^2)\) and the kernel \(K(x, x') = \langle \psi(x), \psi(x') \rangle\). One detail matters: the comparison \(< 1\) is a knife edge, and floating-point rounding can push the two runs to different sides of it when a score lands exactly on 1. Exact fractions remove that doubt.
+Let’s watch the two runs side by side on the line example, with \(\psi(x) = (1, x, x^2)\) and the kernel \(K(x, x') = \langle \psi(x), \psi(x') \rangle\). One detail matters: the comparison \(< 1\) is a knife edge, and floating-point rounding can push the two runs to different sides of it when a score lands exactly on 1. Exact fractions remove that doubt. In the snippet, `theta` follows the feature-space test and `beta` the kernel test, side by side.
 
 ```python
 import random
