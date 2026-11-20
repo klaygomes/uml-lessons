@@ -2,7 +2,9 @@
 
 A series of story-driven lessons on Shai Shalev-Shwartz and Shai Ben-David's *Understanding Machine Learning: From Theory to Algorithms* (Cambridge University Press, 2014). You are building the learner behind a company's mail filter. Every lesson opens on a bug your users notice, and ends when you fix it yourself in an interactive lab.
 
-Open [index.html](index.html) in a browser for the course: one lesson per chapter, in the book's order, each linked once its page is ready. The pages are plain HTML files with `lesson.css` beside them; they need no server.
+**Take the course: [www.estacouveflor.com/uml-lessons](https://www.estacouveflor.com/uml-lessons/)**. The index lists all 31 lessons with their status; start with [lesson 1, Learning needs a bias](https://www.estacouveflor.com/uml-lessons/01-learning-needs-a-bias/3-page/3-page.html).
+
+Locally, open [index.html](index.html) in a browser: the pages are plain HTML files with `lesson.css` beside them and need no server.
 
 Each lesson folder holds three representations of the same idea:
 
