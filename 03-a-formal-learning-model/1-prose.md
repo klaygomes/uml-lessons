@@ -131,12 +131,12 @@ What breaks is the promise. Write \(h_S\) for the hypothesis ERM returns on the 
 
 Where do these labels come from, if not from a single function \(f\)? The answer is to let the label be random too.
 
-Picture each example as a two-step draw. First a message arrives, drawn from a distribution over \(\mathcal X\). Then someone labels it, and the label is itself a draw: for the newsletter, junk with some probability and keep with the rest. Formally, from now on \(\mathcal D\) is a probability distribution over \(\mathcal X \times \mathcal Y\), a **joint distribution** over messages and labels. It is also called the data-labels generating distribution. It has two parts:
+Picture each example as a two-step draw. First a message arrives, drawn from a distribution over \(\mathcal X\). Then someone labels it, and the label is itself a draw: for the newsletter, junk for seven readers in ten and keep for the other three. What gets drawn is a pair, a message together with its label, like (0110, junk). The set of all such pairs is written \(\mathcal X \times \mathcal Y\); the \(\times\) reads “paired with”. Formally, from now on \(\mathcal D\) is a probability distribution over \(\mathcal X \times \mathcal Y\), a **joint distribution** over messages and labels. It is also called the data-labels generating distribution. It has two parts, one for each step of the draw:
 
-- the **marginal distribution** of unlabelled messages, written \(\mathcal D_x\): how often each message arrives;
-- the **conditional probability** of the label given the message, \(\mathcal D((x, y) \mid x)\): how likely a message \(x\) is to be labelled junk.
+- the **marginal distribution** of unlabelled messages, written \(\mathcal D_x\): how often each message arrives, so \(\mathcal D_x(x)\) is the probability that the next message is \(x\);
+- the **conditional probability** of the label given the message, \(\mathcal D((x, y) \mid x)\): how likely a message \(x\) is to be labelled junk. The bar \(\mid\) reads “given”: we only look at draws where this particular message arrived, and ask about its label.
 
-For binary labels we'll shorten the second part to one number per message,
+For binary labels we'll shorten the second part to one number per message, the share of labellers who call it junk, 0.7 for the newsletter:
 
 \[ \eta(x) = \mathbb P_{(x, y) \sim \mathcal D}[\, y = 1 \mid x \,], \]
 
@@ -144,23 +144,21 @@ the probability that a message \(x\) gets labelled junk. (Many texts write \(\ma
 
 Read it from the inside out.
 
-- \(\mathcal X \times \mathcal Y\), from the sentence above, is the set of all pairs \((x, y)\): a message together with a label. The \(\times\) reads “paired with”.
 - \(y = 1\) is the event “the label is junk”.
-- The bar \(\mid\) reads “given”: \(y = 1 \mid x\) means “the label is junk, given that the message is \(x\)”. We only look at draws where this particular message arrived.
-- \((x, y) \sim \mathcal D\) says the pair is drawn from the joint distribution, message and label together.
+- The bar makes it \(y = 1 \mid x\): “the label is junk, given that the message is \(x\)”.
+- \((x, y) \sim \mathcal D\) says the pair is drawn from the joint distribution, message and label together; \(\sim\) reads “drawn from”, as before.
 - \(\mathbb P[\cdot]\) is the probability of the event inside the brackets.
 - \(\eta\) is the Greek letter eta, just a name for this function of \(x\).
 
-In plain words: **\(\eta(x)\) is the share of people who would call message \(x\) junk.** For the newsletter 0110, \(\eta = 0.7\): of ten readers, seven click junk. In Python, a label for \(x\) is a biased coin that comes up 1 with probability \(\eta(x)\), and the share of 1s over many coins comes out close to \(\eta(x)\):
+In plain words: **\(\eta(x)\) is the probability that message \(x\), once it has arrived, gets labelled junk.** For the newsletter 0110, \(\eta = 0.7\): of ten readers, seven click junk. In Python, a label for the newsletter is a biased coin that comes up 1 with probability \(\eta\), and the share of 1s over many coins comes out close to \(\eta\):
 
 ```python
 import random
-def eta(x):
-    return 0.9 if x[0] else (0.7 if x[1] and x[2] else 0.1)
-x = (0, 1, 1, 0)
+eta_newsletter = 0.7
 rng = random.Random(7)
-labels = [int(rng.random() < eta(x)) for _ in range(10000)]
-print(eta(x), sum(labels) / len(labels))
+labels = [int(rng.random() < eta_newsletter)
+          for _ in range(10000)]
+print(eta_newsletter, sum(labels) / len(labels))
 ```
 
 It prints `0.7 0.6992`: in 10,000 labellings of the newsletter, 69.92% said junk.
@@ -177,15 +175,40 @@ Here is the noisy mail room we'll use for the rest of the lesson. As in lesson 1
 
 [[diagram:joint]]
 
-The true risk needs a new definition, because there is no \(f\) to compare with. We redefine it as the probability that a hypothesis disagrees with the label of a fresh example:
+The true risk needs a new definition, because there is no \(f\) to compare with. We redefine it as the probability that a hypothesis disagrees with the label of a fresh example, message and label drawn together. Take the newsletter: when it arrives, \(h_F\) says keep, and seven labellers in ten say junk, so on that message \(h_F\) is wrong with probability 0.7. The new true risk weighs chances like that over every message that might arrive:
 
 \[ L_{\mathcal D}(h) = \mathbb P_{(x, y) \sim \mathcal D}[\, h(x) \ne y \,] = \mathcal D(\{(x, y) : h(x) \ne y\}). \]
 
-The subscript is now just \(\mathcal D\), because \(\mathcal D\) carries the labels as well as the messages. The empirical risk keeps its old definition, \(L_S(h) = |\{i \in [m] : h(x_i) \ne y_i\}|/m\). Here is a neat observation: \(L_S(h)\) is the true risk of \(h\) under the distribution that picks one of the \(m\) examples of \(S\) uniformly at random. The empirical risk is a true risk, just for a tiny, lopsided world made of your training sequence.
+Read it from the inside out.
+
+- \(h(x) \ne y\) is the event “the hypothesis’s label differs from the label actually drawn”: a mistake.
+- \(\mathbb P_{(x, y) \sim \mathcal D}[\dots]\) is its probability when the pair \((x, y)\) is drawn from \(\mathcal D\). Two things are random now: which message arrives and which label it gets.
+- The second form says the same thing about a set. The braces \(\{(x, y) : h(x) \ne y\}\) collect every pair such that \(h\) gets it wrong (read the colon as “such that”), and \(\mathcal D(\dots)\) is the total probability \(\mathcal D\) gives to that set.
+
+In plain words: **the chance that \(h\) mislabels a freshly drawn message, measured against the label it is actually given.** For \(h_F\), the set of mistakes holds 16 of the 32 pairs, one per message: (newsletter, junk) is in it, with probability \(1/16 \cdot 0.7\), and so is every “FREE” message paired with keep, each with probability \(1/16 \cdot 0.1\). Adding up all 16 gives 0.175. The snippet builds that set and sums it:
+
+```python
+from itertools import product
+X = list(product((0, 1), repeat=4))
+def eta(x):
+    return 0.9 if x[0] else (0.7 if x[1] and x[2] else 0.1)
+def D(x, y):
+    return (eta(x) if y == 1 else 1 - eta(x)) / 16
+h_F = lambda x: x[0]
+pairs = [(x, y) for x in X for y in (0, 1)]
+wrong = [(x, y) for x, y in pairs if h_F(x) != y]
+print(len(pairs), len(wrong), round(sum(D(*z) for z in wrong), 3))
+```
+
+It prints `32 16 0.175`: 32 possible pairs, 16 of them mistakes for \(h_F\), with total probability 0.175. The next paragraphs do the same sum by hand.
+
+The subscript is now just \(\mathcal D\), because \(\mathcal D\) carries the labels as well as the messages. The empirical risk keeps its old definition, \(L_S(h) = |\{i \in [m] : h(x_i) \ne y_i\}|/m\): \([m]\) is the list of positions 1 to \(m\), the braces collect the positions \(i\) such that \(h\) is wrong on example \(i\), the bars count them, and dividing by \(m\) makes the count a fraction, 3/12 for \(h_F\) on the table above. Here is a neat observation: \(L_S(h)\) is the true risk of \(h\) under the distribution that picks one of the \(m\) examples of \(S\) uniformly at random. The empirical risk is a true risk, just for a tiny, lopsided world made of your training sequence.
 
 Let's compute the true risk of \(h_F\) in the noisy mail room. On the 8 "FREE" messages it says junk, and the label is keep one time in ten, so it errs with probability 0.1 on each. On the two newsletters it says keep, and the label is junk seven times in ten, so it errs with probability 0.7. On the other six it says keep and errs with probability 0.1. Averaging over the 16 equally likely messages:
 
 \[ L_{\mathcal D}(h_F) = \frac{8 \cdot 0.1 + 2 \cdot 0.7 + 6 \cdot 0.1}{16} = \frac{2.8}{16} = 0.175. \]
+
+Each product on top is “how many messages of that kind” times “how often \(h_F\) errs on one of them”: \(8 \cdot 0.1 = 0.8\) for the “FREE” messages, \(2 \cdot 0.7 = 1.4\) for the newsletters, \(6 \cdot 0.1 = 0.6\) for the rest. Their total, 2.8, is the expected number of mistakes if each of the 16 messages arrived once, and dividing by 16 turns it into a chance per message, because each message arrives with probability \(1/16\). In plain words: **the true risk is the average, over equally likely messages, of the chance of a mistake on each.**
 
 The same calculation gives \(L_{\mathcal D}(h_L) = L_{\mathcal D}(h_U) = 0.425\) and \(L_{\mathcal D}(h_N) = 0.5\). So \(h_F\) is the best hypothesis in the one-feature class, and even the best one is wrong 17.5% of the time. Notice too that on our twelve examples \(h_F\) scored 0.25, not 0.175. The empirical risk is an estimate of the true risk, and with twelve examples it is a rough one.
 
@@ -221,7 +244,28 @@ That rule has a name.
 
 \[ f_{\mathcal D}(x) = \begin{cases} 1 & \text{if } \mathbb P[y = 1 \mid x] \ge 1/2, \\ 0 & \text{otherwise.} \end{cases} \]
 
-In our shorthand: predict junk exactly when \(\eta(x) \ge 1/2\). We'll call its true risk, \(L_{\mathcal D}(f_{\mathcal D})\), the **Bayes risk**.
+Read it from the inside out.
+
+- \(\mathcal X \times \{0, 1\}\) is \(\mathcal X \times \mathcal Y\) with the labels spelled out: every message paired with 0 (keep) or 1 (junk).
+- \(\mathbb P[y = 1 \mid x]\) is \(\eta(x)\), the chance that message \(x\) is labelled junk.
+- \(\ge 1/2\) asks whether junk is at least as likely as keep.
+- The big brace lists cases: output 1 if the condition on its row holds, and 0 “otherwise”, meaning in every other case.
+- The subscript in \(f_{\mathcal D}\) says this predictor is built from \(\mathcal D\) itself, so it changes when the distribution does.
+
+In plain words: **for each message, predict the label that most labellers would give it.** In our shorthand: predict junk exactly when \(\eta(x) \ge 1/2\). The newsletter has \(\eta = 0.7 \ge 0.5\), so \(f_{\mathcal D}\) says junk; the message 0011 has \(\eta = 0.1\), so it says keep.
+
+```python
+def eta(x):
+    return 0.9 if x[0] else (0.7 if x[1] and x[2] else 0.1)
+def f_D(x):
+    return 1 if eta(x) >= 1 / 2 else 0
+for x in ((1, 0, 0, 0), (0, 1, 1, 0), (0, 0, 1, 1)):
+    print(x, eta(x), f_D(x))
+```
+
+It prints one line per kind of message: `(1, 0, 0, 0) 0.9 1`, `(0, 1, 1, 0) 0.7 1` and `(0, 0, 1, 1) 0.1 0`, so junk, junk, keep.
+
+We'll call its true risk, \(L_{\mathcal D}(f_{\mathcal D})\), the **Bayes risk**: the chance that even this best guess mislabels a fresh message.
 
 [[diagram:bayes]]
 
@@ -235,6 +279,17 @@ Here is the whole calculation for the noisy mail room.
 
 \[ L_{\mathcal D}(f_{\mathcal D}) = \frac{8 \cdot 0.1 + 2 \cdot 0.3 + 6 \cdot 0.1}{16} = \frac{2}{16} = 0.125. \]
 
+It has the same shape as the sum for \(h_F\): each product is a count of messages times the chance of a mistake on one of them, now always the smaller of the two “wrong if” columns. Only the middle term changed, \(2 \cdot 0.3 = 0.6\) instead of \(2 \cdot 0.7 = 1.4\), because \(f_{\mathcal D}\) says junk to the newsletters. In plain words: **the Bayes risk averages, over messages, the smaller of the two ways to be wrong.** In Python, `min(e, 1 - e)` is that smaller chance:
+
+```python
+kinds = [("FREE", 8, 0.9), ("newsletter", 2, 0.7),
+         ("everything else", 6, 0.1)]
+terms = [n * min(e, 1 - e) for _, n, e in kinds]
+print([round(t, 2) for t in terms], round(sum(terms) / 16, 3))
+```
+
+It prints `[0.8, 0.6, 0.6] 0.125`: the three products on top of the fraction, then the Bayes risk.
+
 The Bayes optimal predictor junks "FREE" messages and newsletters, and keeps everything else. In feature language: junk when F is on, or when L and U are both on. That is not a one-feature hypothesis. The best one-feature hypothesis, \(h_F\), gets the newsletters wrong, and pays for it: 0.175 against 0.125.
 
 The claim is that \(f_{\mathcal D}\) is optimal: no hypothesis \(g: \mathcal X \to \{0, 1\}\) has smaller true risk. The proof is short, and important enough to do in full. We'll prove it for a finite domain like ours, where every probability is a sum. The general case is the same argument with integrals.
@@ -245,13 +300,19 @@ The claim is that \(f_{\mathcal D}\) is optimal: no hypothesis \(g: \mathcal X \
 
 \[ L_{\mathcal D}(g) = \sum_{x \in \mathcal X} \mathcal D_x(x) \; \mathbb P[\, y \ne g(x) \mid x \,]. \]
 
+The \(\sum\) (a capital sigma) means “add up”, and the \(x \in \mathcal X\) under it says over what: one term for every message \(x\) in the domain. Each term multiplies the chance that \(x\) arrives, \(\mathcal D_x(x)\), by the chance that \(g\) is wrong given that it did. In plain words: **the true risk is the arrival-weighted average of the mistake chance on each message.** For \(g = h_F\), the newsletter’s term is \(1/16 \cdot 0.7\), and all 16 terms add up to the 0.175 we computed. The function `L_D` in the brute-force snippet below is this sum: its list `risks` holds the 16 mistake chances, and dividing the total by `len(X)` multiplies each by \(\mathcal D_x(x) = 1/16\).
+
 Now look inside the sum at one message. If \(g(x) = 1\), the label disagrees when \(y = 0\), which has probability \(1 - \eta(x)\). If \(g(x) = 0\), it disagrees when \(y = 1\), which has probability \(\eta(x)\). Either way,
 
 \[ \mathbb P[\, y \ne g(x) \mid x \,] \in \{\eta(x),\ 1 - \eta(x)\}, \quad \text{so} \quad \mathbb P[\, y \ne g(x) \mid x \,] \ge \min\{\eta(x),\ 1 - \eta(x)\}. \]
 
+Here \(\in\) reads “is one of”, the braces list the two possibilities, and \(\min\{a, b\}\) is the smaller of \(a\) and \(b\). In plain words: **whatever \(g\) says, its mistake chance on a message is one of the two numbers, so it is at least the smaller one.** On the newsletter the two numbers are 0.7 and 0.3; \(h_F\) gets 0.7, which is indeed at least 0.3.
+
 That inequality holds for every hypothesis. Next, check that \(f_{\mathcal D}\) reaches it with equality. If \(\eta(x) \ge 1/2\), then \(f_{\mathcal D}(x) = 1\), its conditional risk is \(1 - \eta(x)\), and \(1 - \eta(x) \le 1/2 \le \eta(x)\), so that is the minimum. If \(\eta(x) < 1/2\), then \(f_{\mathcal D}(x) = 0\), its conditional risk is \(\eta(x)\), and \(\eta(x) < 1/2 < 1 - \eta(x)\), so again that is the minimum. Hence, for every message,
 
 \[ \mathbb P[\, y \ne f_{\mathcal D}(x) \mid x \,] = \min\{\eta(x),\ 1 - \eta(x)\} \le \mathbb P[\, y \ne g(x) \mid x \,]. \]
+
+This reuses the same pieces and says: **on every message, the Bayes optimal predictor’s mistake chance is the smallest one available, so no \(g\) can do better there** (on the newsletter, 0.3 against \(h_F\)’s 0.7).
 
 Finally, multiply both sides by \(\mathcal D_x(x) \ge 0\), which keeps the inequality, and sum over \(x\). The left side becomes \(L_{\mathcal D}(f_{\mathcal D})\) and the right side becomes \(L_{\mathcal D}(g)\). \(\blacksquare\)
 

@@ -110,7 +110,7 @@ Let’s give the learner a bias and watch it work. The new hypothesis class has 
 
 \[ \mathcal H_1 = \{ h_F, h_L, h_U, h_N \}, \qquad h_j(x) = x_j, \]
 
-so \(h_U\) says “junk exactly when the sender is unknown”. Our learner, call it **consistent-feature**, keeps the hypotheses in \(\mathcal H_1\) that agree with every example and returns one of them, picked at random. It has to pick blindly: it doesn’t know which feature is the real one, and listing F first is just how we humans wrote the class down. The truth, \(h_F\), is in the class, so at least one consistent hypothesis always exists.
+Here \(\mathcal H_1\) is the class, \(j\) is one of the four features, and \(x_j\) is that feature’s bit in message \(x\). In plain words: **\(h_j\) copies feature \(j\) as the label.** So \(h_U\) says “junk exactly when the sender is unknown”, and on 1011 it reads the U bit, 1, and says junk. Our learner, call it **consistent-feature**, keeps the hypotheses in \(\mathcal H_1\) that agree with every example and returns one of them, picked at random. It has to pick blindly: it doesn’t know which feature is the real one, and listing F first is just how we humans wrote the class down. The truth, \(h_F\), is in the class, so at least one consistent hypothesis always exists.
 
 Feed it the same eight examples, one at a time, and track which of the four hypotheses survive. Notice two things as you go down the table: how quickly the class shrinks compared with 65,536, and which impostor hangs on the longest.
 
@@ -124,6 +124,22 @@ Feed it the same eight examples, one at a time, and track which of the four hypo
 | 6 | 0100 | keep | F, U | 1,024 |
 | 7 | 1101 | junk | F | 512 |
 | 8 | 0010 | keep | F | 256 |
+
+Python can replay the table: each example keeps only the features whose bit matches its label, and each one also halves the count of all hypotheses.
+
+```python
+bits = ["1111", "0000", "1110", "1011",
+        "0001", "0100", "1101", "0010"]
+S = [(tuple(map(int, b)), int(b[0])) for b in bits]
+H_1 = {"F": 0, "L": 1, "U": 2, "N": 3}
+alive = set(H_1)
+for i, (x, y) in enumerate(S, 1):
+    alive = {j for j in alive if x[H_1[j]] == y}
+    print(i, "".join(sorted(alive, key=H_1.get)),
+          2 ** (16 - i))
+```
+
+It prints the two survivor columns row by row, from `1 FLUN 32768` down to `8 F 256`.
 
 After eight examples the biased learner has exactly one survivor, \(h_F\), the truth. Its true risk is 0 on all 16 messages, including the eight it never saw. The unbiased learner still has 256 candidates and no way to choose.
 
@@ -142,7 +158,7 @@ I should confess that I chose these eight examples so that the impostor lasts. I
 
 Let’s collect the definitions, then prove two facts. Everything below lives in our tiny world, but every step is written so it carries over to the general setting of the next lesson.
 
-**Setting.** The domain set is \(\mathcal X = \{0,1\}^4\) with \(|\mathcal X| = 16\). The label set is \(\mathcal Y = \{0, 1\}\). The true labelling is \(f(x) = x_F\). The distribution \(\mathcal D\) is uniform on \(\mathcal X\). An example is \(z_i = (x_i, y_i)\) with \(y_i = f(x_i)\), and a training sequence is \(S = (z_1, \dots, z_m)\). A learner is an algorithm \(A\), and \(A(S)\) is the hypothesis it returns on \(S\). When \(S\) is random, we write \(S \sim \mathcal D^m\): the messages \(x_1, \dots, x_m\) are drawn **independently and identically distributed** (i.i.d.) from \(\mathcal D\), meaning each is drawn from the same \(\mathcal D\) and no draw influences another.
+**Setting.** The domain set is \(\mathcal X = \{0,1\}^4\), the set of all strings of four bits, with \(|\mathcal X| = 16\) (bars around a set count its elements). The label set is \(\mathcal Y = \{0, 1\}\). The true labelling is \(f(x) = x_F\). The distribution \(\mathcal D\) is uniform on \(\mathcal X\). An example is \(z_i = (x_i, y_i)\) with \(y_i = f(x_i)\), and a training sequence is \(S = (z_1, \dots, z_m)\). A learner is an algorithm \(A\), and \(A(S)\) is the hypothesis it returns on \(S\). When \(S\) is random, we write \(S \sim \mathcal D^m\): the messages \(x_1, \dots, x_m\) are drawn **independently and identically distributed** (i.i.d.) from \(\mathcal D\), meaning each is drawn from the same \(\mathcal D\) and no draw influences another.
 
 **Risks.** These two formulas are the two scores every later lesson keeps comparing, so let’s read them slowly. Here is the first one, the empirical risk of a hypothesis \(h: \mathcal X \to \mathcal Y\):
 
@@ -164,6 +180,7 @@ The second formula is the true risk:
 \[ L_{(\mathcal D, f)}(h) = \mathbb P_{x \sim \mathcal D}\left[ h(x) \neq f(x) \right]. \]
 
 - \(f\) is the true labelling, the rule your users follow in their heads; \(f(x)\) is the label message \(x\) really deserves.
+- The subscript \((\mathcal D, f)\) records that the score depends on both. When \(f\) is clear from context, as it is throughout this lesson, we shorten it to \(L_{\mathcal D}(h)\).
 - \(x \sim \mathcal D\) reads “\(x\) is drawn from \(\mathcal D\)”: a fresh message arrives at random, with each message as likely as \(\mathcal D\) says.
 - \(\mathbb P[\dots]\) is the probability of the event inside the brackets. Here the event is \(h(x) \neq f(x)\): \(h\) gets that fresh message wrong.
 
@@ -188,7 +205,7 @@ print(mistakes, L_S, L_D)
 
 It prints `[7, 8] 0.25 0.5`: \(h_U\) looks only a little wrong on the examples, and is in fact wrong on half of all mail.
 
-The true risk depends on both \(\mathcal D\) and \(f\), which is why it is written \(L_{(\mathcal D, f)}\). When \(f\) is clear from context, as it is throughout this lesson, we shorten it to \(L_{\mathcal D}(h)\). You will also see it called the generalization error or the true error. A hypothesis is consistent with \(S\) when \(L_S(h) = 0\): it makes no mistakes on the examples.
+You will also see the true risk called the generalization error or the true error. A hypothesis is consistent with \(S\) when \(L_S(h) = 0\): it makes no mistakes on the examples.
 
 **Proposition 1 (the examples say nothing about unseen messages).** Let \(\mathcal X\) be any finite domain, with \(|\mathcal X|\) elements, and let \(S\) contain \(k\) distinct messages. Assume the labels in \(S\) don’t conflict: a message that appears more than once always carries the same label. Then exactly \(2^{|\mathcal X|-k}\) hypotheses \(h: \mathcal X \to \{0,1\}\) are consistent with \(S\). Moreover, for every message \(x'\) not in \(S\), exactly half of them have \(h(x') = 1\).
 
@@ -221,6 +238,8 @@ It prints 256 and 128: a hypothesis here is just a tuple of 16 labels, and the p
 
 With \(|\mathcal X| = 16\) and \(k = 8\), that is the 256 and the 128 we counted by hand. Notice what the proposition does and doesn’t say. It says the examples alone leave every unseen label perfectly balanced, so a learner with no bias has nothing to go on. It does not yet say that every learner must fail; a learner whose tie-breaker happens to match the truth would get lucky. Turning “nothing to go on” into “for every learner there is a world where it fails” is the **No-Free-Lunch theorem** of lesson 5, and this counting is its seed.
 
+The second fact answers the question we left open. A wrong feature such as U matches the F bit on a random message half the time, so it survives six random examples with chance \(1/2^6 = 1/64\), and with three wrong features the danger is roughly three times that.
+
 **Proposition 2 (how long a coincidence survives).** Let \(S \sim \mathcal D^m\) in our tiny world. For each wrong hypothesis \(h_j \in \{h_L, h_U, h_N\}\),
 
 \[ \mathbb P_{S \sim \mathcal D^m}\left[ L_S(h_j) = 0 \right] = 2^{-m}, \]
@@ -229,17 +248,19 @@ and the probability that at least one of the three survives is
 
 \[ \mathbb P\left[ \exists j \in \{L, U, N\} : L_S(h_j) = 0 \right] = 1 - \left(1 - 2^{-m}\right)^3 \le 3 \cdot 2^{-m}. \]
 
+The subscript \(S \sim \mathcal D^m\) says the probability is over a random training sequence of \(m\) messages, \(L_S(h_j) = 0\) is the event “\(h_j\) is consistent with \(S\)”, and \(\exists j\) reads “there exists a \(j\)”. In plain words: **each impostor survives \(m\) random examples with chance \(2^{-m}\), and the chance that at least one of the three survives is at most three times that.** At \(m = 6\) that is \(1/64\) each and at most \(3/64\) together; the snippet after the proof checks it.
+
 *Proof.* On one message \(x\), the hypothesis \(h_j\) agrees with the truth exactly when \(x_j = x_F\).
 
-Under the uniform \(\mathcal D\), the four bits of \(x\) are independent fair coins, so \(\mathbb P[x_j = x_F] = 1/2\). Equivalently, \(L_{\mathcal D}(h_j) = 1/2\): 8 of the 16 messages, as we saw for \(h_U\).
+Under the uniform \(\mathcal D\), each of the 16 bit strings has probability \(1/16 = (1/2)^4\), which is exactly what four independent fair coins give, so the four bits of \(x\) are independent fair coins. Whatever \(x_F\) is, \(x_j\) matches it with chance \(1/2\), so \(\mathbb P[x_j = x_F] = 1/2\). Equivalently, \(L_{\mathcal D}(h_j) = 1/2\): 8 of the 16 messages, as we saw for \(h_U\).
 
-\(h_j\) survives \(S\) only if it agrees on all \(m\) messages. The messages are independent, so the probabilities multiply: \(\mathbb P[L_S(h_j) = 0] = (1/2)^m = 2^{-m}\).
+\(h_j\) survives \(S\) exactly when it agrees on all \(m\) messages. The messages are independent, so the probabilities multiply: \(\mathbb P[L_S(h_j) = 0] = (1/2)^m = 2^{-m}\).
 
 For the three together, we need a little more care, in two steps.
 
 First, within one message. Define three agreement bits, \(b_j = \mathbb 1[x_j = x_F]\), using indicator notation: \(\mathbb 1[\text{statement}]\) is 1 when the statement is true and 0 when it is false. Fix the value of \(x_F\). Then each \(b_j\) is a function of \(x_j\) alone, and \(x_L, x_U, x_N\) are independent fair coins, so \(b_L, b_U, b_N\) are independent fair coins. That is a statement about the case \(x_F = 0\) and, separately, the case \(x_F = 1\). But the answer is the same joint distribution in both cases, so it doesn’t depend on \(x_F\), and averaging over \(x_F\) gives it back unchanged: without any conditioning, \(b_L, b_U, b_N\) are independent fair coins.
 
-Second, across messages. The \(m\) messages are drawn independently, so the bits of different messages are independent of each other. Together with the first step, all \(3m\) bits \(b_j^{(i)}\), for \(j \in \{L, U, N\}\) and \(i \in [m]\), are mutually independent. The event “\(h_j\) survives” is “\(b_j^{(i)} = 1\) for every \(i\)”, which depends only on the \(m\) bits in row \(j\). Events built from disjoint groups of independent bits are independent, so the three survival events are independent.
+Second, across messages. The \(m\) messages are drawn independently, so the bits of different messages are independent of each other. Together with the first step, all \(3m\) bits \(b_j^{(i)}\) (the agreement bit \(b_j\) of message \(i\)), for \(j \in \{L, U, N\}\) and \(i \in [m]\), are mutually independent. The event “\(h_j\) survives” is “\(b_j^{(i)} = 1\) for every \(i\)”, which depends only on the \(m\) bits in row \(j\). Events built from disjoint groups of independent bits are independent, so the three survival events are independent.
 
 So the probability that none of them survives is \((1 - 2^{-m})^3\), and its complement is the probability that at least one survives.
 
@@ -294,7 +315,7 @@ ConsistentFeature(S):
 
 Here \(x_{i,j}\) is feature \(j\) of the \(i\)-th message.
 
-**Memorize** takes \(O(md)\) time to build, since hashing each \(d\)-bit message costs \(O(d)\), and \(O(md)\) space. Each prediction costs \(O(d)\) expected time. It is fast and it is cheap, and it fails for reasons that have nothing to do with computation. It considers all \(2^{2^d}\) hypotheses, and Proposition 1 says the examples leave every unseen label balanced among them, so whatever it says off the training sequence is decided by its tie-breaker, not by the data.
+**Memorize** takes \(O(md)\) time to build, since hashing each \(d\)-bit message costs \(O(d)\), and \(O(md)\) space. Each prediction costs \(O(d)\) expected time. It is fast and it is cheap, and it fails for reasons that have nothing to do with computation. It considers all \(2^{2^d}\) hypotheses (one free label for each of the \(2^d\) messages, so \(2^{16}\) when \(d = 4\)), and Proposition 1 says the examples leave every unseen label balanced among them, so whatever it says off the training sequence is decided by its tie-breaker, not by the data.
 
 **ConsistentFeature** takes \(O(md)\) time and \(O(d)\) space for the set of survivors. It is the simplest instance of a pattern you will see in every lesson from here on: search a fixed class \(\mathcal H\) for a hypothesis that does well on \(S\). The next lesson names it empirical risk minimization. For a finite class, the brute-force version costs \(O(m \cdot |\mathcal H|)\) hypothesis evaluations, which is fine for four hypotheses and hopeless for \(2^{2^d}\). How the statistical cost and the computational cost of a class pull against each other is the subject of lesson 8.
 
@@ -346,9 +367,11 @@ In the lab below you choose two things: the hypothesis class the learner searche
 
 Two of the classes on offer are new. One is narrower: one feature, but only among the first three. Small is good, right up until the junk feature isn’t one of them.
 
-The other is bigger. Besides the ten one-feature hypotheses, it also contains every pair \(h_j \wedge h_k\), which says junk only when features \(j\) and \(k\) are both present. That makes 10 single features plus \(\binom{10}{2} = 45\) pairs, so 55 hypotheses. It contains the truth, but its impostors are not all alike, and that matters. A pair without the junk feature is wrong on half the messages, like a single impostor. But a pair that includes it, say the junk feature is \(j^*\) and the pair is \(h_{j^*} \wedge h_k\), disagrees with the truth only when \(j^*\) is present and \(k\) is absent: a quarter of the messages. So it survives each example with probability \(3/4\), not \(1/2\), and Proposition 2’s \(2^{-m}\) is too optimistic for it. The argument still works if you give each impostor its own survival chance. There are 9 of the slow kind and 45 of the fast kind, so
+The other is bigger. Besides the ten one-feature hypotheses, it also contains every pair \(h_j \wedge h_k\), which says junk only when features \(j\) and \(k\) are both present. That makes 10 single features plus \(\binom{10}{2} = 10 \cdot 9 / 2 = 45\) pairs (“10 choose 2”, the number of ways to pick two features), so 55 hypotheses. It contains the truth, but its impostors are not all alike, and that matters. A pair without the junk feature is wrong on half the messages, like a single impostor. But a pair that includes it, say the junk feature is \(j^*\) and the pair is \(h_{j^*} \wedge h_k\), disagrees with the truth only when \(j^*\) is present and \(k\) is absent: a quarter of the messages. So it survives each example with probability \(3/4\), not \(1/2\), and Proposition 2’s \(2^{-m}\) is too optimistic for it. These survival events are no longer independent, so instead add up each impostor’s own survival chance, which can only overcount. The slow kind are the 9 pairs that contain \(j^*\). The fast kind are the 9 wrong single features plus the 36 pairs without \(j^*\), so 45 in all, and
 
 \[ \mathbb P[\text{some impostor survives}] \le 9 \left(\tfrac{3}{4}\right)^m + 45 \cdot 2^{-m}. \]
+
+In plain words: **9 slow impostors that each survive an example with chance \(3/4\), plus 45 fast ones at \(1/2\), bound the danger.** At \(m = 10\) the slow term alone is \(9 \cdot 0.056 \approx 0.51\).
 
 ```python
 for m in (10, 20):

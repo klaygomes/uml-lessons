@@ -122,9 +122,9 @@ Here is a story far from the mail room. You have just arrived on a small Pacific
 
 - The **domain set** \(\mathcal X\): every message that could arrive. Its elements are also called **instances**, and \(\mathcal X\) the instance space.
 - The **label set** \(\mathcal Y\). For now it has two elements, \(\{0, 1\}\), with 1 for junk.
-- The **training data** \(S = ((x_1, y_1), \dots, (x_m, y_m))\), a finite sequence of labelled messages. This is our training sequence, and it is the only thing the learner ever sees. Many texts call it the training set, or the sample, but it is always a sequence: the same example can appear twice, and some learners care about the order.
+- The **training data** \(S = ((x_1, y_1), \dots, (x_m, y_m))\), a finite sequence of labelled messages. This is our training sequence, and it is the only thing the learner ever sees. Many texts call it the training set, or the sample, but it is always a sequence: the same example can appear twice, and some learners care about the order. Each round bracket \((x_i, y_i)\) is one example, the \(i\)-th message with its label, and \(m\) is how many there are; with eight labelled messages, \(m = 8\) and the sequence runs from \((x_1, y_1)\) to \((x_8, y_8)\).
 
-**The learner's output** is a hypothesis \(h : \mathcal X \to \mathcal Y\). Other names for it are predictor and classifier, and we'll keep saying hypothesis. \(A(S)\) is the hypothesis that learner \(A\) returns on \(S\).
+**The learner's output** is a hypothesis \(h : \mathcal X \to \mathcal Y\), a rule that takes any message and returns a label; the arrow reads “from messages to labels”, just as it did for the loss. Other names for it are predictor and classifier, and we'll keep saying hypothesis. \(A(S)\) is the hypothesis that learner \(A\) returns on \(S\).
 
 **How the data is made.** This is the new part, so read it slowly. The framework assumes two hidden objects.
 
@@ -133,9 +133,30 @@ Here is a story far from the mail room. You have just arrived on a small Pacific
 
 Each example is made in two steps: draw a message \(x_i\) from \(\mathcal D\), then label it with \(f\). The learner knows neither \(\mathcal D\) nor \(f\). Finding \(f\) is the whole job.
 
-**How success is measured.** The true risk of \(h\) is the probability that \(h\) gets a fresh message wrong:
+**How success is measured.** The true risk of \(h\) is the probability that \(h\) gets a fresh message wrong. Take the tiny world you are about to meet, where the truth is “FREE and unknown sender” and all sixteen messages are equally likely. The hypothesis “unknown sender means junk” disagrees with the truth on four of them (the ones with an unknown sender and no FREE), so a fresh message trips it up \(4/16 = 1/4\) of the time. In symbols:
 
 \[ L_{\mathcal D, f}(h) = \mathbb P_{x \sim \mathcal D}\left[ h(x) \neq f(x) \right] = \mathcal D(\{ x : h(x) \neq f(x) \}). \]
+
+This is lesson 1’s true risk, now with nothing assumed about \(\mathcal D\). From the inside out:
+
+- \(f(x)\) is the label message \(x\) really deserves, and \(h(x) \neq f(x)\) asks whether \(h\) gets \(x\) wrong.
+- \(\mathbb P_{x \sim \mathcal D}[\dots]\) is the probability of that event when \(x\) is one fresh message drawn from \(\mathcal D\).
+- The right-hand side says the same thing as a mass: collect the set of messages \(x\) such that \(h\) is wrong on them, and ask \(\mathcal D\) how much traffic that set carries.
+- The subscripts \(\mathcal D, f\) on \(L\) record the two hidden objects the number depends on.
+
+In plain words: **the true risk is the share of all arriving mail that \(h\) mislabels.** For “unknown sender means junk” that share is the four messages 0010, 0011, 0110 and 0111, at \(1/16\) each:
+
+```python
+from fractions import Fraction
+X = [format(v, "04b") for v in range(16)]
+D = {x: Fraction(1, 16) for x in X}
+f = lambda x: x[0] == x[2] == "1"
+h_U = lambda x: x[2] == "1"
+wrong = [x for x in X if h_U(x) != f(x)]
+print(wrong, sum(D[x] for x in wrong))
+```
+
+It prints the four messages and `1/4`. The list `wrong` is the set inside \(\mathcal D(\cdot)\), and the sum is its mass. Change any value in `D` and the risk changes with it, which is exactly why the learner, blind to \(\mathcal D\), cannot compute it.
 
 The subscript says the risk depends on both hidden objects. When they are clear we drop it and write \(L_{\mathcal D}(h)\). Other names for it are generalization error, risk and true error. The letter \(L\) is for loss.
 
@@ -145,19 +166,21 @@ Notice what is missing from this list. In lesson 1 we made \(\mathcal D\) unifor
 
 ## Empirical risk minimization
 
-The learner wants a hypothesis with small true risk, but it cannot compute true risk, because that needs \(\mathcal D\) and \(f\). What it can compute is the empirical risk, the fraction of the training examples \(h\) gets wrong:
+The learner wants a hypothesis with small true risk, but it cannot compute true risk, because that needs \(\mathcal D\) and \(f\). What it can compute is the empirical risk, the fraction of the training examples \(h\) gets wrong. If your users labelled eight messages and \(h\) disagrees with them on three, its empirical risk is \(3/8\), no knowledge of \(\mathcal D\) required. In symbols:
 
 \[ L_S(h) = \frac{\left| \{ i \in [m] : h(x_i) \neq y_i \} \right|}{m}. \]
+
+You met this in lesson 1, so a quick reminder, inside out. \(h(x_i) \neq y_i\) asks whether \(h\) gets example \(i\) wrong. The braces with the colon collect the positions \(i\) in \([m]\) such that it does. The bars \(|\cdot|\) count how many positions that is, and dividing by \(m\) turns the count into a fraction. The subscript \(S\) says the score is taken on the training sequence only. In plain words: **the share of your labelled examples that \(h\) gets wrong.** In the table below, \(h_F\) is wrong on positions \(\{4, 5, 6\}\), three of eight, so \(L_S(h_F) = 3/8\); the line building `L_S` in the Python snippet after that table is this formula, mistakes summed and divided by `len(S)`.
 
 Other names for it are training error and empirical error.
 
 The training sequence is the learner's only snapshot of the world, so it makes sense to look for a hypothesis that does well on it. Returning a hypothesis \(h\) that minimizes \(L_S(h)\) is called **Empirical Risk Minimization**, or **ERM**. You will meet it again, in one form or another, in almost every lesson of this course.
 
-Let's run it by hand. We go back to lesson 1's tiny world of four features, F, L, U, N, because thirty features won't fit on a page. But this week the spammers are cleverer: a message is junk exactly when the subject says "FREE" *and* the sender is unknown. A single feature no longer captures that, so we give the learner a bigger class: every one-feature hypothesis and every two-feature hypothesis,
+Let's run it by hand. We go back to lesson 1's tiny world of four features, F, L, U, N, because thirty features won't fit on a page. But this week the spammers are cleverer: a message is junk exactly when the subject says "FREE" *and* the sender is unknown. A single feature no longer captures that, so we give the learner a bigger class: every one-feature hypothesis and every two-feature hypothesis. A two-feature hypothesis says junk only when both of its features are on. The pair F and U says junk on 1010, where both are on, and keep on 1100, where U is off. Written out:
 
-\[ \mathcal H_{\le 2} = \{ h_j \} \cup \{ h_{jk} : j < k \}, \qquad h_{jk}(x) = x_j \wedge x_k, \]
+\[ \mathcal H_{\le 2} = \{ h_j \} \cup \{ h_{jk} : j < k \}, \qquad h_{jk}(x) = x_j \wedge x_k. \]
 
-so \(h_{FU}\) says "junk exactly when the subject says FREE and the sender is unknown". That is 4 one-feature hypotheses plus 6 pairs, ten in all, and the truth \(h_{FU}\) is one of them.
+Read it piece by piece. \(\{ h_j \}\) is the set of the four one-feature hypotheses, one for each feature \(j\). \(\{ h_{jk} : j < k \}\) is the set of pair hypotheses, one for each pair of features \(j\) and \(k\) such that \(j\) comes before \(k\); the condition \(j < k\) stops us from counting F-with-U and U-with-F twice. The cup \(\cup\) means “union”: put both sets together. On the right, \(x_j \wedge x_k\) is “\(x_j\) and \(x_k\)”, which is 1 only when both features are on. The subscript \(\le 2\) on \(\mathcal H\) is a reminder that each hypothesis looks at two features at most. In plain words: **the class holds every rule of the form “junk when this feature is on” or “junk when these two features are both on”.** So \(h_{FU}\) says "junk exactly when the subject says FREE and the sender is unknown". That is 4 one-feature hypotheses plus 6 pairs, ten in all, and the truth \(h_{FU}\) is one of them. The Python snippet after the table builds exactly this class: `names` lists the ten, and `h` computes the “and” with `all`, so `h("FU", "1010")` is 1 and `h("FU", "1100")` is 0.
 
 Your users label eight messages.
 
@@ -214,11 +237,11 @@ Back to the papayas. Picture a gray square of area 2, with a smaller blue square
 
 [[diagram:overfit]]
 
-Now consider this hypothesis:
+Now consider a hypothesis you already know: lesson 1’s memorizer. It repeats the label of any message it has seen, and says “keep” (or “not tasty”) for everything else. Trained on the eight mail examples above, it says junk on 1010 because example 2 was 1010 labelled junk, and keep on 0010 because it never saw 0010. Written as a formula:
 
 \[ h_S(x) = \begin{cases} y_i & \text{if } x = x_i \text{ for some } i \in [m], \\ 0 & \text{otherwise.} \end{cases} \]
 
-You know it. It is lesson 1's memorizer, word for word: repeat the label of any message you have seen, say "keep" (or "not tasty") for everything else.
+The big left brace introduces a definition by cases: read the lines top to bottom and use the first one whose condition holds. The top line says: if \(x\) is one of the training messages \(x_i\), for some position \(i\) in \([m]\), answer with that example’s label \(y_i\). The bottom line says: otherwise answer 0. The subscript \(S\) on \(h_S\) says the hypothesis is built from the training sequence. In plain words: **look the message up among the examples, return its label if found, and 0 if not.** In the papaya snippet below, the line `h_S = lambda x: S.get(x, 0)` is this formula: `S.get` is the lookup, and the `0` is the “otherwise” line.
 
 Whatever the training sequence, \(L_S(h_S) = 0\). No hypothesis can do better than zero, so ERM is entirely free to return it. And its true risk? It says "tasty" on at most \(m\) points. A finite set of points has area zero, so under the uniform distribution the probability of ever meeting one of those papayas again is zero. The memorizer says "not tasty" on essentially every papaya, which is wrong on the whole blue square: \(L_{\mathcal D}(h_S) = 1/2\).
 
@@ -248,11 +271,11 @@ In the mail room the picture is the same. With thirty features there are \(2^{30
 
 We don't give up on ERM. Instead, we look for conditions under which ERM is safe. Safe means that when the ERM hypothesis does well on the training sequence, it is also very likely to do well on \(\mathcal D\).
 
-The fix is the one you met in lesson 1. Before seeing any data, the learner chooses a hypothesis class \(\mathcal H\), and ERM is only allowed to search inside it:
+The fix is the one you met in lesson 1. Before seeing any data, the learner chooses a hypothesis class \(\mathcal H\), and ERM is only allowed to search inside it. You already ran one such search: inside \(\mathcal H_{\le 2}\), the smallest empirical risk on the eight examples was 0, reached by \(h_U\) and \(h_{FU}\), and the learner had to return one of those two. In symbols:
 
 \[ \mathrm{ERM}_{\mathcal H}(S) \in \operatorname*{argmin}_{h \in \mathcal H} L_S(h). \]
 
-Here \(\operatorname{argmin}\) is the set of hypotheses in \(\mathcal H\) that reach the smallest empirical risk, and the \(\in\) says ERM returns some member of that set, any one. The table above computed exactly this set for \(\mathcal H_{\le 2}\): \(\{h_U, h_{FU}\}\).
+Inside out: \(L_S(h)\) is the empirical risk of one hypothesis. The \(\operatorname{argmin}\) with \(h \in \mathcal H\) beneath it runs over every \(h\) in the class and returns not the smallest risk itself but the set of hypotheses that reach it: “the arguments that minimize”. The \(\in\) says ERM returns some member of that set, any one. The subscript \(\mathcal H\) on \(\mathrm{ERM}\) names the class it searches, and the \((S)\) says its answer depends on the training sequence. In plain words: **ERM over \(\mathcal H\) returns one of the hypotheses in \(\mathcal H\) with the fewest training mistakes.** The table above computed exactly this set for \(\mathcal H_{\le 2}\): \(\{h_U, h_{FU}\}\), and the last line of the ERM snippet printed it as `['U', 'FU']`.
 
 Restricting the learner this way biases it toward certain hypotheses, and the restriction is called an **inductive bias**, the same term as in lesson 1. Since \(\mathcal H\) is chosen before any data arrives, it should come from prior knowledge about the problem. For the papayas, a good choice is the class of axis-aligned rectangles in the color-softness plane, and ERM over it does not overfit. (Proving that is problem 3 at the end of this lesson.) The memorizer shows the opposite. A class containing every hypothesis that says "tasty" on a finite set of points is too big for ERM to be safe.
 
@@ -271,17 +294,41 @@ Here is a menu of finite classes for the thirty-feature mail room.
 - **Conjunctions of literals**: rules like "FREE and a link and *not* sent at night", where each feature can be required on, required off, or ignored. That is \(3^{30} + 1 \approx 2.06 \times 10^{14}\) hypotheses (the extra one is the hypothesis that never says junk).
 - **Anything goes**: every function from messages to labels, \(2^{2^{30}}\) hypotheses. The memorizer lives here.
 
+Each count is worth reading once, on the tiny world first. With four features there are six ways to choose a pair, the six pairs of \(\mathcal H_{\le 2}\); \(\binom{4}{2}\), read “4 choose 2”, is the number of ways to pick 2 things out of 4 when order doesn’t matter, and \(\binom{30}{2}\) is the same for 30 features. For conjunctions, each of the four features has three options, so there are \(3 \times 3 \times 3 \times 3 = 3^4 = 81\) rules, plus the one that never says junk: 82. The exponent counts how many independent three-way choices you make. For anything goes, each of the \(2^4 = 16\) messages gets one of two labels, so there are \(2^{16}\) hypotheses: a tower of exponents \(2^{2^4}\), read from the top down. In plain words: **the size of a class is the number of independent choices that pin down one hypothesis, multiplied out.** The same counts in Python, tiny world first and mail room second:
+
+```python
+import math
+print(math.comb(4, 2), math.comb(30, 2))
+print(3 ** 4 + 1, 3 ** 30 + 1)
+print(2 ** 2 ** 4)
+```
+
+It prints `6 435`, then `82 205891132094650`, then `65536`, the very number of hypotheses lesson 1 tried one by one. With thirty features the tower \(2^{2^{30}}\) is too large for Python to print, which is why the label-cost snippet later works with its logarithm.
+
 All four are finite. The question is which ones a few hundred labels can pay for. To answer it, we need two assumptions about the world.
 
 ## Two assumptions: realizability and i.i.d.
 
-The first assumption is about the class. For now we take the simplest case.
+The first assumption is about the class. For now we take the simplest case: the class contains a hypothesis that is never wrong, apart from a set of messages that has probability zero. In the tiny world, \(\mathcal H_{\le 2}\) contains the truth \(h_{FU}\), whose true risk is 0, so this holds. The best one-feature hypothesis still has true risk \(1/4\), so for that class it fails.
 
 **Definition (the realizability assumption).** There exists \(h^\star \in \mathcal H\) with \(L_{(\mathcal D, f)}(h^\star) = 0\).
 
-In words: the class contains a hypothesis that is never wrong, apart from a set of messages that has probability zero. In the tiny world, \(\mathcal H_{\le 2}\) contains \(h_{FU}\), so realizability holds. The one-feature class does not contain it, so for that class realizability fails.
+Read it piece by piece. “There exists” means at least one; mathematicians sometimes write it \(\exists\), and you will see that symbol soon. \(h^\star\) is just a name for that hypothesis, and the star is a label meaning “the good one”, not an operation. \(h^\star \in \mathcal H\) says it belongs to the class. \(L_{(\mathcal D, f)}(h^\star) = 0\) says its true risk is zero. In plain words: **somewhere in the class there is a hypothesis with true risk zero.** The snippet finds the smallest true risk in each class of the tiny world:
 
-Realizability has an immediate consequence. Since \(h^\star\) errs only on a set of probability zero, a random training sequence almost surely has no example from that set. So \(L_S(h^\star) = 0\) with probability 1. The smallest empirical risk in \(\mathcal H\) is therefore 0, and every ERM hypothesis is consistent: \(L_S(h_S) = 0\). (Strictly, this holds with probability 1, and from now on we leave that qualifier out.) The empirical risk of \(h_S\) is settled, then. What we want to know is its true risk.
+```python
+from itertools import combinations
+X = [format(v, "04b") for v in range(16)]
+f = lambda x: x[0] == x[2] == "1"
+h = lambda c, x: all(x[j] == "1" for j in c)
+singles = [(j,) for j in range(4)]
+H = singles + list(combinations(range(4), 2))
+L = lambda c: sum(h(c, x) != f(x) for x in X) / 16
+print(min(L(c) for c in H), min(L(c) for c in singles))
+```
+
+It prints `0.0 0.25`: a zero for \(\mathcal H_{\le 2}\), so realizability holds there, and a quarter for the one-feature class, so it fails there.
+
+Realizability has an immediate consequence. Since \(h^\star\) errs only on a set of probability zero, a random training sequence almost surely has no example from that set. So \(L_S(h^\star) = 0\) with probability 1. The smallest empirical risk in \(\mathcal H\) is therefore 0, and every hypothesis ERM might return is consistent. From here on we write \(h_S\) for whichever hypothesis \(\mathrm{ERM}_{\mathcal H}\) returns on \(S\) (the memorizer borrowed that name for a moment, because it too was built from \(S\)), and the claim reads \(L_S(h_S) = 0\). (Strictly, this holds with probability 1, and from now on we leave that qualifier out.) The empirical risk of \(h_S\) is settled, then. What we want to know is its true risk.
 
 The second assumption is about the training sequence. Any guarantee has to depend on how \(S\) relates to \(\mathcal D\). If your users only ever labelled messages from their friends, \(S\) would tell you nothing about junk. The standard assumption is the following.
 
