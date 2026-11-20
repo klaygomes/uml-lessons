@@ -148,11 +148,11 @@ vote = lambda ys: int(mean(ys) > 1 / 2)
 print(ys, round(mean(ys), 3), vote(ys))
 ```
 
-It prints `[1, 1, 0] 0.667 1`. A weighted average whose weights depend on the neighbours’ distances is a third choice of \(\phi\). For the rest of the lesson we stay with binary labels and the 0-1 loss.
+It prints `[1, 1, 0] 0.667 1`. A weighted average whose weights depend on the neighbours’ distances is a third choice of \(\phi\). For the rest of the lesson we stay with binary labels and the **0-1 loss** \(\ell(h, (x, y)) = \mathbb 1[h(x) \neq y]\), where the **indicator** \(\mathbb 1[\cdot]\) is 1 when the statement inside is true and 0 when it is false: a mistake costs 1, a correct label 0. If q3 turns out to be junk, the 1-NN rule’s “keep” costs 1 and the 3-NN rule’s “junk” costs 0.
 
 ## No class to search, but still a bias
 
-Pause on what just happened, because it is new. ERM, structural risk minimization, boosting and every learner since lesson 2 chose a hypothesis from a class \(\mathcal H\) fixed in advance. The k-NN rule picks a label for any new message without searching any predefined class of functions. It stores the training sequence and, at prediction time, looks things up.
+Pause on what just happened, because it is new. Every learner since lesson 2 chose a hypothesis from a class \(\mathcal H\) fixed in advance: ERM picked the one with the fewest training mistakes, structural risk minimization traded those mistakes against the size of the class, and boosting combined stumps from a fixed family. The k-NN rule picks a label for any new message without searching any predefined class of functions. It stores the training sequence and, at prediction time, looks things up.
 
 That should ring an alarm. Lesson 1’s memorizer also stored the training sequence and looked things up, and it learned nothing. What is different? The memorizer answered only for messages it had seen exactly, and fell back on a blind “keep” for everything else. The nearest neighbour rule answers for unseen messages by borrowing from seen ones that are *close*. That borrowing is generalization, and it rests on an assumption: that the scores describing a message are relevant to its label in such a way that nearby messages are likely to have the same label.
 
@@ -231,7 +231,7 @@ print(round(eta(x), 2), round(sum(ys) / len(ys), 3))
 
 It prints `0.7 0.701`.
 
-What is the best any filter could do on that message? Saying junk, it is wrong whenever the user says keep, 30% of the time; saying keep, it is wrong 70% of the time. The best choice is the more likely label, and it still errs with the less likely probability, 0.3. The **Bayes optimal predictor** \(f_{\mathcal D}\) makes that best choice everywhere: it says junk exactly when \(\eta(x) \ge 1/2\), and lesson 3 proved that no hypothesis has smaller true risk. Recall that the **true risk** \(L_{\mathcal D}(h)\) of a hypothesis \(h\) is the chance that it mislabels a fresh example drawn from \(\mathcal D\). The true risk of \(f_{\mathcal D}\), the **Bayes risk**, is
+What is the best any filter could do on that message? Saying junk, it is wrong whenever the user says keep, 30% of the time; saying keep, it is wrong 70% of the time. The best choice is the more likely label, and it still errs with the less likely probability, 0.3. Recall that the **true risk** \(L_{\mathcal D}(h)\) of a hypothesis \(h\) is the chance that it mislabels a fresh example drawn from \(\mathcal D\). The **Bayes optimal predictor** \(f_{\mathcal D}\) makes the best choice everywhere: it says junk exactly when \(\eta(x) \ge 1/2\), and lesson 3 proved that no hypothesis has smaller true risk. The true risk of \(f_{\mathcal D}\), the **Bayes risk**, is
 
 \[ L_{\mathcal D}(f_{\mathcal D}) = \mathbb E_{x \sim \mathcal D_x}\big[ \min\{\eta(x), 1 - \eta(x)\} \big]. \]
 
@@ -262,7 +262,7 @@ The single bars \(|\cdot|\) are the absolute value, the size of a change ignorin
 
 [[diagram:lipschitz]]
 
-Our invoice world’s \(\eta\) is \(2\sqrt 2\)-Lipschitz. Here is why. Inside the clip, the expression \(2x_1 + 2x_2 - 1.5\) changes by \(2(x'_1 - x_1) + 2(x'_2 - x_2)\), and by the Cauchy–Schwarz inequality that is at most \(\|(2, 2)\| \cdot \|x' - x\| = 2\sqrt 2\, \|x' - x\|\) in absolute value. The clip \(t \mapsto \min\{1, \max\{0, t\}\}\) never moves two numbers further apart than they were, so it keeps the bound. The twenty-eight noise scores do not enter \(\eta\) at all, so the same constant works in thirty dimensions. Let’s check by brute force: the ratio we computed for one nudge above, now for many pairs of nearby messages, keeping the largest.
+Our invoice world’s \(\eta\) is \(2\sqrt 2\)-Lipschitz. Here is why. Inside the clip, the expression \(2x_1 + 2x_2 - 1.5\) changes by \(2(x'_1 - x_1) + 2(x'_2 - x_2)\), and by the Cauchy–Schwarz inequality (a sum of products \(a_1 b_1 + a_2 b_2\) is at most the length of \(a\) times the length of \(b\) in size) that is at most \(\|(2, 2)\| \cdot \|x' - x\| = 2\sqrt 2\, \|x' - x\|\) in absolute value. For our nudge, \(2 \times 0.02 + 2 \times 0.02 = 0.08\) and \(2.83 \times 0.028 \approx 0.08\): a diagonal step meets the bound exactly. The clip \(t \mapsto \min\{1, \max\{0, t\}\}\) never moves two numbers further apart than they were, so it keeps the bound. The twenty-eight noise scores do not enter \(\eta\) at all, so the same constant works in thirty dimensions. Let’s check by brute force: the ratio we computed for one nudge above, now for many pairs of nearby messages, keeping the largest.
 
 ```python
 import math, random
@@ -282,7 +282,7 @@ print(round(worst, 3), round(2 * math.sqrt(2), 3))
 
 It prints `2.828 2.828`: the worst ratio found is the constant, reached when you step diagonally inside the band where users disagree.
 
-Two more conventions before the proofs. The learner’s output depends on the random training sequence: a different thousand labelled invoices gives a different 1-NN rule, with a different true risk. So we measure it on average over many draws of the training sequence. Recall that \(S \sim \mathcal D^m\) means the \(m\) examples of \(S\) are drawn independently from \(\mathcal D\). The guarantee will bound \(\mathbb E_{S \sim \mathcal D^m}[L_{\mathcal D}(h_S)]\): **the true risk of the 1-NN rule, averaged over the random training sequence.** The simulation in Step 1 will put it at about 0.152 for a thousand invoices on two scores. And the setting throughout is \(\mathcal X = [0, 1]^d\), \(\mathcal Y = \{0, 1\}\), the 0-1 loss \(\ell(h, (x, y)) = \mathbb 1[h(x) \neq y]\), and Euclidean distance. The **indicator** \(\mathbb 1[\cdot]\) is 1 when the statement inside is true and 0 when it is false, so the 0-1 loss charges 1 for a mistake and 0 otherwise.
+One more convention before the proofs. The learner’s output depends on the random training sequence: a different thousand labelled invoices gives a different 1-NN rule, with a different true risk. So we measure it on average over many draws of the training sequence. Recall that \(S \sim \mathcal D^m\) means the \(m\) examples of \(S\) are drawn independently from \(\mathcal D\). The guarantee will bound \(\mathbb E_{S \sim \mathcal D^m}[L_{\mathcal D}(h_S)]\): **the true risk of the 1-NN rule, averaged over the random training sequence.** The simulation in Step 1 will put it at about 0.152 for a thousand invoices on two scores. And the setting throughout is \(\mathcal X = [0, 1]^d\), \(\mathcal Y = \{0, 1\}\), the 0-1 loss \(\ell(h, (x, y)) = \mathbb 1[h(x) \neq y]\), and Euclidean distance. The **indicator** \(\mathbb 1[\cdot]\) is 1 when the statement inside is true and 0 when it is false, so the 0-1 loss charges 1 for a mistake and 0 otherwise.
 
 The guarantee comes in three steps. Step 1 turns the error of the 1-NN rule into a distance: how far a fresh message is from its nearest neighbour. Step 2 is a counting fact about regions that a random sample misses. Step 3 combines them to bound that distance, and hence the error.
 
