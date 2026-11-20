@@ -1,0 +1,16 @@
+The mail room: lessons in machine learning theory
+Copyright (c) 2026 Cleiton Loiola.
+
+Lesson text, figures and pages are licensed under Creative Commons
+Attribution-NonCommercial 4.0 International (https://creativecommons.org/licenses/by-nc/4.0/).
+Code (lab scripts, page and figure builders) is licensed under the MIT License:
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this
+  software and associated documentation files, to deal in the software without
+  restriction, subject to including this copyright and permission notice. The software is
+  provided "as is", without warranty of any kind.
+
+Third-party material
+- Lab drawing code adapted from the iwrzwr visual archive (https://github.com/kaganin/iwrzwr-visual-archive), MIT License, Copyright (c) kaganin.
+- Diagrams follow the diagram-design skill (https://github.com/cathrynlavery/diagram-design), MIT License.
+- Source text: Shai Shalev-Shwartz and Shai Ben-David, Understanding Machine Learning: From Theory to Algorithms, Cambridge University Press, 2014. The lessons are original explanations; no text from the book is reproduced.

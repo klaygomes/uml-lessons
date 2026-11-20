@@ -1,0 +1,20 @@
+You are drafting lesson {N} of a story-driven course on machine learning theory. Write the prose and the teacher's sheet only (no figures, no page).
+
+Read first: /Users/cleiton.loiola/personal/lessons/uml-shalev-shwartz/TASKS.md ("Source rule", "The learner's rules"), series.md (world, conventions, glossary; reuse terms exactly), ~/.claude/skills/klay-learning-ladder/references/writing.md (voice, shape, sheet format, the "Rigorous audiences" section), and lesson 1 (01-learning-needs-a-bias/1-prose.md and 1-sheet.md) as your style and depth reference. Skim the drafts that exist for earlier lessons (02-a-gentle-start, 03-a-formal-learning-model, and 04 to {PREV} if present) for terms and story continuity. Also book/map.md and book/notation.md.
+
+Source of truth, never memory: the PDF "/Users/cleiton.loiola/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/understanding-machine-learning-theory-algorithms.pdf" via `pdftotext -f N -l M "<pdf>" -`. Your chapter: {CHAPTER} (pages in book/map.md). Assume the reader has lessons 1 to {PREV} (one per chapter, same numbers) and recap in a line where needed. Other agents are drafting neighbouring lessons in parallel.
+
+Rules the learner set (all mandatory):
+- Write as an original course, not a commentary: never "the book", no chapter, section, theorem, equation or page numbers in 1-prose.md. Name results by what they say; refer to other lessons as "lesson N" or "the next lesson". Book references with pages go only in 1-sheet.md.
+- Notation: accuracy \(\varepsilon\) (`\varepsilon`, never `\epsilon`), confidence \(\delta\), sample size \(m\), as in series.md.
+- Natural, clear teacher voice; easy to read; no robotic short sentences, no limited vocabulary. Define every term before use. No em dashes. Curly quotes.
+- Rigor: formal definitions, the chapter's results with complete step-by-step proofs, every probabilistic and algebraic step spelled out.
+- The learner understands math best as Python: pair each hard definition, result or proof step with a short runnable ```python snippet (standard library, under about 15 lines, every line at most 66 characters, no comments, names that read as the math, printed values rounded to the precision the prose quotes) that computes or simulates the claim. Run every snippet with python3 -I and paste its real output into the prose.
+- An algorithm section for every algorithm the chapter introduces: pseudocode, time and space complexity, a from-scratch build-it challenge with real starter data and asserts you have run against a reference implementation.
+- A concept check of 2 or 3 questions (edge case, proof step, calculation), answers only in the sheet. End-of-chapter: in the sheet, pick 2 or 3 of the chapter's exercises (book/map.md) with hint ladders, presented in the prose as this lesson's own problems.
+- Figure slots `[[diagram:NAME]]` (one per new concept) with a spec for each in the sheet; `[[lab]]` and `[[lab-act2]]` slots with the lab specified in the sheet like lesson 1's (act 2's success must require meeting the lesson's guarantee, not luck).
+- Save CPU: do not run agent-voice, do not spawn subagents, do not launch browsers. Use pdftotext and small python3 scripts only (in /private/tmp/claude-502/-Users-cleiton-loiola-personal/10412219-6ffb-4586-aa42-9a1b7eaa0636/scratchpad/lesson{N}/).
+
+Story (fixed): {STORY}
+
+Write to /Users/cleiton.loiola/personal/lessons/uml-shalev-shwartz/{FOLDER}/1-prose.md and 1-sheet.md; copy the series lesson.css and tokens.css into that folder. Do not edit series.md, TASKS.md, or other lesson folders. Do not commit. Final report under 200 words: files, word count, snippets run and their outputs, exercises chosen, anything outside the book listed in the sheet's Assumptions.

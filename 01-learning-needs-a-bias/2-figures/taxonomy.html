@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Four ways to sort learning problems</title>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400&family=Rubik:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #F7F6F2;
+  --paper-2: #ECEAE4;
+  --ink: #1F2226;
+  --ink-soft: #585C63;
+  --rule: #D8D5CD;
+  --accent: #C47A0A;
+  --accent-ink: #8C5300;
+  --accent-soft: #F6E7C8;
+  --input: #1F5BA8;
+  --input-soft: #DCE6F4;
+  --ok: #25774A;
+  --ok-soft: #DCEFE2;
+  --selection: var(--input-soft);
+  --code-bg: var(--paper-2);
+  --code-text: var(--ink);
+  --code-keyword: #83339A;
+  --code-string: #2E6B1E;
+  --code-number: #8C5300;
+  --code-function: #0B6470;
+  --code-call: #264F8C;
+  --code-builtin: #0B6470;
+  --code-comment: #61646A;
+
+  --font-body: "Literata", Georgia, serif;
+  --font-title: "Rubik", system-ui, sans-serif;
+  --font-ui: "Rubik", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-math: "Literata", "STIX Two Math", serif;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 600;
+  --weight-title: 600;
+
+  --text-fig: 12px;
+  --text-fig-tick: 12.5px;
+  --text-fig-name: 15px;
+  --text-fig-note: 17px;
+  --text-fig-math: 18px;
+  --text-micro: 13px;
+  --text-small: 14.5px;
+  --text-caption: 15.5px;
+  --text-ui: 16px;
+  --text-body: 18px;
+  --text-h3: 19px;
+  --text-result: 19px;
+  --text-lead: clamp(20px, 2.3vw, 23px);
+  --text-h2: clamp(25px, 2.9vw, 29px);
+  --text-h1: clamp(36px, 5.4vw, 50px);
+  --text-table: 14px;
+  --text-code: 14.5px;
+  --text-math: 1.05em;
+  --text-math-display: 1.15em;
+
+  --leading-body: 1.62;
+  --leading-ui: 1.4;
+  --leading-caption: 1.5;
+  --leading-code: 1.5;
+  --leading-heading: 1.18;
+  --leading-title: 1.08;
+  --tracking-title: -0.022em;
+  --tracking-heading: -0.015em;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-14: 56px;
+  --space-18: 72px;
+  --space-20: 80px;
+
+  --space-gutter: var(--space-4);
+  --space-block: var(--space-5);
+  --space-section: var(--space-18);
+  --space-heading-after: var(--space-3);
+  --space-header-gap: var(--space-4);
+  --space-crumbs-top: var(--space-8);
+  --space-header-top: var(--space-10);
+  --space-header-after: var(--space-14);
+  --space-page-bottom: var(--space-20);
+  --space-list: var(--space-2);
+  --space-lab: var(--space-5);
+  --space-control: var(--space-3);
+  --space-cell-x: var(--space-5);
+  --space-cell-y: var(--space-2);
+
+  --layout-measure: 35em;
+  --layout-breakout: 780px;
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --line-hair: 1px;
+  --line-strong: 1.5px;
+  --line-mark: 3px;
+  --focus-ring: 2px;
+  --motion-step: 650ms;
+
+  --measure: var(--layout-measure);
+  --column: var(--layout-breakout);
+  --block-gap: var(--space-block);
+  --section-gap: var(--space-section);
+}
+
+@media (max-width: 520px) {
+  :root {
+    --text-body: 17px;
+    --text-table: 12.5px;
+    --text-math-display: 0.82em;
+    --space-cell-x: var(--space-3);
+    --space-crumbs-top: var(--space-5);
+    --space-header-top: var(--space-6);
+    --space-lab: var(--space-4);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #17181B; --paper-2: #222429; --ink: #ECEAE5; --ink-soft: #A4A39E; --rule: #35373C;
+    --accent: #F0A73A; --accent-ink: #F4BD68; --accent-soft: #3B2C12; --input: #79A6E6; --input-soft: #233A5C; --ok: #5FC28E; --ok-soft: #15301F;
+    --code-keyword: #D3A2F2; --code-string: #A3D58F; --code-number: #F4BD68; --code-function: #7CCAD3; --code-call: #A9C4F0; --code-builtin: #7CCAD3; --code-comment: #9C9C97;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #17181B; --paper-2: #222429; --ink: #ECEAE5; --ink-soft: #A4A39E; --rule: #35373C;
+  --accent: #F0A73A; --accent-ink: #F4BD68; --accent-soft: #3B2C12; --input: #79A6E6; --input-soft: #233A5C; --ok: #5FC28E; --ok-soft: #15301F;
+    --code-keyword: #D3A2F2; --code-string: #A3D58F; --code-number: #F4BD68; --code-function: #7CCAD3; --code-call: #A9C4F0; --code-builtin: #7CCAD3; --code-comment: #9C9C97;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: var(--text-body); line-height: var(--leading-body); font-optical-sizing: auto; text-rendering: optimizeLegibility; font-feature-settings: "kern", "liga"; }
+::selection { background: var(--selection); color: var(--ink); }
+:focus-visible { outline: var(--focus-ring) solid var(--input); outline-offset: var(--space-1); border-radius: 2px; }
+input, textarea { caret-color: var(--input); }
+a { color: var(--input); text-decoration-thickness: var(--line-hair); text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: var(--focus-ring); }
+strong, b { font-weight: var(--weight-bold); }
+code, .num { font-family: var(--font-mono); font-size: 0.88em; font-variant-numeric: tabular-nums; }
+p { margin: 0; max-width: var(--measure); }
+p, li { text-wrap: pretty; hanging-punctuation: first; }
+h1, h2, h3 { margin: 0; text-wrap: balance; font-family: var(--font-title); font-weight: var(--weight-title); }
+
+.wrap { max-width: calc(var(--measure) + 2 * var(--space-gutter)); margin: 0 auto; padding: 0 max(var(--space-gutter), env(safe-area-inset-right, 0px)) var(--space-page-bottom) max(var(--space-gutter), env(safe-area-inset-left, 0px)); }
+
+.crumbs { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); padding-top: var(--space-crumbs-top); font-family: var(--font-ui); font-size: var(--text-caption); line-height: var(--leading-ui); color: var(--ink-soft); }
+.crumbs a { color: var(--ink-soft); }
+header { display: grid; gap: var(--space-header-gap); padding-top: var(--space-header-top); }
+h1 { font-size: var(--text-h1); line-height: var(--leading-title); letter-spacing: var(--tracking-title); }
+.question { font-size: var(--text-lead); line-height: var(--leading-ui); color: var(--ink-soft); }
+header + * { margin-top: var(--space-header-after); }
+
+section { margin-top: var(--space-section); display: grid; gap: var(--space-block); }
+section > *, figure > * { min-width: 0; }
+section > h2 { font-size: var(--text-h2); line-height: var(--leading-heading); letter-spacing: var(--tracking-heading); margin-bottom: calc(var(--space-heading-after) - var(--space-block)); }
+section h3 { font-size: var(--text-h3); line-height: var(--leading-ui); }
+section ul, section ol { margin: 0; padding-left: 1.3em; display: grid; gap: var(--space-list); max-width: var(--measure); }
+
+figure { margin: 0; display: grid; gap: var(--space-2); }
+figcaption { font-family: var(--font-ui); font-size: var(--text-caption); line-height: var(--leading-caption); color: var(--ink-soft); max-width: var(--measure); }
+.diagram { overflow-x: auto; }
+section > figure, section > .lab, section > .k-wide { width: min(var(--column), calc(100vw - 2 * var(--space-gutter))); margin-left: calc((100% - min(var(--column), calc(100vw - 2 * var(--space-gutter)))) / 2); }
+
+.lab { display: grid; gap: var(--space-4); border: var(--line-hair) solid var(--rule); border-radius: var(--radius); padding: var(--space-lab); background: var(--paper); font-family: var(--font-ui); font-size: var(--text-ui); line-height: var(--leading-ui); }
+.lab p { max-width: none; }
+.ask { display: grid; gap: var(--space-2); }
+.ask p { font-weight: var(--weight-bold); }
+.row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+button { font: var(--weight-medium) var(--text-ui)/1 var(--font-ui); color: var(--ink); background: var(--paper); border: var(--line-strong) solid var(--ink); border-radius: var(--radius-sm); padding: var(--space-3) var(--space-4); cursor: pointer; }
+button:hover { background: var(--paper-2); }
+button[aria-pressed="true"] { background: var(--input-soft); border-color: var(--input); }
+button.quiet { border-color: var(--rule); color: var(--ink-soft); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+canvas.stage { width: 100%; display: block; background: var(--paper); border-block: var(--line-hair) solid var(--rule); }
+.key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); font-size: var(--text-caption); color: var(--ink-soft); }
+.control { display: grid; gap: var(--space-1); }
+.control label { font-weight: var(--weight-bold); }
+.control output { font-family: var(--font-mono); color: var(--input); }
+input[type="range"] { width: 100%; accent-color: var(--input); }
+.readout { display: grid; gap: var(--space-1); }
+.readout .result { font-family: var(--font-mono); font-size: var(--text-result); font-variant-numeric: tabular-nums; }
+.readout .result .changed { color: var(--accent-ink); }
+.readout .compare { color: var(--ink-soft); }
+
+ol.steps { list-style: none; margin: 0; padding: 0; counter-reset: s; display: grid; gap: var(--space-3); }
+ol.steps li { counter-increment: s; display: grid; grid-template-columns: var(--space-8) 1fr; gap: var(--space-3); }
+ol.steps li::before { content: counter(s); font-family: var(--font-mono); font-size: var(--text-caption); width: var(--space-8); height: var(--space-8); border-radius: 50%; border: var(--line-strong) solid var(--ink); display: grid; place-items: center; }
+
+.table { overflow-x: auto; max-width: 100%; }
+table.alt { border-collapse: collapse; width: 100%; font-size: var(--text-ui); }
+table.alt th { text-align: left; font-family: var(--font-ui); font-size: var(--text-micro); font-weight: var(--weight-medium); color: var(--ink-soft); }
+table.alt th, table.alt td { padding: var(--space-cell-y) var(--space-cell-x) var(--space-cell-y) 0; border-bottom: var(--line-hair) solid var(--rule); vertical-align: top; }
+table.alt td:last-child, table.alt th:last-child { padding-right: 0; }
+table.alt .changed { color: var(--accent-ink); font-weight: var(--weight-bold); }
+
+.myth { border-left: var(--line-mark) solid var(--accent); padding-left: var(--space-4); display: grid; gap: var(--space-2); }
+.myth b { color: var(--accent-ink); }
+
+footer { margin-top: var(--space-section); border-top: var(--line-hair) solid var(--rule); padding-top: var(--space-3); max-width: var(--measure); font-family: var(--font-ui); font-size: var(--text-small); line-height: var(--leading-caption); color: var(--ink-soft); display: grid; gap: var(--space-1); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+
+.toc { margin-top: var(--space-header-after); font-family: var(--font-ui); font-size: var(--text-caption); line-height: var(--leading-ui); }
+.toc + section { margin-top: var(--space-section); }
+.toc summary { cursor: pointer; width: fit-content; font-weight: var(--weight-bold); color: var(--ink); }
+.toc ol { margin: var(--space-3) 0 0; padding-left: 1.6em; columns: 2 16em; column-gap: var(--space-8); }
+.toc li { break-inside: avoid; padding-block: calc(var(--space-1) / 2); color: var(--ink-soft); }
+.toc a { color: var(--ink); text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+html { scroll-behavior: smooth; scroll-padding-top: var(--space-6); }
+figcaption { text-wrap: pretty; }
+section > figure > figcaption { width: 100%; max-width: var(--measure); margin-inline: auto; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+.k-fig { display: block; width: 100%; height: auto; --k-step: var(--motion-step); }
+.k-fig.k-narrow { display: none; max-width: 440px; margin: 0 auto; }
+@container k-fig (max-width: 600px) {
+  .k-fig.k-wide { display: none; }
+  .k-fig.k-narrow { display: block; }
+}
+.k-fig .k-bg { fill: var(--paper); }
+.k-fig .k-axis { stroke: var(--ink-soft); stroke-width: 1; }
+.k-fig .k-grid { stroke: var(--rule); stroke-width: 1; }
+.k-fig .k-frame { stroke: var(--rule); stroke-width: 1; }
+.k-fig .k-line { stroke: var(--ink); stroke-width: 1.5; fill: none; }
+.k-fig .k-guide { stroke: var(--ink-soft); stroke-width: 1; stroke-dasharray: 3 4; fill: none; }
+.k-fig .k-band { fill: var(--input-soft); }
+.k-fig .k-edge { stroke: var(--input); stroke-width: 1.2; stroke-dasharray: 6 4; }
+.k-fig .k-curve { stroke: var(--ink); stroke-width: 2; fill: none; }
+.k-fig .k-curve-soft { stroke: var(--ink-soft); stroke-width: 1.5; stroke-dasharray: 6 5; fill: none; }
+.k-fig .k-curve-faint { stroke: var(--ink-soft); stroke-width: 1.5; fill: none; opacity: 0.35; }
+.k-fig .k-curve-accent { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 2 4; stroke-linecap: round; fill: none; }
+.k-fig .k-curve-input { stroke: var(--input); stroke-width: 2; fill: none; }
+.k-fig .k-fill { fill: var(--paper-2); }
+.k-fig .k-stem { stroke: var(--ink); stroke-width: 2; }
+.k-fig .k-stem-dot { fill: var(--ink); }
+.k-fig .k-stem-soft { stroke: var(--ink-soft); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.k-fig .k-stem-soft-dot { fill: var(--paper); stroke: var(--ink-soft); stroke-width: 1.5; }
+.k-fig .k-stem-accent { stroke: var(--accent); stroke-width: 2.5; }
+.k-fig .k-stem-accent-dot { fill: var(--accent); }
+.k-fig .k-stem-input { stroke: var(--input); stroke-width: 2; }
+.k-fig .k-stem-input-dot { fill: var(--input); }
+.k-fig .k-hollow { fill: var(--paper); stroke-width: 1.5; }
+.k-fig .k-stem-dot.k-hollow { stroke: var(--ink); }
+.k-fig .k-bar { fill: var(--ink); }
+.k-fig .k-bar-soft { fill: var(--ink-soft); }
+.k-fig .k-ring-missing { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.k-fig .k-row-tint { fill: var(--paper-2); }
+.k-fig .k-muted { opacity: 0.55; }
+.k-fig .k-bar-accent { fill: var(--accent); }
+.k-fig .k-bar-hatch { stroke: var(--accent); stroke-width: 1.5; }
+.k-fig .k-hatch-bg { fill: var(--accent-soft); }
+.k-fig .k-hatch { stroke: var(--accent); stroke-width: 2; }
+.k-fig .k-arrow { stroke: var(--ink-soft); stroke-width: 1.5; fill: none; }
+.k-fig .k-arrow.k-accent { stroke: var(--accent); }
+.k-fig .k-arrow.k-input { stroke: var(--input); }
+.k-fig .k-head { fill: var(--ink-soft); }
+.k-fig .k-head-accent { fill: var(--accent); }
+.k-fig .k-head-input { fill: var(--input); }
+.k-fig .k-vec { stroke: var(--ink); stroke-width: 2; }
+.k-fig .k-wheel { stroke: var(--ink); stroke-width: 1.5; }
+.k-fig .k-stop { fill: var(--ink-soft); }
+.k-fig .k-dot { fill: var(--accent); }
+.k-fig .k-spoke-line { stroke: var(--ink-soft); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.k-fig .k-mask { fill: var(--paper); }
+.k-fig .k-mask-box { fill: var(--paper); }
+.k-fig .k-box { fill: var(--paper-2); stroke: var(--ink); stroke-width: 1.5; }
+.k-fig .k-box-accent { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+.k-fig .k-box-ok { fill: var(--ok-soft); stroke: var(--ok); stroke-width: 1.5; }
+.k-fig .k-name-ok { font-family: var(--font-ui); font-weight: var(--weight-bold); font-size: var(--text-fig-name); fill: var(--ok); }
+.k-fig .k-num-ok { font-family: var(--font-mono); font-size: var(--text-fig); fill: var(--ok); font-weight: var(--weight-medium); }
+.k-fig .k-mark-ok { stroke: var(--input); stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.k-fig .k-mark-bad { stroke: var(--accent); stroke-width: 2.5; fill: none; stroke-linecap: round; }
+.k-fig text { font-family: var(--font-mono); font-size: var(--text-fig); fill: var(--ink-soft); }
+.k-fig .k-label { font-family: var(--font-mono); font-size: var(--text-fig); fill: var(--ink-soft); }
+.k-fig .k-tick { font-family: var(--font-mono); font-size: var(--text-fig-tick); fill: var(--ink-soft); }
+.k-fig .k-num { font-family: var(--font-mono); font-size: var(--text-fig); fill: var(--ink); font-variant-numeric: tabular-nums; }
+.k-fig .k-num-accent { font-family: var(--font-mono); font-size: var(--text-fig); fill: var(--accent-ink); font-weight: var(--weight-medium); }
+.k-fig .k-num-input { font-family: var(--font-mono); font-size: var(--text-fig); fill: var(--input); font-weight: var(--weight-medium); }
+.k-fig .k-name { font-family: var(--font-ui); font-weight: var(--weight-bold); font-size: var(--text-fig-name); fill: var(--ink); }
+.k-fig .k-name-accent { font-family: var(--font-ui); font-weight: var(--weight-bold); font-size: var(--text-fig-name); fill: var(--accent-ink); }
+.k-fig .k-note { font-family: var(--font-body); font-style: italic; font-size: var(--text-fig-note); fill: var(--ink-soft); }
+.k-fig .k-note-accent { font-family: var(--font-body); font-style: italic; font-size: var(--text-fig-note); fill: var(--accent-ink); }
+.k-fig .k-math { font-family: var(--font-math); font-style: italic; font-size: var(--text-fig-math); fill: var(--ink); }
+
+.k-fig [class*="k-a-"] {
+  animation-duration: calc(var(--len, 1) * var(--k-step));
+  animation-delay: calc(var(--d, 0) * var(--k-step));
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(.2, .8, .2, 1);
+}
+.k-fig .k-a-in { animation-name: k-in; }
+.k-fig .k-a-fade { animation-name: k-fade; }
+.k-fig .k-a-flash { animation-name: k-flash; animation-timing-function: linear; }
+.k-fig .k-a-move { animation-name: k-move; }
+.k-fig .k-a-scale { animation-name: k-scale; transform-box: view-box; }
+.k-fig .k-a-turn { animation-name: k-turn; transform-box: view-box; animation-timing-function: steps(var(--steps), jump-none); }
+.k-fig .k-a-draw { animation-name: k-draw; stroke-dasharray: 1; animation-timing-function: ease-in-out; }
+@keyframes k-in { from { opacity: 0; } }
+@keyframes k-fade { from { opacity: var(--o0, 1); } }
+@keyframes k-flash { 0% { opacity: 0; } 12%, 88% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes k-move { from { transform: translate(var(--dx, 0px), var(--dy, 0px)); } }
+@keyframes k-scale { from { transform: scale(var(--sx, 1), var(--sy, 1)); } }
+@keyframes k-turn { from { transform: rotate(var(--r0, 0deg)); } }
+@keyframes k-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.k-fig.k-wait [class*="k-a-"] { animation-play-state: paused; }
+.k-fig.k-reset [class*="k-a-"], .k-fig.k-done [class*="k-a-"] { animation-name: none; }
+@media (prefers-reduced-motion: reduce) {
+  .k-fig [class*="k-a-"] { animation: none !important; }
+}
+@media print {
+  .k-fig [class*="k-a-"] { animation: none !important; }
+}
+.diagram { container: k-fig / inline-size; }
+.k-figure { display: grid; gap: var(--space-2); }
+.k-replay { justify-self: start; font-size: var(--text-small); padding: var(--space-2) var(--space-3); }
+@media (prefers-reduced-motion: reduce) { .k-replay { display: none; } }
+.k-fig .k-ghost { opacity: 0; }
+.k-fig .k-faint { opacity: 0.4; }
+.k-fig .k-legend-line { stroke-width: 2; }
+
+body { padding: 40px 16px; }
+.frame { max-width: 760px; margin: 0 auto; display: grid; gap: 16px; }
+.frame .k-fig { display: block; max-width: none; }
+.frame h1 { font-size: 30px; }</style>
+<style id="fig-taxonomy-style">.k-fig .l1-seen { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5; } .k-fig .l1-unseen { fill: var(--paper); stroke: var(--ink-soft); stroke-width: 1.2; stroke-dasharray: 4 3; } .k-fig .l1-junk { fill: var(--ink); } .k-fig .l1-keep { fill: var(--paper); stroke: var(--ink); stroke-width: 1.2; } .k-fig .l1-ring { fill: none; stroke: var(--accent); stroke-width: 2; } .k-fig .l1-bar { fill: var(--paper-2); stroke: var(--ink-soft); stroke-width: 1; } .k-fig .l1-chip { fill: var(--paper-2); stroke: var(--ink); stroke-width: 1.2; } .k-fig .l1-chip-dead { fill: none; stroke: var(--ink-soft); stroke-width: 1; stroke-dasharray: 3 3; } .k-fig .l1-ink-mark .k-mark-bad { stroke: var(--ink); } .k-fig .l1-cell { fill: var(--paper); stroke: var(--rule); stroke-width: 1; } .k-fig .l1-focus { fill: var(--input-soft); stroke: var(--ink); stroke-width: 1.5; }</style>
+</head>
+<body>
+<div class="frame">
+<p class="topic">Lesson 1 · learning needs a bias</p>
+<h1>Four ways to sort learning problems</h1>
+<div class="diagram"><svg class="k-fig k-wide" id="fig-taxonomy" viewBox="0 0 720 448" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="taxonomy-title taxonomy-desc"><title id="taxonomy-title">Four ways to sort learning problems</title><desc id="taxonomy-desc">Four dimensions of learning, each with its settings and a classic example: supervised, reinforcement or unsupervised; passive or active; a helpful, indifferent or adversarial teacher; batch or online; this course's main focus is tinted in each row.</desc><defs><marker id="taxonomy-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="k-head" points="0 0, 8 3, 0 6"/></marker><marker id="taxonomy-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="k-head-accent" points="0 0, 8 3, 0 6"/></marker><marker id="taxonomy-arrow-input" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="k-head-input" points="0 0, 8 3, 0 6"/></marker><pattern id="taxonomy-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" class="k-hatch-bg"/><line x1="0" y1="0" x2="0" y2="6" class="k-hatch"/></pattern></defs><rect class="k-bg" width="720" height="448"/><g ><text class="k-name" style="font-size:14px" x="24" y="63" text-anchor="start">supervised</text><text class="k-name" style="font-size:14px" x="24" y="81" text-anchor="start">or not</text><g ><rect class="l1-focus" x="152" y="24" width="173.33" height="84" rx="4"/><text class="k-name" style="font-size:14px" x="164" y="46" text-anchor="start">supervised</text><text class="k-tick" x="164" y="64" text-anchor="start">the mail filter:</text><text class="k-tick" x="164" y="79" text-anchor="start">junk and keep</text><text class="k-tick" x="164" y="94" text-anchor="start">clicks</text></g><g ><rect class="l1-cell" x="337.33" y="24" width="173.33" height="84" rx="4"/><text class="k-name" style="font-size:14px" x="349.33" y="46" text-anchor="start">reinforcement</text><text class="k-tick" x="349.33" y="64" text-anchor="start">chess: games</text><text class="k-tick" x="349.33" y="79" text-anchor="start">labelled with</text><text class="k-tick" x="349.33" y="94" text-anchor="start">who won</text></g><g ><rect class="l1-cell" x="522.67" y="24" width="173.33" height="84" rx="4"/><text class="k-name" style="font-size:14px" x="534.67" y="46" text-anchor="start">unsupervised</text><text class="k-tick" x="534.67" y="64" text-anchor="start">anomaly detection,</text><text class="k-tick" x="534.67" y="79" text-anchor="start">clustering</text><text class="k-tick" x="534.67" y="94" text-anchor="start">(lesson 22)</text></g></g>,<g ><text class="k-name" style="font-size:14px" x="24" y="159" text-anchor="start">active or</text><text class="k-name" style="font-size:14px" x="24" y="177" text-anchor="start">passive</text><g ><rect class="l1-focus" x="152" y="120" width="266" height="84" rx="4"/><text class="k-name" style="font-size:14px" x="164" y="142" text-anchor="start">passive</text><text class="k-tick" x="164" y="160" text-anchor="start">the mail filter waits</text><text class="k-tick" x="164" y="175" text-anchor="start">for users' labels</text></g><g ><rect class="l1-cell" x="430" y="120" width="266" height="84" rx="4"/><text class="k-name" style="font-size:14px" x="442" y="142" text-anchor="start">active</text><text class="k-tick" x="442" y="160" text-anchor="start">the learner picks or</text><text class="k-tick" x="442" y="175" text-anchor="start">composes messages</text></g></g>,<g ><text class="k-name" style="font-size:14px" x="24" y="255" text-anchor="start">what kind</text><text class="k-name" style="font-size:14px" x="24" y="273" text-anchor="start">of teacher</text><g ><rect class="l1-cell" x="152" y="216" width="173.33" height="84" rx="4"/><text class="k-name" style="font-size:14px" x="164" y="238" text-anchor="start">helpful</text><text class="k-tick" x="164" y="256" text-anchor="start">a child, a student</text></g><g ><rect class="l1-focus" x="337.33" y="216" width="173.33" height="84" rx="4"/><text class="k-name" style="font-size:14px" x="349.33" y="238" text-anchor="start">indifferent nature</text><text class="k-tick" x="349.33" y="256" text-anchor="start">what a scientist</text><text class="k-tick" x="349.33" y="271" text-anchor="start">learns from:</text><text class="k-tick" x="349.33" y="286" text-anchor="start">statistical</text></g><g ><rect class="l1-cell" x="522.67" y="216" width="173.33" height="84" rx="4"/><text class="k-name" style="font-size:14px" x="534.67" y="238" text-anchor="start">adversarial</text><text class="k-tick" x="534.67" y="256" text-anchor="start">spammers,</text><text class="k-tick" x="534.67" y="271" text-anchor="start">fraudsters; also</text><text class="k-tick" x="534.67" y="286" text-anchor="start">the worst case</text></g></g>,<g ><text class="k-name" style="font-size:14px" x="24" y="351" text-anchor="start">batch or</text><text class="k-name" style="font-size:14px" x="24" y="369" text-anchor="start">online</text><g ><rect class="l1-focus" x="152" y="312" width="266" height="84" rx="4"/><text class="k-name" style="font-size:14px" x="164" y="334" text-anchor="start">batch</text><text class="k-tick" x="164" y="352" text-anchor="start">a data miner with</text><text class="k-tick" x="164" y="367" text-anchor="start">a big archive</text></g><g ><rect class="l1-cell" x="430" y="312" width="266" height="84" rx="4"/><text class="k-name" style="font-size:14px" x="442" y="334" text-anchor="start">online</text><text class="k-tick" x="442" y="352" text-anchor="start">a stockbroker, every</text><text class="k-tick" x="442" y="367" text-anchor="start">day (lesson 21)</text></g></g><rect class="l1-focus" x="152" y="412" width="22" height="14" rx="3"/><text class="k-label" x="182" y="423" text-anchor="start">this course's focus: supervised, passive, statistical, batch</text></svg></div>
+</div>
+</body>
+</html>

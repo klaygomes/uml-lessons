@@ -1,0 +1,26 @@
+{
+  "messages": {
+    "title": "All 16 messages, eight of them seen",
+    "caption": "The tiny world: every message is four bits, FLUN, and a message is junk exactly when it says \"FREE\". Solid cells are the eight examples, numbered in order. The memorizer says keep for every unseen message, so it is wrong on the four unseen junk ones.",
+    "animated": false,
+    "phone": true
+  },
+  "funnel": {
+    "title": "Two ways to narrow 65,536 hypotheses",
+    "caption": "Left, anything goes: each example halves the count, and 256 consistent hypotheses remain, split evenly on every unseen message. Right, a bias first cuts the field to 4; examples 3, 4 and 7 knock out N, L and U, and only the truth is left.",
+    "animated": true,
+    "phone": true
+  },
+  "flip": {
+    "title": "Flipping one unseen label",
+    "caption": "Each row is one consistent hypothesis, its 16 labels in order from 0000 to 1111. φ changes only the label at 1000, so it pairs every hypothesis that says junk there with one that says keep: 128 each.",
+    "animated": false,
+    "phone": true
+  },
+  "taxonomy": {
+    "title": "Four ways to sort learning problems",
+    "caption": "Four questions that sort any learning problem, with a classic example under each setting. Tinted cells are this course's main focus: supervised, passive, statistical, batch. Online learning comes in lesson 21, clustering in lesson 22.",
+    "animated": false,
+    "phone": true
+  }
+}

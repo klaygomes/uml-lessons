@@ -1,0 +1,91 @@
+<style>
+.lab [data-k="fix-controls"]:not([hidden]) { display: grid; gap: var(--space-3); }
+.lab .k-classes { display: grid; grid-template-columns: repeat(4, auto); justify-content: start; gap: var(--space-2); }
+.lab .k-train-row { display: flex; align-items: center; gap: var(--space-4); }
+.lab .k-train-row .control { flex: 1; min-width: 0; }
+.lab button.k-primary, .act2 button.k-primary { background: var(--input); border-color: var(--input); color: var(--paper); font-weight: var(--weight-bold); }
+.lab button.k-primary:hover, .act2 button.k-primary:hover { background: var(--ink); border-color: var(--ink); }
+.act2 button.k-primary { justify-self: start; padding: var(--space-4) var(--space-6); font-size: var(--text-h3); }
+.lab .k-win { display: grid; gap: var(--space-1); border: var(--line-strong) solid var(--ok); border-radius: var(--radius); background: var(--ok-soft); padding: var(--space-4); }
+.lab .k-win p { margin: 0; }
+.lab .k-win .k-win-head { font-family: var(--font-ui); font-weight: var(--weight-bold); font-size: var(--text-h3); line-height: var(--leading-heading); color: var(--ink); }
+.lab .k-win b { color: var(--ok); font-family: var(--font-mono); font-weight: var(--weight-medium); font-variant-numeric: tabular-nums; }
+.lab .result .ok { color: var(--ok); }
+.lab .ends:has(.k-budget) { position: relative; }
+.lab .ends .k-budget { position: absolute; left: calc(11 / 39 * 100%); transform: translateX(-50%); }
+.lab .k-win canvas.k-inbox { width: 100%; display: block; margin-top: var(--space-2); border-radius: var(--radius-sm); }
+.lab .k-win .k-inbox-key { font-size: var(--text-small); color: var(--ink-soft); }
+.lab .note sub, .lab .result sub, .lab .readout sub, .k-ask sub { font-size: 0.72em; line-height: 0; }
+.lab .k-meter.k-ok .fill { background: var(--ok); }
+.k-ask button .k-not { font-weight: var(--weight-regular); }
+@media (max-width: 520px) {
+  .lab .k-classes { grid-template-columns: 1fr 1fr; }
+  .lab .k-classes button { padding: var(--space-2) var(--space-3); min-height: calc(var(--space-10) + var(--space-1)); line-height: var(--leading-ui); text-align: left; }
+  .lab .k-train-row { gap: var(--space-3); }
+}
+</style>
+<template id="bias-lab">
+  <div class="task" data-k="task" hidden><p class="story" data-k="task-text"></p></div>
+  <div data-k="ask"></div>
+  <div data-k="explore-controls">
+    <p class="note">The ten one-feature hypotheses are h<sub>1</sub> to h<sub>10</sub>: h<sub>j</sub> says junk exactly when feature j is present.</p>
+    <div class="control">
+      <label data-for="m">Examples the learners see, m: <output data-k="m-out">100</output></label>
+      <input data-k="m" type="range" min="1" max="200" step="1" value="100">
+      <div class="ends" aria-hidden="true"><span>1</span><span>200</span></div>
+    </div>
+  </div>
+  <div data-k="fix-controls" hidden>
+    <div class="k-classes" role="group" aria-label="Hypothesis class">
+      <button type="button" data-cls="any" aria-pressed="true">Anything goes</button>
+      <button type="button" data-cls="ten" aria-pressed="false">One feature of ten</button>
+      <button type="button" data-cls="three" aria-pressed="false">One of the first three</button>
+      <button type="button" data-cls="pairs" aria-pressed="false">One or two features (55)</button>
+    </div>
+    <p class="note" data-note="any">Anything goes: every one of the 2<sup>1,024</sup> ways to label the messages is allowed, so the learner returns the memorizer.</p>
+    <p class="note" data-note="ten" hidden>One feature of ten: h<sub>j</sub> says junk exactly when feature j is present, for j from 1 to 10. Ten hypotheses.</p>
+    <p class="note" data-note="three" hidden>One of the first three: only h<sub>1</sub>, h<sub>2</sub> and h<sub>3</sub> are allowed. Three hypotheses.</p>
+    <p class="note" data-note="pairs" hidden>One or two features: h<sub>j</sub> alone, or h<sub>j</sub> ∧ h<sub>k</sub>, which says junk only when both feature j and feature k are present. The 10 one-feature hypotheses plus the 45 pairs make 55.</p>
+    <div class="k-train-row">
+      <div class="control">
+        <label data-for="labels">Labels: <output data-k="labels-out">5</output></label>
+        <input data-k="labels" type="range" min="1" max="40" step="1" value="5">
+        <div class="ends" aria-hidden="true"><span>1</span><span class="k-budget">budget 12</span><span>40</span></div>
+      </div>
+      <button type="button" class="k-primary" data-k="train">Label and train</button>
+    </div>
+  </div>
+  <canvas data-k="stage" class="stage" role="img"></canvas>
+  <div class="key" data-k="key">
+    <span><i class="k-seen"></i>seen in the training sequence</span>
+    <span><i class="k-wrong"></i>a message the hypothesis gets wrong</span>
+    <span data-k="key-out"><b class="num">#3</b> under a hypothesis: example 3 ruled it out</span>
+    <span data-k="key-pin" hidden><i class="k-pin"></i>pinned run</span>
+  </div>
+  <div class="k-meter" data-k="meter" hidden>
+    <span>True risk of the returned hypothesis</span>
+    <div class="bar" aria-hidden="true"><div class="fill"></div></div>
+    <output aria-live="polite">?</output>
+    <div class="scale" aria-hidden="true"><span>0%</span><span>50%</span></div>
+  </div>
+  <div class="k-win" data-k="win" hidden>
+    <p class="k-win-head">Fixed: the inbox is clean</p>
+    <p>True risk of the returned hypothesis: <b data-k="win-risk">0%</b></p>
+    <p>Junk reaching the inbox: <span data-k="win-before"></span> of 1,024 messages with version one, <b data-k="win-after"></b> now.</p>
+    <canvas data-k="inbox" class="k-inbox" role="img"></canvas>
+    <p class="k-inbox-key">Each square is one of this week’s 1,024 fresh messages; amber squares are junk that reaches the inbox.</p>
+  </div>
+  <div class="readout" aria-live="polite">
+    <div class="result" data-k="result"></div>
+    <p data-k="why"></p>
+    <p class="compare" data-k="compare" hidden></p>
+  </div>
+  <div class="row">
+    <button type="button" data-k="resample">Resample</button>
+    <button type="button" data-k="pin">Pin this</button>
+    <button type="button" class="quiet" data-k="another" hidden>Try another</button>
+    <button type="button" data-k="reset">Reset</button>
+  </div>
+  <p class="jump" data-k="jump"><a href="#fix-the-bug">Ready for the real bug? Jump to the challenge.</a></p>
+</template>
+<div class="lab" id="lab"></div>

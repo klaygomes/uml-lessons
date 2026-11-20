@@ -1,0 +1,517 @@
+# No Free Lunch
+
+## The universal filter
+
+Theo from the platform team has been reading your design notes, and he is not impressed. “All this care about hypothesis classes,” he says, scrolling past lesson 1’s one-feature hypotheses and lesson 3’s agnostic guarantees. “You keep choosing what the learner is allowed to believe. Why decide in advance? I’ve built a filter with no bias at all. It considers every hypothesis there is, every possible way of labelling every possible message. It never rules anything out, so it can never be wrong about what junk looks like. Give it enough labelled mail and it will learn any junk rule the spammers come up with, including ones none of us has imagined.”
+
+He wants to replace the course’s careful classes with his **universal filter**, and the pitch is attractive. Every class you have chosen so far was a bet, and lesson 1 showed you what happens when the bet is wrong: the rat, whose bias blinds it to a world where a sound causes sickness. Theo’s filter makes no bet, so it can never lose one.
+
+You have a nagging feeling that lesson 1 already answered him. It proved that when a learner considers every hypothesis, the examples leave every unseen message perfectly balanced: exactly half of the consistent hypotheses call it junk. But read lesson 1 again and you will find that it stopped short. It said that a learner with no bias has nothing to go on, and it also admitted that a learner whose tie-breaker happens to match the truth would get lucky. Theo is not claiming his filter is lucky. He is claiming that some clever tie-breaker, some rule for labelling unseen messages, works well on every task. Maybe there is one, and we just haven’t found it.
+
+So here is the question this lesson settles. Is there a **universal learner**: one learner, and one number of examples \(m\), such that on every learning task, given \(m\) examples, it probably returns a hypothesis with small true risk? If there is, Theo wins and the course can stop worrying about bias. If there isn’t, we owe him a proof, and we owe ourselves an account of what a bias costs and what it buys.
+
+## Where we stand
+
+A one-paragraph recap of the tools we already own, since the proof will lean on them. Since lesson 3 a **learning task** is a distribution \(\mathcal D\) over pairs \((x, y)\) in \(\mathcal X \times \{0, 1\}\), the **true risk** of a hypothesis is \(L_{\mathcal D}(h) = \mathbb P_{(x,y) \sim \mathcal D}[h(x) \neq y]\), and the training sequence \(S = ((x_1, y_1), \dots, (x_m, y_m))\) is drawn i.i.d., written \(S \sim \mathcal D^m\). Counting a mistake as 1 and a correct label as 0 is the **0-1 loss**, the only loss in this lesson. Lesson 2 showed that ERM over a finite class \(\mathcal H\) that contains the truth reaches true risk at most \(\varepsilon\) with probability at least \(1 - \delta\) once \(m \ge \log(|\mathcal H|/\delta)/\varepsilon\). Lesson 3 called that being **PAC learnable**. Lesson 4 dropped the assumption that the class contains the truth: with \(m \ge 2\log(2|\mathcal H|/\delta)/\varepsilon^2\) examples, ERM comes within \(\varepsilon\) of the **best in the class**, \(\min_{h \in \mathcal H} L_{\mathcal D}(h)\). Every one of those guarantees starts with “fix a class”. Theo’s question is whether we needed to.
+
+## A duel on four messages
+
+Let’s shrink the mail room until we can check everything by hand. Keep only two features, F (the subject says “FREE”) and L (the message has a link), so there are four possible messages: 00, 01, 10 and 11. Each training message is drawn uniformly from these four, and we draw \(m = 2\) of them.
+
+Now set up a duel. Theo picks a learner. You pick the **target**, the labelling function \(f\) that decides which of the four messages are junk. Then the training sequence is drawn, his learner returns a hypothesis, and we score its true risk. You are allowed to know his learner before you pick, which is the whole point: you are looking for a task on which it fails.
+
+Theo’s first learner is lesson 1’s memorizer: it returns the label of every message it has seen, and says keep for every message it hasn’t. Which target would you pick against it? Think about it before you read on.
+
+The memorizer’s weakness is its default. It says keep for every unseen message, so pick the target that labels every message junk. Then the memorizer is right on what it has seen and wrong on everything else, and its true risk is simply the fraction of the four messages it hasn’t seen. There are \(4 \times 4 = 16\) equally likely training sequences, and they come in two kinds.
+
+| training sequence | how many | unseen messages | true risk |
+|---|---|---|---|
+| the same message twice, like (01, 01) | 4 | 3 | 3/4 |
+| two different messages, like (01, 10) | 12 | 2 | 2/4 |
+
+Averaging over the 16, the expected true risk is \((4 \cdot \tfrac34 + 12 \cdot \tfrac24)/16 = 9/16 = 0.5625\). Worse than a coin.
+
+Theo shrugs and patches it. His second learner fills in unseen messages by majority: if most of the labels it has seen are junk, it says junk for the unseen ones, and otherwise keep. Against “everything is junk” it is now perfect, since it sees two junk labels and copies them everywhere. So you change targets. Try “junk exactly when the subject says FREE”: 00 and 01 are keep, 10 and 11 are junk. Now whenever both training messages share a label, majority copies that label onto the unseen messages of the other kind, and gets them wrong. The bookkeeping is a little longer, so let Python do it. The snippet scores both learners on all 16 possible targets, writing a target as the tuple \((f(00), f(01), f(10), f(11))\), and prints each learner’s average over the targets, its worst score, and the target that achieves it.
+
+```python
+import itertools
+
+C = ["00", "01", "10", "11"]
+targets = list(itertools.product([0, 1], repeat=4))
+sequences = list(itertools.product(C, repeat=2))
+
+def memorizer(S):
+    return lambda x: dict(S).get(x, 0)
+
+def majority(S):
+    vote = int(2 * sum(y for _, y in S) > len(S))
+    return lambda x: dict(S).get(x, vote)
+
+def expected_risk(A, f):
+    g = dict(zip(C, f))
+    return sum(A([(x, g[x]) for x in xs])(c) != g[c]
+               for xs in sequences for c in C) / (16 * 4)
+
+for A in (memorizer, majority):
+    r = {f: expected_risk(A, f) for f in targets}
+    worst = max(r, key=r.get)
+    print(sum(r.values()) / 16, r[worst], worst)
+```
+
+It prints
+
+```
+0.28125 0.5625 (1, 1, 1, 1)
+0.28125 0.375 (0, 0, 1, 1)
+```
+
+The memorizer’s worst target is “everything is junk”, at 0.5625, the number we computed by hand. Majority’s worst is “junk exactly when FREE”, at 0.375. Majority is the better learner in the worst case, but you still found a task where it is wrong more than a third of the time.
+
+Now look at the first column. Both learners score exactly 0.28125 when you average over all 16 targets. Two different learners, with different weaknesses and different worst cases, and the same average to five decimal places. Is that a coincidence?
+
+## Lab: beat the adversary
+
+Try to break the pattern yourself. The lab below has a slightly larger world: three features, F, L and U, so eight messages, and \(m = 4\) training messages drawn uniformly. You choose how Theo’s learner labels the messages it hasn’t seen: always keep, always junk, the majority of the labels it has seen, or the label of the nearest seen message (the one that differs in the fewest features). The lab then plays the adversary for you. It computes the expected true risk on every one of the \(2^8 = 256\) targets, exactly, by going through all \(8^4 = 4{,}096\) training sequences, and it draws the 256 results as a strip, with the average marked and the worst target highlighted.
+
+Before you press anything, predict: which of the four rules has the lowest average over all 256 targets?
+
+[[lab]]
+
+## Why every learner has the same average
+
+They tie. Every rule averages 0.2931 over the 256 targets, and every rule has a target that pushes it well above a quarter. Here is why, and you have seen the trick before.
+
+Fix one training sequence, say it contains the messages 000, 011 and 101 (one of them twice), and fix one message it doesn’t contain, say 110. Now take any target \(f\) and its **twin**: the target that agrees with \(f\) everywhere except at 110, where its label is flipped. On the training sequence, the twins are indistinguishable. They give the same labels to 000, 011 and 101, so the learner receives exactly the same examples under both, and so it returns exactly the same hypothesis. That hypothesis says one thing about 110, either junk or keep. One twin says junk there and the other says keep, so exactly one of the twins catches the learner out.
+
+[[diagram:pairing]]
+
+That is lesson 1’s flip map, the one that paired consistent hypotheses by flipping one unseen label, now applied to targets instead of hypotheses. Every target has exactly one twin at 110, so the 256 targets split into 128 twin pairs, and in every pair the learner is wrong at 110 exactly once. Averaged over all targets, the learner is wrong at 110 exactly half the time. And nothing in that argument cared what the learner does. Keep, junk, majority, nearest, a neural network, a crystal ball: as long as it is a function of the examples it sees, the twins defeat it at every unseen message half the time.
+
+So, averaged over all targets, the expected true risk of any learner that gets its seen messages right is half the expected fraction of messages it hasn’t seen. (A learner that also errs on seen messages only does worse.) That fraction depends on how many distinct messages turn up in the training sequence, and not on the learner at all, which is why every rule in the lab got the same number.
+
+Two more facts finish the argument, and they are the heart of this lesson.
+
+First, if the training sequence has \(m\) messages and the domain has \(2m\), then at most \(m\) distinct messages can appear, so at least half are unseen. Half of “at least half” is at least a quarter. Averaged over all targets, every learner’s expected true risk is at least \(1/4\).
+
+Second, **the maximum is at least the average**. If the average over targets is at least \(1/4\), then some single target has expected risk at least \(1/4\), since not every number in a list can be below the list’s average. That target is a task on which the learner fails.
+
+[[diagram:averaging]]
+
+The quarter is a floor, not the exact value. The exact average is half the expected fraction of unseen messages, and when each of the \(m\) draws is uniform over \(2m\) messages, a given message is missed by all of them with probability \((1 - \tfrac{1}{2m})^m\). Let’s check that against brute force, using the memorizer as the learner, for domains of 2, 4, 6 and 8 messages.
+
+```python
+import itertools
+
+def average_over_targets(m):
+    C = range(2 * m)
+    targets = list(itertools.product([0, 1], repeat=2 * m))
+    sequences = list(itertools.product(C, repeat=m))
+    wrong = sum(f[c] != (f[c] if c in xs else 0)
+                for f in targets for xs in sequences for c in C)
+    return wrong / (len(targets) * len(sequences) * len(C))
+
+for m in (1, 2, 3, 4):
+    formula = (1 - 1 / (2 * m)) ** m / 2
+    brute = average_over_targets(m)
+    print(m, round(brute, 4), round(formula, 4))
+print(round(0.5 * 2.718281828 ** -0.5, 4))
+```
+
+It prints
+
+```
+1 0.25 0.25
+2 0.2812 0.2812
+3 0.2894 0.2894
+4 0.2931 0.2931
+0.3033
+```
+
+The brute force matches the formula: 0.28125 is the four-message duel and 0.2931 is the lab. As \(m\) grows the average climbs toward \(e^{-1/2}/2 \approx 0.3033\), never below a quarter. A learner that has seen half the domain is, averaged over all the ways the world could be, wrong on more than a quarter of it.
+
+This is the **No-Free-Lunch theorem**, which lesson 1 promised. Let’s state it properly and prove it properly.
+
+## The formal statements
+
+**Setting.** We are doing binary classification with the 0-1 loss over a domain \(\mathcal X\). A learning task is a distribution \(\mathcal D\) over \(\mathcal X \times \{0, 1\}\), and \(L_{\mathcal D}(h) = \mathbb P_{(x,y) \sim \mathcal D}[h(x) \neq y]\). A learner \(A\) is a deterministic algorithm: it maps each training sequence \(S\) to a hypothesis \(A(S): \mathcal X \to \{0, 1\}\), so the same \(S\) always gives the same hypothesis. A **universal learner** would be a learner \(A\) and a training sequence size \(m\) such that for every task \(\mathcal D\), given \(S \sim \mathcal D^m\), \(A(S)\) has small true risk with high probability.
+
+**No-Free-Lunch theorem.** Let \(A\) be any learner for binary classification with the 0-1 loss over a domain \(\mathcal X\), and let \(m\) be any training sequence size smaller than \(|\mathcal X|/2\). Then there is a distribution \(\mathcal D\) over \(\mathcal X \times \{0, 1\}\) such that:
+
+1. there is a function \(f: \mathcal X \to \{0, 1\}\) with \(L_{\mathcal D}(f) = 0\), and
+2. with probability at least \(1/7\) over the choice of \(S \sim \mathcal D^m\), \(L_{\mathcal D}(A(S)) \ge 1/8\).
+
+Read the order of the quantifiers carefully, because it carries the whole meaning. The learner comes first; the task is then chosen to defeat it. The task is perfectly realizable, since \(f\) labels it with zero error, so a different learner (ERM over the one-hypothesis class \(\{f\}\), which simply returns \(f\)) would solve it with no examples at all. What fails is not the task. It is the attempt to solve every task with one learner.
+
+*Proof.* We go in seven steps. Steps 1 and 2 set up a family of tasks; steps 3 to 6 show that, on average over that family, the learner’s expected true risk is at least \(1/4\); step 7 turns that average into the probability statement.
+
+**Step 1: a family of tasks on a finite piece of the domain.** Since \(m < |\mathcal X|/2\), the domain has at least \(2m\) elements, so we can pick a subset \(C \subseteq \mathcal X\) with \(|C| = 2m\). The intuition is the one from the lab: a learner that observes at most half of \(C\) has no information about the labels of the rest. There are \(T = 2^{2m}\) functions from \(C\) to \(\{0, 1\}\); call them \(f_1, \dots, f_T\). For each \(i\), let \(\mathcal D_i\) be the distribution over \(C \times \{0, 1\}\) given by
+
+\[ \mathcal D_i(\{(x, y)\}) = \begin{cases} 1/|C| & \text{if } y = f_i(x), \\ 0 & \text{otherwise.} \end{cases} \]
+
+In words: draw \(x\) uniformly from \(C\), then label it by \(f_i\). Clearly \(L_{\mathcal D_i}(f_i) = 0\). Under \(\mathcal D_i\), the true risk of any \(h\) is the fraction of \(C\) on which \(h\) disagrees with \(f_i\):
+
+\[ L_{\mathcal D_i}(h) = \frac{1}{2m} \sum_{x \in C} \mathbb 1[h(x) \neq f_i(x)]. \]
+
+**Step 2: the expectation is an average over sequences.** There are \(k = (2m)^m\) sequences of \(m\) messages from \(C\); call them \(S_1, \dots, S_k\). If \(S_j = (x_1, \dots, x_m)\), write \(S_j^i = ((x_1, f_i(x_1)), \dots, (x_m, f_i(x_m)))\) for the same messages labelled by \(f_i\). When the task is \(\mathcal D_i\), the training sequence is always one of \(S_1^i, \dots, S_k^i\). Each \(x_t\) is uniform on \(C\) and the draws are independent, so the probability of any particular sequence of messages is the product \((1/2m)^m = 1/k\): all \(k\) are equally likely. An expectation over finitely many equally likely outcomes is their plain average, so
+
+\[ \mathbb E_{S \sim \mathcal D_i^m}\left[L_{\mathcal D_i}(A(S))\right] = \frac1k \sum_{j=1}^{k} L_{\mathcal D_i}(A(S_j^i)). \]
+
+**Step 3: maximum, average, minimum.** We want to show that \(\max_{i \in [T]}\) of that expectation is at least \(1/4\). Two elementary facts carry the step: the maximum of a list of numbers is at least their average (each number is at most the maximum, so their sum is at most \(T\) times it), and the average is at least the minimum (by the same argument turned upside down). Between them we swap the order of two finite sums, which changes nothing:
+
+\[ \max_{i \in [T]} \frac1k \sum_{j=1}^{k} L_{\mathcal D_i}(A(S_j^i)) \;\ge\; \frac1T \sum_{i=1}^{T} \frac1k \sum_{j=1}^{k} L_{\mathcal D_i}(A(S_j^i)) \;=\; \frac1k \sum_{j=1}^{k} \frac1T \sum_{i=1}^{T} L_{\mathcal D_i}(A(S_j^i)) \;\ge\; \min_{j \in [k]} \frac1T \sum_{i=1}^{T} L_{\mathcal D_i}(A(S_j^i)). \]
+
+The right-hand end fixes one sequence of messages \(S_j\) and averages over all targets. That is exactly what the twins argument handles. It remains to show that, for every \(j\), this average over targets is at least \(1/4\).
+
+**Step 4: keep only the unseen messages.** Fix \(j\), and let \(v_1, \dots, v_p\) be the messages of \(C\) that do not appear in \(S_j\). Since \(S_j\) has \(m\) entries, it contains at most \(m\) distinct messages, so \(p \ge 2m - m = m\). For every \(h: C \to \{0, 1\}\) and every \(i\), dropping the seen messages from the sum in step 1 can only lower it, since every term is 0 or 1, and \(\frac{1}{2m} \ge \frac{1}{2p}\) because \(p \ge m\):
+
+\[ L_{\mathcal D_i}(h) = \frac{1}{2m} \sum_{x \in C} \mathbb 1[h(x) \neq f_i(x)] \;\ge\; \frac{1}{2m} \sum_{r=1}^{p} \mathbb 1[h(v_r) \neq f_i(v_r)] \;\ge\; \frac{1}{2p} \sum_{r=1}^{p} \mathbb 1[h(v_r) \neq f_i(v_r)]. \]
+
+**Step 5: from the average over unseen messages to the worst one.** Apply step 4 with \(h = A(S_j^i)\), average over \(i\), and swap the two finite sums again. Then use “an average is at least the minimum” once more, this time over \(r\):
+
+\[ \frac1T \sum_{i=1}^{T} L_{\mathcal D_i}(A(S_j^i)) \;\ge\; \frac{1}{2p} \sum_{r=1}^{p} \frac1T \sum_{i=1}^{T} \mathbb 1[A(S_j^i)(v_r) \neq f_i(v_r)] \;\ge\; \frac12 \cdot \min_{r \in [p]} \frac1T \sum_{i=1}^{T} \mathbb 1[A(S_j^i)(v_r) \neq f_i(v_r)]. \]
+
+The \(\frac12\) comes from writing \(\frac{1}{2p} \sum_{r=1}^{p}\) as \(\frac12\) times the average over \(r\).
+
+**Step 6: the twins.** Fix \(r\). Pair each target \(f_i\) with the target \(f_{i'}\) that agrees with it everywhere on \(C\) except at \(v_r\). Flipping the same label twice gives back the original, so this pairing splits \(f_1, \dots, f_T\) into \(T/2\) disjoint pairs. Since \(v_r\) does not appear in \(S_j\), the twins label every message of \(S_j\) identically, so \(S_j^i = S_j^{i'}\), and because \(A\) is a function of its input, \(A(S_j^i) = A(S_j^{i'})\). Call that hypothesis \(h\). The bit \(h(v_r)\) equals exactly one of \(f_i(v_r)\) and \(f_{i'}(v_r)\), since those two differ, so
+
+\[ \mathbb 1[A(S_j^i)(v_r) \neq f_i(v_r)] + \mathbb 1[A(S_j^{i'})(v_r) \neq f_{i'}(v_r)] = 1. \]
+
+Summing over the \(T/2\) pairs gives \(T/2\), so for every \(r\),
+
+\[ \frac1T \sum_{i=1}^{T} \mathbb 1[A(S_j^i)(v_r) \neq f_i(v_r)] = \frac12. \]
+
+Chaining steps 3, 5 and 6: for every \(j\) the average over targets is at least \(\frac12 \cdot \frac12 = \frac14\), so the minimum over \(j\) is at least \(1/4\), and therefore
+
+\[ \max_{i \in [T]} \mathbb E_{S \sim \mathcal D_i^m}\left[L_{\mathcal D_i}(A(S))\right] \ge \frac14. \]
+
+So far \(A\) was a learner that receives examples from \(C\) and returns a function on \(C\). Now take any learner \(A'\) over the whole domain \(\mathcal X\). Under any \(\mathcal D_i\), every training sequence lies in \(C\), and the true risk of \(A'(S)\) depends only on its values on \(C\), because \(\mathcal D_i\) puts no probability outside \(C\). So define \(A(S)\) as \(A'(S)\) restricted to \(C\); the bound applies to it, and the risks agree. Let \(i^\star\) be an index achieving the maximum, set \(\mathcal D = \mathcal D_{i^\star}\), and extend \(f_{i^\star}\) to all of \(\mathcal X\) in any way, say with keep outside \(C\); call the result \(f\). Then \(L_{\mathcal D}(f) = 0\), which is part 1, and
+
+\[ \mathbb E_{S \sim \mathcal D^m}\left[L_{\mathcal D}(A'(S))\right] \ge \frac14. \]
+
+Here is a machine check of step 6, the one step that does real work. The learner below is as arbitrary as I could make it: for each training sequence, it labels every message by a coin flip seeded with that sequence, so it is deterministic but follows no pattern at all. For every one of the 16 sequences and every message the sequence misses, the snippet collects the fraction of the 16 targets that catch the learner out at that message.
+
+```python
+import itertools, random
+
+C, m = ["00", "01", "10", "11"], 2
+targets = list(itertools.product([0, 1], repeat=4))
+
+def A(S):
+    rng = random.Random(str(S))
+    return {c: rng.randint(0, 1) for c in C}
+
+averages = set()
+for xs in itertools.product(C, repeat=m):
+    for v in set(C) - set(xs):
+        wrong = [A([(x, f[C.index(x)]) for x in xs])[v]
+                 != f[C.index(v)] for f in targets]
+        averages.add(sum(wrong) / len(targets))
+print(averages)
+```
+
+It prints `{0.5}`. Every sequence, every unseen message, the same answer: exactly half the targets catch it.
+
+**Step 7: from an average to a probability.** Let \(\theta = L_{\mathcal D}(A'(S))\). It is a random variable, because \(S\) is random, and it takes values in \([0, 1]\), with \(\mathbb E[\theta] \ge 1/4\). Let \(q = \mathbb P[\theta \ge 1/8]\). Split the expectation according to whether \(\theta\) is at least \(1/8\). On the event \(\theta \ge 1/8\), which has probability \(q\), the value is at most 1. On its complement, which has probability \(1 - q\), the value is below \(1/8\). So
+
+\[ \frac14 \le \mathbb E[\theta] \le 1 \cdot q + \frac18 (1 - q). \]
+
+Multiply by 8 to get \(2 \le 8q + 1 - q\), so \(7q \ge 1\) and \(q \ge 1/7\). That is part 2. (The same bound follows from **Markov’s inequality**, which says that a nonnegative random variable \(Z\) has \(\mathbb P[Z \ge a] \le \mathbb E[Z]/a\) for every \(a > 0\). Apply it to \(Z = 1 - \theta\) with \(a = 7/8\): \(\mathbb P[\theta \le 1/8] \le (3/4)/(7/8) = 6/7\).) \(\blacksquare\)
+
+The \(1/7\) is not slack in the argument; it can be reached. A risk that equals 1 with probability \(1/7\) and sits just under \(1/8\) otherwise has mean exactly a quarter:
+
+```python
+mean_at_least, cutoff = 1 / 4, 1 / 8
+q = (mean_at_least - cutoff) / (1 - cutoff)
+print(round(q, 6), round(1 / 7, 6))
+theta = [(1.0, q), (cutoff - 1e-9, 1 - q)]
+print(round(sum(v * p for v, p in theta), 6))
+```
+
+It prints `0.142857 0.142857` and `0.25`. Knowing only the mean, you cannot promise more than \(1/7\).
+
+Notice what the theorem does and doesn’t say. It does not say every learner is bad on every task: the memorizer is perfect on any task whose target says keep everywhere. It does not say learning is impossible: the task it builds is solved by a learner that knows to look for \(f\). It says that for each learner, separately, a bad task exists, and that the bad task needs nothing exotic, just a uniform distribution on \(2m\) messages and a labelling the learner didn’t expect.
+
+## Theo’s filter, on an infinite domain
+
+Theo’s filter does not work on four messages, or eight, or 256. It works on real messages, and a real message is text of any length. There are infinitely many possible messages, so \(\mathcal X\) is infinite. And “consider every hypothesis” means his hypothesis class is the set of all functions from \(\mathcal X\) to \(\{0, 1\}\). What does the theorem say about that?
+
+Recall lesson 3’s definition. A class \(\mathcal H\) is **PAC learnable** if there are a function \(m_{\mathcal H}: (0,1)^2 \to \mathbb N\) and a learner such that for every \(\varepsilon, \delta \in (0, 1)\), every distribution over \(\mathcal X\) and every labelling \(f\) for which some hypothesis in \(\mathcal H\) has zero true risk, the learner, run on \(m \ge m_{\mathcal H}(\varepsilon, \delta)\) i.i.d. examples, returns a hypothesis with true risk at most \(\varepsilon\), with probability at least \(1 - \delta\).
+
+**Corollary (the class of all functions is not learnable).** Let \(\mathcal X\) be an infinite domain and let \(\mathcal H\) be the set of all functions from \(\mathcal X\) to \(\{0, 1\}\). Then \(\mathcal H\) is not PAC learnable.
+
+*Proof.* Suppose, for contradiction, that it is. Choose \(\varepsilon < 1/8\) and \(\delta < 1/7\). By the definition there is a learner \(A\) and an integer \(m = m_{\mathcal H}(\varepsilon, \delta)\) such that on every realizable task, with probability at least \(1 - \delta\), \(L_{\mathcal D}(A(S)) \le \varepsilon\) when \(S\) has \(m\) examples. Equivalently, the probability that \(L_{\mathcal D}(A(S)) > \varepsilon\) is at most \(\delta\).
+
+Since \(\mathcal X\) is infinite, \(|\mathcal X| > 2m\), so the No-Free-Lunch theorem applies to \(A\) and \(m\). It gives a task \(\mathcal D\) with a labelling \(f\) of zero true risk. Every function is in \(\mathcal H\), so \(f \in \mathcal H\) and the task is realizable with respect to \(\mathcal H\): the definition’s promise covers it. But the theorem says that with probability at least \(1/7\), \(L_{\mathcal D}(A(S)) \ge 1/8\), and \(1/8 > \varepsilon\), so with probability at least \(1/7 > \delta\), \(L_{\mathcal D}(A(S)) > \varepsilon\). The promise says that probability is at most \(\delta\). Contradiction. \(\blacksquare\)
+
+That is the answer to Theo. There is no “enough labelled mail”. Whatever number of labels he names, the domain has more than twice that many messages, and there is a junk rule, one that some hypothesis labels perfectly, on which his filter has a one-in-seven chance or more of being wrong on at least an eighth of all messages.
+
+How do we escape? By doing exactly what the course has been doing: using prior knowledge about the task to rule out the distributions that would defeat us, and writing that knowledge down as a restricted hypothesis class. Which raises the real question. If the class of all functions is too rich, how rich should a class be? On one side, we want the class to contain the truth, or at least something with small true risk. On the other, we have just seen that we cannot take the richest class there is. Lesson 1 named the two ways to get this wrong, the rat’s and the pigeon’s. Now we can measure them.
+
+## Two ways to be wrong
+
+Take any class \(\mathcal H\), and let \(h_S\) be the hypothesis ERM returns, that is, \(h_S \in \operatorname{argmin}_{h \in \mathcal H} L_S(h)\). Split its true risk into two parts:
+
+\[ L_{\mathcal D}(h_S) = \varepsilon_{\mathrm{app}} + \varepsilon_{\mathrm{est}}, \qquad \varepsilon_{\mathrm{app}} = \min_{h \in \mathcal H} L_{\mathcal D}(h), \qquad \varepsilon_{\mathrm{est}} = L_{\mathcal D}(h_S) - \varepsilon_{\mathrm{app}}. \]
+
+The decomposition is trivially true, since the second part is defined as whatever is left over. What makes it worth writing down is that each part has its own cause and its own cure.
+
+[[diagram:decomposition]]
+
+The **approximation error** \(\varepsilon_{\mathrm{app}}\) is the true risk of the best hypothesis in the class. It measures how much we lose by restricting ourselves to \(\mathcal H\) at all, which is to say how much inductive bias we have, and it is the rat’s failure: a class that misses the truth. It is a property of the class and the task alone. It does not depend on \(m\) or on which examples arrived, and no number of examples changes it. When the task is realizable by \(\mathcal H\) it is zero. When it isn’t, it can be large, and it is never below the Bayes risk, lesson 3’s floor that no hypothesis at all can beat. (Some authors call only the excess over the Bayes risk the approximation error; we keep the full minimum.) Enlarging the class can only help it: if \(\mathcal H \subseteq \mathcal H'\), then \(\min_{h \in \mathcal H'} L_{\mathcal D}(h) \le \min_{h \in \mathcal H} L_{\mathcal D}(h)\), because the minimum over a bigger set is taken over more candidates, including all the old ones.
+
+The **estimation error** \(\varepsilon_{\mathrm{est}}\) is how far ERM’s choice falls short of the best in the class. It is never negative, since \(h_S\) is itself in \(\mathcal H\) and so its true risk is at least the class minimum. It exists because ERM ranks hypotheses by empirical risk, which is only an estimate of true risk, so the hypothesis that wins on the examples is only an estimate of the hypothesis that wins on \(\mathcal D\). This is the pigeon’s failure: a class so large for the examples that a coincidence can beat the truth. It depends on \(m\) and on the size of the class, and lesson 4 already measured it.
+
+**Proposition (estimation error of a finite class).** Let \(\mathcal H\) be finite, let \(\delta \in (0, 1)\), and let \(S \sim \mathcal D^m\). Then with probability at least \(1 - \delta\),
+
+\[ \varepsilon_{\mathrm{est}} \le \sqrt{\frac{2 \log(2|\mathcal H|/\delta)}{m}}. \]
+
+*Proof.* Set \(\varepsilon = \sqrt{2\log(2|\mathcal H|/\delta)/m}\), so that \(m = 2\log(2|\mathcal H|/\delta)/\varepsilon^2\). Lesson 4 showed, using Hoeffding’s inequality for each fixed hypothesis and the union bound across the class, that the probability of some \(h \in \mathcal H\) having \(|L_S(h) - L_{\mathcal D}(h)| > \varepsilon/2\) is at most \(2|\mathcal H| \exp(-2m(\varepsilon/2)^2) = 2|\mathcal H| \exp(-m\varepsilon^2/2)\). With our \(m\), the exponent is \(-\log(2|\mathcal H|/\delta)\), so the bound equals \(\delta\). So with probability at least \(1 - \delta\), the training sequence is \(\varepsilon/2\)-representative: every hypothesis in the class has empirical risk within \(\varepsilon/2\) of its true risk.
+
+On that event, let \(h^\star\) be a best hypothesis in the class, so \(L_{\mathcal D}(h^\star) = \varepsilon_{\mathrm{app}}\). Then
+
+\[ L_{\mathcal D}(h_S) \le L_S(h_S) + \tfrac{\varepsilon}{2} \le L_S(h^\star) + \tfrac{\varepsilon}{2} \le L_{\mathcal D}(h^\star) + \varepsilon. \]
+
+The first and third steps use representativeness, and the middle step uses that \(h_S\) minimizes empirical risk. Subtracting \(\varepsilon_{\mathrm{app}}\) gives \(\varepsilon_{\mathrm{est}} \le \varepsilon\). \(\blacksquare\)
+
+The bound grows with the logarithm of the class size and shrinks like \(1/\sqrt m\). The logarithm is generous, but notice what it is a logarithm of. For Theo’s class on a domain of \(N\) messages, \(|\mathcal H| = 2^N\), so \(\log|\mathcal H| = N \log 2\): the bound needs \(m\) to be large compared with the number of possible messages, which is the No-Free-Lunch theorem seen from the other side.
+
+## A ladder of classes
+
+Let’s watch the two errors trade against each other in a world we can compute exactly. Give each message eight features, so the domain has \(2^8 = 256\) messages, drawn uniformly. The first four are lesson 1’s, and four new ones join them. Here is the truth, which the learner doesn’t know: each feature carries some points, and a message is junk exactly when its points add up to at least 26, half of the 52 available.
+
+| feature | meaning | points |
+|---|---|---|
+| F | the subject says “FREE” | 16 |
+| L | it has a link | 12 |
+| U | the sender is unknown | 8 |
+| N | it was sent at night | 6 |
+| A | it has an attachment | 4 |
+| R | the reply-to address differs from the sender | 3 |
+| M | it went to many recipients | 2 |
+| I | it is mostly images | 1 |
+
+Every feature matters a little, and the ones further down matter less. Now build a **nested family** of classes, each containing the one before. Let \(\mathcal H_k\) be the set of all hypotheses that look only at the first \(k\) features: a **\(k\)-feature table**, which assigns a label to each of the \(2^k\) possible settings of those features, called **cells**, and gives that label to every message in the cell. So \(\mathcal H_0\) has two members (always keep, always junk), \(\mathcal H_1\) has four, and in general \(|\mathcal H_k| = 2^{2^k}\). At the top of the ladder, \(\mathcal H_8\) is every hypothesis on the domain, all \(2^{256}\) of them. That top rung is Theo’s universal filter.
+
+\[ \mathcal H_0 \subseteq \mathcal H_1 \subseteq \cdots \subseteq \mathcal H_8 = \{\text{all } h: \{0,1\}^8 \to \{0,1\}\}. \]
+
+What does ERM over \(\mathcal H_k\) do? The empirical risk splits into one sum per cell, and each cell’s sum depends only on the label the table gives that cell. Every combination of cell labels is in the class, so we can minimize each cell separately, and within a cell the fewest mistakes come from the majority label of the examples that fell in it. So ERM over \(\mathcal H_k\) is a **table learner**: majority vote within each cell, with ties and empty cells labelled keep (any label is a minimizer there; keep is our tie-break). At \(k = 8\) every cell is a single message, and the table learner is lesson 1’s memorizer.
+
+The approximation error comes from the same cell-by-cell reasoning, applied to the truth instead of the examples. The best table puts the majority true label in each cell, and it is wrong on the cell’s minority. Add the minorities up:
+
+```python
+import itertools
+
+POINTS = (16, 12, 8, 6, 4, 3, 2, 1)
+X = list(itertools.product([0, 1], repeat=8))
+
+def f(x):
+    return int(sum(p * b for p, b in zip(POINTS, x)) >= 26)
+
+def approximation_error(k):
+    cells = {}
+    for x in X:
+        cells.setdefault(x[:k], []).append(f(x))
+    wrong = 0
+    for labels in cells.values():
+        wrong += min(sum(labels), len(labels) - sum(labels))
+    return wrong / len(X)
+
+print(sum(map(f, X)))
+print([approximation_error(k) * 256 for k in range(9)])
+```
+
+It prints `132` (132 of the 256 messages are junk) and `[124.0, 48.0, 48.0, 26.0, 18.0, 12.0, 8.0, 4.0, 0.0]`: the best \(k\)-feature table is wrong on that many messages out of 256. The approximation error falls from \(124/256 \approx 0.48\) for the constant hypotheses to zero for Theo’s class, the only one that contains the truth. (Adding L alone doesn’t help, since 48 stays 48; it only pays off once U joins it.)
+
+So far Theo is winning: his class is the only one with no approximation error at all. Now give the table learner a label budget of \(m = 50\) and compute its expected true risk on each rung. The column below was computed exactly, by summing over how many examples land in each cell and how their votes split; the simulation after it checks the numbers.
+
+| \(k\) | \(\lvert\mathcal H_k\rvert\) | \(\varepsilon_{\mathrm{app}}\) | expected \(L_{\mathcal D}(h_S)\) | expected \(\varepsilon_{\mathrm{est}}\) |
+|---|---|---|---|---|
+| 0 | \(2\) | 0.484 | 0.499 | 0.015 |
+| 1 | \(2^2\) | 0.188 | 0.188 | 0.000 |
+| 2 | \(2^4\) | 0.188 | 0.210 | 0.023 |
+| 3 | \(2^8\) | 0.102 | 0.120 | 0.018 |
+| 4 | \(2^{16}\) | 0.070 | **0.105** | 0.035 |
+| 5 | \(2^{32}\) | 0.047 | 0.156 | 0.109 |
+| 6 | \(2^{64}\) | 0.031 | 0.256 | 0.225 |
+| 7 | \(2^{128}\) | 0.016 | 0.353 | 0.338 |
+| 8 | \(2^{256}\) | 0 | 0.424 | 0.424 |
+
+Read down the last two columns. The approximation error falls on every rung, and the estimation error rises, slowly at first and then fast, because each rung doubles the number of cells and 50 examples spread over 256 cells leave most cells empty. The total, their sum, is lowest at \(k = 4\): a 16-cell table on F, L, U and N, wrong about 10.5% of the time. Theo’s filter, at the top, is wrong 42.4% of the time, every bit of it estimation error.
+
+Here is the same claim as an experiment: draw 4,000 training sequences of 50 examples, run the table learner, and average its exact true risk over all 256 messages.
+
+```python
+import itertools, random
+
+POINTS = (16, 12, 8, 6, 4, 3, 2, 1)
+X = list(itertools.product([0, 1], repeat=8))
+def f(x):
+    return int(sum(p * b for p, b in zip(POINTS, x)) >= 26)
+
+def table_erm(S, k):
+    cells = {}
+    for x, y in S:
+        cells.setdefault(x[:k], []).append(y)
+    return {c: int(2 * sum(ys) > len(ys))
+            for c, ys in cells.items()}
+
+rng, m, trials = random.Random(1), 50, 4000
+for k in (1, 3, 4, 5, 8):
+    total = 0
+    for _ in range(trials):
+        S = [(x, f(x)) for x in rng.choices(X, k=m)]
+        h = table_erm(S, k)
+        total += sum(h.get(x[:k], 0) != f(x) for x in X) / len(X)
+    print(k, round(total / trials, 3))
+```
+
+It prints `1 0.188`, `3 0.119`, `4 0.105`, `5 0.155` and `8 0.424`, matching the exact column to within simulation noise.
+
+[[diagram:tradeoff]]
+
+What about the bound from the proposition? It holds for every distribution, which makes it cautious, and here is how cautious:
+
+```python
+import math
+
+def estimation_bound(k, m, delta=0.1):
+    log_size = 2 ** k * math.log(2)
+    return math.sqrt(2 * (log_size + math.log(2 / delta)) / m)
+
+for m in (50, 5000):
+    bounds = [estimation_bound(k, m) for k in (1, 4, 8)]
+    print(m, [round(b, 3) for b in bounds])
+```
+
+It prints `50 [0.419, 0.751, 2.687]` and `5000 [0.042, 0.075, 0.269]`. At 50 examples the bound is useless, above 1 for most rungs, since a risk can never exceed 1. At 5,000 it says something, and its shape is the shape of the table: it grows with \(\sqrt{2^k}\), the square root of the log of the class size. The bound tells you which way the estimation error moves; the exact numbers came from knowing \(\mathcal D\).
+
+## The bias-complexity tradeoff
+
+Put it together and you have the **bias-complexity tradeoff**. Choose a very rich class and the approximation error shrinks, but the estimation error may grow, because a rich class has room for a coincidence to beat the truth: that is **overfitting**, the pigeon’s failure. Choose a very small class and the estimation error shrinks, but the approximation error may grow, because the truth, or anything close to it, may not be in the class: that is **underfitting**, the rat’s failure. The best class sits between them, and where it sits depends on how many examples you have. In our eight-feature world, recomputing the table for other budgets, the best rung climbs with the budget:
+
+| label budget \(m\) | 20 | 50 | 100 | 300 | 500 | 1,000 |
+|---|---|---|---|---|---|---|
+| best \(k\) | 3 | 4 | 5 | 6 | 7 | 8 |
+| its expected true risk | 0.162 | 0.105 | 0.079 | 0.040 | 0.026 | 0.010 |
+
+Theo’s filter does eventually win, at 1,000 labels, which is nearly four labels for every possible message. In a domain of 256 messages, that is affordable. In the real one, where messages are unbounded text, it never is.
+
+Is there a perfect class? Yes, in principle: the class containing only the Bayes optimal predictor from lesson 3. Its approximation error is the Bayes risk, the best possible, and its estimation error is zero, since there is nothing to choose. But building it requires knowing \(\mathcal D\), and if we knew \(\mathcal D\) we wouldn’t need to learn. Learning theory asks how rich a class can be while the estimation error stays reasonable. Practice spends much of its effort designing classes whose approximation error is small for the domain at hand. The point of prior knowledge is to land somewhere that both errors are tolerable: you don’t know the junk rule, but you know enough about junk to guess which features carry it.
+
+One honest caveat about the lab you are about to use. It shows you the approximation error because it knows the truth. In the real mail room you don’t, and picking the rung from data alone is a problem of its own: lesson 7 handles it by spreading confidence across the ladder, and lesson 11 by holding out examples to validate.
+
+## The algorithms
+
+Two algorithms carry this lesson. The first is the table learner, ERM over \(\mathcal H_k\). The second is the adversary from the proof, written as code: given a learner, it finds the task that defeats it.
+
+```
+TableERM(S, k):
+  votes ← empty hash map from cells to (junk count, total)
+  for i = 1..m:
+    c ← first k features of x_i
+    votes[c].junk += y_i;  votes[c].total += 1
+  table ← for each cell c in votes: 1 if 2·junk > total else 0
+  return h(x) = table[first k features of x] if present, else 0
+
+Adversary(A, C, m):
+  best ← none
+  for each target f: C → {0, 1}:
+    total ← 0
+    for each sequence (x_1, ..., x_m) in C^m:
+      h ← A(((x_1, f(x_1)), ..., (x_m, f(x_m))))
+      total += (number of c in C with h(c) ≠ f(c)) / |C|
+    if total / |C|^m > risk of best: best ← (f, total / |C|^m)
+  return best
+```
+
+**TableERM** reads each example once and hashes a prefix of \(k\) bits, so it takes \(O(mk)\) time. It stores at most one entry per occupied cell, so \(O(k \cdot \min(m, 2^k))\) space. A prediction costs \(O(k)\) expected time. The cost does not grow with the class size \(2^{2^k}\), which is the one piece of good news about a class this rich: searching it is easy, and it is only the statistics that are hard.
+
+**Adversary** is the proof of the No-Free-Lunch theorem made executable, and its cost shows why the proof averages instead of searching. With \(|C| = 2m\), it runs the learner on \(2^{2m} \cdot (2m)^m\) training sequences and evaluates each returned hypothesis on \(2m\) messages, so it takes \(O(2^{2m} (2m)^{m} (t_A + m))\) time, where \(t_A\) is the learner’s running time, and \(O(m)\) space beyond what the learner itself uses. At \(m = 4\) that is already over a million runs of the learner, which is what the lab did for you. The proof never finds the worst target. It only shows that the average is high, and the average is enough.
+
+**Build it yourself.** Using only the Python standard library:
+
+```python
+import itertools
+
+POINTS = (16, 12, 8, 6, 4, 3, 2, 1)
+MESSAGES = [
+    "11010000", "11010000", "11010001", "00000000", "11000011",
+    "01100101", "10101111", "10110010", "11011101", "00000111",
+    "11011010", "01101101", "11000110", "00100111", "10001100",
+    "01001100", "11010111", "11111001", "01100111", "01011111",
+    "11001111", "11111111", "01110001", "11010111", "00010000",
+    "10000010", "10011110", "00101111", "01010111", "10111100",
+    "11000101", "01011110", "11111011", "11101111", "01001010",
+    "01011010", "01101111", "00011110", "11100011", "00011111",
+    "10110101", "11100111", "01000100", "01101100", "00001100",
+    "01000001", "01001001", "01111100", "10101001", "10011100"]
+
+def f(x):
+    return int(sum(p * int(b) for p, b in zip(POINTS, x)) >= 26)
+
+def memorizer(S):
+    table = dict(S)
+    return lambda x: table.get(x, 0)
+
+S = [(x, f(x)) for x in MESSAGES]
+
+def table_learner(S, k): ...
+def true_risk(h, f): ...
+def approximation_error(k, f): ...
+def adversary(A, C, m): ...
+
+if __name__ == "__main__":
+    app = [approximation_error(k, f) * 256 for k in range(9)]
+    assert app == [124, 48, 48, 26, 18, 12, 8, 4, 0]
+    assert true_risk(table_learner(S, 4), f) == 20 / 256
+    assert true_risk(table_learner(S, 8), f) == 102 / 256
+    risks = [true_risk(table_learner(S, k), f) for k in range(9)]
+    assert min(range(9), key=risks.__getitem__) == 4
+    C2 = ["00", "01", "10", "11"]
+    assert adversary(memorizer, C2, 2) == ((1, 1, 1, 1), 0.5625)
+    C3 = ["000", "001", "010", "011", "100", "101"]
+    assert adversary(memorizer, C3, 3)[1] >= 1 / 4
+```
+
+1. Implement the four functions. A message is a string of eight bits; `table_learner` returns a function from messages to labels (majority per cell, ties and empty cells keep); `true_risk` averages mistakes over all 256 messages; `adversary` takes a learner (a function from a list of `(x, y)` pairs to a hypothesis), the list `C` and `m`, and returns the target, as a tuple of labels in the order of `C`, with the highest expected true risk, together with that risk.
+2. Print the true risk of `table_learner(S, k)` for every \(k\) on this one training sequence of 50 examples, and compare it with the expected values in the table of “A ladder of classes”. Which rungs did this sequence treat kindly?
+3. Run `adversary` on `table_learner` with \(k = 1\) over the four two-bit messages. Which target defeats it, and is its failure approximation error, estimation error, or both?
+4. Draw 2,000 training sequences for each budget \(m\) in 20, 50, 100 and 300, and reproduce the row “best \(k\)” of the tradeoff table by simulation.
+
+## Fix the bug
+
+Theo isn’t convinced by a proof. He wants to see the filter lose, and he wants you to show him what to ship instead.
+
+In the lab below, the mail room is the eight-feature world, with its points rule hidden from the learner but known to the lab. Each round gives you a label budget, and you choose the rung \(k\) of the ladder, from the constant hypotheses at \(k = 0\) to Theo’s universal filter at \(k = 8\). The lab shows the approximation error of every rung, because it knows the truth. What it doesn’t show is the estimation error: to see that, you train, and watch how the true risk of \(h_S\) scatters from one training sequence to the next. Your goal is the rung whose expected true risk is lowest for the budget, within a hundredth.
+
+Before your first round, predict: with a budget of 50 labels, on which rung will the universal filter’s expected true risk land, compared with the best rung?
+
+[[lab-act2]]
+
+## What people get wrong
+
+**“No free lunch means learning is impossible.”** It means learning is impossible *without prior knowledge*. Every task the theorem builds is solved easily by a learner that expected it. The theorem is an argument for choosing a class, not against learning.
+
+**“So every learner is equally good.”** Only on average over *all* targets, each counted equally. The real mail room is not a uniformly random labelling of all messages: junk has structure, and a class that matches that structure beats Theo’s filter by a factor of four at 50 labels. Prior knowledge is exactly the claim that your task is not a uniformly random target.
+
+**“A bigger class is safer, because it is more likely to contain the truth.”** It is more likely to contain the truth, which lowers the approximation error. But it also contains more impostors, which raises the estimation error. In the ladder, the class that contains the truth comes last at 50 labels.
+
+**“The approximation error is bad luck with the data.”** No. It is a property of the class and the task, fixed before any example arrives. More examples shrink the estimation error and leave the approximation error exactly where it was, which is why the rat in a world of clicks never recovers.
+
+## Recap and the next bug
+
+1. A universal learner would succeed on every task with one fixed number of examples. The No-Free-Lunch theorem says none exists: for every learner and every \(m < |\mathcal X|/2\) there is a realizable task on which, with probability at least \(1/7\), its true risk is at least \(1/8\).
+2. The proof averages over all \(2^{2m}\) targets on \(2m\) messages. Twin targets, which differ only at one unseen message, hand the learner identical examples, so every unseen message is wrong for exactly half of them. At least half the messages are unseen, so the average risk is at least \(1/4\); the maximum is at least the average; and splitting the expectation at \(1/8\) turns it into the probability.
+3. On an infinite domain, the class of all functions is not PAC learnable. Theo’s “enough labelled mail” does not exist.
+4. ERM’s true risk splits into approximation error, the best risk in the class (the rat’s failure, fixed by the class), and estimation error, ERM’s shortfall from it (the pigeon’s failure, shrinking with \(m\) and growing with \(\log|\mathcal H|\)).
+5. Choosing a class is the bias-complexity tradeoff: too rich overfits, too poor underfits, and the best rung climbs as the label budget grows.
+
+Theo has gone quiet, and the team has moved on to a new idea. Instead of tables over yes/no features, they want the filter to compute one continuous spam score per message, a real number, and learn a threshold: junk exactly when the score is at least \(\theta\). The class is \(\{h_\theta : \theta \in \mathbb R\}\), and it has one hypothesis for every real number, so it is infinite. Every guarantee you own runs through \(\log|\mathcal H|\), and for this class that is infinite too; the bound says nothing at all. By this lesson’s logic, an infinite class should be Theo’s filter all over again. And yet, when you try it, thresholds learn from a few dozen labels and stay right on fresh messages. What is it about thresholds that a count of hypotheses misses? That’s the next lesson.
+
+## Concept check
+
+Write your answers down before moving on to the next lesson, with your reasoning, not just the answer.
+
+1. A mail room has only \(|\mathcal X| = 10\) possible messages, and Theo offers \(m = 10\) labels drawn uniformly. Does the No-Free-Lunch theorem apply? If it doesn’t, does that mean the memorizer (keep on unseen messages) succeeds on every task here? Find a task and compute its expected true risk exactly.
+2. In step 6 of the proof, the twins differ only at an unseen message \(v_r\). Suppose instead you paired targets that differ at a message that does appear in \(S_j\). Which line of the argument breaks, and why? Separately, step 4 replaced \(\frac{1}{2m}\) by \(\frac{1}{2p}\): where does \(p \ge m\) come from, and what would the final constant be if every training sequence happened to contain \(m\) distinct messages?
+3. In the eight-feature world at \(m = 50\), the class \(\mathcal H_3\) has approximation error \(26/256\) and expected true risk \(0.1196\). What is its expected estimation error? How many examples does the proposition’s bound need before it guarantees \(\varepsilon_{\mathrm{est}} \le 0.05\) with \(\delta = 0.1\) for \(\mathcal H_3\), and how many for Theo’s \(\mathcal H_8\)?

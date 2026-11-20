@@ -1,0 +1,14 @@
+.DS_Store
+__pycache__/
+
+read-aloud*/
+
+**/3-page/.slot-*
+**/3-page/3-page.src.html
+**/3-page/test.html
+**/3-page/shot-*.png
+
+*.png
+.impeccable/
+*.log
+**/test*.html
