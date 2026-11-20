@@ -10,7 +10,7 @@ She did something nobody on the team had thought of. She deleted the training me
 
 It is a sharp question, and the team has no tool that answers it. Lesson 6 certifies the box through its VC dimension, which talks about the class of all boxes and says nothing about how the learner used its examples. Lesson 13 certifies stable learners. Nothing you own turns “this hypothesis can be rebuilt from a few of its examples” into a statement about its true risk. This lesson builds that tool. It is called a **compression bound**, and the auditor’s instinct turns out to be very nearly right, with one twist that costs a logarithm.
 
-Here is her experiment in Python. The messages are drawn at random, junk exactly when both scores fall inside the true box \([0.3, 0.8] \times [0.2, 0.6]\), the learner draws the tightest box around the junk, and then we keep only four positions and rebuild:
+Here is her experiment in Python. The messages are drawn at random, junk exactly when both scores fall inside the true box \([0.3, 0.8] \times [0.2, 0.6]\) (capitals between 0.3 and 0.8 and links between 0.2 and 0.6, the \(\times\) pairing one interval per score as in lesson 8), the learner draws the tightest box around the junk, and then we keep only four positions and rebuild:
 
 ```python
 import random
@@ -60,7 +60,7 @@ Each end of each interval is set by one junk example, so there are four slots to
 
 So the box is pinned by the list of positions \((1, 4, 1, 2)\). Notice that example 1 fills two slots, because it has both the fewest capitals and the fewest links. The list has four entries but only three different examples. Hold on to that; it matters for the theory.
 
-Now **rebuild**: hand the learner only the examples at those positions, \((z_1, z_4, z_1, z_2)\), and let it draw the tightest box around their junk. The smallest capitals among them is 0.35 and the largest 0.75; the smallest links 0.25 and the largest 0.5. Same box. And since it is the same box, it makes the same zero mistakes on all eight examples. The four keep messages, 5 to 8, were never consulted at all.
+Now **rebuild**: hand the learner only the examples at those positions, \((z_1, z_4, z_1, z_2)\), where \(z_i\) is the \(i\)-th example, message and label together, and let it draw the tightest box around their junk. The smallest capitals among them is 0.35 and the largest 0.75; the smallest links 0.25 and the largest 0.5. Same box. And since it is the same box, it makes the same zero mistakes on all eight examples. The four keep messages, 5 to 8, were never consulted at all.
 
 ```python
 S = [((0.35, 0.25), 1), ((0.6, 0.5), 1), ((0.5, 0.3), 1),
@@ -84,7 +84,7 @@ In the lab below, the dots are training messages. Drag them around, delete them,
 
 ## An exam the box never saw
 
-The auditor’s intuition goes like this. Suppose you build a hypothesis from a handful of examples, and then grade it on a completely separate batch it never touched. The grade on that separate batch is an honest estimate of the true risk, for exactly the reason lesson 2 gave: the batch is a fresh sample from \(\mathcal D\), and the hypothesis was fixed before the batch was drawn.
+The auditor’s intuition goes like this. Suppose you build a hypothesis from a handful of examples, and then grade it on a completely separate batch it never touched. The grade on that separate batch is an honest estimate of the true risk, for exactly the reason lesson 11 gave for its validation set: the batch is a fresh sample from \(\mathcal D\), the distribution the mail comes from, and the hypothesis was fixed before the batch was drawn.
 
 Let’s state that protocol carefully, because the whole lesson leans on it. First draw \(k\) examples, call this sequence \(T\), and build a hypothesis \(h_T\) from it, by any method you like. Then draw a fresh sequence of further examples, call it \(V\) (for “validation”), and compute the empirical risk of \(h_T\) on \(V\). Recall that the empirical risk \(L_V(h)\) is the fraction of the examples in \(V\) that \(h\) gets wrong, and the true risk \(L_{\mathcal D}(h)\) is the probability that \(h\) mislabels a fresh message drawn from the distribution \(\mathcal D\). The question is how far apart \(L_V(h_T)\) and \(L_{\mathcal D}(h_T)\) can be.
 
@@ -118,7 +118,7 @@ Read it from the inside out.
 - In the denominator, \(\sum_j \mathbb E[Z_j^2]\) is the total variance, the 19.6 above, and \(Mt/3\) is a correction for the rare large jump.
 - \(\exp(\cdot)\) is \(e\) raised to the given power, so a large fraction inside means a tiny probability.
 
-In plain words: **the chance that a sum of bounded, mean-zero quantities overshoots by \(t\) shrinks like \(e^{-t^2/(2 \cdot \text{variance})}\) as long as \(t\) is small next to the variance divided by \(M\), and like \(e^{-3t/(2M)}\) beyond that.** Push the story through it. With 1,000 messages at error rate 0.02, ask for the chance of 15 or more extra mistakes, that is more than 35 in all: \(t = 15\), total variance 19.6, \(M = 1\), so the exponent is \(-112.5 / (19.6 + 5) \approx -4.57\) and the bound is about 0.0103. Hoeffding’s version of the same question, \(e^{-2t^2/m}\), gives 0.64, which is almost useless. The exact binomial probability is smaller still.
+In plain words: **the chance that a sum of bounded, mean-zero quantities overshoots by \(t\) shrinks like \(e^{-t^2/(2 \cdot \text{variance})}\) as long as \(t\) is small next to the variance divided by \(M\), and like \(e^{-3t/(2M)}\) beyond that.** Push the story through it. With 1,000 messages at error rate 0.02, ask for the chance of more than 15 extra mistakes, that is 36 or more in all: \(t = 15\), total variance 19.6, \(M = 1\), so the exponent is \(-112.5 / (19.6 + 5) \approx -4.57\) and the bound is about 0.0103. Hoeffding’s version of the same question, \(e^{-2t^2/m}\), gives 0.64, which is almost useless. The exact binomial probability is smaller still.
 
 ```python
 from math import comb, exp
@@ -171,10 +171,11 @@ for _ in range(20_000):
     bad1 += L_S >= L_D + sqrt(2 * L_D * L / m) + 2 * L / (3 * m)
     bad2 += L_D >= L_S + sqrt(2 * L_S * L / m) + 4 * L / m
 print(round(bad1 / 20_000, 4), round(bad2 / 20_000, 4))
-print(round(sqrt(2 * 0.02 * L / m) + 4 * L / m, 4))
+print(round(sqrt(2 * 0.02 * L / m) + 4 * L / m, 4),
+      round(sqrt(log(2 / delta) / (2 * m)), 4))
 ```
 
-It prints `0.0037 0.0` and `0.0229`. Each line of the loop is one of the two events, symbol for symbol. Both happen far less often than 5%: the constants are safe, not tight.
+It prints `0.0037 0.0` and `0.0229 0.0429`, the last two being the Bernstein slack of the worked example and Hoeffding’s slack \(\sqrt{\log(2/\delta)/(2n)}\) from the previous section. Each line of the loop is one of the two events, symbol for symbol. Both happen far less often than 5%: the constants are safe, not tight.
 
 *Proof of (1).* Define \(\alpha_i = \ell(h, z_i) - L_{\mathcal D}(h)\) for \(i \in [m]\), where \([m]\) is the set of positions \(\{1, \dots, m\}\). Each \(\alpha_i\) is a function of \(z_i\) alone, and the \(z_i\) are i.i.d., so the \(\alpha_i\) are i.i.d. too. Their mean is \(\mathbb E[\ell(h, z_i)] - L_{\mathcal D}(h) = 0\), by the definition of the true risk.
 
@@ -439,7 +440,7 @@ Now check the promise. The rebuilt hypothesis \(h'\) is consistent with \(S'\), 
 
 The compression bound needs no change for this case: it already allows \(L_V(A(S)) > 0\). That is the agnostic form of the guarantee, and the corollary is its realizable special case.
 
-Here is the upgrade on the simplest class there is, thresholds on one score: \(h_\theta(x) = 1\) when \(x \ge \theta\), “junk when the capitals share is at least \(\theta\)”. Its realizable scheme has size 1: keep the junk example with the smallest score, and rebuild \(\theta\) as that score. The snippet draws 200 messages whose true threshold is 0.6, flips 10% of the labels, finds an ERM threshold by trying every score, discards its mistakes, keeps one example, and rebuilds.
+Here is the upgrade on the simplest class there is, thresholds on one score: \(h_\theta(x) = 1\) when \(x \ge \theta\), “junk when the capitals share is at least \(\theta\)”. Its realizable scheme has size 1: keep the junk example with the smallest score, and rebuild \(\theta\) as that score (with no junk at all, keep any example and rebuild a \(\theta\) above every score). The snippet draws 200 messages whose true threshold is 0.6, flips 10% of the labels, finds an ERM threshold by trying every score, discards its mistakes, keeps one example, and rebuilds.
 
 ```python
 import random
@@ -475,7 +476,7 @@ That is the auditor’s four: \(d = 2\) scores, \(k = 2d = 4\).
 
 ## Halfspaces: the shortest vector in the hull
 
-The second family is the halfspaces of lesson 9. Here we switch to that lesson’s labels, \(y = +1\) for junk and \(-1\) for keep. A message is a vector \(\mathbf x \in \mathbb R^d\), and a **homogeneous halfspace** is the hypothesis \(\mathbf x \mapsto \operatorname{sign}(\langle \mathbf w, \mathbf x \rangle)\) for a weight vector \(\mathbf w \in \mathbb R^d\), where \(\operatorname{sign}\) returns \(+1\) for a positive number and \(-1\) otherwise, and \(\langle \mathbf w, \mathbf x \rangle = \sum_j w_j x_j\) is the inner product and “homogeneous” means the boundary passes through the origin. A training sequence is realizable when some \(\mathbf w^\star\) has \(y_i \langle \mathbf w^\star, \mathbf x_i \rangle > 0\) for every \(i\). We will find a scheme of size \(d\): in two dimensions, two examples are enough to rebuild a consistent halfspace, however many there are.
+The second family is the halfspaces of lesson 9. Here we switch to that lesson’s labels, \(y = +1\) for junk and \(-1\) for keep. A message is a vector \(\mathbf x \in \mathbb R^d\), and a **homogeneous halfspace** is the hypothesis \(\mathbf x \mapsto \operatorname{sign}(\langle \mathbf w, \mathbf x \rangle)\) for a weight vector \(\mathbf w \in \mathbb R^d\), where \(\langle \mathbf w, \mathbf x \rangle = \sum_j w_j x_j\) is the inner product and \(\operatorname{sign}\) returns \(+1\) for a positive number and \(-1\) otherwise. “Homogeneous” means there is no bias term, so the boundary passes through the origin. A training sequence is realizable when some \(\mathbf w^\star\) has \(y_i \langle \mathbf w^\star, \mathbf x_i \rangle > 0\) for every \(i\). We will find a scheme of size \(d\): in two dimensions, two examples are enough to rebuild a consistent halfspace, however many there are.
 
 **One trick first: fold the labels in.** Since \(y_i \langle \mathbf w, \mathbf x_i \rangle = \langle \mathbf w, y_i \mathbf x_i \rangle\), the halfspace gets example \(i\) right exactly when \(\langle \mathbf w, \mathbf u_i \rangle > 0\), where \(\mathbf u_i = y_i \mathbf x_i\) is the message flipped through the origin if it is keep. So we may as well pretend every label is \(+1\) and look for a \(\mathbf w\) that has a positive inner product with every \(\mathbf u_i\).
 
@@ -525,7 +526,7 @@ It prints `[0.689, 0.574] [(2, -1), (-0.5, 2)]` and then `[0.689, 0.574] True`: 
 
 *Step 1: the origin is not in the hull.* By realizability, \(\langle \mathbf w^\star, \mathbf u_i \rangle > 0\) for every \(i\). Then for any convex combination, \(\langle \mathbf w^\star, \sum_i \lambda_i \mathbf u_i \rangle = \sum_i \lambda_i \langle \mathbf w^\star, \mathbf u_i \rangle > 0\), because the weights are non-negative and at least one is positive. The origin has inner product 0 with everything, so it is not a convex combination.
 
-*Step 2: the nearest point exists and is unique.* The hull of finitely many points is closed and bounded, and the norm is continuous, so the norm attains a minimum on it; call a minimizer \(\mathbf w\). By step 1, \(\mathbf w \ne \mathbf 0\). Suppose \(\mathbf v \ne \mathbf w\) were another minimizer, with \(\|\mathbf v\| = \|\mathbf w\| = r\). Their midpoint is in the hull (the hull is convex), and the parallelogram identity (expand both squared norms on the right to check it) gives \(\left\|\frac{\mathbf v + \mathbf w}{2}\right\|^2 = \frac{\|\mathbf v\|^2 + \|\mathbf w\|^2}{2} - \frac{\|\mathbf v - \mathbf w\|^2}{4} < r^2\), a point nearer than the nearest. So the minimizer is unique. (In fact \(\mathbf w\) points in the direction of the widest-margin separator of lesson 15, but we will not need that.)
+*Step 2: the nearest point exists and is unique.* The hull of finitely many points is closed and bounded, and the norm is continuous, so the norm attains a minimum on it; call a minimizer \(\mathbf w\). By step 1, \(\mathbf w \ne \mathbf 0\). Suppose \(\mathbf v \ne \mathbf w\) were another minimizer, with \(\|\mathbf v\| = \|\mathbf w\| = r\). Their midpoint is in the hull (the hull is convex), and the parallelogram identity (expand both squared norms on the right to check it) gives \(\left\|\frac{\mathbf v + \mathbf w}{2}\right\|^2 = \frac{\|\mathbf v\|^2 + \|\mathbf w\|^2}{2} - \frac{\|\mathbf v - \mathbf w\|^2}{4} < r^2\), a point nearer than the nearest. So the minimizer is unique. (In fact \(\mathbf w\) points in the direction of the widest-margin homogeneous separator, the one lesson 15’s hard-SVM returns, but we will not need that.)
 
 *Step 3: \(\mathbf w\) separates the data.* Suppose, for contradiction, that \(\langle \mathbf w, \mathbf u_i \rangle \le 0\) for some \(i\). Walk from \(\mathbf w\) a little way toward \(\mathbf u_i\): let \(\mathbf w' = (1 - \alpha)\mathbf w + \alpha \mathbf u_i\) with
 
@@ -644,7 +645,7 @@ It prints `[0.22, -0.68, 0.57] [0.034, -0.016, -0.148]` and `True`. Three messag
 
 ## Margin: what the Perceptron remembers
 
-The last example needs no geometry beyond lesson 9. Suppose every message has length at most 1, \(\|\mathbf x_i\| \le 1\), and the training sequence is separated with **margin** \(\gamma > 0\): some unit vector \(\mathbf w^\star\) has \(y_i \langle \mathbf w^\star, \mathbf x_i \rangle \ge \gamma\) for every \(i\), so every message sits at least \(\gamma\) from the boundary on its correct side. Lesson 9 proved that the Perceptron then stops after at most \((R/\gamma)^2\) updates, where \(R\) is the largest message length; here \(R \le 1\), so at most \(1/\gamma^2\).
+The last example needs no geometry beyond lesson 9. Suppose every message has length at most 1, \(\|\mathbf x_i\| \le 1\), and the training sequence is separated with **margin** \(\gamma > 0\): some unit vector \(\mathbf w^\star\) (one of length 1) has \(y_i \langle \mathbf w^\star, \mathbf x_i \rangle \ge \gamma\) for every \(i\), so every message sits at least \(\gamma\) from the boundary on its correct side. Lesson 9 proved that the Perceptron then stops after at most \((R/\gamma)^2\) updates, where \(R\) is the largest message length; here \(R \le 1\), so at most \(1/\gamma^2\).
 
 Now look at what the Perceptron’s final weight vector *is*. It starts at \(\mathbf 0\), and each update adds \(y_i \mathbf x_i\) for the example it got wrong. So the output is
 
