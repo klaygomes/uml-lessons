@@ -105,7 +105,31 @@ Recall lesson 7’s **minimum description length** bound. A **description langua
 
 \[ \forall h \in \mathcal H, \qquad L_{\mathcal D}(h) \le L_S(h) + \sqrt{\frac{|h| + \log(2/\delta)}{2m}}, \]
 
-where \(\log\) is the natural logarithm. The prior knowledge sits in the language: hypotheses with short descriptions get small penalties. And lesson 7’s one warning: the language must be fixed before the training sequence is seen.
+where \(\log\) is the natural logarithm. Let’s read it from the inside out, since it is the certificate this whole lesson leans on.
+
+- \(m\) is the number of labelled examples, and \(S \sim \mathcal D^m\) reads “\(S\) is drawn from \(\mathcal D^m\)”: \(m\) examples, each drawn independently from the same distribution \(\mathcal D\) over messages and their labels.
+- \(\delta\) (delta) is the chance we allow the certificate to fail, and \(\delta \in (0,1)\) says it is strictly between 0 and 1. The phrase “with probability at least \(1 - \delta\)” says that for all but a fraction \(\delta\) of the possible draws of \(S\), what follows holds.
+- \(|h|\) is the number of bits in \(h\)’s description. The bars mean “how many”, here how many bits, and not an absolute value.
+- \(\log(2/\delta)\) is the price of confidence: the smaller \(\delta\), the bigger this term.
+- The fraction adds the two and divides by \(2m\), so more data shrinks it; the square root \(\sqrt{\cdot}\) turns it into the **penalty**.
+- \(L_S(h)\) is the empirical risk, the fraction of the \(m\) examples \(h\) gets wrong, and \(L_{\mathcal D}(h)\) is the true risk, the chance that \(h\) mislabels a fresh message drawn from \(\mathcal D\).
+- \(\forall h \in \mathcal H\) reads “for every \(h\) in \(\mathcal H\)”: one draw of \(S\) makes the inequality true for all hypotheses at once.
+
+In plain words: **except on a fraction \(\delta\) of unlucky training sequences, every hypothesis’s true risk is at most its training error plus a penalty that grows with its description length and shrinks with the number of examples.** Say some hypothesis has a 40-bit description and gets 10% of 1,000 examples wrong, and we want \(\delta = 0.05\). Then \(\log(2/0.05) = \log 40 \approx 3.689\), the penalty is \(\sqrt{43.689/2000} \approx 0.148\), and the certificate reads \(L_{\mathcal D}(h) \le 0.248\).
+
+```python
+import math
+
+LS, bits, m, delta = 0.1, 40, 1000, 0.05
+log_term = math.log(2 / delta)
+penalty = math.sqrt((bits + log_term) / (2 * m))
+print(round(log_term, 3), round(penalty, 3))
+print(round(LS + penalty, 3))
+```
+
+It prints `3.689 0.148` and `0.248`. Remember the 40 bits; they will come back as a tree.
+
+The prior knowledge sits in the language: hypotheses with short descriptions get small penalties. And lesson 7’s one warning: the language must be fixed before the training sequence is seen.
 
 So all we need is a prefix-free language in which small trees have short descriptions. Here is one. Write a tree with \(n\) nodes as \(n + 1\) **blocks** of equal length. The first \(n\) blocks list the nodes in **preorder**: the root first, then the whole “yes” subtree in preorder, then the whole “no” subtree in preorder. The last block marks the end. Each block says one of the following:
 
@@ -114,7 +138,11 @@ So all we need is a prefix-free language in which small trees have short descrip
 - a leaf with value 0;
 - end of the code.
 
-That makes \(d + 3\) options per block, so a block needs \(b = \lceil \log_2(d + 3) \rceil\) bits, and a tree with \(n\) nodes has description length \((n + 1) b\).
+That makes \(d + 3\) options per block. How many bits does a block need? With \(b\) bits you can write \(2^b\) different strings, so we need the smallest \(b\) with \(2^b \ge d + 3\): for \(d = 4\) there are 7 options, 2 bits give only 4 strings and 3 bits give 8, so \(b = 3\). In symbols,
+
+\[ b = \lceil \log_2(d + 3) \rceil, \qquad \text{description length} = (n + 1)\, b. \]
+
+Here \(\log_2\) is the base-2 logarithm, the power you must raise 2 to: \(\log_2 8 = 3\), and \(\log_2 7 \approx 2.807\). The brackets \(\lceil \cdot \rceil\) are the **ceiling**, rounding up to the next whole number, so \(\lceil 2.807 \rceil = 3\). In plain words: **each block gets just enough bits to name one of the \(d + 3\) options, and a tree with \(n\) nodes is \(n + 1\) blocks.** The auditor’s tree, with \(n = 7\) and \(d = 4\), takes \(8 \times 3 = 24\) bits.
 
 Let’s write down the auditor’s tree. With \(d = 4\) there are 7 options, so blocks have 3 bits. Number the symbols F, L, U, N as 0 to 3, “leaf 1” as 4, “leaf 0” as 5 and “end” as 6. The preorder of the tree is U, then its “yes” subtree (F, leaf 1, L, leaf 1, leaf 0), then its “no” subtree (leaf 0).
 
@@ -130,7 +158,7 @@ print(b, len(code))
 print(code)
 ```
 
-It prints `3 24` and `010000100001100101101110`: eight blocks of three bits, 24 bits for the whole tree.
+It prints `3 24` and `010000100001100101101110`: eight blocks of three bits, 24 bits for the whole tree. The line `b = math.ceil(math.log2(d + 3))` is the ceiling formula term by term, and the length of `code` is \((n + 1) b\).
 
 [[diagram:code]]
 

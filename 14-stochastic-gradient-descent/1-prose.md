@@ -310,15 +310,19 @@ Look at the simplest crease, \(f(x) = |x|\) at \(x = 0\). The line \(y = 0.5x\) 
 
 This is in fact a characterization of convexity, which we state without proof (it is a standard result of convex analysis):
 
+Here a convex set (lesson 12) contains the segment between any two of its points, and an open one leaves every point a little room around it inside the set, as the whole plane does.
+
 **Lemma (supporting planes).** Let \(S\) be an open convex set. A function \(f: S \to \mathbb R\) is convex if and only if for every \(\mathbf w \in S\) there is a vector \(\mathbf v\) with
 
 \[ f(\mathbf u) \ge f(\mathbf w) + \langle \mathbf u - \mathbf w, \mathbf v \rangle \quad \text{for all } \mathbf u \in S. \]
 
-**Definition (subgradient).** A vector \(\mathbf v\) satisfying that inequality is a **subgradient** of \(f\) at \(\mathbf w\). The set of all subgradients of \(f\) at \(\mathbf w\) is written \(\partial f(\mathbf w)\) (it is also called the differential set, or the subdifferential).
+This is the tangent inequality with \(\mathbf v\) in place of the gradient, and \(\mathbf u \in S\) reads “\(\mathbf u\) in \(S\)”. In plain words: **a function is convex exactly when, at every point, some plane through its graph stays below it everywhere.** For \(|x|\) at \(w = 0\) with \(v = 0.5\) and \(u = 2\): \(|2| = 2 \ge 0 + 2 \cdot 0.5 = 1\). The fan snippet below checks this inequality for six slopes at once.
+
+**Definition (subgradient).** A vector \(\mathbf v\) satisfying that inequality is a **subgradient** of \(f\) at \(\mathbf w\). The set of all subgradients of \(f\) at \(\mathbf w\) is written \(\partial f(\mathbf w)\) (it is also called the differential set, or the subdifferential). The curly \(\partial\) is back, now with no fraction: read \(\partial f(\mathbf w)\) as “the slopes of all supporting planes at \(\mathbf w\)”. For \(|x|\) at 0 it is every slope from \(-1\) to \(1\).
 
 For a function of one variable, a subgradient at \(w\) is the slope of a line that touches \(f\) at \(w\) and is nowhere above \(f\). Where a function is smooth, nothing new happens:
 
-**Claim (smooth points).** If \(f\) is convex and differentiable at \(\mathbf w\), then \(\partial f(\mathbf w) = \{\nabla f(\mathbf w)\}\).
+**Claim (smooth points).** If \(f\) is convex and differentiable at \(\mathbf w\), then \(\partial f(\mathbf w) = \{\nabla f(\mathbf w)\}\), the set whose only member is the gradient.
 
 *Proof.* The gradient is a subgradient: that is the tangent-plane inequality. For the converse, let \(\mathbf v \in \partial f(\mathbf w)\), pick any direction \(\mathbf e\), and use the subgradient inequality at \(\mathbf u = \mathbf w + s\mathbf e\) for small \(s > 0\): \(f(\mathbf w + s\mathbf e) - f(\mathbf w) \ge s \langle \mathbf e, \mathbf v \rangle\). Divide by \(s\) and let \(s \to 0\). The left side tends to the directional derivative \(\langle \mathbf e, \nabla f(\mathbf w) \rangle\), so \(\langle \mathbf e, \nabla f(\mathbf w) - \mathbf v \rangle \ge 0\). This holds for every \(\mathbf e\), including \(-\mathbf e\), so \(\langle \mathbf e, \nabla f(\mathbf w) - \mathbf v \rangle = 0\) for every \(\mathbf e\). Taking \(\mathbf e = \nabla f(\mathbf w) - \mathbf v\) gives \(\|\nabla f(\mathbf w) - \mathbf v\|^2 = 0\). \(\blacksquare\)
 
@@ -326,7 +330,7 @@ So for \(f(x) = |x|\), the claim settles every point except the crease, and the 
 
 \[ \partial f(x) = \begin{cases} \{1\} & x > 0, \\ \{-1\} & x < 0, \\ [-1, 1] & x = 0. \end{cases} \]
 
-Here is the fan checked by brute force, on a grid of 601 points:
+The big brace lists cases: each line reads “this set, if this condition holds”, and \([-1, 1]\) is the interval of all numbers from \(-1\) to \(1\). In plain words: **the slope of \(|x|\) is 1 on the right, \(-1\) on the left, and anything from \(-1\) to 1 at the bottom of the V.** Here is the fan checked by brute force, on a grid of 601 points:
 
 ```python
 grid = [k / 100 for k in range(-300, 301)]
@@ -340,6 +344,8 @@ It prints `True` for \(-1, -0.5, 0, 0.7\) and \(1\), and `False` for \(1.1\).
 In practice we never need the whole set \(\partial f(\mathbf w)\); one member is enough to take a step. For a maximum of smooth convex pieces, there is a simple recipe: take the gradient of whichever piece is on top.
 
 **Claim (subgradient of a maximum).** Let \(g(\mathbf w) = \max_{i \in [r]} g_i(\mathbf w)\) for convex differentiable functions \(g_1, \dots, g_r\). Given \(\mathbf w\), let \(j \in \operatorname{argmax}_i g_i(\mathbf w)\). Then \(\nabla g_j(\mathbf w) \in \partial g(\mathbf w)\).
+
+Here \([r]\) is the list \(\{1, \dots, r\}\), \(\max_{i \in [r]}\) takes the largest of the \(r\) values, and \(\operatorname{argmax}_i\) is the index of a piece that reaches it. In plain words: **the gradient of whichever piece is on top is a subgradient of the maximum.** For message A at \(\mathbf w = \mathbf 0\), the hinge’s two pieces are 0 and 1, so the second is on top.
 
 *Proof.* Since \(g_j\) is convex and differentiable, its tangent plane lies below it: \(g_j(\mathbf u) \ge g_j(\mathbf w) + \langle \mathbf u - \mathbf w, \nabla g_j(\mathbf w) \rangle\) for all \(\mathbf u\). Now replace both ends by \(g\). On the left, \(g(\mathbf u) \ge g_j(\mathbf u)\) because \(g\) is the maximum. On the right, \(g_j(\mathbf w) = g(\mathbf w)\) because \(j\) is the piece on top at \(\mathbf w\). So \(g(\mathbf u) \ge g(\mathbf w) + \langle \mathbf u - \mathbf w, \nabla g_j(\mathbf w) \rangle\) for all \(\mathbf u\). \(\blacksquare\)
 
