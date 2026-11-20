@@ -478,7 +478,7 @@ We also need the rounds to be well defined. If \(\varepsilon_t = 0\), the vote \
 
 *Proof.* We follow the vote as it builds up. For each \(t\), let
 \[ f_t = \sum_{p \le t} w_p h_p, \]
-the score of the vote after \(t\) rounds: \(\sum_{p \le t}\) adds the voted stumps of rounds \(p = 1\) up to \(t\), so \(f_t(x)\) is the number whose sign is the vote. After one round, \(f_1(x) = 0.693\, h_1(x)\). The symbol \(\equiv\) means “equal for every input”, so \(f_0 \equiv 0\) says no rounds give score 0 everywhere, and AdaBoost outputs \(h_s = \operatorname{sign}(f_T)\).
+the score of the vote after \(t\) rounds: \(\sum_{p \le t}\) adds the voted stumps of rounds \(p = 1\) up to \(t\), so \(f_t(x)\) is the number whose sign is the vote. In plain words: **\(f_t\) is the running total of the voted stumps.** After one round, \(f_1(x) = 0.693\, h_1(x)\). The symbol \(\equiv\) means “equal for every input”, so \(f_0 \equiv 0\) says no rounds give score 0 everywhere, and AdaBoost outputs \(h_s = \operatorname{sign}(f_T)\).
 
 Now the smooth quantity. The product \(y_i f_t(x_i)\) is positive when the score points the right way and negative when it points the wrong way, and its size says how confidently. Feed it through \(e^{-u}\): a confidently right example contributes a small number, a wrong one a number above 1. After round 1, the eight messages the stump gets right have \(y_i f_1(x_i) = 0.693\) and contribute \(e^{-0.693} = 0.5\); messages 4 and 5 have \(-0.693\) and contribute 2. Define
 \[ Z_t = \frac1m \sum_{i=1}^m e^{-y_i f_t(x_i)}. \]
@@ -501,19 +501,19 @@ It prints `[0.5, 0.5, 0.5, 2.0, 2.0, 0.5, 0.5, 0.5, 0.5, 0.5]` and `0.8 [0.0625,
 
 **Step 1: the empirical risk is at most \(Z_T\).** Take one example. If \(h_s\) gets it wrong, then \(\operatorname{sign}(f_T(x_i)) \neq y_i\). If \(y_i = +1\), that means \(f_T(x_i) \le 0\); if \(y_i = -1\), it means \(f_T(x_i) > 0\). Either way \(y_i f_T(x_i) \le 0\), so \(e^{-y_i f_T(x_i)} \ge 1\). If \(h_s\) gets it right, the indicator is 0, and an exponential is always positive. So for every example
 \[ \mathbb 1[h_s(x_i) \neq y_i] \le e^{-y_i f_T(x_i)}. \]
-Average over \(i\): \(L_S(h_s) \le Z_T\). (This also settles any worry about ties: our sign sends 0 to \(-1\), but the inequality holds whichever label a tie gets, because \(e^0 = 1\).) So it suffices to show \(Z_T \le e^{-2\gamma^2 T}\).
+In plain words: **each example’s mistake count, 0 or 1, is at most its term in \(Z_T\).** After round 1, message 4 is a mistake, \(1 \le 2\), and message 1 is not, \(0 \le 0.5\). Average over \(i\): \(L_S(h_s) \le Z_T\). (This also settles any worry about ties: our sign sends 0 to \(-1\), but the inequality holds whichever label a tie gets, because \(e^0 = 1\).) So it suffices to show \(Z_T \le e^{-2\gamma^2 T}\).
 
 **Step 2: a telescoping product.** Since \(f_0 \equiv 0\), every term of \(Z_0\) is \(e^0 = 1\), so \(Z_0 = 1\). All the \(Z_t\) are positive, so we may write
 \[ Z_T = \frac{Z_T}{Z_0} = \frac{Z_T}{Z_{T-1}} \cdot \frac{Z_{T-1}}{Z_{T-2}} \cdots \frac{Z_1}{Z_0}. \]
-Each intermediate \(Z\) appears once on top and once below, and cancels. So it suffices to show that for every round,
+Each intermediate \(Z\) appears once on top and once below, and cancels; the dots \(\cdots\) stand for the factors in between. In plain words: **the final \(Z\) is the product of how much \(Z\) shrank in each round.** On the ten messages, the three factors will turn out to be 0.8, 0.6614 and 0.5151, and their product is \(Z_3 \approx 0.273\). So it suffices to show that for every round,
 \[ \frac{Z_{t+1}}{Z_t} \le e^{-2\gamma^2}, \]
-because multiplying \(T\) such factors gives \(e^{-2\gamma^2 T}\).
+that every round shrinks \(Z\) by a factor of at most \(e^{-2\gamma^2}\) (about 0.835 for \(\gamma = 0.3\)), because multiplying \(T\) such factors gives \(e^{-2\gamma^2 T}\).
 
 [[diagram:telescope]]
 
 **Step 3: the weights are the exponentials, normalized.** We claim that for every \(t \ge 0\) and every \(i\),
 \[ D_i^{(t+1)} = \frac{e^{-y_i f_t(x_i)}}{\sum_{j=1}^m e^{-y_j f_t(x_j)}}. \]
-We prove it by induction on \(t\). For \(t = 0\), \(f_0 \equiv 0\), so the right side is \(1/m\), which is \(D^{(1)}\). Now suppose it holds for \(t - 1\), that is, \(D_i^{(t)} = e^{-y_i f_{t-1}(x_i)} / N_{t-1}\), where \(N_{t-1}\) is the sum in the denominator. AdaBoost’s update multiplies \(D_i^{(t)}\) by \(e^{-w_t y_i h_t(x_i)}\) and renormalizes. Since \(f_t = f_{t-1} + w_t h_t\),
+The top is example \(i\)’s term in \(Z_t\); the bottom adds the same term over all examples (with letter \(j\), since \(i\) is taken). In plain words: **the next round’s weight of an example is its share of the total \(e^{-y f_t}\).** That is what the snippet above printed: \(0.5/4 = 0.0625\) and \(2/4 = 0.25\). We prove it by induction on \(t\). For \(t = 0\), \(f_0 \equiv 0\), so the right side is \(1/m\), which is \(D^{(1)}\). Now suppose it holds for \(t - 1\), that is, \(D_i^{(t)} = e^{-y_i f_{t-1}(x_i)} / N_{t-1}\), where \(N_{t-1}\) is the sum in the denominator. AdaBoost’s update multiplies \(D_i^{(t)}\) by \(e^{-w_t y_i h_t(x_i)}\) and renormalizes. Since \(f_t = f_{t-1} + w_t h_t\),
 \[ D_i^{(t)} e^{-w_t y_i h_t(x_i)} = \frac{e^{-y_i f_{t-1}(x_i)}\, e^{-y_i w_t h_t(x_i)}}{N_{t-1}} = \frac{e^{-y_i f_t(x_i)}}{N_{t-1}}. \]
 So the unnormalized new weights are proportional to \(e^{-y_i f_t(x_i)}\), with the same constant \(1/N_{t-1}\) for every \(i\). Normalizing them to sum to 1 cancels that constant and divides by \(\sum_j e^{-y_j f_t(x_j)}\), which is the claim for \(t\).
 
