@@ -520,8 +520,8 @@ Folder: `28-fundamental-theorem-proof/`
 
 Folder: `29-multiclass-learnability/`
 
-- [ ] 1 prose and sheet (drafting by agent, started 2026-11-20; brief in the session scratchpad, template docs/writer-brief.md)
-- [ ] 2 gates: book check (PDF agents), read-aloud, fresh reader, greps
+- [x] 1 prose and sheet (about 13,300 words with code, 16 snippets run by the lead; the failing fence is the build-it stub; no book references; written with both rules; 2026-11-20). Writer's claims to verify: the one-versus-all counting step uses |C|^d, false for d = 1, replaced by (|C|+1)^d with kd ≥ 4; the bad-ERM failure holds with probability 1 under the book's distribution, so the Chernoff step is not needed. Whether the conjecture the chapter mentions has since been resolved was not checked. Align its recaps of the binary lower bounds with lesson 28 (now drafted)
+- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page

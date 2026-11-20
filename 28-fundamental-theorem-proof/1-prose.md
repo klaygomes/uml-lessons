@@ -2,7 +2,7 @@
 
 ## The auditor’s question
 
-The filter is about to get its first outside audit. Since lesson 6 it has scored every message with the spam score, a number between 0 and 1, and it labels a message junk when the score falls inside an interval it has learned. The class of intervals has VC dimension 2, and the certificate your team filed back then rests on one sentence from lesson 6: the fundamental theorem of statistical learning, quantitative version. Write \(d\) for the VC dimension, \(\varepsilon\) for the accuracy you ask for and \(\delta\) for the chance you allow the guarantee to fail. The theorem says the number of labels a class needs grows like \(d + \log(1/\delta)\) over \(\varepsilon^2\) when labels are noisy, and roughly like \(d \log(1/\varepsilon) + \log(1/\delta)\) over \(\varepsilon\) when some interval is perfect.
+At the end of the last review, someone from the research team asked whether you could prove the fundamental theorem of lesson 6, both directions, with the exact rates. That question now has a deadline. The interval filter of lesson 6, which scores every message with the spam score, a number between 0 and 1, and labels it junk when the score falls inside an interval it has learned, is about to get its first outside audit. The class of intervals has VC dimension 2 (it can label two messages every possible way, but never three), and the certificate your team filed back then rests on one sentence from lesson 6: the fundamental theorem of statistical learning, quantitative version. Write \(d\) for the VC dimension, \(\varepsilon\) for the accuracy you ask for and \(\delta\) for the chance you allow the guarantee to fail. The theorem says the number of labels a class needs grows like \(d + \log(1/\delta)\) over \(\varepsilon^2\) when labels are noisy, and roughly like \(d \log(1/\varepsilon) + \log(1/\delta)\) over \(\varepsilon\) when some interval is perfect.
 
 The certificate has two lines. The clean line covers the mailboxes where one interval really does separate junk from keep. The noisy line covers the shared mailboxes, where users disagree and no interval is perfect. Both promise a filter within \(\varepsilon = 0.1\) of the best possible, with confidence \(1 - \delta = 0.95\), and both budgets were computed by plugging the numbers into the theorem’s shapes:
 
@@ -19,7 +19,7 @@ It prints `500 76`. So the certificate says: 76 labels for the clean line, 500 f
 
 The auditor reads it twice and puts down her pen. “Lesson 6 says there *are* constants \(C_1\) and \(C_2\) that make this true. You used 1 for both. Where is the proof that 1 works? And the lower constant: how do you know a smaller budget could not have done the job? If you can’t show me a floor and a ceiling, this certificate is a guess with a theorem’s name on it.”
 
-She is right, and it is a little embarrassing. Lesson 6 stated the quantitative theorem and promised the proof for later. Your team has been quoting its rates ever since without anyone checking where they come from. This lesson pays that debt. We will prove three things, each with explicit constants:
+She is right, and it is a little embarrassing. Lesson 6 stated the quantitative theorem and promised the proof for later. Your team has been quoting its rates ever since without anyone checking where they come from. This lesson pays that debt and answers the research team’s question. We will prove three things, each with explicit constants:
 
 1. **The ceiling with noisy labels**: enough labels, of order \((d \log(1/\varepsilon) + \log(1/\delta))/\varepsilon^2\), make ERM (lesson 2’s learner that returns a hypothesis with the smallest empirical risk) succeed for every distribution.
 2. **The floor with noisy labels**: fewer than about \((d + \log(1/\delta))/\varepsilon^2\) labels make *every* learner fail on some distribution.
@@ -31,7 +31,7 @@ By the end you will rewrite both lines of the certificate with numbers you can d
 
 Let’s set out the vocabulary, since every step below leans on it.
 
-A **hypothesis class** \(\mathcal H\) is a set of hypotheses \(h: \mathcal X \to \{0, 1\}\), where \(\mathcal X\) is the domain (here, spam scores) and the label 1 means junk. Its **VC dimension** \(d\) (lesson 6) is the size of the largest set of messages that \(\mathcal H\) **shatters**, that is, labels in all \(2^{|C|}\) possible ways. For intervals, \(d = 2\): any two scores can be labelled every way, but no three can, since “junk, keep, junk” would need a gap inside an interval.
+A **hypothesis class** \(\mathcal H\) is a set of hypotheses \(h: \mathcal X \to \{0, 1\}\), where \(\mathcal X\) is the domain (here, spam scores) and the label 1 means junk. Its **VC dimension** \(d\) (lesson 6) is the size of the largest set \(C\) of messages that \(\mathcal H\) **shatters**, that is, labels in all \(2^{|C|}\) possible ways, where \(|C|\) is the number of messages in \(C\). For intervals, \(d = 2\): any two scores can be labelled every way, but no three can, since “junk, keep, junk” would need a gap inside an interval.
 
 A training sequence \(S = (z_1, \dots, z_m)\) is \(m\) examples \(z_i = (x_i, y_i)\) drawn i.i.d. from a distribution \(\mathcal D\) over messages and labels; we write \(S \sim \mathcal D^m\). The **true risk** \(L_{\mathcal D}(h)\) is the chance that \(h\) mislabels a fresh example, and the **empirical risk** \(L_S(h)\) is the fraction of \(S\) that \(h\) gets wrong. The **best in the class** is \(\min_{h \in \mathcal H} L_{\mathcal D}(h)\), the smallest true risk any hypothesis in \(\mathcal H\) can reach. When a learner \(A\) returns \(A(S)\), the amount by which it falls short of the best in the class,
 
@@ -58,36 +58,47 @@ The picture above is the certificate’s noisy line on a number line of budgets.
 
 ### The plan, in words
 
-Lesson 4 gave the strategy. Call a training sequence **\(\varepsilon\)-representative** when every hypothesis in the class has empirical risk within \(\varepsilon\) of its true risk. If \(S\) is \(\varepsilon/2\)-representative, then ERM, which returns a hypothesis with the smallest empirical risk, has estimation error at most \(\varepsilon\): its empirical risk is the lowest, and neither it nor the best hypothesis can be more than \(\varepsilon/2\) away from its true risk. So we need one thing: a number of examples that makes \(S\) representative with probability at least \(1 - \delta\).
+Lesson 4 gave the strategy. Call a training sequence **\(\varepsilon\)-representative** when every hypothesis in the class has empirical risk within \(\varepsilon\) of its true risk. If \(S\) is \(\varepsilon/2\)-representative, then ERM, which returns a hypothesis with the smallest empirical risk, has estimation error at most \(\varepsilon\). Write \(h_S\) for ERM’s output and \(h^\star\) for the best hypothesis in the class; then \(L_{\mathcal D}(h_S) \le L_S(h_S) + \varepsilon/2 \le L_S(h^\star) + \varepsilon/2 \le L_{\mathcal D}(h^\star) + \varepsilon\), where the outer steps are representativeness and the middle one is ERM picking the lowest empirical risk. So we need one thing: a number of examples that makes \(S\) representative with probability at least \(1 - \delta\).
 
-Lesson 26 built the tool for this: Rademacher complexity. Let’s recall the three facts we need before we use them.
+Lesson 26 built the tools for this: the Rademacher complexity, McDiarmid’s inequality to turn it into a guarantee, and Massart’s lemma to compute it for a finite set. Let’s recall the three facts we need before we use them.
 
 ### Three facts from lesson 26
 
-Fix the training sequence and line up, for each hypothesis, the vector of its losses on the \(m\) examples. A loss of 1 marks a mistake. Collect these vectors in a set \(A \subseteq \mathbb R^m\), the set of real vectors of length \(m\). The **random signs** \(\sigma_1, \dots, \sigma_m\) are independent, each \(+1\) or \(-1\) with chance one half, the same signs lesson 6 used for its ghost sample. The **Rademacher complexity** of \(A\) is
+Fix the training sequence and line up, for each hypothesis, its **loss vector**: entry \(i\) is its loss on example \(i\), 1 for a mistake and 0 otherwise. Collect these vectors in a set \(A \subseteq \mathbb R^m\), the set of real vectors of length \(m\). The **random signs** \(\sigma_1, \dots, \sigma_m\) are independent, each \(+1\) or \(-1\) with chance one half, the Rademacher variables of lesson 26. The **Rademacher complexity** of \(A\) is
 
 \[ R(A) = \frac{1}{m} \, \mathbb E_{\sigma} \left[ \sup_{a \in A} \sum_{i=1}^{m} \sigma_i a_i \right]. \]
 
 From the inside out:
 
 - \(a_i\) is coordinate \(i\) of a vector \(a\), the loss of one hypothesis on example \(i\).
-- \(\sum_{i=1}^{m} \sigma_i a_i\) adds up the losses, each with a random sign. Think of the signs as splitting the examples into two random teams, and the sum as “mistakes on team plus minus mistakes on team minus”.
-- \(\sup_{a \in A}\) (the supremum, which for a finite set is just the maximum) picks the vector that makes that difference as large as possible: the hypothesis that best “fits” the random split.
+- \(\sum_{i=1}^{m} \sigma_i a_i\) adds up the losses, each with a random sign. Think of the signs as splitting the examples into two random halves, and the sum as “mistakes on the \(+\) half minus mistakes on the \(-\) half”; or think of them as random fake labels, pure noise.
+- \(\sup_{a \in A}\) (the supremum, which for a finite set is just the maximum) picks the vector that makes that sum as large as possible: the hypothesis that best fits this noise.
 - \(\mathbb E_{\sigma}\) averages over all \(2^m\) equally likely sign vectors, and \(\frac{1}{m}\) turns the total into a per-example rate.
 
-In plain words: **how well, on average, the class can match a random split of the training sequence into two teams.** A class that can fit any random split is rich and dangerous; a class that cannot is safe. On one example, with \(A = \{(0), (1)\}\), the sign is \(+1\) half the time (the best vector scores 1) and \(-1\) half the time (the best vector, \((0)\), scores 0), so \(R(A) = \tfrac12\).
+In plain words: **how well, on average, the class’s losses can fit pure noise on these very messages.** A class that can fit any noise is rich enough to fit the accidents of your training sequence too; a class that cannot is safe. On one example, with \(A = \{(0), (1)\}\), the sign is \(+1\) half the time (the best vector scores 1) and \(-1\) half the time (the best vector, \((0)\), scores 0), so \(R(A) = \tfrac12\). The snippet in Step 2 below computes this average exactly, by trying every sign vector.
 
-The second fact turns this into a guarantee. Let \(\ell(h, z)\) be the loss of \(h\) on example \(z\), and suppose \(|\ell(h, z)| \le c\) for every \(h\) and \(z\), where the bars are absolute value. Write \(\ell \circ \mathcal H \circ S'\) for the set of loss vectors on a sequence \(S'\). Then, **with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\), every \(h \in \mathcal H\) satisfies**
+The second fact, lesson 26’s Rademacher generalization bound, turns this into a guarantee. Let \(\ell(h, z)\) be the loss of \(h\) on example \(z\), and suppose \(|\ell(h, z)| \le c\) for every \(h\) and \(z\), where the bars are absolute value. Write \(\ell \circ \mathcal H \circ S'\) for the set of loss vectors on a sequence \(S'\). Then, **with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\), every \(h \in \mathcal H\) satisfies**
 
 \[ L_{\mathcal D}(h) - L_S(h) \le 2 \, \mathbb E_{S' \sim \mathcal D^m} \left[ R(\ell \circ \mathcal H \circ S') \right] + c \sqrt{\frac{2 \log(2/\delta)}{m}}. \]
 
-Reading it: the left side is how much hypothesis \(h\) flatters itself on \(S\), true risk minus empirical risk. On the right, \(S'\) is another training sequence drawn from \(\mathcal D^m\), and \(\mathbb E_{S'}\) averages the Rademacher complexity of the loss vectors over all such sequences; the factor 2 comes from lesson 26’s ghost-sample argument. The last term is the price of confidence: it shrinks like \(1/\sqrt m\) and grows only with the log of \(1/\delta\). In plain words: **no hypothesis can look better on the training sequence than it really is by more than twice the class’s average Rademacher complexity plus a small confidence term.** With the 0-1 loss, \(c = 1\); at \(m = 10{,}000\) and \(\delta = 0.05\), the confidence term is \(\sqrt{2 \log 40 / 10{,}000} \approx 0.027\).
+Reading it: the left side is how much hypothesis \(h\) flatters itself on \(S\), true risk minus empirical risk. On the right, \(S'\) is another training sequence drawn from \(\mathcal D^m\), and \(\mathbb E_{S'}\) averages the Rademacher complexity of the loss vectors over all such sequences. The factor 2 comes from lesson 26’s symmetrization lemma (the ghost sample and the random signs), which bounds the *average*, over training sequences, of the worst self-flattery in the class. The last term is the price of confidence, and it comes from **McDiarmid’s inequality**: a function of \(m\) independent examples that no single example can move by more than \(c'\) stays within \(c'\sqrt{m \log(2/\delta)/2}\) of its average, except with probability \(\delta\). Changing one example moves every empirical risk, and so the worst self-flattery, by at most \(2c/m\); with \(c' = 2c/m\) the radius is exactly \(c\sqrt{2 \log(2/\delta)/m}\). It shrinks like \(1/\sqrt m\) and grows only with the log of \(1/\delta\). In plain words: **no hypothesis can look better on the training sequence than it really is by more than twice the class’s average Rademacher complexity plus a small confidence term.** With the 0-1 loss, \(c = 1\); at \(m = 10{,}000\) and \(\delta = 0.05\), the confidence term is \(\sqrt{2 \log 40 / 10{,}000} \approx 0.027\):
 
-The third fact, **Massart’s lemma**, bounds the Rademacher complexity of a finite set. If \(A = \{a_1, \dots, a_N\}\) has \(N\) vectors and \(\bar a = \frac1N \sum_{j=1}^{N} a_j\) is their average, then
+```python
+from math import log, sqrt
+
+m, delta, c = 10_000, 0.05, 1
+step = 2 * c / m
+radius = step * sqrt(m * log(2 / delta) / 2)
+print(round(radius, 4), round(c * sqrt(2 * log(2 / delta) / m), 4))
+```
+
+It prints `0.0272 0.0272`: McDiarmid’s radius with one example’s reach \(2c/m\) is the bound’s confidence term.
+
+The third fact, **Massart’s lemma**, bounds the Rademacher complexity of a finite set. If \(A = \{a_1, \dots, a_N\}\) has \(N \ge 2\) vectors and \(\bar a = \frac1N \sum_{j=1}^{N} a_j\) is their average, then
 
 \[ R(A) \le \max_{a \in A} \|a - \bar a\| \, \frac{\sqrt{2 \log N}}{m}. \]
 
-Here \(\|a - \bar a\|\) is the Euclidean length of the vector from the average to \(a\), the square root of the sum of its squared coordinates, and \(\max_{a \in A}\) takes the longest one. In plain words: **a finite set of vectors can fit random signs only as well as its spread times the square root of the log of how many vectors there are.** The log is what makes this useful: a million hypotheses cost only \(\sqrt{2 \log 10^6} \approx 5.3\).
+Here \(\|a - \bar a\|\) is the Euclidean length of the vector from the average to \(a\), the square root of the sum of its squared coordinates, and \(\max_{a \in A}\) takes the longest one, the set’s spread. In plain words: **a finite set fits noise no better than its spread times \(\sqrt{2\log N}\), divided by \(m\).** The log is what makes this useful: a million hypotheses cost only \(\sqrt{2 \log 10^6} \approx 5.3\). The Step 2 snippet checks it against the exact complexity.
 
 Now we can follow the chain.
 
@@ -101,7 +112,7 @@ Formally, fix \(S = ((x_1, y_1), \dots, (x_m, y_m))\) and let
 
 \[ A = \left\{ \left( \mathbb 1[h(x_1) \neq y_1], \dots, \mathbb 1[h(x_m) \neq y_m] \right) : h \in \mathcal H \right\}. \]
 
-The indicator \(\mathbb 1[\cdot]\) is 1 when the statement inside is true and 0 otherwise, so each coordinate is the 0-1 loss of \(h\) on one example. The braces collect one vector per hypothesis, and the colon reads “such that \(h\) ranges over \(\mathcal H\)”; two hypotheses with the same mistakes give the same vector, counted once. In plain words: **\(A\) is the set of all mistake patterns the class can make on this training sequence.** The map from labelling \((h(x_1), \dots, h(x_m))\) to mistake pattern flips coordinate \(i\) exactly when \(y_i = 1\), and flipping twice undoes it, so the map is a bijection. Hence \(|A|\) equals the number of labellings the class produces on \(x_1, \dots, x_m\), which is at most the growth function \(\tau_{\mathcal H}(m)\) of lesson 6. By Sauer’s lemma, for \(m \ge d\),
+The indicator \(\mathbb 1[\cdot]\) is 1 when the statement inside is true and 0 otherwise, so each coordinate is the 0-1 loss of \(h\) on one example. The braces collect one vector per hypothesis, and the colon reads “such that \(h\) ranges over \(\mathcal H\)”; two hypotheses with the same mistakes give the same vector, counted once. In plain words: **\(A\) is the set of all mistake patterns the class can make on this training sequence.** The map from labelling \((h(x_1), \dots, h(x_m))\) to mistake pattern flips coordinate \(i\) exactly when \(y_i = 1\), and flipping twice undoes it, so the map is a bijection. Hence \(|A|\) equals the number of labellings the class produces on \(x_1, \dots, x_m\), which is at most the growth function \(\tau_{\mathcal H}(m)\) of lesson 6, the largest number of labellings the class makes on any \(m\) messages. By Sauer’s lemma, for \(m \ge d\),
 
 \[ |A| \le \tau_{\mathcal H}(m) \le \left( \frac{em}{d} \right)^d. \]
 
@@ -158,7 +169,7 @@ Put Step 2 into the second fact with \(c = 1\) and confidence \(\delta/2\). Sinc
 
 \[ L_{\mathcal D}(h) - L_S(h) \le \sqrt{\frac{8 d \log(em/d)}{m}} + \sqrt{\frac{2 \log(4/\delta)}{m}}. \]
 
-That is one side: no hypothesis looks much *better* on \(S\) than it is. We also need the other side, that none looks much *worse*. Here is the trick. Use the loss \(-\ell\) instead of \(\ell\). It is still bounded by \(c = 1\) in absolute value, its true and empirical risks are \(-L_{\mathcal D}(h)\) and \(-L_S(h)\), and its loss vectors are \(-A\). Flipping every vector does not change the Rademacher complexity, because \(\sigma\) and \(-\sigma\) are equally likely, so \(R(-A) = R(A)\). The same argument, again at confidence \(\delta/2\), gives the same bound for \(L_S(h) - L_{\mathcal D}(h)\).
+That is one side: no hypothesis looks much *better* on \(S\) than it is. We also need the other side, that none looks much *worse*. Here is the trick. Use the loss \(-\ell\) instead of \(\ell\). It is still bounded by \(c = 1\) in absolute value, its true and empirical risks are \(-L_{\mathcal D}(h)\) and \(-L_S(h)\), and its loss vectors are \(-A\). Flipping every vector does not change the Rademacher complexity, because \(\sigma\) and \(-\sigma\) are equally likely, so \(R(-A) = R(A)\): lesson 26’s shift-and-scale rule with factor \(-1\). The same argument, again at confidence \(\delta/2\), gives the same bound for \(L_S(h) - L_{\mathcal D}(h)\).
 
 Each of the two bounds fails with probability at most \(\delta/2\). By the **union bound** (lesson 2: the chance that at least one of several events happens is at most the sum of their chances), at least one fails with probability at most \(\delta\). So with probability at least \(1 - \delta\), both hold, and every \(h\) has
 
@@ -196,9 +207,11 @@ We want the bound to be at most a target \(\varepsilon\). Squaring and rearrangi
 
 The trouble is that \(m\) appears on both sides, once inside a log. We need a way to pull it out, and a small lemma does it.
 
+The log curve bends down, so it never rises above a straight line that touches it: at \(x = 20\), \(\log 20 \approx 3.00\), while the line touching the curve at \(7\) has already climbed to \(\log 7 + 20/7 - 1 \approx 3.80\). A straight line in \(m\) is easy to solve for, so we swap the log for one.
+
 **The tangent-line lemma.** For all \(x > 0\) and \(t > 0\), \(\log x \le \log t + \frac{x}{t} - 1\).
 
-The right side is the tangent line to the log curve at the point \(t\): a straight line with slope \(1/t\) that touches the curve at \(x = t\). In plain words: **the log curve never rises above any of its tangent lines.** At \(t = 7\) and \(x = 20\): \(\log 20 \approx 3.00\), while the tangent gives \(\log 7 + 20/7 - 1 \approx 3.80\).
+The right side is the tangent line to the log curve at the point \(t\): a straight line with slope \(1/t\) that touches the curve at \(x = t\). In plain words: **the log curve never rises above any of its tangent lines.**
 
 *Proof.* Let \(g(x) = \log t + x/t - 1 - \log x\). Its derivative \(1/t - 1/x\) is negative for \(x < t\) and positive for \(x > t\), so \(g\) is smallest at \(x = t\), where \(g(t) = \log t + 1 - 1 - \log t = 0\). So \(g(x) \ge 0\) everywhere. \(\blacksquare\)
 
@@ -248,7 +261,7 @@ It prints `True` (the log stays under its tangent at 10,000 test points) and `11
 
 ### What this ceiling does and does not prove
 
-Look at the shape: \((d \log(1/\varepsilon) + \log(1/\delta))/\varepsilon^2\), up to constants. The theorem of lesson 6 promises \(d + \log(1/\delta)\) in the numerator, with no \(\log(1/\varepsilon)\) next to the \(d\). Our proof is off by that log factor. Removing it needs a sharper analysis of Rademacher complexity called **chaining**, which measures the class at many scales at once instead of counting its labellings at one; that proof is beyond this course. So be honest with the auditor: the ceiling we have proved is the theorem’s shape up to a factor of \(\log(1/\varepsilon)\), with explicit constants, and its constants are large. Large, but proved.
+Look at the shape: \((d \log(1/\varepsilon) + \log(1/\delta))/\varepsilon^2\), up to constants. The theorem of lesson 6 promises \(d + \log(1/\delta)\) in the numerator, with no \(\log(1/\varepsilon)\) next to the \(d\). Our proof is off by that log factor. The log factor comes from Massart’s lemma, which measures the class at one scale. Removing it needs lesson 27’s chaining, which measures it at many scales at once, fed with a bound on the covering numbers of a class of VC dimension \(d\) that does not grow with \(m\); that covering bound is a separate, harder proof that this course does not give. So be honest with the auditor: the ceiling we have proved is the theorem’s shape up to a factor of \(\log(1/\varepsilon)\), with explicit constants, and its constants are large. Large, but proved.
 
 ## The floor, part one: one message, two worlds
 
@@ -596,7 +609,7 @@ print(round(floor_log(eps, delta)), round(floor_d(eps, d)),
       round((d + log(1 / delta)) / (1024 * eps**2)))
 ```
 
-It prints `0.1429 0.0884`, the \(1/7\) and the largest allowed \(\varepsilon\), then `322 78 40`: for a class with \(d = 100\) at \(\varepsilon = \delta = 0.05\), the confidence floor is 322 labels, the dimension floor 78, and the combined formula 40, a little weaker than either, as averaging promised. For the certificate’s \(\varepsilon = 0.1\), the dimension part does not apply (0.1 is above 0.088), but the confidence floor of 80.47 does.
+It prints `0.1429 0.0884`, the \(1/7\) and the largest allowed \(\varepsilon\), then `322 78 40`: for a class with \(d = 100\) at \(\varepsilon = \delta = 0.05\), the confidence floor is 322 labels, the dimension floor 78, and the combined formula 40, weaker than either, the price of one tidy formula. For the certificate’s \(\varepsilon = 0.1\), the dimension part does not apply (0.1 is above 0.088), but the confidence floor of 80.47 does.
 
 ## The ceiling with clean labels: \(\varepsilon\)-nets
 
@@ -694,20 +707,20 @@ The idea is lesson 6’s: put all \(2m\) points in one row, \(S\) first and \(T\
 
 The sum runs over the distinct patterns, \(|P|\) counts the positions in a pattern, and each term is 1 for a heavy pattern that the first half misses. In plain words: **the bad event needs at least one heavy pattern to dodge \(S\) completely, and we add up the chances pattern by pattern.**
 
-Now the swap. The entries of \(U\) are i.i.d., so permuting them gives a row with the same distribution, and the set of patterns and their sizes do not care about order. So the expectation is unchanged if “the first half” is replaced by any fixed set of \(m\) positions \(J\), and hence also by a uniformly random \(J\) among all \(\binom{2m}{m}\) of them. For a fixed row and a pattern with \(r \ge \alpha\) positions, the chance that a random \(J\) avoids all \(r\) of them is the chance of drawing \(m\) balls from a bag of \(2m\) without touching any of \(r\) red ones:
+Now the swap. The entries of \(U\) are i.i.d., so permuting them gives a row with the same distribution, and the set of patterns and their sizes do not care about order. So the expectation is unchanged if “the first half” is replaced by any fixed set of \(m\) positions \(J\), and hence also by a uniformly random \(J\) among all \(\binom{2m}{m}\) of them. For a fixed row and a pattern with \(n = |P| \ge \alpha\) positions, the chance that a random \(J\) avoids all \(n\) of them is the chance of drawing \(m\) balls from a bag of \(2m\) without touching any of \(n\) red ones:
 
-\[ \frac{\binom{2m - r}{m}}{\binom{2m}{m}} = \prod_{k=0}^{m-1} \frac{2m - r - k}{2m - k} \le \left(1 - \frac{r}{2m}\right)^m \le \left(1 - \frac{\varepsilon}{4}\right)^m \le e^{-\varepsilon m/4}. \]
+\[ \frac{\binom{2m - n}{m}}{\binom{2m}{m}} = \prod_{k=0}^{m-1} \frac{2m - n - k}{2m - k} \le \left(1 - \frac{n}{2m}\right)^m \le \left(1 - \frac{\varepsilon}{4}\right)^m \le e^{-\varepsilon m/4}. \]
 
-The product draws the balls one at a time: the \(k\)-th draw avoids the red balls with chance \(1 - r/(2m - k) \le 1 - r/(2m)\). Then \(r \ge \alpha = \varepsilon m/2\) gives \(r/(2m) \ge \varepsilon/4\), and \(1 - x \le e^{-x}\) finishes. In plain words: **a random half of the row dodges every one of \(\varepsilon m/2\) marked points with chance at most \(e^{-\varepsilon m/4}\).** Each of the at most \(\tau_{\mathcal R}(2m)\) patterns contributes at most this much, which proves the claim. \(\blacksquare\)
+The product draws the balls one at a time: the \(k\)-th draw avoids the red balls with chance \(1 - n/(2m - k) \le 1 - n/(2m)\). Then \(n \ge \alpha = \varepsilon m/2\) gives \(n/(2m) \ge \varepsilon/4\), and \(1 - x \le e^{-x}\) finishes. In plain words: **a random half of the row dodges every one of \(\varepsilon m/2\) marked points with chance at most \(e^{-\varepsilon m/4}\).** Each of the at most \(\tau_{\mathcal R}(2m)\) patterns contributes at most this much, which proves the claim. \(\blacksquare\)
 
 ```python
 from math import comb, exp
 
-def miss_all(m, r):
-    return comb(2 * m - r, m) / comb(2 * m, m)
+def miss_all(m, n):
+    return comb(2 * m - n, m) / comb(2 * m, m)
 m, eps = 100, 0.1
-r = round(eps * m / 2)
-print(r, f"{miss_all(m, r):.4f}", f"{(1 - r / (2*m))**m:.4f}",
+n = round(eps * m / 2)
+print(n, f"{miss_all(m, n):.4f}", f"{(1 - n / (2*m))**m:.4f}",
       f"{exp(-eps * m / 4):.4f}")
 ```
 
@@ -848,7 +861,7 @@ In the lab below, the certificate has both lines on sliders, and the company wil
 
 **“Clean labels just make the same bound smaller.”** They change the rate. With noise, the learner must estimate every hypothesis’s risk to within \(\varepsilon\), which costs \(1/\varepsilon^2\). Without noise, it only needs every heavy mistake region to be hit once, which costs \(1/\varepsilon\). At \(\varepsilon = 0.1\) that is the difference between 2,240 and 547,743.
 
-**“The proof shows the theorem exactly as stated.”** The noisy ceiling we proved has an extra \(\log(1/\varepsilon)\) next to \(d\). The theorem’s cleaner shape needs chaining, which we did not prove.
+**“The proof shows the theorem exactly as stated.”** The noisy ceiling we proved has an extra \(\log(1/\varepsilon)\) next to \(d\). The theorem’s cleaner shape needs lesson 27’s chaining plus a covering bound for VC classes, which we did not prove.
 
 ## Recap and the next bug
 
