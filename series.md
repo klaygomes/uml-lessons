@@ -33,7 +33,8 @@ Every lesson of the course, delivered or not. `_kit/index.py` reads this table f
 | 8 | The runtime of learning | When is learning possible in principle but too slow to compute? |
 | 9a | Halfspaces and the Perceptron | How can a filter that weighs every word be learned when its class is infinite, and how many updates can the Perceptron take? |
 | 9b | Linear and logistic regression | How do you find, and prove you found, the best line for a junk score, and how does the same line give a probability of junk? |
-| 10 | Boosting | Can many rules that are barely better than a guess add up to a strong one? |
+| 10a | AdaBoost | Can a pile of rules that are each barely better than a coin be turned into one that is right on nearly every labelled message? |
+| 10b | Boosting and fresh mail | A boosted vote is nearly perfect on its labels, so what can you promise about fresh mail, and how many rounds should you run? |
 | 11 | Model selection | How do you pick among models without fooling yourself with the same data? |
 | 12a | Convexity | Which losses can an optimiser minimise reliably, and how does a walk prove it has reached the bottom? |
 | 12b | Convex learnability and surrogates | A convex loss can be minimised, but can it be learned from a finite label budget, and how does it become a promise about mistakes? |

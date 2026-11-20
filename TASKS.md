@@ -146,7 +146,7 @@ Folder: `03-a-formal-learning-model/`
 Folder: `04-uniform-convergence/`
 
 - [x] 1 prose and sheet (7,479 words, 9 snippets run by the lead, the 9th is the build-it stub, no book references, 2026-11-20)
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (CPU rule)
+- [x] 2 gates: clean-context review; book check against the PDF (no book errors; five writer choices confirmed valid; one arithmetic fix 0.513; a slot sharing a line with text fixed by the lead) and sheet resync incl. LaTeX fixes, 2026-11-20. Read-aloud and fresh reader not run (optional, CPU)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -261,12 +261,27 @@ Folder: `09b-linear-regression/`
 - [ ] 9 concept check: mastery confirmed
 - [ ] 10 end-of-chapter problems done
 
-### 10. Ch. 10 boosting (weak learnability, decision stumps, AdaBoost, Viola-Jones)
+### 10a. AdaBoost
 
-Folder: `10-boosting/`
+Folder: `10a-adaboost/`
 
-- [x] 1 prose and sheet (about 10,900 words with code, 11 snippets plus 2 build-it stubs run by the lead, no book references, 2026-11-20; the writer reports three book slips it repaired: Example 10.1's outer rays, w_1 = 0.5 only for even T, and the VC dimension of T-stump combinations; verify them)
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (CPU rule)
+- [x] 1 prose and sheet (split from lesson 10 on 2026-11-20; original in `_archive/10-boosting`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
+- [ ] 3 review stop: user approved the prose
+- [ ] 4 figures
+- [ ] 5 page
+- [ ] 6 learner judge: ready
+- [ ] 7 verification
+- [ ] 8 delivery: series.md, index.html
+- [ ] 9 concept check: mastery confirmed
+- [ ] 10 end-of-chapter problems done
+
+### 10b. Boosting and fresh mail
+
+Folder: `10b-boosting-generalization/`
+
+- [x] 1 prose and sheet (split from lesson 10 on 2026-11-20; original in `_archive/10-boosting`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page

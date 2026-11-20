@@ -608,7 +608,9 @@ print(round((128 * d + 2 * log(2 / delta)) / eps**2))
 
 It prints `9610` and `13538`: about ten thousand examples for one threshold to within 0.1 of the best, with 95% confidence, and the cleaner formula rounds that up to about thirteen and a half thousand. It is a rough estimate, and it has an embarrassing feature. The answer depends on how your machine stores numbers, which has nothing to do with learning. A 32-bit machine would “need” only about half as many examples for the same class.
 
-[[diagram:discretization]] Lesson 6 replaces this trick with a measure of a class’s size that does not care about bits.
+[[diagram:discretization]]
+
+Lesson 6 replaces this trick with a measure of a class’s size that does not care about bits.
 
 ## The dashboard as code
 
