@@ -2,11 +2,11 @@
 
 ## The committee nobody can certify
 
-The filter has changed a great deal since the first lesson, and this week it changed again. Every message now arrives with a **junk score**, a number between 0 and 1 computed upstream by the scorer you built over the last few lessons: the higher the score, the more the message looks like junk. The last step of the filter is the simplest one in the whole system. It picks a number \(t\), the **threshold**, and says junk exactly when the score is at least \(t\). The team writes thresholds with nine decimal places, from 0.000000000 to 0.999999999, so there are a billion possible thresholds to choose from.
+The filter has changed a great deal since the first lesson, and this week it changed again. Every message now arrives with a **junk score**, a number between 0 and 1 computed upstream by the rest of the filter: the higher the score, the more the message looks like junk. The last step of the filter is the simplest one in the whole system. It picks a number \(t\), the **threshold**, and says junk exactly when the score is at least \(t\). The team writes thresholds with nine decimal places, from 0.000000000 to 0.999999999, so there are a billion possible thresholds to choose from.
 
 [[diagram:dial]]
 
-Two things about this week are new, and both of them come from good instincts.
+Two things about this week are new, the two your team asked for at the end of the last lesson, and both of them come from good instincts.
 
 The first is trust. Long before this week’s labels arrived, the team wrote down which thresholds it believed in. Last year’s threshold was 0.60, tuned on mail from the senders everyone already knew to be bad, and in all the years of records the right threshold has never drifted more than 0.05 in a year. So the team put 99% of its trust on the band from 0.55 to 0.65, spread evenly, and the last 1% evenly over everything else. They also like short thresholds, the round ones you can write on a whiteboard, such as 0.60 rather than 0.613527118. Trust of this kind is exactly the inductive bias of lesson 1, written down as numbers before any data arrives.
 
@@ -16,8 +16,8 @@ Then the reviewer from lesson 7 arrives with the same deal as before. The filter
 
 So you try every certificate the course has built. On this week’s labels the committee errs on 2.94% of the examples, and the single best threshold on 1.69%.
 
-- Lesson 4’s certificate for a finite class adds the same margin to every hypothesis in it, \(\sqrt{\log(2|\mathcal H|/\delta)/(2m)}\). Here \(|\mathcal H|\) is the number of hypotheses in the class, a billion; \(m = 650\) is the number of labelled examples; \(\log\) is the natural logarithm. Because the margin is the same for every threshold, it also covers any average of thresholds, the committee included. But it charges the full size of the class and ignores every bit of the team’s trust.
-- Lesson 7’s certificate uses trust. A hypothesis \(h\) with trust \(w(h)\) gets the margin \(\sqrt{(\log(1/w(h)) + \log(2/\delta))/(2m)}\), which is small when the trust is large. But it certifies one hypothesis at a time, and here the trust is spread so thinly that each single threshold in the band gets only \(0.99/10^8 + 0.01/10^9 \approx 9.9 \times 10^{-9}\), less than one part in a hundred million.
+- Lesson 4’s certificate for a finite class adds the same margin to every hypothesis in it, \(\sqrt{\log(2|\mathcal H|/\delta)/(2m)}\): its sample size \(m \ge \log(2|\mathcal H|/\delta)/(2\varepsilon^2)\), solved for the accuracy \(\varepsilon\). Here \(|\mathcal H|\) is the number of hypotheses in the class, a billion; \(m = 650\) is the number of labelled examples; \(\log\) is the natural logarithm. Because the margin is the same for every threshold, it also covers any average of thresholds, the committee included. But it charges the full size of the class and ignores every bit of the team’s trust.
+- Lesson 7’s certificate uses trust. A hypothesis \(h\) with trust \(w(h)\) (lesson 7 called it a weight) gets the margin \(\sqrt{(\log(1/w(h)) + \log(2/\delta))/(2m)}\), which is small when the trust is large. But it certifies one hypothesis at a time, and here the trust is spread so thinly that each single threshold in the band gets only \(0.99/10^8 + 0.01/10^9 \approx 9.9 \times 10^{-9}\), less than one part in a hundred million.
 
 ```python
 from math import log, sqrt
@@ -237,7 +237,7 @@ Read it from the inside out.
 - \(\ell: \mathcal H \times Z \to [0, 1]\) says the loss takes a hypothesis and an example (from the set \(Z\) of all examples) and returns a number between 0 and 1; the 0-1 loss qualifies.
 - \(S \sim \mathcal D^m\) reads “\(S\) is drawn from \(\mathcal D^m\)”: \(m\) examples, each drawn from \(\mathcal D\), independently of each other (i.i.d., lesson 1). The probability \(1 - \delta\) is over that draw.
 - \(\delta \in (0, 1)\) says \(\delta\) is strictly between 0 and 1: the chance of failure you accept, 0.05 for the reviewer.
-- \(D(Q\|P)\) is the price of the posterior; \(\log(m/\delta)\) is a price for the confidence, a little larger than lesson 4’s \(\log(2/\delta)\) because it grows with \(m\).
+- \(D(Q\|P)\) is the price of the posterior; \(\log(m/\delta)\) is a price for the confidence, larger than the \(\log(2/\delta)\) that lessons 4 and 7 paid for one fixed hypothesis (9.47 against 3.69 here), because it grows with \(m\).
 - Dividing by \(2(m - 1)\) and taking the square root turns the total price into a margin that shrinks like one over the square root of \(m\).
 - “Every posterior \(Q\)” is the key phrase. The bad event, the unlucky training sequences, is fixed before any posterior is chosen, and outside it the inequality holds for all of them simultaneously. So you may look at \(S\), pick any \(Q\), and the certificate still holds.
 
@@ -434,7 +434,7 @@ The equality moves the average over \(S\) inside the sum. This is the one place 
 
 So the **good event** \(G = \{S : \Phi(S) < m/\delta\}\), the set of training sequences on which \(\Phi\) stays below \(m/\delta\), has probability at least \(1 - \delta\). With \(m = 650\) and \(\delta = 0.05\), the level is 13,000. Notice that no posterior has appeared yet. The good event is fixed before anyone chooses \(Q\).
 
-**Step 5: the change of measure.** Now the transfer from the prior to every posterior. It is a fact about distributions, with no randomness in it at all.
+**Step 5: the change of measure.** Now the transfer from the prior to every posterior. It is a fact about distributions, with no randomness in it at all. The idea: a posterior can raise the average of some score \(g\) only by moving belief towards hypotheses where \(g\) is large, and moving belief costs relative entropy, so gain minus cost is capped by a number that depends on the prior alone.
 
 **Lemma (change of measure).** Let \(P\) and \(Q\) be distributions over a countable \(\mathcal H\), and \(g: \mathcal H \to \mathbb R\) a bounded function. Then
 
@@ -527,7 +527,7 @@ The theorem quietly contains the certificates of earlier lessons. Pick the prior
 
 \[ L_{\mathcal D}(h) \le L_S(h) + \sqrt{\frac{|h|\log 2 + \log(m/\delta)}{2(m-1)}}. \]
 
-In plain words: **a hypothesis that takes \(|h|\) bits to write down pays \(|h|\log 2\) for being chosen, which is Occam’s razor from lesson 7.** Lesson 7’s 7-bit decision list, with empirical risk 0.17 at 100 labels, got 0.401 from the MDL bound; here it gets 0.421.
+In plain words: **a hypothesis that takes \(|h|\) bits to write down pays \(|h|\log 2\) for being chosen, which is Occam’s razor from lesson 7.** (Lesson 7’s MDL bound rounded \(|h|\log 2\) up to \(|h|\), so its price for the 7-bit list was 7 rather than 4.85.) Lesson 7’s 7-bit decision list, with empirical risk 0.17 at 100 labels, got 0.401 from the MDL bound; here it gets 0.421.
 
 ```python
 from math import log, sqrt
@@ -717,11 +717,11 @@ Remember what the team knows: last year’s threshold, tuned on mail from the kn
 
 This is the last lesson, so let’s look back down the road the mail room travelled.
 
-It started with a filter that memorized every label and guessed like a coin on everything else. Lesson 1 found the reason: a learner that is willing to believe anything learns nothing, and the cure was an **inductive bias**, a hypothesis class chosen before any data. Lesson 2 put a price on that choice, the logarithm of the class size, paid in labels. Lessons 3 to 6 made the promise exact and let the class grow without bound, as long as its VC dimension stayed finite, and lesson 5 proved that no learner escapes the need for a bias. Lesson 7 let the bias become graded, trusting some hypotheses more than others, and paid for each by its weight or its description length. Lesson 8 asked what learning costs in computation as well as in labels. Lessons 9 to 20 built the machinery: halfspaces, boosting, validation, convexity and regularization, stochastic gradient descent, margins and kernels, many classes and rankings, decision trees, nearest neighbours and neural networks, each with its own bias and its own price. Lesson 21 faced spammers who adapt, with a filter that keeps learning, message by message. Lessons 22 to 25 learned from mail nobody labelled, compressed it, modelled how it is produced, and chose and built its features. Lessons 26 to 30 sharpened the theory: measuring a class on the data at hand, covering it with a few representatives, proving the fundamental theorem in full, learning many classes at once, and rebuilding a rule from a handful of its own examples.
+It started with a filter that memorized every label and guessed like a coin on everything else. Lesson 1 found the reason: a learner that is willing to believe anything learns nothing, and the cure was an **inductive bias**, a hypothesis class chosen before any data. Lesson 2 put a price on that choice, the logarithm of the class size, paid in labels. Lessons 3 to 6 made the promise exact and let the class grow without bound, as long as its VC dimension stayed finite, and lesson 5 proved that no learner escapes the need for a bias. Lesson 7 let the bias become graded, trusting some hypotheses more than others, and paid for each by its weight or its description length. Lesson 8 asked what learning costs in computation as well as in labels. Lessons 9 to 20 built the machinery: halfspaces, boosting, validation, convexity and regularization, stochastic gradient descent, margins and kernels, many classes and rankings, decision trees, nearest neighbours and neural networks, each with its own bias and its own price. Lesson 21 faced spammers who adapt, with a filter that keeps learning, message by message. Lessons 22 to 25 learned from mail nobody labelled, compressed it, modelled how it is produced, and chose and built its features. Lessons 26 to 30 sharpened the theory. Lesson 26 measured a class on the data at hand, by how well its losses fit random signs: the Rademacher complexity. Lesson 27 replaced a rich class by a few representatives, covers chained across many scales. Lesson 28 used those tools to prove the fundamental theorem in full, both directions, with their rates. Lesson 29 sorted mail into hundreds of folders, where the Natarajan dimension takes the place of the VC dimension. And lesson 30 showed that a rule rebuilt from a handful of its own examples generalizes, paying only for the size of that handful.
 
 And today the filter is **certified**: the reviewer signs a guarantee for the committee that ships. It is **explainable**: each answer is made by one threshold you can read. And it is **adaptive**: next week the labels change, the posterior moves, and the certificate is recomputed, all under a prior written down in advance.
 
-Look at what every one of those lessons had in common. Each began by committing to something before the data arrived: a class, a weight, a description language, a regularizer, a margin, a kernel, a prior. And each paid for that commitment in examples: the log of the class size, the VC dimension, the description length, the norm of the weights, and today the relative entropy. That is the one idea the whole course has been about. **Learning is a bias chosen before the data, paid for in examples.** The better your bias fits the world, the less it costs; and no learner, however clever, can do without one.
+Look at what every one of those lessons had in common. Each began by committing to something before the data arrived: a class, a weight, a description language, a regularizer, a margin, a kernel, a prior. And each paid for that commitment in examples: the log of the class size, the VC dimension, the description length, the norm of the weights, the Natarajan dimension, the size of a compression scheme, and today the relative entropy. That is the one idea the whole course has been about. **Learning is a bias chosen before the data, paid for in examples.** The better your bias fits the world, the less it costs; and no learner, however clever, can do without one.
 
 [[diagram:journey]]
 
