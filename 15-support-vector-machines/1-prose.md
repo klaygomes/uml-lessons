@@ -181,7 +181,7 @@ Hard-SVM(S):
 
 The program reads: among all pairs \((\mathbf w, b)\) such that every signed score is at least 1, find one with the smallest squared length \(\|\mathbf w\|^2\) (squaring removes the square root and changes nothing about which pair is shortest); then rescale it to unit length, the hats on \(\hat{\mathbf w}, \hat b\) marking the returned pair. For the pair \(\mathbf w_0 = (\tfrac23, -\tfrac13)\), \(b_0 = -1\) that we will meet shortly, \(\|\mathbf w_0\|^2 = \tfrac49 + \tfrac19 = \tfrac59\).
 
-Why should the shortest \(\mathbf w\) give the widest margin? Think of the constraint as demanding a score of at least 1 from every message. The score of \(\mathbf x\) is its distance to the hyperplane times \(\|\mathbf w\|\), so a short \(\mathbf w\) can only reach a score of 1 on every message if every message is far away. Minimizing the length of \(\mathbf w\) pushes the messages as far from the hyperplane as they can be.
+Why should the shortest \(\mathbf w\) give the widest margin? A message’s score is its distance to the hyperplane times \(\|\mathbf w\|\), so a short \(\mathbf w\) can only give every message a score of 1 if every message is far away.
 
 **Lemma (hard-SVM finds the widest separator).** Suppose \(S\) is separable and contains both labels, and let \((\mathbf w_0, b_0)\) solve the quadratic program. Then for every \((\mathbf w, b)\) with \(\|\mathbf w\| = 1\) and \(\gamma = \min_i y_i (\langle \mathbf w, \mathbf x_i \rangle + b) > 0\),
 
@@ -510,8 +510,6 @@ for m in (10_000, 50_000):
 
 It prints `10000 0.0354 0.3228 0.3228 0.3228` and `50000 0.0158 0.1665 0.1665 0.1665`. The formula’s \(\lambda\), a brute-force search over \(\lambda\), and the closed form all agree: with 50,000 labels the expected 0-1 true risk is certified below 0.1665.
 
-A word on the radius. The requirement that every message lies in a ball of radius \(\rho\) is not a technicality. We saw that without a constraint on scale, any margin can be made as large as you like by multiplying the messages by a big number. The radius is what gives the norm of \(\mathbf w\), and the margin, a meaning.
-
 ## Margins against dimension
 
 How much does dropping \(d\) actually buy? Compare the two kinds of bound. The VC route of lesson 6, for homogeneous halfspaces with VC dimension \(d\), makes the estimation error of an ERM hypothesis shrink like \(\sqrt{d/m}\). The margin route makes it shrink like \(\sqrt{\rho^2 B^2/m}\). Which is smaller depends on the problem, so let’s look at a realistic one.
@@ -662,7 +660,7 @@ The dots stand for the same expression on both sides. On the left the minimizer 
 
 In plain words: **for fixed weights \(\alpha_i\), the best \(\mathbf w\) is the sum of the messages, each scaled by its weight and its label.** It is the sum the support-vector snippet computed. The optimal weight vector is a combination of the training messages, a fact the next lesson builds on.
 
-*Step 5: substitute.* Put \(\mathbf w = \sum_j \alpha_j y_j \mathbf x_j\) back in. The sum \(\sum_i \alpha_i y_i \langle \mathbf w, \mathbf x_i \rangle = \langle \mathbf w, \sum_i \alpha_i y_i \mathbf x_i \rangle = \|\mathbf w\|^2\), so the objective becomes \(\tfrac12 \|\mathbf w\|^2 + \sum_i \alpha_i - \|\mathbf w\|^2 = \sum_i \alpha_i - \tfrac12 \|\mathbf w\|^2\). Expanding \(\|\mathbf w\|^2 = \langle \sum_i \alpha_i y_i \mathbf x_i, \sum_j \alpha_j y_j \mathbf x_j \rangle\) by bilinearity gives the dual problem:
+*Step 5: substitute.* Put \(\mathbf w = \sum_j \alpha_j y_j \mathbf x_j\) back in. The sum \(\sum_i \alpha_i y_i \langle \mathbf w, \mathbf x_i \rangle = \langle \mathbf w, \sum_i \alpha_i y_i \mathbf x_i \rangle = \|\mathbf w\|^2\), so the objective becomes \(\tfrac12 \|\mathbf w\|^2 + \sum_i \alpha_i - \|\mathbf w\|^2 = \sum_i \alpha_i - \tfrac12 \|\mathbf w\|^2\). Expanding \(\|\mathbf w\|^2 = \langle \sum_i \alpha_i y_i \mathbf x_i, \sum_j \alpha_j y_j \mathbf x_j \rangle\) one pair of terms at a time (the inner product of two sums is the sum of the inner products of their terms, as \((a + c)(a' + c')\) multiplies out) gives the dual problem:
 
 \[ \max_{\boldsymbol\alpha \in \mathbb R^m : \boldsymbol\alpha \ge \mathbf 0} \left( \sum_{i=1}^m \alpha_i - \frac12 \sum_{i=1}^m \sum_{j=1}^m \alpha_i \alpha_j y_i y_j \langle \mathbf x_j, \mathbf x_i \rangle \right). \]
 
@@ -672,7 +670,7 @@ Look at what it needs: only the inner products \(\langle \mathbf x_j, \mathbf x_
 
 [[diagram:duality]]
 
-The dual is easy to attack one coordinate at a time. Fix every \(\alpha_j\) except \(\alpha_i\); the dual objective is then a downward parabola in \(\alpha_i\), maximized at \(\alpha_i + (1 - y_i \langle \mathbf w, \mathbf x_i \rangle)/\|\mathbf x_i\|^2\) with \(\mathbf w = \sum_j \alpha_j y_j \mathbf x_j\), and clipping at 0 respects \(\alpha_i \ge 0\). Sweeping over the coordinates again and again climbs to the maximum. (This method, dual coordinate ascent, is a standard solver; it is the one that produced the numbers we have been quoting.) At the end, compare the primal value \(\tfrac12 \|\mathbf w_0\|^2\) with the dual value:
+The dual is easy to attack one coordinate at a time. Fix every \(\alpha_j\) except \(\alpha_i\), and let \(\mathbf w = \sum_j \alpha_j y_j \mathbf x_j\). Raising \(\alpha_i\) by \(\delta\) moves \(\mathbf w\) by \(\delta y_i \mathbf x_i\), so the dual value \(\sum_j \alpha_j - \tfrac12\|\mathbf w\|^2\) changes by \(\delta (1 - y_i \langle \mathbf w, \mathbf x_i \rangle) - \tfrac12 \delta^2 \|\mathbf x_i\|^2\) (expand the square, using \(y_i^2 = 1\)). That is a downward parabola in \(\delta\), highest at \(\delta = (1 - y_i \langle \mathbf w, \mathbf x_i \rangle)/\|\mathbf x_i\|^2\), and clipping the new \(\alpha_i\) at 0 respects \(\alpha_i \ge 0\): the solver’s line `new = max(0.0, alpha[i] + gap / dot(X[i], X[i]))`. Sweeping over the coordinates again and again climbs to the maximum. (This method, dual coordinate ascent, is a standard solver; it is the one that produced the numbers we have been quoting.) At the end, compare the primal value \(\tfrac12 \|\mathbf w_0\|^2\) with the dual value:
 
 ```python
 S = [((5, 2), 1), ((3, 0), 1), ((4, 1), 1), ((4, 0), 1),
@@ -735,7 +733,7 @@ print([round(c, 6) for c in closed])
 
 Both lines print `[-0.685902, -0.263015, -0.231963]`.
 
-*The subgradient of the hinge loss.* Lesson 14 computed it: at \(\mathbf w\), for the example \((\mathbf x, y)\), take \(\mathbf v = \mathbf 0\) if \(y \langle \mathbf w, \mathbf x \rangle \ge 1\) (the flat part) and \(\mathbf v = -y\mathbf x\) otherwise (the sloped part). Write \(\boldsymbol\theta^{(t)} = -\sum_{j<t} \mathbf v_j\) for the running sum. Then \(\boldsymbol\theta\) changes only on examples with signed score below 1, by adding \(y_i \mathbf x_i\), and the weights are \(\boldsymbol\theta\) scaled down. Matching the indices exactly, the closed form gives \(\mathbf w^{(t)} = \boldsymbol\theta^{(t)}/(\lambda (t-1))\) for \(t \ge 2\). The standard form of the algorithm, below, divides by \(\lambda t\) instead: it is defined already at \(t = 1\), and the two differ by the factor \((t-1)/t\), which tends to 1. That is the whole algorithm.
+*The subgradient of the hinge loss.* Lesson 14 computed it: at \(\mathbf w\), for the example \((\mathbf x, y)\), take \(\mathbf v = \mathbf 0\) if \(y \langle \mathbf w, \mathbf x \rangle \ge 1\) (the flat part) and \(\mathbf v = -y\mathbf x\) otherwise (the sloped part). Write \(\boldsymbol\theta^{(t)} = -\sum_{j<t} \mathbf v_j\) for the running sum. Then \(\boldsymbol\theta\) changes only on examples with signed score below 1, by adding \(y_i \mathbf x_i\), and the closed form gives \(\mathbf w^{(t)} = \boldsymbol\theta^{(t)}/(\lambda (t-1))\) for \(t \ge 2\). The standard form of the algorithm, below, divides by \(\lambda t\) instead: it is defined already at \(t = 1\), and the two differ by the factor \((t-1)/t\), which tends to 1. That is the whole algorithm.
 
 ```
 SGD-SoftSVM(S, λ, T):
@@ -870,7 +868,7 @@ The margin route is open, because the soft-SVM theorem has no \(d\) in it. In th
 
 \[ L_{\mathcal D}^{\text{hinge}}(\mathbf u) + \lambda \|\mathbf u\|^2 + \frac{2\rho^2}{\lambda m}. \]
 
-It is the right side of the RLM oracle inequality, term for term: the comparator’s hinge risk, its penalty, and the overfitting term, which `soft_svm_bound` computed earlier. Only a certificate at most 0.18, within the budget, ships the filter. Then the lab trains soft-SVM by SGD with your \(\lambda\) on your \(m\) labels and shows its error on fresh mail, but the training run does not count: what ships is the certificate, because tomorrow’s training sequence will be different. Before you touch the sliders, work out which comparator can possibly make it, and roughly where \(\lambda\) must be.
+It is the right side of the soft-SVM theorem, exactly what `soft_svm_bound` computed. Only a certificate at most 0.18, within the budget, ships the filter. Then the lab trains soft-SVM by SGD with your \(\lambda\) on your \(m\) labels and shows its error on fresh mail, but the training run does not count: what ships is the certificate, because tomorrow’s training sequence will be different. Before you touch the sliders, work out which comparator can possibly make it, and roughly where \(\lambda\) must be.
 
 [[lab-act2]]
 

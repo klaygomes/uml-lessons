@@ -155,7 +155,7 @@ To score a feature, fit the best line through it. Write the feature’s eight va
 - \(\frac1m\) turns the total into an average: this is the empirical risk \(L_S\) of the line.
 - \(\min_{a,b \in \mathbb R}\) asks for the smallest such average over every slope and intercept.
 
-In plain words: **the training error of the best line that uses only this feature.** For bangs, the flat line \(a = 0, b = 0\) predicts 0 everywhere, misses every label by exactly 1, and scores 1.0; the best line, which the snippet below finds with Python’s `statistics.linear_regression` (lesson 9’s least squares for one feature), scores about 0.623. With twenty thousand features we want a formula for that number. Two steps get us there.
+In plain words: **the training error of the best line that uses only this feature.** For bangs, the flat line \(a = 0, b = 0\) predicts 0 everywhere, misses every label by exactly 1, and scores 1.0; the best line, which Python’s `statistics.linear_regression` finds exactly (lesson 9’s least squares for one feature), scores about 0.623. With twenty thousand features we want a formula for that number. Two steps get us there.
 
 **Step 1: centering changes nothing.** Write \(\bar v = \frac1m \sum_{i=1}^m v_i\) for the average of the feature (for bangs, \(15/8 = 1.875\)) and \(\bar y\) for the average label (here 0, four junk and four keep). Subtract the averages from both vectors before fitting, and the best achievable loss is the same:
 
@@ -164,25 +164,7 @@ In plain words: **the training error of the best line that uses only this featur
 - \(\mathbf v - \bar v\) is the **centered** feature: each value minus the average, so its entries add up to 0. Same for \(\mathbf y - \bar y\).
 - The left side is the best line on the raw data; the right side is the best line on the centered data.
 
-In plain words: **shifting the feature and the labels to average zero does not change how well a line can fit them.** That is believable: a line can absorb any shift through its intercept. Proving it carefully is the first problem at the end of this lesson. Here it is checked on bangs, by fitting both sides exactly:
-
-```python
-from statistics import fmean, linear_regression
-
-y = [1, 1, 1, 1, -1, -1, -1, -1]
-v = [5, 3, 0, 4, 1, 0, 0, 2]
-vc = [vi - fmean(v) for vi in v]
-yc = [yi - fmean(y) for yi in y]
-
-def best_loss(v, y):
-    a, b = linear_regression(v, y)
-    return fmean((a * p + b - q) ** 2 for p, q in zip(v, y))
-
-print(round(best_loss(v, y), 4), round(best_loss(vc, yc), 4))
-print(linear_regression(vc, yc))
-```
-
-It prints `0.6233 0.6233`, and the best line on the centered data has intercept exactly 0 and slope about 0.335. Both facts are about to be proved.
+In plain words: **shifting the feature and the labels to average zero does not change how well a line can fit them.** That is believable: a line can absorb any shift through its intercept. Proving it carefully is the first problem at the end of this lesson; the snippet after step 2 checks it on bangs.
 
 **Step 2: solve the centered problem.** On centered data, write \(\mathbf v' = \mathbf v - \bar v\) and \(\mathbf y' = \mathbf y - \bar y\); both have entries summing to zero. The objective is \(g(a, b) = \frac1m \sum_i (a v'_i + b - y'_i)^2\). It is a convex quadratic in \((a, b)\) (lesson 12), so its minimum is where both partial derivatives vanish.
 
@@ -199,22 +181,25 @@ With \(b = 0\), the objective is \(\frac1m \|a\mathbf v' - \mathbf y'\|^2 = \fra
 In plain words: **the best line’s error is the labels’ total variation, minus the part the feature explains.** For bangs: the labels vary by \(\|\mathbf y - \bar y\|^2 = 8\), the inner product is 9, the feature’s centered squared length is 26.875, so the loss is \((8 - 81/26.875)/8 \approx 0.6233\), the exact fit’s answer, and the slope is \(9/26.875 \approx 0.335\).
 
 ```python
-from statistics import fmean
+from statistics import fmean, linear_regression
 
 y = [1, 1, 1, 1, -1, -1, -1, -1]
 v = [5, 3, 0, 4, 1, 0, 0, 2]
-m = len(y)
-vc = [vi - fmean(v) for vi in v]
-yc = [yi - fmean(y) for yi in y]
+vc = [p - fmean(v) for p in v]
+yc = [q - fmean(y) for q in y]
+
+def best_loss(v, y):
+    a, b = linear_regression(v, y)
+    return fmean((a * p + b - q) ** 2 for p, q in zip(v, y))
+
 inner = sum(p * q for p, q in zip(vc, yc))
-norm2_v = sum(p * p for p in vc)
-norm2_y = sum(q * q for q in yc)
-a = inner / norm2_v
-print(round(inner, 4), round(norm2_v, 4), norm2_y, round(a, 4))
-print(round((norm2_y - inner ** 2 / norm2_v) / m, 4))
+norm2_v, norm2_y = sum(p * p for p in vc), sum(q * q for q in yc)
+print(round(best_loss(v, y), 4), round(best_loss(vc, yc), 4))
+print(linear_regression(vc, yc).intercept, inner, norm2_v, norm2_y)
+print(round((norm2_y - inner ** 2 / norm2_v) / len(y), 4))
 ```
 
-It prints `9.0 26.875 8.0 0.3349` and `0.6233`, line for line the formula.
+It prints `0.6233 0.6233` (the exact least-squares fit on raw and on centered data: step 1), then `0.0 9.0 26.875 8.0` (the centered fit’s intercept is 0, and the three pieces of the formula), then `0.6233`, line for line the formula.
 
 Now look at which part depends on the feature. The first term, \(\|\mathbf y - \bar y\|^2\), is the same for every feature. So a feature is better exactly when \(\langle \mathbf v - \bar v, \mathbf y - \bar y \rangle^2/\|\mathbf v - \bar v\|^2\) is larger. Divide that by the constant \(\|\mathbf y - \bar y\|^2\) and take a square root, and you get a number with a famous name.
 
@@ -951,15 +936,15 @@ Before you start, think about three things. Which of the transformations in the 
 
 ## What people get wrong
 
-**“A feature with zero correlation is useless.”** Zero correlation says only that the best line in that feature *alone* is flat. In the cancelling world, link has correlation exactly 0 and is indispensable: together with old it predicts every label. Filter methods cannot see features whose value lies in combination; greedy selection, which scores a candidate next to the features already chosen, can.
+**“A feature with zero correlation is useless.”** Zero correlation says only that the best line in that feature *alone* is flat. In the cancelling world, link has correlation exactly 0, yet together with old it predicts every label. Greedy selection, which scores a candidate next to the features already chosen, sees this; filter methods cannot.
 
-**“The \(\ell_2\) penalty also selects features, just more gently.”** It shrinks every weight by a factor but never to zero. With a correlation of 0.1 and \(\lambda = 0.15\), the \(\ell_2\) weight is 0.077 and the \(\ell_1\) weight is exactly 0. Only the \(\ell_1\) price has the constant pull towards zero that stops weak features dead.
+**“The \(\ell_2\) penalty also selects features, just more gently.”** It shrinks every weight by a factor, never to zero: with a correlation of 0.1 and \(\lambda = 0.15\), the \(\ell_2\) weight is 0.077 and the \(\ell_1\) weight is exactly 0.
 
 **“Normalization is cosmetic: the information is the same.”** For a learner with a fixed preference, such as ridge regression’s preference for short weight vectors or a filter class with fixed weights and thresholds, the units decide what the learner can afford. Rescaling one feature took ridge’s true risk from 0.1 to about \(10^{-5}\), and clipping took a linear predictor’s risk from 0.96 to 0.
 
 **“Unit range is the safe default.”** One outlier sets the range, and every ordinary value is squashed next to zero: five lengths from 120 to 5,100 bytes all became 0.0 or 0.01. If the feature has heavy tails, clip it or take its logarithm first.
 
-**“My filter has 99% training accuracy with all 20,000 words, so it is good.”** With all the features in play, the gap in the finite-class bound is 3.7, so the training accuracy certifies nothing. A filter with four well-chosen features and a worse training error can carry a real guarantee.
+**“My filter has 99% training accuracy with all 20,000 words, so it is good.”** With all the features in play, the gap in the finite-class bound is 3.7, so the training accuracy certifies nothing; four well-chosen features with a worse training error can carry a real guarantee.
 
 ## Recap and the next bug
 
