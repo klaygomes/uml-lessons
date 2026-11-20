@@ -60,7 +60,9 @@ print(max(nearest) <= r)
 
 It prints `[0.11, 0.11, 0.16, 0.16, 0.22, 0.22]` and `True`: the table’s last column, and the verdict that every distance is at most \(r = 0.5\).
 
-Could two representatives do the job at distance \(0.5\)? No, and the reason is worth seeing. The three clumps are far apart: any vector from one clump is more than \(1\) away from any vector of another (the closest pair across clumps, \((0.1, -0.2)\) and \((-0.8, -0.6)\), is about \(0.98\) apart... let’s be careful and check: the gap is \(\sqrt{0.81 + 0.16} \approx 0.985\)). Hmm, that is just under 1, so let’s argue with the true numbers. If one representative \(b\) were within \(0.5\) of a vector \(u\) in one clump and of a vector \(v\) in another, then by the triangle inequality, the rule that a detour is never shorter than the direct road, \(\|u - v\| \le \|u - b\| + \|b - v\| \le 1\). So two vectors less than \(1\) apart could share a representative, and we need to look closer. The top-right clump is at distance at least \(\|(0.7, 0.9) - (-0.2, 0.1)\| \approx 1.20\) from the middle clump and further still from the bottom left, so its representative serves it alone. The middle and bottom-left clumps would have to share the second one, which means one point within \(0.5\) of all four vectors \((-0.8, -0.6)\), \((-0.9, -0.9)\), \((0.1, -0.2)\) and \((-0.2, 0.1)\); but \((-0.9, -0.9)\) and \((-0.2, 0.1)\) are \(\sqrt{0.49 + 1} \approx 1.22\) apart, more than \(2 \times 0.5\). So two representatives cannot do it, and three is the least that works at distance \(0.5\).
+Could two representatives do the job at distance \(0.5\)? No, and the reason is worth seeing. The key is the **triangle inequality**, the rule that a detour is never shorter than the direct road: for any three vectors, \(\|u - v\| \le \|u - b\| + \|b - v\|\). So if one representative \(b\) is within \(0.5\) of both \(u\) and \(v\), then \(u\) and \(v\) are at most \(1\) apart. Turn that around: two score vectors more than \(1\) apart can never share a representative at radius \(0.5\).
+
+Now measure. Every top-right vector is more than \(1.2\) from every other vector (the closest such pair, \((0.7, 0.9)\) and \((-0.2, 0.1)\), is \(\sqrt{0.81 + 0.64} \approx 1.20\) apart), so the top-right clump needs a representative of its own that serves nobody else. With only two representatives, the second one would have to serve all four remaining vectors, including \((-0.9, -0.9)\) and \((-0.2, 0.1)\); but those two are \(\sqrt{0.49 + 1} \approx 1.22\) apart, more than \(1\). So two representatives cannot do it, and three is the least that works at distance \(0.5\).
 
 [[diagram:cover]]
 
@@ -115,10 +117,12 @@ def grid_cover(c, d, r):
 c, d, r = math.sqrt(2), 2, 0.6
 B = grid_cover(c, d, r)
 rng = random.Random(0)
-box = ((rng.uniform(-c, c), rng.uniform(-c, c)) for _ in range(9000))
+box = [(rng.uniform(-c, c), rng.uniform(-c, c))
+       for _ in range(9000)]
 A = [a for a in box if math.hypot(*a) <= c]
 worst = max(min(math.dist(a, b) for b in B) for a in A)
-print(len(B), round((2 * c * math.sqrt(d) / r) ** d), round(worst, 3))
+bound = (2 * c * math.sqrt(d) / r) ** d
+print(len(B), round(bound), round(worst, 3))
 ```
 
 It prints `16 44 0.498`. The grid has 16 points; the farthest of about 7,000 random points of the disc is \(0.498\) from its nearest representative, safely within \(r = 0.6\); and 44 is the rounder bound we prove next, which is looser but easier to carry around.
@@ -502,13 +506,13 @@ GridCover(c, d, r):
   axis ← [−c + ε/2 + j·ε for j = 0..n−1]
   return every d-tuple of values from axis
 
-CoveringRadius(A, B):            # A finite sample, B representatives
+CoveringRadius(A, B):
   worst ← 0
   for a in A:
     worst ← max(worst, min over b in B of ‖a − b‖)
   return worst
 
-ChainingBound(m, c, sizes):      # sizes[k] = size of a c·2^(−k)-cover
+ChainingBound(m, c, sizes):
   M ← len(sizes)
   s ← sum over k = 1..M of 2^(−k) · sqrt(log sizes[k])
   return c · 2^(−M) / sqrt(m) + (6c / m) · s
@@ -545,7 +549,8 @@ if __name__ == "__main__":
     assert round(covering_radius(A, B), 3) == 0.224
     m = 10_000
     c = math.sqrt(m)
-    sizes = [len(grid_cover(c, 2, c * 2 ** -k)) for k in range(1, 9)]
+    sizes = [len(grid_cover(c, 2, c * 2 ** -k))
+             for k in range(1, 9)]
     assert sizes[:3] == [9, 36, 144]
     assert round(chaining_bound(m, c, sizes), 4) == 0.1132
     assert best_M(1_000, sizes) == 8
@@ -573,14 +578,15 @@ Before you start, work it out on paper. The closed formula from the flat-filter 
 import math
 d, delta, target = 2, 0.05, 0.25
 N_k = lambda k: math.ceil(2 ** k * math.sqrt(d)) ** d
+link = lambda k: 2 ** -k * math.sqrt(math.log(N_k(k)))
 def chain(m):
     total, k = 1.0, 0
     while 6 * math.sqrt(math.log(N_k(k + 1))) <= math.sqrt(m):
         k += 1
-        total += -2 ** -k + 6 / math.sqrt(m) * 2 ** -k * math.sqrt(
-            math.log(N_k(k)))
+        total += -2 ** -k + 6 / math.sqrt(m) * link(k)
     return total
-gap = lambda m: 2 * chain(m) + math.sqrt(2 * math.log(2 / delta) / m)
+conf = lambda m: math.sqrt(2 * math.log(2 / delta) / m)
+gap = lambda m: 2 * chain(m) + conf(m)
 m = next(m for m in range(100, 10 ** 6, 100) if gap(m) <= target)
 print(m, round(chain(m), 4), round(gap(m), 4))
 ```

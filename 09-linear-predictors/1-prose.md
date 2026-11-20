@@ -838,11 +838,11 @@ The last step holds because \(D D^+\) is diagonal with a 1 where \(D_{i,i} \ne 0
 
 *(a) \(U\) is the range of \(A\)*, the set \(\{A \mathbf v\}\). Indeed \(A \mathbf v = \sum_i D_{i,i} \mathbf v_i \langle \mathbf v_i, \mathbf v \rangle\) only involves the \(\mathbf v_i\) with \(D_{i,i} \ne 0\), and each such \(\mathbf v_i = A (\mathbf v_i / D_{i,i})\) is in the range.
 
-*(b) The range of \(A\) is the span of the messages \(\mathbf x_1, \dots, \mathbf x_m\).* One direction: \(A \mathbf v = \sum_i \mathbf x_i \langle \mathbf x_i, \mathbf v \rangle\) is a combination of messages. For the other, look at the **null space**, the vectors with \(A \mathbf v = \mathbf 0\). For such \(\mathbf v\), \(0 = \langle \mathbf v, A \mathbf v \rangle = \sum_i \langle \mathbf x_i, \mathbf v \rangle^2\), so \(\mathbf v\) is perpendicular to every message. And since \(A\) is symmetric, the null space is exactly the set of vectors perpendicular to the range: \(\langle \mathbf v, A \mathbf u \rangle = \langle A \mathbf v, \mathbf u \rangle\) for all \(\mathbf u\). So every message is perpendicular to every vector that is perpendicular to the range, which in finite dimensions means every message lies in the range.
+*(b) The range of \(A\) is the span of the messages \(\mathbf x_1, \dots, \mathbf x_m\).* One direction: \(A \mathbf v = \sum_i \mathbf x_i \langle \mathbf x_i, \mathbf v \rangle\) is a combination of messages. For the other, look at the **null space**, the vectors with \(A \mathbf v = \mathbf 0\). For such \(\mathbf v\), \(0 = \langle \mathbf v, A \mathbf v \rangle = \sum_i \langle \mathbf x_i, \mathbf v \rangle^2\), so \(\mathbf v\) is perpendicular to every message. And since \(A\) is symmetric, \(\langle \mathbf v, A \mathbf u \rangle = \langle A \mathbf v, \mathbf u \rangle\) for all \(\mathbf u\), and the null space is exactly the set of vectors perpendicular to the range: if \(A \mathbf v = \mathbf 0\), every \(\langle \mathbf v, A \mathbf u \rangle\) is 0; if \(\mathbf v\) is perpendicular to the range, then \(\|A \mathbf v\|^2 = \langle \mathbf v, A (A \mathbf v) \rangle = 0\). So every message is perpendicular to every vector that is perpendicular to the range, which in finite dimensions means every message lies in the range.
 
 *(c) \(\mathbf b = \sum_i y_i \mathbf x_i\) is a combination of messages*, so by (b) and (a) it lies in \(U\). \(\blacksquare\)
 
-Back to the always-together words, now checking the claim itself: build \(A\) and \(\mathbf b\) from the three messages, apply \(A^+ = \tfrac{1}{56} \begin{pmatrix} 1 & 1 \\ 1 & 1 \end{pmatrix}\), and compare with another candidate that puts all the weight on “free”.
+Now check the claim on the twins, and compare \(\hat{\mathbf w}\) with another candidate that puts all the weight on “free”:
 
 ```python
 cs, ys = [1, 2, 3], [10, 35, 70]
@@ -918,11 +918,11 @@ Should you now reach for degree 5? With six points it would hit every one exactl
 
 One more request, this time from the inbox designers. They want to grey out messages that are *probably* junk and show the filter’s confidence on hover. A halfspace says \(+1\) or \(-1\) and nothing else, even for a message whose score is a hair above zero. Can a linear learner say “junk, with probability 0.73”?
 
-In **logistic regression** the hypotheses map \(\mathbb R^d\) to the interval \([0, 1]\), and \(h(\mathbf x)\) is read as the probability that the label of \(\mathbf x\) is \(+1\). What we want is a squashing function: feed it the score, get back a number between 0 and 1 that is near 1 for big positive scores (A scores 5: surely junk), near 0 for big negative ones, and exactly one half at score 0, where the halfspace is undecided. The class composes such a **sigmoid** (“S-shaped”) function with the linear functions; specifically the **logistic function**
+In **logistic regression** the hypotheses map \(\mathbb R^d\) to the interval \([0, 1]\), the numbers from 0 to 1, and \(h(\mathbf x)\) is read as the probability that the label of \(\mathbf x\) is \(+1\). What we want is a squashing function: feed it the score, get back a number between 0 and 1 that is near 1 for big positive scores (A scores 5: surely junk), near 0 for big negative ones, and exactly one half at score 0, where the halfspace is undecided. The class composes such a **sigmoid** (“S-shaped”) function with the linear functions; specifically the **logistic function**
 
 \[ \varphi_{\text{sig}}(z) = \frac{1}{1 + \exp(-z)}, \]
 
-Here \(z\) stands for the score, and \(\exp(-z)\) is \(e^{-z}\), the number \(e \approx 2.718\) raised to the power \(-z\); it is huge when \(z\) is very negative and tiny when \(z\) is large. Inside out: flip the sign of the score, raise \(e\) to it, add 1, and take one over the result. When \(z\) is large the bottom is close to 1, so the answer is close to 1; when \(z\) is very negative the bottom is huge, so the answer is close to 0. In plain words: **the logistic function squashes any score into a probability between 0 and 1, with score 0 landing on one half.** At \(z = 1\), message B’s score: \(e^{-1} \approx 0.368\), the bottom is 1.368, and the probability is 0.731.
+where \(z\) stands for the score, and \(\exp(-z)\) is \(e^{-z}\), the number \(e \approx 2.718\) raised to the power \(-z\); it is huge when \(z\) is very negative and tiny when \(z\) is large. Inside out: flip the sign of the score, raise \(e\) to it, add 1, and take one over the result. When \(z\) is large the bottom is close to 1, so the answer is close to 1; when \(z\) is very negative the bottom is huge, so the answer is close to 0. In plain words: **the logistic function squashes any score into a probability between 0 and 1, with score 0 landing on one half.** At \(z = 1\), message B’s score: \(e^{-1} \approx 0.368\), the bottom is 1.368, and the probability is 0.731.
 
 ```python
 import math
@@ -938,7 +938,7 @@ It prints `-3 20.086 21.086 0.047`, `0 1.0 2.0 0.5`, `1 0.368 1.368 0.731` and `
 
 This reads exactly like \(HS_d\), with the logistic function in place of the sign: **score the message, then squash the score into a probability.**
 
-When \(\langle \mathbf w, \mathbf x \rangle\) is large, \(\varphi_{\text{sig}}\) is close to 1; when it is very negative, close to 0; and at 0 it is exactly \(\tfrac12\). So the logistic hypothesis and the halfspace with the same \(\mathbf w\) agree whenever \(|\langle \mathbf w, \mathbf x \rangle|\) is large. They differ near the boundary: there the halfspace still answers a flat \(\pm 1\), while the logistic hypothesis admits it is unsure and gives a probability just above or just below one half.
+So the logistic hypothesis and the halfspace with the same \(\mathbf w\) agree whenever \(|\langle \mathbf w, \mathbf x \rangle|\) is large. They differ near the boundary: there the halfspace still answers a flat \(\pm 1\), while the logistic hypothesis admits it is unsure and gives a probability just above or just below one half.
 
 [[diagram:logistic]]
 
@@ -962,7 +962,7 @@ for z in (-3, -1, 0, 1, 3, 5):
     print(z, round(sigma(z), 3), round(loss(z), 3))
 ```
 
-It prints `-3 0.047 3.049`, `-1 0.269 1.313`, `0 0.5 0.693`, `1 0.731 0.313`, `3 0.953 0.049` and `5 0.993 0.007`. Read the first column as the signed score \(y \langle \mathbf w, \mathbf x \rangle\). With our halfspace \(\mathbf w = (-1, 2, -2)\), message A has score 5, so the filter gives it probability 0.993 of junk and pays a loss of 0.007. Message B scores 1: probability 0.731, loss 0.313. A message on the boundary pays \(\log 2 \approx 0.693\). And a confident mistake, signed score \(-3\), costs 3.049, so the loss punishes confidence in the wrong direction much more than hesitation. (The `assert` checks the identity \(1 - \varphi_{\text{sig}}(z) = \varphi_{\text{sig}}(-z)\) we just derived.)
+It prints `-3 0.047 3.049`, `-1 0.269 1.313`, `0 0.5 0.693`, `1 0.731 0.313`, `3 0.953 0.049` and `5 0.993 0.007`. With our halfspace \(\mathbf w = (-1, 2, -2)\), message A has signed score 5, so the filter gives it probability 0.993 of junk and pays 0.007. A message on the boundary pays \(\log 2 \approx 0.693\). And a confident mistake, signed score \(-3\), costs 3.049: the loss punishes confidence in the wrong direction much more than hesitation.
 
 Given \(S\), the ERM problem of logistic regression is
 
@@ -970,7 +970,7 @@ Given \(S\), the ERM problem of logistic regression is
 
 Every piece is already familiar: the logistic loss of example \(i\), averaged over the \(m\) examples, and \(\operatorname{argmin}\) returns the weights that make that average smallest. In plain words: **find the weights with the smallest average logistic loss.** At \(\mathbf w = \mathbf 0\) every signed score is 0 and every loss is \(\log 2 \approx 0.693\), so the average is 0.693; the gradient descent snippet below starts there and drives it down.
 
-Its great advantage is that this objective is a **convex** function of \(\mathbf w\), which makes it efficiently solvable by standard methods, separable data or not. Here is why it is convex. Picture the logistic loss as a curve over the signed score, and pick two points on it: \(-3\) with loss 3.049 and 1 with loss 0.313. Halfway between them, at \(-1\), the curve sits at 1.313, below the halfway point of the straight chord joining them, \((3.049 + 0.313)/2 = 1.681\). A curve that always sags below its chords like that is convex. In symbols, a function \(f\) is convex when \(f(\theta \mathbf u + (1 - \theta) \mathbf v) \le \theta f(\mathbf u) + (1 - \theta) f(\mathbf v)\) for all \(\mathbf u, \mathbf v\) and \(\theta \in [0, 1]\). Here \(\theta\) (theta) is a mixing weight between 0 and 1, and \([0, 1]\) is the interval of numbers from 0 to 1. The left side evaluates \(f\) at a point mixed from \(\mathbf u\) and \(\mathbf v\); the right side mixes the two values of \(f\) with the same weights, which is the height of the chord. In plain words: **the chord lies above the graph.**
+Its great advantage is that this objective is a **convex** function of \(\mathbf w\), which makes it efficiently solvable by standard methods, separable data or not. Here is why it is convex. Picture the logistic loss as a curve over the signed score, and pick two points on it: \(-3\) with loss 3.049 and 1 with loss 0.313. Halfway between them, at \(-1\), the curve sits at 1.313, below the halfway point of the straight chord joining them, \((3.049 + 0.313)/2 = 1.681\). A curve that always sags below its chords like that is convex. In symbols, a function \(f\) is convex when \(f(\theta \mathbf u + (1 - \theta) \mathbf v) \le \theta f(\mathbf u) + (1 - \theta) f(\mathbf v)\) for all \(\mathbf u, \mathbf v\) and \(\theta \in [0, 1]\). Here \(\theta\) (theta) is a mixing weight between 0 and 1. The left side evaluates \(f\) at a point mixed from \(\mathbf u\) and \(\mathbf v\); the right side mixes the two values of \(f\) with the same weights, which is the height of the chord. In plain words: **the chord lies above the graph.**
 
 ```python
 import math
@@ -982,7 +982,23 @@ chord = theta * g(u) + (1 - theta) * g(v)
 print(round(mid, 3), round(chord, 3), mid <= chord)
 ```
 
-It prints `1.313 1.681 True`. One pair of points is an example, not a proof; here is the proof. For one variable, write \(g(z) = \log(1 + e^{-z})\). Its derivatives (the prime \(g'\) is the slope, the double prime \(g''\) is how fast the slope changes) are \(g'(z) = -\varphi_{\text{sig}}(-z)\) and \(g''(z) = \varphi_{\text{sig}}(z) \, \varphi_{\text{sig}}(-z) > 0\), and a function of one variable with a nonnegative second derivative is convex. Each term of the risk is \(g\) applied to \(z_i(\mathbf w) = y_i \langle \mathbf w, \mathbf x_i \rangle\), which is linear in \(\mathbf w\), so \(z_i(\theta \mathbf u + (1 - \theta) \mathbf v) = \theta z_i(\mathbf u) + (1 - \theta) z_i(\mathbf v)\), and convexity of \(g\) carries straight over to the term. An average of convex functions is convex. Lesson 12 develops this properly, and lesson 14 gives a simple algorithm for minimizing such functions.
+It prints `1.313 1.681 True`. One pair of points is an example, not a proof; here is the proof. For one variable, write \(g(z) = \log(1 + e^{-z})\). Write \(g'\) for its slope and \(g''\) for how fast the slope changes. The slope of \(\log u\) is \(1/u\) times the slope of \(u\), so \(g'(z) = -e^{-z}/(1 + e^{-z})\), and multiplying top and bottom by \(e^z\) turns that into \(-1/(e^z + 1) = -\varphi_{\text{sig}}(-z)\). The same two rules give the logistic function’s own slope, \(\varphi_{\text{sig}}'(z) = e^{-z}/(1 + e^{-z})^2 = \varphi_{\text{sig}}(z) \, \varphi_{\text{sig}}(-z)\), so
+
+\[ g''(z) = \varphi_{\text{sig}}(z) \, \varphi_{\text{sig}}(-z) > 0. \]
+
+In plain words: **the slope of the loss always increases, by the product of the two class probabilities.** At \(z = 1\) that is \(0.731 \cdot 0.269 \approx 0.197\), and nudging the slope by a thousandth agrees:
+
+```python
+import math
+
+g = lambda z: math.log(1 + math.exp(-z))
+sigma = lambda z: 1 / (1 + math.exp(-z))
+z, h = 1, 1e-3
+numeric = (g(z + h) - 2 * g(z) + g(z - h)) / h ** 2
+print(round(numeric, 3), round(sigma(z) * sigma(-z), 3))
+```
+
+It prints `0.197 0.197`. A function of one variable whose second derivative is never negative is convex. Each term of the risk is \(g\) applied to \(z_i(\mathbf w) = y_i \langle \mathbf w, \mathbf x_i \rangle\), which is linear in \(\mathbf w\), so \(z_i(\theta \mathbf u + (1 - \theta) \mathbf v) = \theta z_i(\mathbf u) + (1 - \theta) z_i(\mathbf v)\), and convexity of \(g\) carries straight over to the term. An average of convex functions is convex. Lesson 12 develops this properly, and lesson 14 gives a simple algorithm for minimizing such functions.
 
 There is also a statistical reading. Suppose the labels really were drawn with \(\mathbb P[y = +1 \mid \mathbf x] = \varphi_{\text{sig}}(\langle \mathbf w, \mathbf x \rangle)\). By the identity above, the probability of the observed label is \(\varphi_{\text{sig}}(y \langle \mathbf w, \mathbf x \rangle)\) in both cases, so the probability of the whole training sequence, with its examples independent, is \(\prod_i \varphi_{\text{sig}}(y_i \langle \mathbf w, \mathbf x_i \rangle)\). Its negative logarithm is \(\sum_i \log(1 + \exp(-y_i \langle \mathbf w, \mathbf x_i \rangle))\), which is \(m\) times the logistic risk. So minimizing the logistic risk is the same as choosing the \(\mathbf w\) under which the data is most likely, the **maximum likelihood** approach that lesson 24 studies.
 

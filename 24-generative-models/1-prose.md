@@ -52,7 +52,7 @@ None of the four junk messages contains it, so the fraction is \(0/4 = 0\). Here
 | free | 3/4 | 1/4 |
 | prize | 3/4 | 0 |
 | click | 3/4 | 1/4 |
-| invoice | 0 | 2/4 |
+| invoice | 0 | 1/4 |
 | meeting | 0 | 3/4 |
 | lunch | 0 | 3/4 |
 | winner | 0 | 0 |
@@ -125,7 +125,7 @@ Explore it in a bigger mail room. The lab below has a dictionary of 200 words, e
 
 [[lab]]
 
-With 100 labelled messages of each kind, about a quarter of fresh messages crash the filter and almost half more get an answer of exactly 0 or exactly 1. Rare words are everywhere in real mail, and every one of them is a trap. To fix this properly, we need to understand what Ines was actually computing. It has a name.
+With 100 labelled messages of each kind, more than a quarter of fresh messages crash the filter and almost half more get an answer of exactly 0 or exactly 1. Rare words are everywhere in real mail, and every one of them is a trap. To fix this properly, we need to understand what Ines was actually computing. It has a name.
 
 ## Which parameter makes the data most likely?
 
@@ -214,7 +214,7 @@ The edge cases. If \(k = 0\), the log-likelihood is \(m \log(1 - \theta)\), whic
 
 Read that edge case again, because it is our bug. When a word never appears among \(m\) junk messages, the most likely world, given only those messages, is one where junk *never* contains it. Maximum likelihood is not making an arithmetic slip: it is answering the question it was asked.
 
-**How accurate is it?** The estimate \(\hat\theta\) is an average of \(m\) independent coins, each equal to 1 with probability \(\theta\). An estimator is **unbiased** when its expected value, averaged over the random training sequence, equals the parameter. This one is: by linearity of expectation, \(\mathbb E_S[\hat\theta] = \frac1m \sum_i \mathbb E[x_i] = \frac1m \cdot m\theta = \theta\). (A reminder: \(\mathbb E\) is the expected value, the probability-weighted average, and the subscript \(S\) says the randomness is in the training sequence.)
+**How accurate is it?** The estimate \(\hat\theta\) is an average of \(m\) independent coins, each equal to 1 with probability \(\theta\). An estimator is **unbiased** when its expected value, averaged over the random training sequence, equals the parameter. This one is, because the expected value of a sum is the sum of the expected values: \(\mathbb E_S[\hat\theta] = \frac1m \sum_i \mathbb E[x_i] = \frac1m \cdot m\theta = \theta\). (A reminder: \(\mathbb E\) is the expected value, the probability-weighted average, and the subscript \(S\) says the randomness is in the training sequence.)
 
 Unbiased says the estimate is right on average; it does not say how far one estimate strays. For that, recall Hoeffding’s inequality from lesson 4: for an average \(\bar Z\) of \(m\) i.i.d. variables with values in \([0, 1]\) and mean \(\mu\), \(\mathbb P[|\bar Z - \mu| > \varepsilon] \le 2e^{-2m\varepsilon^2}\). Set the right side equal to a confidence parameter \(\delta\) and solve for \(\varepsilon\): \(2e^{-2m\varepsilon^2} = \delta\) gives \(\varepsilon = \sqrt{\log(2/\delta)/(2m)}\). So with probability at least \(1 - \delta\) over the choice of \(S\),
 
@@ -421,7 +421,7 @@ Lesson 2 asked of every learner: trained on a finite training sequence, how good
 - Second line: expand both squares. The \(x^2\) terms cancel, \(-\tfrac12(-2x\mu^\star) + \tfrac12(-2x\hat\mu) = x(\mu^\star - \hat\mu)\), and the constants are \(\tfrac12\hat\mu^2 - \tfrac12(\mu^\star)^2\).
 - Third line: the only random thing left is \(x\), and \(\mathbb E[x] = \mu^\star\). Collect: \(\tfrac12\hat\mu^2 - \hat\mu\mu^\star + \tfrac12(\mu^\star)^2\) is \(\tfrac12(\hat\mu - \mu^\star)^2\).
 
-In one sentence: **using a centre that is off by some amount costs, on every fresh message on average, half the square of that amount.** And how far off is \(\hat\mu\)? It is an average of \(m\) independent scores of variance 1, and lesson 4 showed that such an average has variance \(1/m\). Since \(\hat\mu\) is unbiased, its variance *is* \(\mathbb E[(\hat\mu - \mu^\star)^2]\), so **the expected excess risk is exactly \(1/(2m)\).** With Chebyshev’s inequality from lesson 4, \(\mathbb P[(\hat\mu - \mu^\star)^2 \ge 1/(m\delta)] \le \delta\), so with probability at least \(1 - \delta\) the excess risk is below \(1/(2m\delta)\). Ten messages give an expected excess of \(0.05\).
+In one sentence: **using a centre that is off by some amount costs, on every fresh message on average, half the square of that amount.** And how far off is \(\hat\mu\)? It is an average of \(m\) independent scores of variance 1, and lesson 4 showed that such an average has variance \(1/m\). Since \(\hat\mu\) is unbiased, its variance *is* \(\mathbb E[(\hat\mu - \mu^\star)^2]\), so **the expected excess risk is exactly \(1/(2m)\).** Chebyshev’s inequality from lesson 4 says a variable lands at least \(a\) from its mean with probability at most its variance over \(a^2\); with \(a^2 = 1/(m\delta)\) it gives \(\mathbb P[(\hat\mu - \mu^\star)^2 \ge 1/(m\delta)] \le \delta\), so with probability at least \(1 - \delta\) the excess risk is below \(1/(2m\delta)\). Ten messages give an expected excess of \(0.05\).
 
 ```python
 import random
@@ -447,13 +447,14 @@ And then the true risk is infinite. The next junk message contains “winner” 
 
 In one sentence: **an estimate of exactly 0 for something that does happen makes the expected surprise infinite.** It does not matter that \(\hat\theta = 0\) is within 0.002 of the truth, a superb estimate by Hoeffding’s standards. The log loss magnifies errors near 0 without limit.
 
-How often does this happen? The chance that all \(m\) observations are 0 is \((1 - \theta^\star)^m\). A clean lower bound: for \(0 \le \theta \le 1/2\),
+How often does this happen? The chance that all \(m\) observations are 0 is \((1 - \theta^\star)^m\). A clean lower bound: for \(0 \le \theta^\star \le 1/2\),
 
 \[ (1 - \theta^\star)^m \ge e^{-2\theta^\star m}. \]
 
+- \(\theta^\star m\) is the expected number of messages, out of \(m\), that contain the word.
 - \(e^{-2\theta^\star m}\) is easier to reason about than the power: it says the chance shrinks exponentially in the number of examples, at rate \(2\theta^\star\).
 
-In one sentence: **the chance of never seeing a rare word is at least \(e\) to the minus twice the expected number of times you would see it.** To prove it, take logs: we need \(m\log(1 - \theta) \ge -2\theta m\), so it is enough that \(h(\theta) = \log(1 - \theta) + 2\theta \ge 0\). At \(\theta = 0\), \(h(0) = 0\), and its derivative \(-1/(1 - \theta) + 2\) is nonnegative while \(1 - \theta \ge 1/2\), so \(h\) only grows on \([0, 1/2]\).
+In one sentence: **the chance of never seeing a rare word is at least \(e\) to the minus twice the expected number of times you would see it.** For “winner”, \(e^{-0.8} \approx 0.449\), safely below the true 0.67. To prove it, write \(\theta\) for \(\theta^\star\) and take logs: we need \(m\log(1 - \theta) \ge -2\theta m\), so it is enough that \(h(\theta) = \log(1 - \theta) + 2\theta \ge 0\). At \(\theta = 0\), \(h(0) = 0\), and its derivative \(-1/(1 - \theta) + 2\) is nonnegative while \(1 - \theta \ge 1/2\), so \(h\) only grows on \([0, 1/2]\).
 
 Now ask when the bound is at least a half: \(e^{-2\theta^\star m} \ge 1/2\) exactly when \(m \le \log 2/(2\theta^\star)\). **Whenever the training sequence has at most \(\log 2/(2\theta^\star)\) examples, maximum likelihood has infinite true risk with probability at least one half.** For “winner”, that is any \(m\) up to 173.
 

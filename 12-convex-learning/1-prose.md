@@ -243,7 +243,7 @@ It prints `0.6931 [0.0, -0.3, 0.1]`. The tangent plane at \(\mathbf w\) is the l
 
 \[ f(\mathbf u) \ge f(\mathbf w) + \langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle. \]
 
-The left side is the true height at \(\mathbf u\); the right side is the tangent plane at \(\mathbf w\) evaluated at \(\mathbf u\), built from the pieces just walked through. In plain words: **the tangent plane at any point is a floor under the whole graph.** From \(\mathbf w = \mathbf 0\), predict the logistic risk at \(\mathbf u = \mathbf w^\circ = (-1, 2, -2)\): the tangent says \(0.6931 + (0 \cdot (-1) - 0.3 \cdot 2 + 0.1 \cdot (-2)) = -0.1069\), and the real risk is above it:
+The left side is the true height at \(\mathbf u\); the right side is the tangent plane at \(\mathbf w\) evaluated at \(\mathbf u\), built from the pieces just walked through. In plain words: **the tangent plane at any point is a floor under the whole graph.** From \(\mathbf w = \mathbf 0\), predict the logistic risk at \(\mathbf u = \mathbf w^\circ = (-1, 2, -2)\): the tangent says \(0.6931 + (0 \cdot (-1) - 0.3 \cdot 2 + 0.1 \cdot (-2)) = -0.1069\), and the real risk is above it (the logistic risk is convex, as a later section proves):
 
 ```python
 import math
@@ -267,7 +267,7 @@ It prints `0.5503 -0.1069 True`.
 
 \[ \frac{f(\mathbf w + \alpha(\mathbf u - \mathbf w)) - f(\mathbf w)}{\alpha} \le f(\mathbf u) - f(\mathbf w). \]
 
-As \(\alpha \to 0\), the left side tends to the derivative of \(f\) at \(\mathbf w\) in the direction \(\mathbf u - \mathbf w\), which for a differentiable function is \(\langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle\). The right side does not depend on \(\alpha\), so the inequality survives the limit. Rearranging gives the claim. \(\square\)
+The left side is a rise over a run: how much \(f\) changes when you step a fraction \(\alpha\) of the way towards \(\mathbf u\), divided by \(\alpha\). As \(\alpha \to 0\) (read “as \(\alpha\) shrinks towards 0”), the left side tends to the derivative of \(f\) at \(\mathbf w\) in the direction \(\mathbf u - \mathbf w\), which for a differentiable function is \(\langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle\). The right side does not depend on \(\alpha\), so the inequality survives the limit. Rearranging gives the claim. \(\square\)
 
 [[diagram:tangent]]
 
@@ -287,7 +287,7 @@ For functions of one variable there is an easy test.
 
 \[ \alpha\,(f(x) - f(u)) = \alpha (1 - \alpha)(v - u) f'(\xi_1) \le \alpha(1 - \alpha)(v - u) f'(\xi_2) = (1 - \alpha)(f(v) - f(x)). \]
 
-Expand: \(\alpha f(x) - \alpha f(u) \le (1 - \alpha) f(v) - (1 - \alpha) f(x)\), so \(f(x) \le \alpha f(u) + (1 - \alpha) f(v)\). The cases \(u > v\) and \(\alpha \in \{0, 1\}\) follow by symmetry or are trivial.
+The outer two expressions are the two mean-value equations multiplied by \(\alpha\) and \(1 - \alpha\), and the middle step only swaps the smaller slope for the larger. Expand: \(\alpha f(x) - \alpha f(u) \le (1 - \alpha) f(v) - (1 - \alpha) f(x)\), so \(f(x) \le \alpha f(u) + (1 - \alpha) f(v)\). The cases \(u > v\) and \(\alpha \in \{0, 1\}\) follow by symmetry or are trivial.
 
 (2 ⇔ 3.) A differentiable function, here \(f'\), is nondecreasing exactly when its derivative is nonnegative: if \(f'' \ge 0\), the mean value theorem gives \(f'(c) - f'(a) = f''(\xi)(c - a) \ge 0\) for \(a < c\); and if \(f'\) is nondecreasing, every difference quotient \((f'(a + t) - f'(a))/t\) with \(t > 0\) is nonnegative, so their limit \(f''(a)\) is too. \(\square\)
 
@@ -295,7 +295,7 @@ Two examples. The function \(f(x) = x^2\) has \(f''(x) = 2 > 0\), so it is conve
 
 \[ f'(x) = \frac{\exp(x)}{1 + \exp(x)} = \frac{1}{\exp(-x) + 1}, \]
 
-which is increasing because \(\exp(-x)\) decreases; so softplus is convex. Its second derivative is \(f'(x) f'(-x)\), the logistic function of lesson 9 times its mirror image. Let’s check all three statements on a grid, and the tangent inequality too.
+which is increasing because \(\exp(-x)\) decreases; so softplus is convex. Here \(\exp(x) = e^x\) and \(\log\) is the natural logarithm, its inverse. The first fraction is the chain rule (the derivative of \(\log(1 + t)\) is \(1/(1 + t)\), times the derivative \(\exp(x)\) of the inside); the second divides top and bottom by \(\exp(x)\). In plain words: **the slope of softplus climbs from 0 towards 1 as \(x\) grows.** At \(x = 0\) it is \(1/(1 + 1) = 1/2\), and the line `df = lambda x: 1 / (1 + math.exp(-x))` in the next snippet is the second form, term for term. Its second derivative is \(f'(x) f'(-x)\), the logistic function of lesson 9 times its mirror image. Let’s check all three statements on a grid, and the tangent inequality too.
 
 ```python
 import math
@@ -331,7 +331,7 @@ f(\alpha \mathbf w_1 + (1 - \alpha)\mathbf w_2) &= g(\langle \alpha \mathbf w_1 
 \end{aligned}
 \]
 
-where the last step is convexity of \(g\) at the two numbers \(\langle \mathbf w_i, \mathbf x \rangle + y\). The last line is \(\alpha f(\mathbf w_1) + (1 - \alpha) f(\mathbf w_2)\). \(\square\)
+where the first three lines only rewrite the argument of \(g\) (the inner product splits across the mixed weights), and the last step is convexity of \(g\) at the two numbers \(\langle \mathbf w_i, \mathbf x \rangle + y\). The last line is \(\alpha f(\mathbf w_1) + (1 - \alpha) f(\mathbf w_2)\). \(\square\)
 
 Two losses you have met are convex because of this claim. The square loss \(f(\mathbf w) = (\langle \mathbf w, \mathbf x \rangle - y)^2\) is \(g(a) = a^2\) composed with a linear function. The logistic loss \(f(\mathbf w) = \log(1 + \exp(-y \langle \mathbf w, \mathbf x \rangle))\), for \(y \in \{\pm 1\}\), is softplus composed with \(\langle \mathbf w, -y\mathbf x \rangle\). (Lesson 9 made this argument inline; now it has a name.)
 
@@ -341,6 +341,20 @@ The second pair of operations lets us combine several convex functions.
 
 - \(g(\mathbf x) = \max_{i \in [r]} f_i(\mathbf x)\);
 - \(g(\mathbf x) = \sum_{i=1}^r w_i f_i(\mathbf x)\), where \(w_i \ge 0\) for all \(i\).
+
+Here \([r]\) is shorthand for \(\{1, 2, \dots, r\}\), so \(\max_{i \in [r]} f_i(\mathbf x)\) evaluates all \(r\) functions at \(\mathbf x\) and keeps the largest value; \(\sum_{i=1}^r w_i f_i(\mathbf x)\) multiplies each value by its weight \(w_i\) and adds them up. In plain words: **the upper envelope of convex functions is convex, and so is any blend of them with nonnegative weights.** Take \(f_1(x) = x\), \(f_2(x) = -x\), \(f_3(x) = x^2/4\), and weights \(1/2\) each. At \(u = -3\), \(v = 1\), \(\alpha = 1/2\), the maximum has \(g(-1) = 1\) against a chord value of \((3 + 1)/2 = 2\), and the sum has \(0.125\) against \(0.625\):
+
+```python
+fs = [lambda x: x, lambda x: -x, lambda x: x * x / 4]
+g_max = lambda x: max(f(x) for f in fs)
+g_sum = lambda x: sum(0.5 * f(x) for f in fs)
+u, v, a = -3, 1, 0.5
+for g in (g_max, g_sum):
+    left = g(a * u + (1 - a) * v)
+    print(left, a * g(u) + (1 - a) * g(v))
+```
+
+It prints `1.0 2.0` and `0.125 0.625`: both below the chord.
 
 *Proof.* For the maximum,
 
@@ -365,13 +379,20 @@ g(\alpha \mathbf u + (1 - \alpha)\mathbf v) &= \sum_i w_i f_i(\alpha \mathbf u +
 
 where the inequality needs \(w_i \ge 0\): multiplying an inequality by a negative weight would flip it. \(\square\)
 
-For example, \(|x| = \max\{x, -x\}\), and both \(x\) and \(-x\) are convex (a linear function meets its own chord with equality), so \(|x|\) is convex. And an empirical risk \(L_S(\mathbf w) = \frac1m \sum_i \ell(\mathbf w, z_i)\) is a sum with weights \(1/m \ge 0\), so it is convex whenever each \(\ell(\cdot, z_i)\) is.
+For example, \(|x| = \max\{x, -x\}\), and both \(x\) and \(-x\) are convex (a linear function meets its own chord with equality), so \(|x|\) is convex. And an empirical risk \(L_S(\mathbf w) = \frac1m \sum_i \ell(\mathbf w, z_i)\), the average loss over the \(m\) examples \(z_1, \dots, z_m\) of \(S\), is a sum with weights \(1/m \ge 0\), so it is convex whenever each \(\ell(\cdot, z_i)\) is.
 
-Now the loss this lesson is really about. Take the signed score \(z = y \langle \mathbf w, \mathbf x \rangle\) and define the **hinge loss**
+Now the loss this lesson is really about. The 0-1 loss charges B′ (signed score \(-1\)) and E′ (signed score \(-3\)) the same 1, though E′ is the more confident mistake. Suppose instead we charge “how far the score falls short of 1”, and nothing when it doesn’t: B′ pays \(1 - (-1) = 2\), E′ pays 4, and message A, with score 5, pays 0. Take the signed score \(z = y \langle \mathbf w, \mathbf x \rangle\) and define the **hinge loss**
 
 \[ \ell^{\text{hinge}}(\mathbf w, (\mathbf x, y)) = \max\{0, \; 1 - y \langle \mathbf w, \mathbf x \rangle\}. \]
 
-It is zero when the signed score is at least 1 (right, with room to spare), and it grows linearly as the score falls below 1, so a confident mistake costs more than a narrow one. It is the maximum of two functions of \(\mathbf w\), the constant 0 and \(1 - y\langle \mathbf w, \mathbf x \rangle\), and both are linear plus a constant, hence convex. By the claim on maxima, the hinge loss is convex in \(\mathbf w\), and by the claim on sums, so is its empirical risk. Compare it with the 0-1 risk on the ten messages: draw 20,000 random pairs of weight vectors and a random \(\alpha\), and count how often each risk breaks the chord inequality.
+Inside, \(1 - y\langle \mathbf w, \mathbf x \rangle\) is the shortfall of the signed score below 1; \(\max\{0, \cdot\}\) keeps the larger of 0 and that shortfall, so a negative shortfall becomes 0. In plain words: **the hinge loss charges how far the signed score falls short of 1.** It is zero when the signed score is at least 1 (right, with room to spare), and it grows linearly as the score falls below 1, so a confident mistake costs more than a narrow one. On the signed scores of \(\mathbf w^\circ\) for the ten messages, plus a narrow correct score of 0.5:
+
+```python
+scores = [5, 1, 3, 1, 3, 3, 3, 1, -1, -3, 0.5]
+print([max(0, 1 - z) for z in scores])
+```
+
+It prints `[0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 0.5]`. It is the maximum of two functions of \(\mathbf w\), the constant 0 and \(1 - y\langle \mathbf w, \mathbf x \rangle\), and both are linear plus a constant, hence convex. By the claim on maxima, the hinge loss is convex in \(\mathbf w\), and by the claim on sums, so is its empirical risk. Compare it with the 0-1 risk on the ten messages: draw 20,000 random pairs of weight vectors and a random \(\alpha\), and count how often each risk breaks the chord inequality.
 
 ```python
 import random
@@ -410,7 +431,7 @@ Convexity says the landscape has one valley. It says nothing about how steep the
 
 \[ \| f(\mathbf w_1) - f(\mathbf w_2) \| \le \rho \, \| \mathbf w_1 - \mathbf w_2 \|. \]
 
-Intuitively, a Lipschitz function cannot change too fast: moving the input by a distance \(t\) moves the output by at most \(\rho t\). For a differentiable \(f : \mathbb R \to \mathbb R\) there is an easy sufficient condition. The mean value theorem gives \(f(w_1) - f(w_2) = f'(u)(w_1 - w_2)\) for some \(u\) between \(w_1\) and \(w_2\), so if \(|f'| \le \rho\) everywhere, \(f\) is \(\rho\)-Lipschitz.
+\(C \subseteq \mathbb R^d\) says \(C\) is a subset of \(\mathbb R^d\), and \(f : \mathbb R^d \to \mathbb R^k\) allows the output to be a vector of \(k\) numbers, which is why the left side uses the length \(\|\cdot\|\) too (for one number it is just the absolute value). The left side is how far apart the outputs are; the right side is \(\rho\) times how far apart the inputs are. In plain words: **the output never moves more than \(\rho\) times as far as the input.** For \(f(x) = |x|\) with \(\rho = 1\), take \(x_1 = 3\) and \(x_2 = -1\): the outputs differ by \(|3 - 1| = 2\), the inputs by 4, and \(2 \le 1 \cdot 4\). Intuitively, a Lipschitz function cannot change too fast: moving the input by a distance \(t\) moves the output by at most \(\rho t\). For a differentiable \(f : \mathbb R \to \mathbb R\) there is an easy sufficient condition. The mean value theorem gives \(f(w_1) - f(w_2) = f'(u)(w_1 - w_2)\) for some \(u\) between \(w_1\) and \(w_2\), so if \(|f'| \le \rho\) everywhere, \(f\) is \(\rho\)-Lipschitz.
 
 Four examples, each a small proof.
 
@@ -421,7 +442,7 @@ Four examples, each a small proof.
 
 [[diagram:lipschitz]]
 
-The snippet measures the steepest chord slope \(|f(a) - f(b)|/|b - a|\) over a fine grid, which is the smallest \(\rho\) that works on that grid. With \(\rho = 3\), it also checks the \(x^2\) counterexample.
+The snippet measures the steepest chord slope \(|f(a) - f(b)|/|b - a|\) over a fine grid, which is the smallest \(\rho\) that works on that grid: the definition divided through by the input distance, mirrored by `abs(f(a) - f(b)) / (b - a)`. With \(\rho = 3\), it also checks the \(x^2\) counterexample.
 
 ```python
 import math
@@ -449,7 +470,7 @@ Lipschitz constants multiply under composition, which is how we get them for los
 
 \[ |f(\mathbf w_1) - f(\mathbf w_2)| = |g_1(g_2(\mathbf w_1)) - g_1(g_2(\mathbf w_2))| \le \rho_1 \|g_2(\mathbf w_1) - g_2(\mathbf w_2)\| \le \rho_1 \rho_2 \|\mathbf w_1 - \mathbf w_2\|. \]
 
-The special case uses \(\rho_2 = \|\mathbf v\|\) from the linear example. \(\square\)
+Each \(\le\) is one Lipschitz condition: first for \(g_1\), whose inputs are the two values of \(g_2\), then for \(g_2\). The special case uses \(\rho_2 = \|\mathbf v\|\) from the linear example. \(\square\)
 
 Apply it to the hinge loss. As a function of the signed score, \(\phi(a) = \max\{0, 1 - a\}\) is 1-Lipschitz: both pieces, \(0\) and \(1 - a\), are 1-Lipschitz, and a maximum of two \(\rho\)-Lipschitz functions is \(\rho\)-Lipschitz, because changing each argument of a maximum by at most \(t\) changes the maximum by at most \(t\). The signed score \(\mathbf w \mapsto y \langle \mathbf w, \mathbf x \rangle = \langle y \mathbf x, \mathbf w \rangle\) is linear with \(\|y \mathbf x\| = \|\mathbf x\|\), since \(|y| = 1\). By the composition claim:
 
@@ -486,17 +507,32 @@ Lipschitzness bounds how fast the loss changes. Smoothness bounds how fast its *
 
 \[ \|\nabla f(\mathbf v) - \nabla f(\mathbf w)\| \le \beta \|\mathbf v - \mathbf w\|. \]
 
+It is the Lipschitz definition with the gradient \(\nabla f\) in place of \(f\) and \(\beta\) in place of \(\rho\). In plain words: **the slope never changes more than \(\beta\) times as fast as the point moves.** Softplus has slope \(1/2\) at 0 and \(0.7311\) at 1, a change of \(0.2311\) over a distance of 1, within \(\beta = 1/4\); the first line of the softplus snippet below takes the largest such ratio over a grid.
+
 Why care? Because smoothness puts a ceiling over the function, just as convexity put a floor under it.
 
 **Claim (quadratic upper bound).** If \(f\) is \(\beta\)-smooth, then for all \(\mathbf v, \mathbf w\),
 
 \[ f(\mathbf v) \le f(\mathbf w) + \langle \nabla f(\mathbf w), \mathbf v - \mathbf w \rangle + \frac{\beta}{2} \|\mathbf v - \mathbf w\|^2. \]
 
+The first two terms on the right are the tangent plane at \(\mathbf w\); the third adds a bowl, \(\beta/2\) times the squared distance from \(\mathbf w\). In plain words: **the tangent plus a bowl of curvature \(\beta\) is a ceiling over the graph.** For softplus at \(w = 0\), \(v = 2\): the tangent gives \(0.6931 + 0.5 \cdot 2 = 1.6931\), the bowl adds \(\frac18 \cdot 4 = 0.5\), and the ceiling 2.1931 is above the true \(f(2) = 2.1269\), which is above the tangent floor. The `upper` line of the softplus snippet below is this inequality, term by term.
+
 *Proof.* Walk from \(\mathbf w\) to \(\mathbf v\) along the segment and set \(h(t) = f(\mathbf w + t(\mathbf v - \mathbf w))\) for \(t \in [0, 1]\). By the chain rule, \(h'(t) = \langle \nabla f(\mathbf w + t(\mathbf v - \mathbf w)), \mathbf v - \mathbf w \rangle\), which is continuous in \(t\) because the gradient is Lipschitz. The fundamental theorem of calculus gives
 
 \[ f(\mathbf v) - f(\mathbf w) = h(1) - h(0) = \int_0^1 \langle \nabla f(\mathbf w + t(\mathbf v - \mathbf w)), \mathbf v - \mathbf w \rangle \, dt. \]
 
-Add and subtract \(\nabla f(\mathbf w)\) inside the inner product:
+The integral sign \(\int_0^1 \dots \, dt\) adds up the quantity inside over every \(t\) from 0 to 1, in infinitely thin slices of width \(dt\). In plain words: **the total change along the segment is the sum of all the small changes along the way.** For \(f(x) = x^2\) from \(w = 1\) to \(v = 3\), the slope along the way is \(h'(t) = 2(1 + 2t) \cdot 2\), and adding it up over 100,000 thin slices gives back \(9 - 1 = 8\):
+
+```python
+f = lambda x: x * x
+df = lambda x: 2 * x
+w, v, n = 1, 3, 100000
+h1 = lambda t: df(w + t * (v - w)) * (v - w)
+area = sum(h1((k + 0.5) / n) for k in range(n)) / n
+print(f(v) - f(w), round(area, 6))
+```
+
+It prints `8 8.0`. Add and subtract \(\nabla f(\mathbf w)\) inside the inner product:
 
 \[ f(\mathbf v) - f(\mathbf w) = \langle \nabla f(\mathbf w), \mathbf v - \mathbf w \rangle + \int_0^1 \langle \nabla f(\mathbf w + t(\mathbf v - \mathbf w)) - \nabla f(\mathbf w), \mathbf v - \mathbf w \rangle \, dt. \]
 
