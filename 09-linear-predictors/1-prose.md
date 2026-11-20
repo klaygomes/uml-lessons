@@ -182,7 +182,7 @@ In the separable case the minimum empirical risk is 0, so an ERM hypothesis is e
 
 \[ y_i \langle \mathbf w, \mathbf x_i \rangle > 0 \quad \text{for all } i = 1, \dots, m. \]
 
-Here \(m\) is the number of labelled examples, eight for us, and the subscript \(i\) picks one of them: \(\mathbf x_i\) is message \(i\) (with the 1 glued on) and \(y_i\) its label. Inside out: \(\langle \mathbf w, \mathbf x_i \rangle\) is the score of message \(i\), \(y_i\) times it is the signed score, \(> 0\) says message \(i\) is classified correctly, and “for all \(i = 1, \dots, m\)” demands that for every one of the \(m\) messages at once. In plain words: **find weights whose signed score is positive on every training message.** With \(\mathbf w = (-1, 2, -2)\), bias term first, the eight signed scores are all positive:
+Here \(m\) is the number of labelled examples, eight for us, and the subscript \(i\) picks one of them: \(\mathbf x_i\) is message \(i\) (with the 1 glued on) and \(y_i\) its label. Each condition is the signed score test from above, and “for all \(i = 1, \dots, m\)” demands it for every message at once. In plain words: **find weights whose signed score is positive on every training message.** With \(\mathbf w = (-1, 2, -2)\), bias term first, the eight signed scores are all positive:
 
 ```python
 S = [((3, 0), 1), ((2, 1), 1), ((4, 2), 1), ((1, 0), 1),
@@ -228,11 +228,11 @@ Our constraints \(y_i \langle \mathbf w, \mathbf x_i \rangle > 0\) are almost of
 
 **Claim.** If \(S\) is separable, there is a vector \(\bar{\mathbf w}\) with \(y_i \langle \bar{\mathbf w}, \mathbf x_i \rangle \ge 1\) for all \(i\). Conversely, any such vector is an ERM hypothesis.
 
-*Proof.* Let \(\mathbf w^\star\) satisfy \(y_i \langle \mathbf w^\star, \mathbf x_i \rangle > 0\) for all \(i\); it exists because \(S\) is separable. Let \(\gamma = \min_i y_i \langle \mathbf w^\star, \mathbf x_i \rangle\). This is a minimum of finitely many positive numbers, so \(\gamma > 0\). Set \(\bar{\mathbf w} = \mathbf w^\star / \gamma\). The inner product is linear in its first argument, so for every \(i\),
+*Proof.* The star in \(\mathbf w^\star\) marks the separator we start from, and the bar in \(\bar{\mathbf w}\) the rescaled one we build. Let \(\mathbf w^\star\) satisfy \(y_i \langle \mathbf w^\star, \mathbf x_i \rangle > 0\) for all \(i\); it exists because \(S\) is separable. Let \(\gamma\) (gamma) be its smallest signed score, \(\gamma = \min_i y_i \langle \mathbf w^\star, \mathbf x_i \rangle\), where \(\min_i\) means “the smallest value over all \(i\)”. This is a minimum of finitely many positive numbers, so \(\gamma > 0\). Set \(\bar{\mathbf w} = \mathbf w^\star / \gamma\). The inner product is linear in its first argument, so for every \(i\),
 
 \[ y_i \langle \bar{\mathbf w}, \mathbf x_i \rangle = \frac{1}{\gamma} \, y_i \langle \mathbf w^\star, \mathbf x_i \rangle \ge \frac{\gamma}{\gamma} = 1, \]
 
-where the inequality is just \(y_i \langle \mathbf w^\star, \mathbf x_i \rangle \ge \gamma\), the definition of \(\gamma\) as the minimum. Here \(\min_i\) means “the smallest value over all \(i\)”, the star in \(\mathbf w^\star\) marks the separator we started from, the bar in \(\bar{\mathbf w}\) marks the rescaled one, and the Greek letter \(\gamma\) (gamma) is the smallest signed score. Read the display inside out: dividing the weights by \(\gamma\) divides every score by \(\gamma\); each original signed score was at least \(\gamma\); so each new one is at least \(\gamma / \gamma = 1\). In plain words: **divide the separator by its smallest signed score, and the smallest becomes exactly 1.** If the closest call scored 0.5, dividing by 0.5 doubles everything and the closest call now scores 1; the snippet at the end of this section does exactly that on our messages. For the converse, \(y_i \langle \bar{\mathbf w}, \mathbf x_i \rangle \ge 1 > 0\) says every example is labelled correctly, so the empirical risk is 0, the smallest possible. \(\blacksquare\)
+where the inequality is just \(y_i \langle \mathbf w^\star, \mathbf x_i \rangle \ge \gamma\), the definition of \(\gamma\) as the minimum. Read the display inside out: dividing the weights by \(\gamma\) divides every score by \(\gamma\); each original signed score was at least \(\gamma\); so each new one is at least \(\gamma / \gamma = 1\). In plain words: **divide the separator by its smallest signed score, and the smallest becomes exactly 1.** If the closest call scored 0.5, dividing by 0.5 doubles everything and the closest call now scores 1; the snippet at the end of this section does exactly that on our messages. For the converse, \(y_i \langle \bar{\mathbf w}, \mathbf x_i \rangle \ge 1 > 0\) says every example is labelled correctly, so the empirical risk is 0, the smallest possible. \(\blacksquare\)
 
 Multiplying \(\mathbf w\) by a positive number never changes the sign of any score, so it never changes the hypothesis. That freedom is what we spent.
 
@@ -284,7 +284,7 @@ Why is that a sensible thing to do? Ask what the update does to the example it w
 
 \[ y_i \langle \mathbf w^{(t+1)}, \mathbf x_i \rangle = y_i \langle \mathbf w^{(t)} + y_i \mathbf x_i, \mathbf x_i \rangle = y_i \langle \mathbf w^{(t)}, \mathbf x_i \rangle + y_i^2 \|\mathbf x_i\|^2 = y_i \langle \mathbf w^{(t)}, \mathbf x_i \rangle + \|\mathbf x_i\|^2. \]
 
-The first equality is the update, the second splits the inner product (it is linear in each argument), and the third uses \(y_i^2 = 1\), which is the third reason for \(\pm 1\) labels. So every update raises that example’s signed score by exactly \(\|\mathbf x_i\|^2\). It pushes \(\mathbf w\) to be “more correct” on the example it just got wrong. Of course it may make things worse on other examples, which is why we need a proof that the process ends at all. In one sentence: **an update raises the signed score of the message it was made for by that message’s squared length.** Take the second step of our run: the weights are \((1, 3, 0)\), and keep message E, \((1, 1, 2)\), scores 4, so its signed score is \(-4\), a mistake. Subtracting E gives \((0, 2, -2)\), which scores E at \(-2\), signed score 2. The gain is \(2 - (-4) = 6\), exactly \(\|\mathbf x\|^2\):
+The first equality is the update, the second splits the inner product (it is linear in each argument), and the third uses \(y_i^2 = 1\), which is the third reason for \(\pm 1\) labels. The update may make things worse on other examples, which is why we need a proof that the process ends at all. In plain words: **an update raises the signed score of the message it was made for by that message’s squared length.** Take the second step of our run: the weights are \((1, 3, 0)\), and keep message E, \((1, 1, 2)\), scores 4, so its signed score is \(-4\), a mistake. Subtracting E gives \((0, 2, -2)\), which scores E at \(-2\), signed score 2. The gain is \(2 - (-4) = 6\), exactly \(\|\mathbf x\|^2\):
 
 ```python
 dot = lambda u, v: sum(a * b for a, b in zip(u, v))
@@ -331,7 +331,7 @@ while mistakes(w):
 print(T, updated, w)
 ```
 
-It prints `3 [1, 5, 8] [-1, 2, -2]`. Three updates, on messages A, E and H, and the result is \(\mathbf w = (-1, 2, -2)\): bias term \(-1\), weight 2 on “free”, weight \(-2\) on “meeting”. That is exactly the score \(2x_1 - 2x_2 - 1\) we found by hand. Trace it with a pencil: after A the weights are \((1, 3, 0)\); E, a keep message with vector \((1, 1, 2)\), is then scored \(1 + 3 = 4 > 0\), a mistake, and subtracting it gives \((0, 2, -2)\); H, the empty message \((1, 0, 0)\), now scores 0, which counts as a mistake, and subtracting it gives \((-1, 2, -2)\).
+It prints `3 [1, 5, 8] [-1, 2, -2]`. Three updates, on messages A, E and H, and the result is \(\mathbf w = (-1, 2, -2)\): bias term \(-1\), weight 2 on “free”, weight \(-2\) on “meeting”. That is exactly the score \(2x_1 - 2x_2 - 1\) we found by hand. The first two updates are the ones traced above; after them, H, the empty message \((1, 0, 0)\), scores 0, which counts as a mistake, and subtracting it gives \((-1, 2, -2)\).
 
 [[diagram:perceptron]]
 
@@ -415,7 +415,7 @@ So \(\sqrt T \le R \|\mathbf w^\star\|\), that is, \(T \le (R \|\mathbf w^\star\
 
 *Step 4: the best \(\mathbf w^\star\).* The bound holds for every \(\mathbf w^\star\) that scores all examples at least 1, so it holds for the shortest one: \(T \le (RB)^2\). In other words, the Perceptron cannot make more than \((RB)^2\) updates. Every pass through its loop either updates or stops, so it stops after at most \((RB)^2\) updates. \(\blacksquare\)
 
-Watch the two invariants on our run. Take \(\bar{\mathbf w} = (-1, 2, -2)\) as the \(\mathbf w^\star\): its smallest score is exactly 1 (the earlier snippet printed scores 5, 1, 3, 1, 3, 3, 3, 1 after signs), and \(R^2 = \|(1, 4, 2)\|^2 = 21\), from message C. Replay the three updates:
+Watch the two invariants on our run, with \(\mathbf w^\star = (-1, 2, -2)\) (smallest signed score 1) and \(R^2 = 21\). Replay the three updates:
 
 ```python
 X = [(1, 3, 0), (1, 1, 2), (1, 0, 0)]

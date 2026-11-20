@@ -170,7 +170,28 @@ It prints `x^2 0.0`, `softplus 0.0`, `abs 0.0` and `step 0.99`. The first three 
 
 ## Every local minimum is global
 
-Here is the property that makes convexity worth all this. Let \(B(\mathbf u, r) = \{\mathbf v : \|\mathbf v - \mathbf u\| \le r\}\) be the ball of radius \(r\) around \(\mathbf u\). We say \(f(\mathbf u)\) is a **local minimum** of \(f\) at \(\mathbf u\) if there is some \(r > 0\) such that \(f(\mathbf v) \ge f(\mathbf u)\) for every \(\mathbf v \in B(\mathbf u, r)\): nothing nearby is lower. A **global minimum** is lower than or equal to every point, near or far. The point \(-\mathbf w^\circ\) of the worked example is a local minimum of the 0-1 risk, with value 0.8, and it is not global.
+Here is the property that makes convexity worth all this. Remember the plateau around \(-\mathbf w^\circ\): every point within distance 0.218 had risk 0.8, nothing nearby was lower, and yet 0.2 existed far away. Let \(B(\mathbf u, r) = \{\mathbf v : \|\mathbf v - \mathbf u\| \le r\}\) be the ball of radius \(r\) around \(\mathbf u\): the set of points \(\mathbf v\) such that the distance \(\|\mathbf v - \mathbf u\|\) from \(\mathbf u\) is at most \(r\). We say \(f(\mathbf u)\) is a **local minimum** of \(f\) at \(\mathbf u\) if there is some \(r > 0\) such that \(f(\mathbf v) \ge f(\mathbf u)\) for every \(\mathbf v \in B(\mathbf u, r)\): nothing nearby is lower. A **global minimum** is lower than or equal to every point, near or far. The point \(-\mathbf w^\circ\) of the worked example is a local minimum of the 0-1 risk, with value 0.8, and it is not global. Sample 10,000 points of the ball of radius 0.2 around it and collect the risks you see:
+
+```python
+import math, random
+
+S = [((3, 0), 1), ((2, 1), 1), ((4, 2), 1), ((1, 0), 1),
+     ((1, 2), -1), ((0, 1), -1), ((2, 3), -1), ((0, 0), -1),
+     ((2, 1), -1), ((1, 2), 1)]
+X, Y = [(1,) + x for x, _ in S], [y for _, y in S]
+dot = lambda u, v: sum(a * b for a, b in zip(u, v))
+risk01 = lambda w: sum(y * dot(w, x) <= 0
+                       for x, y in zip(X, Y)) / 10
+u, r = (1, -2, 2), 0.2
+rng, seen = random.Random(3), set()
+for _ in range(10000):
+    d = [rng.gauss(0, 1) for _ in u]
+    s = r * rng.random() / math.sqrt(dot(d, d))
+    seen.add(risk01([a + s * b for a, b in zip(u, d)]))
+print(seen)
+```
+
+It prints `{0.8}`: each point is \(\mathbf u\) plus a random direction scaled to a length below \(r\), so it lies in \(B(\mathbf u, r)\), and none of them does better.
 
 **Claim.** If \(f\) is convex, every local minimum of \(f\) is a global minimum.
 
@@ -182,17 +203,41 @@ But \(\mathbf u + \alpha(\mathbf v - \mathbf u) = \alpha \mathbf v + (1 - \alpha
 
 \[ f(\mathbf u + \alpha(\mathbf v - \mathbf u)) = f(\alpha \mathbf v + (1 - \alpha)\mathbf u) \le (1 - \alpha) f(\mathbf u) + \alpha f(\mathbf v). \]
 
-Chain the two: \(f(\mathbf u) \le (1 - \alpha) f(\mathbf u) + \alpha f(\mathbf v)\). Subtract \((1 - \alpha) f(\mathbf u)\) from both sides to get \(\alpha f(\mathbf u) \le \alpha f(\mathbf v)\), and divide by \(\alpha > 0\): \(f(\mathbf u) \le f(\mathbf v)\). Since \(\mathbf v\) was arbitrary, \(f(\mathbf u)\) is a global minimum. \(\square\)
+This is the chord inequality again, with the roles of \(\mathbf u\) and \(\mathbf v\) swapped, so nothing new to read. Chain the two: \(f(\mathbf u) \le (1 - \alpha) f(\mathbf u) + \alpha f(\mathbf v)\). Subtract \((1 - \alpha) f(\mathbf u)\) from both sides to get \(\alpha f(\mathbf u) \le \alpha f(\mathbf v)\), and divide by \(\alpha > 0\): \(f(\mathbf u) \le f(\mathbf v)\). Since \(\mathbf v\) was arbitrary, \(f(\mathbf u)\) is a global minimum. \(\square\)
 
 Read that as a promise to a search algorithm. On a convex landscape, the moment you cannot improve locally, you are done globally. There are no false bottoms to get trapped in.
 
 ## The tangent below the graph
 
-A second property gives a searcher a sense of direction, and a way to know how far from the bottom it is. When \(f\) is differentiable, its **gradient** at \(\mathbf w\) is the vector of partial derivatives,
+A second property gives a searcher a sense of direction, and a way to know how far from the bottom it is. Take lesson 9’s logistic risk on the ten messages, the average of \(\log(1 + \exp(-y\langle \mathbf w, \mathbf x \rangle))\), and stand at \(\mathbf w = \mathbf 0\), where it equals \(\log 2 \approx 0.6931\). Nudge one weight at a time by a tiny amount and watch how fast the risk changes: nudging the bias weight changes nothing, nudging the “free” weight up lowers the risk at rate 0.3, nudging the “meeting” weight up raises it at rate 0.1. Those three rates, collected into a vector, are the gradient. When \(f\) is differentiable, its **gradient** at \(\mathbf w\) is the vector of partial derivatives,
 
-\[ \nabla f(\mathbf w) = \left( \frac{\partial f(\mathbf w)}{\partial w_1}, \dots, \frac{\partial f(\mathbf w)}{\partial w_d} \right), \]
+\[ \nabla f(\mathbf w) = \left( \frac{\partial f(\mathbf w)}{\partial w_1}, \dots, \frac{\partial f(\mathbf w)}{\partial w_d} \right). \]
 
-and the tangent plane at \(\mathbf w\) is the linear function \(\mathbf u \mapsto f(\mathbf w) + \langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle\). For a convex function, that tangent lies below the graph everywhere, not just near \(\mathbf w\).
+- \(\nabla\), “nabla” or “grad”, names the gradient; \(\nabla f(\mathbf w)\) is a vector with one entry per weight.
+- \(\frac{\partial f(\mathbf w)}{\partial w_j}\), the partial derivative with respect to \(w_j\), is the rate at which \(f\) changes when only the \(j\)-th weight moves and the others stay put.
+- The subscripts run from 1 to \(d\), the number of weights.
+
+In plain words: **the gradient lists, weight by weight, how steeply \(f\) rises.** The snippet nudges each weight by \(10^{-6}\) and divides the change by the nudge:
+
+```python
+import math
+
+S = [((3, 0), 1), ((2, 1), 1), ((4, 2), 1), ((1, 0), 1),
+     ((1, 2), -1), ((0, 1), -1), ((2, 3), -1), ((0, 0), -1),
+     ((2, 1), -1), ((1, 2), 1)]
+X, Y = [(1,) + x for x, _ in S], [y for _, y in S]
+dot = lambda u, v: sum(a * b for a, b in zip(u, v))
+f = lambda w: sum(math.log(1 + math.exp(-y * dot(w, x)))
+                  for x, y in zip(X, Y)) / 10
+w, h = [0.0, 0.0, 0.0], 1e-6
+grad = []
+for j in range(3):
+    up = [c + h * (k == j) for k, c in enumerate(w)]
+    grad.append(round((f(up) - f(w)) / h, 4))
+print(round(f(w), 4), grad)
+```
+
+It prints `0.6931 [0.0, -0.3, 0.1]`. The tangent plane at \(\mathbf w\) is the linear function \(\mathbf u \mapsto f(\mathbf w) + \langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle\) (the arrow \(\mapsto\) reads “sends \(\mathbf u\) to”): start at the height \(f(\mathbf w)\) and add, for each weight, its rate times how far \(\mathbf u\) moved in it. For a convex function, that tangent lies below the graph everywhere, not just near \(\mathbf w\).
 
 **Claim (tangent inequality).** If \(f : \mathbb R^d \to \mathbb R\) is convex and differentiable, then for all \(\mathbf w, \mathbf u\),
 

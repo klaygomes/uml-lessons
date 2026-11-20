@@ -67,7 +67,7 @@ The lesson has three parts, and the map below shows how they fit together.
 
 [[diagram:selection-map]]
 
-1. **Feature selection**: from a large pool of \(d\) features, keep a small number \(k\). We will see three families: filters, greedy selection, and sparsity-inducing norms.
+1. **Feature selection**: from a large pool of \(d\) features, keep a small number \(k\). We will see three families: filter methods, greedy selection, and sparsity-inducing norms.
 2. **Feature manipulation and normalization**: change each feature’s scale or shape, by centering, rescaling, clipping or taking logarithms.
 3. **Feature learning**: let the data build new features, through dictionary learning and auto-encoders.
 
@@ -121,11 +121,11 @@ for k in (1, 3, 10):
     print(k, f"{comb(d, k):.3g}")
 ```
 
-It prints `1 2e+04`, `3 1.33e+12` and `10 2.82e+36`. Three words out of twenty thousand is already over a trillion least-squares fits; ten is hopeless. And this is not a failure of imagination: the sparsity-constrained problem is known to be computationally hard in general (lesson 8 is where hardness of this kind lives). So we settle for methods that are cheap and often work well, without a promise of finding the best set. We take them in order of how much they know about each other: a filter scores each feature alone; greedy selection adds features while watching the ones it already has; the \(\ell_1\) norm lets an optimizer decide everything at once.
+It prints `1 2e+04`, `3 1.33e+12` and `10 2.82e+36`. Three words out of twenty thousand is already over a trillion least-squares fits; ten is hopeless. And this is not a failure of imagination: the sparsity-constrained problem is known to be computationally hard in general (lesson 8 is where hardness of this kind lives). So we settle for methods that are cheap and often work well, without a promise of finding the best set. We take them in order of how much they know about each other: a filter method scores each feature alone; greedy selection adds features while watching the ones it already has; the \(\ell_1\) norm lets an optimizer decide everything at once.
 
-## Filters: score each feature on its own
+## Filter methods: score each feature on its own
 
-The simplest idea is a **filter**: give every feature a score that measures how useful it is on its own, then keep the \(k\) features with the best scores (or keep every feature whose score passes a threshold). The scores are computed one feature at a time, ignoring the others.
+The simplest idea is a **filter method**: give every feature a score that measures how useful it is on its own, then keep the \(k\) features with the best scores (or keep every feature whose score passes a threshold). The mail filter is the product; a filter method is one way of choosing its features. The scores are computed one feature at a time, ignoring the others.
 
 Which score? The most natural one asks: if the learner could use only this feature, how well would it do? Let’s make that concrete with linear regression and the square loss, the setting of lesson 9. Here is a training sequence of eight messages with labels \(+1\) for junk and \(-1\) for keep, and three candidate features: the number of exclamation marks (“bangs”), the number of links, and whether it was sent at night.
 
@@ -266,13 +266,13 @@ for name, v in features.items():
     print(name, round(pearson(v, y), 4))
 ```
 
-It prints `bangs 0.6138`, `links 0.2582`, `night 0.5`. Check bangs against the loss: \(1 \cdot (1 - 0.6138^2) \approx 0.6233\). A filter with \(k = 1\) keeps bangs, and with \(k = 2\) keeps bangs and night. Scoring each feature costs one pass over its \(m\) values, so the whole filter costs \(O(dm)\) time plus \(O(d \log d)\) to sort the scores, and \(O(d)\) extra space. Cheap enough for twenty thousand words.
+It prints `bangs 0.6138`, `links 0.2582`, `night 0.5`. Check bangs against the loss: \(1 \cdot (1 - 0.6138^2) \approx 0.6233\). A filter method with \(k = 1\) keeps bangs, and with \(k = 2\) keeps bangs and night. Scoring each feature costs one pass over its \(m\) values, so the whole filter method costs \(O(dm)\) time plus \(O(d \log d)\) to sort the scores, and \(O(d)\) extra space. Cheap enough for twenty thousand words.
 
 Pearson’s coefficient is not the only score in use. Estimates of the mutual information between a feature and the label, or the area under the ROC curve of a single-feature rule, are popular too. They all share the weakness we are about to find.
 
 ## When a lonely score lies
 
-A correlation of zero says that the best line in this feature alone is flat: the feature, alone, cannot help a linear predictor. It does not say the feature is useless. Here is a case where the filter throws away the one feature you cannot do without.
+A correlation of zero says that the best line in this feature alone is flat: the feature, alone, cannot help a linear predictor. It does not say the feature is useless. Here is a case where the filter method throws away the one feature you cannot do without.
 
 Your mail system has an old hand-tuned score from last year, “old”, which nobody documented. Unknown to you, last year’s engineer built it as half the junk signal minus half the link indicator, because back then links mostly meant newsletters. Write junk as \(y = \pm 1\), and “has a link” as \(\pm 1\), independent of junk. Then old \(= (y - \text{link})/2\), and therefore \(y = \text{link} + 2 \cdot \text{old}\) exactly. Here are eight messages covering every combination twice, with a third feature, bangs, that agrees with the label on six of the eight.
 
@@ -298,7 +298,7 @@ fit = [1 * a + 2 * b for a, b in zip(link, old)]
 print(fit == y)
 ```
 
-It prints `link 0.0`, `old 0.7071`, `bangs 0.5`, and `True`. Link has correlation exactly zero, so the filter keeps old and bangs, and the best line on those two still has square loss \(3/7 \approx 0.43\) on average. Meanwhile link together with old fits every label perfectly. No predictor can do well here without link, and the filter ranks it last.
+It prints `link 0.0`, `old 0.7071`, `bangs 0.5`, and `True`. Link has correlation exactly zero, so the filter method keeps old and bangs, and the best line on those two still has square loss \(3/7 \approx 0.43\) on average. Meanwhile link together with old fits every label perfectly. No predictor can do well here without link, and the filter ranks it last.
 
 [[diagram:filter-blind]]
 
@@ -331,7 +331,7 @@ print(E([yi * q for yi, q in zip(y, x2)]))
 
 It prints `0.0 0.0 0.0`, then `1.0 -1.0 0.0` (the two pieces and their sum), then `0.5` for \(\mathbb E[y x_2]\). With a large enough training sequence, link’s Pearson score will be close to zero and it will almost certainly not be selected. The mutual-information and ROC scores suffer from the same blindness: any score that looks at one feature at a time cannot see a feature whose value lies only in combination.
 
-The lab below puts you in this world, with link, old, bangs and a few dozen noise words, and lets you run a filter with any \(k\) and compare it with a set of features you pick by hand.
+The lab below puts you in this world, with link, old, bangs and a few dozen noise words, and lets you run the filter method with any \(k\) and compare it with a set of features you pick by hand.
 
 [[lab]]
 
@@ -339,7 +339,7 @@ The lab below puts you in this world, with link, old, bangs and a few dozen nois
 
 The filter’s mistake was to judge each feature in isolation. The fix is to judge each candidate *next to the features already chosen*, by actually running the learner. That is **forward greedy selection**. Start with no features. In each round, try adding each feature not yet chosen, fit the learner on the chosen set plus that one candidate, and keep the candidate whose fitted predictor has the smallest risk, measured on the training sequence or, better, on a validation set as in lesson 11. Stop when you have \(k\) features, where \(k\) is your budget, or when the predictor is accurate enough.
 
-Let’s watch it on the cancelling world. Round 1 fits each feature alone, which is exactly the filter’s question: old wins with error \(4/8 = 0.5\). Round 2 tries old plus link, and old plus bangs, and old plus link fits perfectly. The greedy method finds the pair the filter could not, because in round 2 it asks the right question: given old, which feature helps?
+Let’s watch it on the cancelling world. Round 1 fits each feature alone, which is exactly the filter method’s question: old wins with error \(4/8 = 0.5\). Round 2 tries old plus link, and old plus bangs, and old plus link fits perfectly. The greedy method finds the pair the filter method could not, because in round 2 it asks the right question: given old, which feature helps?
 
 Now let’s make the rounds precise for linear regression with the square loss. Put the \(m\) training messages as the rows of a matrix \(X\), so \(X\) has \(m\) rows and \(d\) columns, and write \(X_j\) for its \(j\)-th column, the values of feature \(j\) on all \(m\) messages. For a set of feature positions \(I\), let \(X_I\) be the matrix made of just the columns in \(I\). We drop the intercept here, as lesson 9 did with its homogeneous form: you can always include a constant feature among the columns.
 
@@ -360,7 +360,7 @@ Read it from the inside out.
 - \(\min_{\mathbf w}\) fits the weights: this is a least-squares fit, lesson 9’s algorithm, on \(t\) columns.
 - \(\operatorname{argmin}_{j \notin I_{t-1}}\) returns the candidate \(j\) (among those not already chosen) whose fitted loss is smallest. The symbol \(\in\) is there because several candidates can tie; any one of them will do.
 
-In plain words: **in each round, add the feature that, fitted together with the ones you already have, gives the smallest training loss.** In round 1 of the six-message example, each single column is fitted by the weight \(w = \langle X_j, \mathbf y \rangle / \|X_j\|^2\) (the same calculation as the slope in the filter section, without centering), and the losses are:
+In plain words: **in each round, add the feature that, fitted together with the ones you already have, gives the smallest training loss.** In round 1 of the six-message example, each single column is fitted by the weight \(w = \langle X_j, \mathbf y \rangle / \|X_j\|^2\) (the same calculation as the slope in the filter-method section, without centering), and the losses are:
 
 ```python
 def dot(a, b): return sum(p * q for p, q in zip(a, b))
@@ -401,7 +401,7 @@ so forward greedy selection’s choice is \(j_t \in \operatorname{argmax}_j \lan
 
 - The left side is forward greedy’s round-\(t\) score for candidate \(j\): the loss after refitting.
 - \(\|V_{t-1}\boldsymbol\theta_{t-1} - \mathbf y\|^2\) is the loss of the current predictor, before adding anything. It is the same for every candidate.
-- \(\langle \mathbf u_j, \mathbf y \rangle^2 / \|\mathbf u_j\|^2\) is how much the new part of feature \(j\) can explain of the labels, the same shape as the filter’s score but computed on the *new part*.
+- \(\langle \mathbf u_j, \mathbf y \rangle^2 / \|\mathbf u_j\|^2\) is how much the new part of feature \(j\) can explain of the labels, the same shape as the filter method’s score but computed on the *new part*.
 - \(\operatorname{argmax}_j\) returns the candidate with the largest value.
 
 In plain words: **adding a feature lowers the loss by exactly the squared alignment of its new part with the labels, so the best feature to add is the one whose new part lines up best.**
@@ -958,19 +958,19 @@ for k in (1, 2, 3, 4, 5, d):
 
 It prints `1 15.0 0.0697`, `2 27.0 0.0895`, `3 38.3 0.1049`, `4 49.1 0.1179`, `5 59.7 0.1293` and `20002 41605.9 3.724`. With four features, the training error can mislead you by at most about 0.118. With all of them, the “gap” is 3.7, more than the largest possible risk: no certificate at all. That is the opening bug, measured. A filter that reads every word may look perfect on its training sequence and you can promise nothing about it.
 
-Notice what the bound does *not* require: that you pick the features in any particular way. It holds for every filter in \(\mathcal H_k\) at once, so you may choose the \(k\) features by a filter score, by forward greedy selection, or by staring at the data, and the certificate still holds. What it does require is that the menu of transformations was fixed before the labels were seen.
+Notice what the bound does *not* require: that you pick the features in any particular way. It holds for every filter in \(\mathcal H_k\) at once, so you may choose the \(k\) features by a filter-method score, by forward greedy selection, or by staring at the data, and the certificate still holds. What it does require is that the menu of transformations was fixed before the labels were seen.
 
 ## Fix the bug
 
 The lab below gives you the real mail stream: 20,000 words, the length in bytes and the sender volume, and a fixed budget of 2,000 labelled messages, already drawn. You choose up to five features, a transformation for each, and the lab fits the signs and the threshold that minimize the training error and prints \(L_S\), the gap and their sum. Your goal: a filter whose **certified** true risk, \(L_S(h)\) plus the gap, is at most 0.19. A filter whose fresh-message error happens to be low but whose certificate is above 0.19 does not count.
 
-Before you start, think about three things. Which of the transformations in the toolbox survive a 900,000-byte outlier? What does adding a fifth feature cost you in gap, and what must it buy in training error to pay for itself? And what will the filter score of the sender volume look like when its values run into the millions?
+Before you start, think about three things. Which of the transformations in the toolbox survive a 900,000-byte outlier? What does adding a fifth feature cost you in gap, and what must it buy in training error to pay for itself? And what will the filter-method score of the sender volume look like when its values run into the millions?
 
 [[lab-act2]]
 
 ## What people get wrong
 
-**“A feature with zero correlation is useless.”** Zero correlation says only that the best line in that feature *alone* is flat. In the cancelling world, link has correlation exactly 0 and is indispensable: together with old it predicts every label. Filters cannot see features whose value lies in combination; greedy selection, which scores a candidate next to the features already chosen, can.
+**“A feature with zero correlation is useless.”** Zero correlation says only that the best line in that feature *alone* is flat. In the cancelling world, link has correlation exactly 0 and is indispensable: together with old it predicts every label. Filter methods cannot see features whose value lies in combination; greedy selection, which scores a candidate next to the features already chosen, can.
 
 **“The \(\ell_2\) penalty also selects features, just more gently.”** It shrinks every weight by a factor but never to zero. With a correlation of 0.1 and \(\lambda = 0.15\), the \(\ell_2\) weight is 0.077 and the \(\ell_1\) weight is exactly 0. Only the \(\ell_1\) price has the constant pull towards zero that stops weak features dead.
 
@@ -984,7 +984,7 @@ Before you start, think about three things. Which of the transformations in the 
 
 1. A feature is a measurement of a message, and the representation is prior knowledge, chosen before the hypothesis class. How good a feature is depends on the learner: \(x_1\) with \(y = x_1^2\) is perfect for a parabola and useless for a line.
 2. Feature selection asks for the best predictor with \(\|\mathbf w\|_0 \le k\), which is hard to solve exactly, so we use cheaper methods.
-3. **Filters** score each feature alone. For linear regression with the square loss, ranking by the best single-feature line is ranking by \(|\rho|\), Pearson’s correlation, and it costs \(O(dm)\). Filters miss features that help only in combination.
+3. **Filter methods** score each feature alone. For linear regression with the square loss, ranking by the best single-feature line is ranking by \(|\rho|\), Pearson’s correlation, and it costs \(O(dm)\). Filter methods miss features that help only in combination.
 4. **Forward greedy selection** adds the feature that helps most next to those chosen. **OMP** does the same for least squares, scoring each candidate by \(\langle \mathbf u_j, \mathbf y \rangle^2/\|\mathbf u_j\|^2\), the alignment of its new part with the labels, in \(O(Tdm)\). The steepest-gradient rule and AdaBoost are greedy selections too. **Backward elimination** removes the least useful feature each round, at a much higher cost.
 5. The **\(\ell_1\) norm** is the convex stand-in for the count. Soft thresholding shows why it gives exact zeros: a weight whose evidence is below \(\lambda\) is set to zero. The **LASSO** is least squares with this price, solvable by coordinate descent.
 6. **Normalization and transformations** change what a learner can afford and even what it can express: ridge and units, clipping and approximation error, and a toolbox (centering, unit range, standardization, clipping, sigmoid, logarithm), each a bet about the problem.

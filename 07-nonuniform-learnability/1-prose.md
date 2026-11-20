@@ -85,7 +85,7 @@ for n in (1, 2, 3):
     print(n, terms, total, brute(n), round(math.log2(total), 2))
 ```
 
-It prints `1 [1, 2] 6 6 2.58`, `2 [1, 4, 8] 26 26 4.7` and `3 [1, 6, 24, 48] 158 158 7.3`. `math.perm(n, k)` is \(n!/(n-k)!\), and `brute` lists every ordered choice of features one by one and gets the same totals. So there are 6 lists of size at most 1, 26 of size at most 2, 158 of size at most 3, and then it explodes: 151,946 of size at most 6.
+It prints `1 [1, 2] 6 6 2.58`, `2 [1, 4, 8] 26 26 4.7` and `3 [1, 6, 24, 48] 158 158 7.3`. `math.perm(n, k)` is \(n!/(n-k)!\), and `brute` lists every ordered choice of features one by one and gets the same totals. Then it explodes: 151,946 lists of size at most 6.
 
 Each \(\mathcal H_n\) is finite, so its VC dimension is finite. Shattering \(d\) messages means producing all \(2^d\) labellings of them, which takes at least \(2^d\) different hypotheses, so \(2^d \le |\mathcal H_n|\). Taking the base-2 logarithm, \(\log_2\), which asks “2 to what power gives this number?”, turns that into \(d \le \log_2 |\mathcal H_n|\). The last column above is that logarithm: the 6 lists of \(\mathcal H_1\) can shatter at most 2 messages, since \(2^3 = 8\) labellings would need 8 lists. The union is another story. Here is the reviewer’s argument, made exact.
 
@@ -253,7 +253,7 @@ That is your teammate’s wish, granted with a guarantee attached. Long lists ar
 
 Let’s make all of this exact. From here on, \(\mathcal D\) is any distribution over \(\mathcal X \times \{0, 1\}\), pairs of a message and a label, as in lesson 3’s **agnostic** setting, where labels may be noisy and no hypothesis need be perfect. The loss is the **0-1 loss**: 1 for a wrong label, 0 for a right one, so a risk is a fraction of mistakes.
 
-**Recap from earlier lessons.** First, in words. A class is agnostic PAC learnable when you can name, before seeing any data, how many labels make the learner’s true risk at most \(\varepsilon\) worse than the best list in the class, with probability at least \(1 - \delta\), whatever the stream. In symbols, a class \(\mathcal H\) is *agnostic PAC learnable* (lesson 3) if there are a learner \(A\) and a function \(m_{\mathcal H}: (0,1)^2 \to \mathbb N\) such that for every \(\varepsilon, \delta \in (0, 1)\) and every \(\mathcal D\), if \(m \ge m_{\mathcal H}(\varepsilon, \delta)\) then with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\),
+**Recap from earlier lessons.** The PAC promise from the opening, in symbols: a class \(\mathcal H\) is *agnostic PAC learnable* (lesson 3) if there are a learner \(A\) and a function \(m_{\mathcal H}: (0,1)^2 \to \mathbb N\) such that for every \(\varepsilon, \delta \in (0, 1)\) and every \(\mathcal D\), if \(m \ge m_{\mathcal H}(\varepsilon, \delta)\) then with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\),
 
 \[ L_{\mathcal D}(A(S)) \le \min_{h' \in \mathcal H} L_{\mathcal D}(h') + \varepsilon. \]
 
@@ -398,7 +398,7 @@ How many labels does SRM need to compete with a given list, say the three-test o
 
 \[ m^{\mathrm{NUL}}_{\mathcal H}(\varepsilon, \delta, h) \le m^{\mathrm{UC}}_{\mathcal H_{n(h)}}\Big(\frac{\varepsilon}{2}, \frac{6\delta}{(\pi n(h))^2}\Big). \]
 
-Read it from the inside out. \(6\delta/(\pi n(h))^2\) is \(w(n(h)) \cdot \delta\), the share of the budget given to the list’s size, written out. \(\varepsilon/2\) is half the accuracy, because the proof will pay the gap twice. And \(m^{\mathrm{UC}}_{\mathcal H_{n(h)}}\) is the uniform convergence sample size of the list’s own class, run at that half accuracy and that share. In plain words: **to compete with a list of size \(n\), SRM needs only as many labels as uniform convergence on \(\mathcal H_n\) needs at half the accuracy and the size’s share of the confidence.** For the three-test list, \(\varepsilon = 0.1\) and \(\delta = 0.05\): the share is \(0.05 \times 0.0675 = 0.00338\), \(\log(2 \times 158 / 0.00338) = 11.45\), and divided by \(2 \times 0.05^2 = 0.005\) that is 2,290 labels.
+Read it from the inside out. \(6\delta/(\pi n(h))^2\) is \(w(n(h)) \cdot \delta\), the share of the budget given to the list’s size, written out. \(\varepsilon/2\) is half the accuracy, for the two payments of the gap. And \(m^{\mathrm{UC}}_{\mathcal H_{n(h)}}\) is the uniform convergence sample size of the list’s own class, run at that half accuracy and that share. In plain words: **to compete with a list of size \(n\), SRM needs only as many labels as uniform convergence on \(\mathcal H_n\) needs at half the accuracy and the size’s share of the confidence.** For the three-test list, \(\varepsilon = 0.1\) and \(\delta = 0.05\): the share is \(0.05 \times 0.0675 = 0.00338\), \(\log(2 \times 158 / 0.00338) = 11.45\), and divided by \(2 \times 0.05^2 = 0.005\) that is 2,290 labels.
 
 ```python
 import math
