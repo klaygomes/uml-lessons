@@ -89,7 +89,7 @@ What should we expect? With tolerances \(\varepsilon = \delta = 0.1\), we will s
 
 examples, returns a hypothesis with \(L_{\mathcal D}(h_S) \le \varepsilon\) with probability at least \(1 - \delta\). So \(m_{\mathcal H_{\mathrm{thr}}}(\varepsilon, \delta) \le \lceil \log(2/\delta)/\varepsilon \rceil\).
 
-Compare it with the finite-class formula: \(|\mathcal H|\) has been replaced by 2, as if the infinite class of thresholds were a class of two rules. The ceiling brackets \(\lceil \cdot \rceil\) round up to the next whole number. In plain words: **about \(\log(2/\delta)/\varepsilon\) labels give any ERM threshold a true risk of at most \(\varepsilon\), with probability at least \(1 - \delta\).** At \(\varepsilon = \delta = 0.1\): \(\log 20 \approx 3.00\), divided by 0.1 is 29.96, rounded up to 30. The line computing `m` in the simulation after the proof is this formula, and so is `by_threshold_argument` in the first snippet, which gave 74 at 0.05.
+Compare it with the finite-class formula: \(|\mathcal H|\) has been replaced by 2, as if the infinite class of thresholds were a class of two rules. The ceiling brackets \(\lceil \cdot \rceil\) round up to the next whole number. In plain words: **about \(\log(2/\delta)/\varepsilon\) labels give any ERM threshold a true risk of at most \(\varepsilon\), with probability at least \(1 - \delta\).** At \(\varepsilon = \delta = 0.1\): \(\log 20 \approx 3.00\), divided by 0.1 is 29.96, rounded up to 30. The line computing `m` in the simulation after the proof is this formula, and so is `by_threshold_argument` in the 64-bit snippet, which gave 74 at 0.05 against 948 from counting floating-point numbers.
 
 Before the proof, a picture of where the mistakes can live. Draw the score line with \(t^\star\) marked. Just to the left of \(t^\star\) lies a strip of scores that carries probability exactly \(\varepsilon\); just to the right lies another. If the training sequence puts at least one example in each strip, the learner’s threshold is trapped between them, and every mistake it can make lies inside one strip.
 
@@ -143,7 +143,7 @@ for _ in range(trials):
 print(m, fails / trials, round(2 * math.exp(-eps * m), 4))
 ```
 
-It prints `30 0.08507 0.0996`. Thirty labels; even the most unlucky ERM learner fails about 8.5% of the time (the exact figure is \(2(0.9)^{30} - (0.8)^{30} \approx 8.35\%\)); and the bound \(2e^{-3} \approx 9.96\%\) sits just above, under \(\delta = 10\%\). With \(\varepsilon = \delta = 0.05\), the same claim asks for 74 labels: the second number the first snippet printed, against 948 from counting floating-point numbers.
+It prints `30 0.08507 0.0996`. Thirty labels; even the most unlucky ERM learner fails about 8.5% of the time (the exact figure is \(2(0.9)^{30} - (0.8)^{30} \approx 8.35\%\)); and the bound \(2e^{-3} \approx 9.96\%\) sits just above, under \(\delta = 10\%\).
 
 Notice what the proof never did. It never counted hypotheses. It used one fact about thresholds: two well-placed examples, one on each side of \(t^\star\), pin the threshold down. That is a fact about how thresholds can *label* points, and it is the thread we pull next.
 
@@ -603,11 +603,11 @@ A tail is in \(Y_1\) exactly when it is the tail of a hypothesis with a partner,
 
 Same notation as Step 2, now for the partner class. In the example, \(\mathcal H'\) labels 0.7 only as junk, so it shatters only \(\emptyset\): one subset, against \(|Y_1| = 1\).
 
-*Step 4: each set shattered by \(\mathcal H'\) grows by \(c_1\).* Suppose \(\mathcal H'\) shatters \(B \subseteq C'\). Take any labelling of \(B \cup \{c_1\}\). Some \(g \in \mathcal H'\) produces its part on \(B\). The partner \(g'\) of \(g\) agrees with \(g\) on all of \(C'\), hence on \(B\), and gives \(c_1\) the other label; and \(g'\) is itself in \(\mathcal H'\), with \(g\) as its partner. One of \(g, g'\) gives \(c_1\) the label we want. So \(\mathcal H'\) shatters \(B \cup \{c_1\}\), and since \(\mathcal H' \subseteq \mathcal H\), so does \(\mathcal H\). The map \(B \mapsto B \cup \{c_1\}\) is one-to-one from subsets of \(C'\) to subsets of \(C\) that contain \(c_1\), so
+*Step 4: each set shattered by \(\mathcal H'\) grows by \(c_1\).* Suppose \(\mathcal H'\) shatters \(B \subseteq C'\). Take any labelling of \(B \cup \{c_1\}\), the set \(B\) with the point \(c_1\) added (\(\cup\) reads “together with”). Some \(g \in \mathcal H'\) produces its part on \(B\). The partner \(g'\) of \(g\) agrees with \(g\) on all of \(C'\), hence on \(B\), and gives \(c_1\) the other label; and \(g'\) is itself in \(\mathcal H'\), with \(g\) as its partner. One of \(g, g'\) gives \(c_1\) the label we want. So \(\mathcal H'\) shatters \(B \cup \{c_1\}\), and since \(\mathcal H' \subseteq \mathcal H\), so does \(\mathcal H\). The map \(B \mapsto B \cup \{c_1\}\) is one-to-one from subsets of \(C'\) to subsets of \(C\) that contain \(c_1\), so
 
 \[ |Y_1| \le |\{ B \subseteq C : c_1 \in B,\ \mathcal H \text{ shatters } B \}|. \]
 
-Here \(B \cup \{c_1\}\) is \(B\) with the point \(c_1\) added (\(\cup\) reads “together with”), and \(B \mapsto B \cup \{c_1\}\) is the rule that sends each \(B\) to that bigger set. In the example, \(\mathcal H'\) shatters \(\emptyset\), which grows into \(\{0.3\}\), and thresholds do shatter \(\{0.3\}\): one shattered subset containing \(c_1\), against \(|Y_1| = 1\).
+Here \(B \mapsto B \cup \{c_1\}\) is the rule that sends each \(B\) to that bigger set. In the example, \(\mathcal H'\) shatters \(\emptyset\), which grows into \(\{0.3\}\), and thresholds do shatter \(\{0.3\}\): one shattered subset containing \(c_1\), against \(|Y_1| = 1\).
 
 *Step 5: add.* The shattered subsets of \(C\) split into those without \(c_1\) (Step 2) and those with it (Step 4), so
 
