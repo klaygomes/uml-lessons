@@ -722,17 +722,19 @@ Quadratic-program solvers and dual coordinate ascent both work, but for the real
 
 (Notice the \(\lambda/2\). It makes the algebra below cleaner. Running this method with parameter \(\lambda\) solves soft-SVM as we defined it with parameter \(\lambda/2\); to get soft-SVM with parameter \(\lambda\), run it with \(2\lambda\).)
 
-Recall the method from lesson 14. The objective \(f(\mathbf w) = \tfrac{\lambda}{2}\|\mathbf w\|^2 + L_S(\mathbf w)\) is \(\lambda\)-strongly convex. At step \(t\), pick an example uniformly at random from \(S\) and a subgradient \(\mathbf v_t\) of its loss at \(\mathbf w^{(t)}\); then \(\lambda \mathbf w^{(t)} + \mathbf v_t\) is, in expectation, a subgradient of \(f\), and the update with step size \(1/(\lambda t)\) is
+Recall the method from lesson 14. The objective \(f(\mathbf w) = \tfrac{\lambda}{2}\|\mathbf w\|^2 + L_S(\mathbf w)\) is **\(\lambda\)-strongly convex** (lesson 13): it curves upward at least as much as the bowl \(\tfrac{\lambda}{2}\|\mathbf w\|^2\), which is what makes a step size shrinking like \(1/t\) safe. **Stochastic gradient descent** (SGD) walks downhill using a cheap, noisy slope computed from one example at a time. At step \(t\), pick an example uniformly at random from \(S\) and a subgradient \(\mathbf v_t\) of its loss at the current weights \(\mathbf w^{(t)}\) (the superscript in parentheses counts steps; it is not a power); then \(\lambda \mathbf w^{(t)} + \mathbf v_t\) is, in expectation, a subgradient of \(f\), and the update with step size \(1/(\lambda t)\) is
 
 \[ \mathbf w^{(t+1)} = \mathbf w^{(t)} - \frac{1}{\lambda t} \left( \lambda \mathbf w^{(t)} + \mathbf v_t \right) = \left(1 - \frac1t\right) \mathbf w^{(t)} - \frac{1}{\lambda t} \mathbf v_t, \]
 
 starting from \(\mathbf w^{(1)} = \mathbf 0\).
 
+From the inside out: \(\lambda \mathbf w^{(t)}\) is the slope of the bowl, \(\mathbf v_t\) the slope of one example’s loss, their sum the step direction, and \(\frac{1}{\lambda t}\) the step size, shrinking as \(t\) grows. Expanding gives the right-hand form. In plain words: **shrink the current weights by the factor \(1 - 1/t\), then step against one example’s slope.** At \(t = 1\) the factor is 0; at \(t = 2\) the weights are halved before the step. The snippet below runs exactly this line, `w = [wi - gi / (lam * t) ...]`.
+
 *The update in closed form.* We claim \(\mathbf w^{(t+1)} = -\frac{1}{\lambda t} \sum_{j=1}^t \mathbf v_j\) for every \(t \ge 1\). For \(t = 1\), the factor \(1 - 1/1 = 0\) kills \(\mathbf w^{(1)}\) and leaves \(-\mathbf v_1/\lambda\). If it holds for \(t - 1\), that is \(\mathbf w^{(t)} = -\frac{1}{\lambda(t-1)} \sum_{j<t} \mathbf v_j\), then
 
 \[ \mathbf w^{(t+1)} = \frac{t-1}{t} \cdot \frac{-1}{\lambda (t-1)} \sum_{j<t} \mathbf v_j - \frac{1}{\lambda t} \mathbf v_t = -\frac{1}{\lambda t} \sum_{j \le t} \mathbf v_j. \]
 
-So the weights at step \(t\) are just the running sum of the subgradients, scaled. Check it against the step-by-step update with fifty random subgradients:
+The factor \(\frac{t-1}{t}\) turns \(\frac{1}{\lambda(t-1)}\) into \(\frac{1}{\lambda t}\), so the old subgradients and the new one end up with the same weight. So the weights at step \(t\) are just the running sum of the subgradients, scaled. Check it against the step-by-step update with fifty random subgradients:
 
 ```python
 import random
@@ -769,9 +771,11 @@ Look at the update line. It is the Perceptron’s update, \(y_i \mathbf x_i\), t
 
 [[diagram:sgd]]
 
-How good is \(\bar{\mathbf w}\)? Lesson 14’s analysis for a \(\lambda\)-strongly convex objective with a \(\rho\)-Lipschitz loss gives
+How good is \(\bar{\mathbf w}\)? Lesson 14’s analysis of exactly this objective with a \(\rho\)-Lipschitz loss gives
 
-\[ \mathbb E[f(\bar{\mathbf w})] - \min_{\mathbf w} f(\mathbf w) \le \frac{4\rho^2}{\lambda T} (1 + \log T). \]
+\[ \mathbb E[f(\bar{\mathbf w})] - \min_{\mathbf w} f(\mathbf w) \le \frac{2\rho^2}{\lambda T} (1 + \log T). \]
+
+The bar on \(\bar{\mathbf w}\) marks the average of the \(T\) iterates, the `total / T` of the pseudocode. \(\mathbb E\) averages over the random choices of examples, and \(\min_{\mathbf w} f(\mathbf w)\) is the best objective value there is, so the left side is how far, on average, the returned weights are from optimal. On the right, \(1 + \log T\) grows very slowly while \(T\) in the denominator grows fast. In plain words: **after \(T\) steps, the averaged weights are on average within about \(\log T / T\) of the best objective, scaled by \(2\rho^2/\lambda\).**
 
 Let’s run it on the ten almost-separable messages, lifted, with \(\lambda = 0.2\) and \(T = 100{,}000\). By the remark above, that solves soft-SVM with parameter 0.1, whose minimizer we quoted as \((-\tfrac12, \tfrac12, -\tfrac12)\) with objective 0.475.
 
@@ -797,7 +801,16 @@ print([round(c, 3) for c in w_bar])
 print(round(lam / 2 * dot(w_bar, w_bar) + hinge / len(X), 4))
 ```
 
-It prints `[-0.518, 0.502, -0.484]` and `0.4752`: within 0.0002 of the optimum 0.475. The guarantee, with \(\rho^2 = 30\) (the longest lifted message is A, \((1, 5, 2)\)), promises an expected gap of at most \(4 \cdot 30 \cdot (1 + \log 100{,}000)/(0.2 \cdot 100{,}000) \approx 0.075\). As with the Perceptron’s mistake bound, the guarantee is a worst case, and on friendly data the method does far better.
+It prints `[-0.518, 0.502, -0.484]` and `0.4752`: within 0.0002 of the optimum 0.475. The guarantee, with \(\rho^2 = 30\) (the longest lifted message is A, \((1, 5, 2)\)), promises an expected gap of at most \(2 \cdot 30 \cdot (1 + \log 100{,}000)/(0.2 \cdot 100{,}000)\):
+
+```python
+import math
+
+rho2, lam, T = 30, 0.2, 100_000
+print(round(2 * rho2 / (lam * T) * (1 + math.log(T)), 4))
+```
+
+It prints `0.0375`. As with the Perceptron’s mistake bound, the guarantee is a worst case, and on friendly data the method does far better.
 
 ## SVMs as code
 
@@ -874,7 +887,7 @@ The margin route is open, because the soft-SVM theorem has no \(d\) in it. In th
 
 \[ L_{\mathcal D}^{\text{hinge}}(\mathbf u) + \lambda \|\mathbf u\|^2 + \frac{2\rho^2}{\lambda m}. \]
 
-Only a certificate at most 0.18, within the budget, ships the filter. Then the lab trains soft-SVM by SGD with your \(\lambda\) on your \(m\) labels and shows its error on fresh mail, but the training run does not count: what ships is the certificate, because tomorrow’s training sequence will be different. Before you touch the sliders, work out which comparator can possibly make it, and roughly where \(\lambda\) must be.
+It is the right side of the RLM oracle inequality, term for term: the comparator’s hinge risk, its penalty, and the overfitting term, which `soft_svm_bound` computed earlier. Only a certificate at most 0.18, within the budget, ships the filter. Then the lab trains soft-SVM by SGD with your \(\lambda\) on your \(m\) labels and shows its error on fresh mail, but the training run does not count: what ships is the certificate, because tomorrow’s training sequence will be different. Before you touch the sliders, work out which comparator can possibly make it, and roughly where \(\lambda\) must be.
 
 [[lab-act2]]
 

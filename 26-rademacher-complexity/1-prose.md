@@ -2,7 +2,7 @@
 
 ## The certificate that certifies nothing
 
-The production filter has been running on fifty thousand words for a while now. Every message is a vector of 50,000 yes/no features, one per word in the vocabulary, and the filter is a weight vector \(\mathbf w\) with one weight per word: it calls a message junk when the score \(\langle \mathbf w, \mathbf x \rangle\) is positive. The team keeps the weight vector short, its length is never allowed past a fixed budget, because lessons 13 and 15 showed that short weight vectors are stable and leave wide margins. And it works. On a month of fresh mail that nobody trained on, it misclassifies about 3 messages in 100.
+The four-feature filter of the last lesson was a stopgap. Since then the vocabulary has grown to fifty thousand words, the users have labelled 50,000 messages, and the production filter reads every word. Every message is a vector of 50,000 yes/no features, one per word in the vocabulary, and the filter is a weight vector \(\mathbf w\) with one weight per word: it calls a message junk when the score \(\langle \mathbf w, \mathbf x \rangle\) is positive. The team keeps the weight vector short, its length never allowed past a fixed budget \(B\), because lessons 13 and 15 showed that short weight vectors are stable and leave wide margins. And it works. On a month of fresh mail that nobody trained on, it misclassifies about 3 messages in 100.
 
 Then operations asks for something new. The lesson 15 certificate covered one learner, soft-SVM with one regularization weight, and only on average over training sequences. But the team no longer ships exactly that. Some weeks they stop the optimizer early, some weeks they hand-tune a few weights, some weeks they try a different solver. Operations wants a single written promise that covers *whatever* weight vector the team ships from the allowed set, holds with probability 95%, and is computed from the 50,000 labels the users can afford:
 
@@ -10,7 +10,7 @@ Then operations asks for something new. The lesson 15 certificate covered one le
 
 You already know how to write promises like that. A promise for every hypothesis at once is exactly the uniform convergence property of lesson 4, and you have three ways to pay for it, each measuring how rich the class is.
 
-- **Size** (lesson 4): \(\log |\mathcal H|\). Our class is infinite, so this one is out at once.
+- **Size** (lessons 2 and 4): \(\log |\mathcal H|\). Our class is infinite, so this one is out at once.
 - **VC dimension** (lesson 6): halfspaces over 50,000 words have VC dimension 50,000.
 - **Description length** (lesson 7): write every weight as a 32-bit number and a weight vector takes 1.6 million bits.
 
@@ -29,7 +29,7 @@ print(round(vc, 1), round(mdl, 2))
 
 It prints `37.1 4.0`. A risk is a number between 0 and 1, so a promise that the gap is at most 37, or at most 4, promises nothing at all. Both certificates are worthless at this budget, and yet the filter plainly works.
 
-Here is the thing to notice. All three measures were computed before a single message arrived. The VC dimension asks about the *worst* set of 50,000 messages the class could face, and the description length asks how many bits the *worst* weight vector needs. None of them looks at the mail you actually have: short messages, a couple of dozen words each, scored by weight vectors that are short too. So here is the question for this lesson. Can you measure how rich a class is on the very data in hand, and turn that measurement into a certificate?
+Here is the thing to notice, and it is the research colleague’s complaint from the end of lesson 25. All three measures were computed before a single message arrived. The VC dimension asks about the *worst* set of 50,000 messages the class could face, and the description length asks how many bits the *worst* weight vector needs. None of them looks at the mail you actually have: short messages, a couple of dozen words each, scored by weight vectors that are short too. So here is the question for this lesson. Can you measure how rich a class is on the very data in hand, and turn that measurement into a certificate?
 
 The answer is yes, and the measurement has a name, the **Rademacher complexity**. By the end of this lesson you will have proved its generalization bound from scratch, learned a small calculus for computing it, used it to show that norm-bounded linear predictors need a number of labels that does not depend on the number of features, and finally proved the margin bound that lesson 15 stated and promised.
 
@@ -219,11 +219,11 @@ The lemma already gives a learning guarantee. Write \(\mathrm{ERM}_{\mathcal H}(
 
 and if \(h^\star\) is the best hypothesis in the class, then for every \(\delta \in (0, 1)\), with probability at least \(1 - \delta\) over \(S\), \(L_{\mathcal D}(\mathrm{ERM}_{\mathcal H}(S)) - L_{\mathcal D}(h^\star) \le 2\,\mathbb E_{S'}[R(\ell \circ \mathcal H \circ S')]/\delta\).
 
-In plain words: **on average, ERM falls short of any fixed competitor by at most twice the expected Rademacher complexity, and dividing by \(\delta\) turns that into a high-probability statement.**
+In plain words: **on average, ERM falls short of any fixed competitor by at most twice the expected Rademacher complexity, and dividing by \(\delta\) turns that into a high-probability statement.** In the threshold world of the last snippet, \(2\,\mathbb E_S[R] \approx 0.242\): on average ERM on 30 messages lands within 0.242 of the best threshold, but at \(\delta = 0.05\) the promise becomes \(0.242/0.05 = 4.84\).
 
 *Proof.* Write \(h_S = \mathrm{ERM}_{\mathcal H}(S)\). First, \(L_{\mathcal D}(h_S) - L_S(h_S) \le \mathrm{Rep}_{\mathcal D}(\mathcal F, S)\) by the definition of the supremum, so by the symmetrization lemma \(\mathbb E_S[L_{\mathcal D}(h_S) - L_S(h_S)] \le 2\,\mathbb E_S[R]\). Second, \(h^\star\) is fixed before \(S\) is drawn, so \(\mathbb E_S[L_S(h^\star)] = L_{\mathcal D}(h^\star)\), and ERM gives \(L_S(h_S) \le L_S(h^\star)\) for every \(S\); averaging, \(\mathbb E_S[L_S(h_S)] \le L_{\mathcal D}(h^\star)\). Add the two: \(\mathbb E_S[L_{\mathcal D}(h_S)] - L_{\mathcal D}(h^\star) \le 2\,\mathbb E_S[R]\). For the last claim, when \(h^\star\) is the best in the class the variable \(L_{\mathcal D}(h_S) - L_{\mathcal D}(h^\star)\) is never negative, so Markov’s inequality (lesson 4: \(\mathbb P[Z \ge a] \le \mathbb E[Z]/a\) for \(Z \ge 0\)) with \(a = 2\,\mathbb E[R]/\delta\) bounds the chance of exceeding it by \(\delta\). \(\blacksquare\)
 
-A factor \(1/\delta\) is expensive. For 95% confidence it multiplies the bound by 20, and for 99.9% by 1,000. Lesson 4 met the same problem with Markov’s inequality and fixed it with Hoeffding’s, whose price is only \(\sqrt{\log(1/\delta)}\). We need the same upgrade here, but Hoeffding’s inequality is about averages, and \(\mathrm{Rep}\) is a supremum of averages. We need a tool for functions that are not averages.
+A factor \(1/\delta\) is expensive, as that 4.84 shows. For 95% confidence it multiplies the bound by 20, and for 99.9% by 1,000. Lesson 4 met the same problem with Markov’s inequality and fixed it with Hoeffding’s, whose price is only \(\sqrt{\log(1/\delta)}\). We need the same upgrade here, but Hoeffding’s inequality is about averages, and \(\mathrm{Rep}\) is a supremum of averages. We need a tool for functions that are not averages.
 
 ## McDiarmid’s inequality
 
@@ -374,6 +374,8 @@ Computing a supremum over an infinite class, averaged over \(2^m\) sign vectors,
 
 ### Rule 1: shifting and scaling
 
+Triple every loss, and every fit to noise triples too. Add the same fixed vector to every loss vector, and every member gains the same signed amount, which cannot help one member beat another and averages to zero over the signs.
+
 **Lemma (shift and scale).** For every \(A \subset \mathbb R^m\), number \(c \in \mathbb R\) and vector \(\mathbf a_0 \in \mathbb R^m\),
 
 \[ R(\{ c\,\mathbf a + \mathbf a_0 : \mathbf a \in A \}) = |c|\, R(A). \]
@@ -439,9 +441,20 @@ The first is an inequality about exponentials: for every real \(a\),
 
 \[ \frac{e^{a} + e^{-a}}{2} \le e^{a^2/2}. \]
 
-The left side is the average of \(e^{\sigma a}\) over a fair sign \(\sigma\), which is exactly the quantity we will meet. In plain words: **the average of \(e^{a}\) and \(e^{-a}\) is at most \(e^{a^2/2}\).** At \(a = 1\): \((2.718 + 0.368)/2 = 1.543 \le e^{0.5} = 1.649\). *Proof.* Expand both sides as power series. The odd powers cancel on the left, leaving \(\sum_{n \ge 0} a^{2n}/(2n)!\); the right side is \(\sum_{n \ge 0} a^{2n}/(2^n n!)\). Term by term the left is smaller, because \((2n)! = \prod_{k=1}^{2n} k \ge \prod_{k=1}^{n} (2k) = 2^n n!\) (keep only the even factors, each at least 1 in the rest). \(\blacksquare\)
+The left side is the average of \(e^{\sigma a}\) over a fair sign \(\sigma\), which is exactly the quantity we will meet. In plain words: **the average of \(e^{a}\) and \(e^{-a}\) is at most \(e^{a^2/2}\).** At \(a = 1\): \((2.718 + 0.368)/2 = 1.543 \le e^{0.5} = 1.649\). *Proof.* Expand both sides as power series. The odd powers cancel on the left, leaving \(\sum_{n \ge 0} a^{2n}/(2n)!\); the right side is \(\sum_{n \ge 0} a^{2n}/(2^n n!)\). Term by term the left is smaller, because \((2n)! = \prod_{k=1}^{2n} k \ge \prod_{k=1}^{n} (2k) = 2^n n!\): dropping the odd factors \(1, 3, \dots, 2n - 1\), each at least 1, can only shrink the product, and the even factors \(2, 4, \dots, 2n\) that remain multiply to \(2^n n!\). \(\blacksquare\)
 
-The second is **Jensen’s inequality** for the logarithm: since \(\log\) is concave, the log of an average is at least the average of the logs, \(\mathbb E[\log Y] \le \log \mathbb E[Y]\) for a positive random variable \(Y\). (Lesson 14 used Jensen for convex functions; a concave function flips the inequality.)
+The second is **Jensen’s inequality** for the logarithm. The logarithm is **concave**: its graph bends down, so the chord between two points on it lies below the graph (the mirror image of the convex functions of lesson 12). So the log of an average is at least the average of the logs, \(\mathbb E[\log Y] \le \log \mathbb E[Y]\) for a positive random variable \(Y\). If \(Y\) is 1 or 100 with equal chance, the average of the logs is \((0 + 4.605)/2 = 2.303\), and the log of the average is \(\log 50.5 = 3.922\). (Lesson 14 used Jensen for convex functions; a concave function flips the inequality.)
+
+```python
+from math import exp, log
+
+for a in (0.5, 1, 2, 4):
+    print(a, round((exp(a) + exp(-a)) / 2, 3), round(exp(a * a / 2), 3))
+Y = (1, 100)
+print(round(sum(log(y) for y in Y) / 2, 3), round(log(sum(Y) / 2), 3))
+```
+
+It prints `0.5 1.128 1.133`, `1 1.543 1.649`, `2 3.762 7.389`, `4 27.308 2980.958` and then `2.303 3.922`: the exponential inequality holds with room to spare as \(a\) grows, and the log of the average beats the average of the logs.
 
 **Lemma (Massart).** Let \(A = \{\mathbf a_1, \dots, \mathbf a_N\}\) be \(N \ge 2\) vectors in \(\mathbb R^m\), with mean \(\bar{\mathbf a} = \frac1N \sum_{j=1}^N \mathbf a_j\). Then
 
@@ -659,7 +672,7 @@ There is one awkward thing about that theorem: \(\|\mathbf w^\star\|\) is the le
 
 Here \(\log_2\) is the base-2 logarithm, so \(\log_2\|\mathbf w_S\|\) counts how many doublings of 1 reach the learned length. In plain words: **you pay twice the complexity term for not knowing the budget in advance, plus a confidence term that grows only like the log of the log of the length.**
 
-*Proof.* For each integer \(i \ge 1\) let \(B_i = 2^i\), \(\mathcal H_i = \{\mathbf w : \|\mathbf w\| \le B_i\}\) and \(\delta_i = \delta/(2i^2)\). The norm-bounded theorem (ramp loss, \(c = \rho = 1\)) gives, for each \(i\), with probability at least \(1 - \delta_i\), \(L_{\mathcal D}(\mathbf w) \le L_S(\mathbf w) + 2B_iR/\sqrt m + \sqrt{2\log(2/\delta_i)/m}\) for every \(\mathbf w \in \mathcal H_i\). Since \(\sum_{i \ge 1}\delta/(2i^2) = \delta\pi^2/12 < \delta\), the union bound makes all of them hold at once with probability at least \(1 - \delta\). Given \(\mathbf w\) with \(\|\mathbf w\| \ge 2\), take \(i = \lceil\log_2\|\mathbf w\|\rceil\), the smallest \(i\) with \(2^i \ge \|\mathbf w\|\) (\(\lceil\cdot\rceil\) rounds up). Then \(\mathbf w \in \mathcal H_i\), \(B_i < 2\|\mathbf w\|\), and \(i < \log_2\|\mathbf w\| + 1 \le 2\log_2\|\mathbf w\|\) (because \(\log_2\|\mathbf w\| \ge 1\)), so \(2/\delta_i = (2i)^2/\delta \le (4\log_2\|\mathbf w\|)^2/\delta\). Then \(2\log(2/\delta_i) \le 4\log(4\log_2\|\mathbf w\|) + 2\log(1/\delta) \le 4\log(4\log_2\|\mathbf w\|/\delta)\), and its square root over \(m\) is the second term. Apply this to \(\mathbf w_S\), whose ramp training risk is 0. \(\blacksquare\)
+*Proof.* For each integer \(i \ge 1\) let \(B_i = 2^i\), \(\mathcal H_i = \{\mathbf w : \|\mathbf w\| \le B_i\}\) and \(\delta_i = \delta/(2i^2)\). The norm-bounded theorem (ramp loss, \(c = \rho = 1\)) gives, for each \(i\), with probability at least \(1 - \delta_i\), \(L_{\mathcal D}(\mathbf w) \le L_S(\mathbf w) + 2B_iR/\sqrt m + \sqrt{2\log(2/\delta_i)/m}\) for every \(\mathbf w \in \mathcal H_i\). Since \(\sum_{i \ge 1} 1/i^2 = \pi^2/6 \approx 1.645\), the failure chances add up to \(\sum_{i \ge 1}\delta/(2i^2) = \delta\pi^2/12 \approx 0.82\,\delta < \delta\), and the union bound makes all of them hold at once with probability at least \(1 - \delta\). Given \(\mathbf w\) with \(\|\mathbf w\| \ge 2\), take \(i = \lceil\log_2\|\mathbf w\|\rceil\), the smallest \(i\) with \(2^i \ge \|\mathbf w\|\) (\(\lceil\cdot\rceil\) rounds up). Then \(\mathbf w \in \mathcal H_i\), \(B_i < 2\|\mathbf w\|\), and \(i < \log_2\|\mathbf w\| + 1 \le 2\log_2\|\mathbf w\|\) (because \(\log_2\|\mathbf w\| \ge 1\)), so \(2/\delta_i = (2i)^2/\delta \le (4\log_2\|\mathbf w\|)^2/\delta\). Then \(2\log(2/\delta_i) \le 4\log(4\log_2\|\mathbf w\|) + 2\log(1/\delta) \le 4\log(4\log_2\|\mathbf w\|/\delta)\), and its square root over \(m\) is the second term. Apply this to \(\mathbf w_S\), whose ramp training risk is 0. \(\blacksquare\)
 
 ```python
 import math
@@ -673,7 +686,7 @@ for w_norm in (2, 4, 8):
     print(w_norm, round(norm_bound(5, w_norm, 50_000, 0.05), 4))
 ```
 
-It prints `2 0.1976`, `4 0.3779` and `8 0.7365`: with \(R = 5\) and 50,000 labels, a learned separator of length 2 is certified at about 0.2, while one of length 8 is not useful. Every number is computed from the training sequence alone.
+It prints `2 0.1976`, `4 0.3779` and `8 0.7365`: with \(R = 5\) and 50,000 labels, a learned separator of length 2 is certified at about 0.2, while one of length 8 is not useful. Apart from the radius, which is a promise about the messages, every number comes from the training sequence alone.
 
 None of these bounds mention the dimension of \(\mathbf w\). That is exactly why lesson 16 could run SVM in a feature space with a billion coordinates, or infinitely many, and still expect it to generalize: only the norm and the radius count.
 
@@ -700,7 +713,7 @@ for words, k in ((25, 1), (25, 10), (400, 10), (400, 40)):
     print(words, k, round(l2, 4), round(l1, 4))
 ```
 
-It prints `25 1 0.0224 0.0215`, `25 10 0.0707 0.2146`, `400 10 0.2828 0.2146` and `400 40 0.5657 0.8584`. Short messages and a predictor spread over ten words: the Euclidean budget wins by a factor of three. Long messages of 400 words and ten key words: the \(\ell_1\) budget wins. Long messages but forty key words: Euclidean again. The \(\ell_1\) penalty that lesson 25 used to make the filter sparse pays off when messages are long and the truth uses few words.
+It prints `25 1 0.0224 0.0215`, `25 10 0.0707 0.2146`, `400 10 0.2828 0.2146` and `400 40 0.5657 0.8584`. Short messages and a predictor spread over ten words: the Euclidean budget wins by a factor of three. Long messages of 400 words and ten key words: the \(\ell_1\) budget wins. Long messages but forty key words: Euclidean again. Lesson 25 made the filter sparse with the \(\ell_1\) price, minimizing \(L_S(\mathbf w) + \lambda\|\mathbf w\|_1\) so that every word whose evidence falls below \(\lambda\) gets weight exactly zero, and showed that the minimizer also solves the budgeted problem with \(B = \|\mathbf w_\lambda\|_1\). So this theorem is the second payoff that lesson promised: the \(\ell_1\) price controls the estimation error too, and it pays off when messages are long and the truth uses few words.
 
 ## Estimating the Rademacher complexity as code
 
@@ -801,7 +814,7 @@ In the lab below, you choose the norm (Euclidean or \(\ell_1\)), the budget \(B\
 4. **Rademacher calculus**: shifting adds nothing and scaling multiplies by \(|c|\); convex hulls add nothing; finite sets cost \(\sqrt{2\log N}\) (Massart); \(\rho\)-Lipschitz losses multiply by at most \(\rho\) (contraction).
 5. Euclidean-norm linear classes have complexity at most \(BR/\sqrt m\), and \(\ell_1\)-norm classes at most \(BR\sqrt{2\log(2d)/m}\). The resulting SVM and \(\ell_1\) bounds do not depend on the number of features, and they prove the hard-SVM bound of lesson 15.
 
-The certificate ships. Then the data team comes back with a harder class. They want to certify a filter whose loss vectors are not a ball, not a finite set, and not a Lipschitz image of either: a two-layer filter from lesson 20, say. For a class like that the supremum inside the Rademacher complexity has no closed form, and Massart’s lemma, the one tool that works for any shape, applies only to finite sets. So the team asks: could a rich class be replaced, for every practical purpose, by a finite set of representative hypotheses, close to every member of the class? If every loss vector is within a small distance of one of the representatives, Massart’s lemma would apply to the representatives, and the small distance would cost only a little. How many representatives does it take? That is the next lesson.
+The certificate ships. Then the data team comes back with a harder class. They want to certify a filter whose loss vectors are not a ball, not a finite set, and not a Lipschitz image of either: a depth 2 network from lesson 20, say, where a hidden layer of neurons each turns the message into a feature of its own and one output neuron combines those features. For a class like that the supremum inside the Rademacher complexity has no closed form, and Massart’s lemma, the one tool that works for any shape, applies only to finite sets. So the team asks: could a rich class be replaced, for every practical purpose, by a finite set of representative hypotheses, close to every member of the class? If every loss vector is within a small distance of one of the representatives, Massart’s lemma would apply to the representatives, and the small distance would cost only a little. How many representatives does it take? That is the next lesson.
 
 ## Concept check
 

@@ -2,7 +2,7 @@
 
 ## The search that never comes back
 
-Lesson 11 ended with a learning curve that would not come down. Your colleague’s halfspace filter, the one from lesson 9 that weighs word counts, kept a stubborn empirical risk even though the validation numbers said the class was good enough. The diagnosis was uncomfortable: the learner was not really doing ERM. The mail is not separable, so no halfspace gets every example right, and finding the halfspace with the *fewest* training mistakes is computationally hard. The code had been running a heuristic and hoping.
+Lesson 11 ended with a learning curve that would not come down. Your colleague’s halfspace filter, the one from lesson 9 that weighs word counts, kept a stubborn empirical risk even though the validation numbers said the class was good enough. The diagnosis was uncomfortable: the learner was not really doing ERM, the rule from lesson 2 that returns the hypothesis with the fewest training mistakes. The mail is not separable, so no halfspace gets every example right, and finding the one with the *fewest* mistakes is computationally hard. The code had been running a heuristic and hoping.
 
 So this morning the team tried to do it properly. The plan was honest brute force: the real filter uses 30 words plus the bias term, the users have labelled 300 messages, and lesson 6 tells you that halfspaces cannot produce every possible labelling of those 300 messages, only a limited number of them. Enumerate the labellings a halfspace can produce, count the mistakes of each, keep the best. The job started at nine. At lunch it was still running. Someone did the arithmetic and quietly cancelled it.
 
@@ -20,9 +20,9 @@ print(f"{seconds / 3.15e7:.1e}")
 
 It prints `43 1.70e+42` and then `5.0e+29`. A 43-digit number of labellings, and about \(5 \times 10^{29}\) years of work. And that is generous, because it pretends we already know how to list the labellings one by one. As lesson 8 warned, the problem is not just slow to brute-force: finding the halfspace with the fewest mistakes on non-separable data is NP-hard, so no clever trick is expected to make it fast.
 
-You remember what lesson 9 did with the same ten messages, though. It did not count mistakes at all. It minimized the logistic loss, and the minimization went smoothly, separable data or not, with a guarantee that the objective was “convex”. That word was used once and promised a whole lesson. This is the lesson.
+You remember what lesson 9 did with its ten small example messages, though. It did not count mistakes at all. It minimized the logistic loss, a smooth penalty that grows as a message lands further on the wrong side, and the minimization went smoothly, separable data or not, with a guarantee that the objective was “convex”. That word was used once and promised a whole lesson. This is the lesson.
 
-The idea is simple to say. Counting mistakes is hard because the 0-1 loss is a landscape of flat terraces and cliffs. Replace it with a loss shaped like a bowl, one that is never smaller than the 0-1 loss, and minimize that instead. Bowls are easy: walk downhill and you reach the bottom. And because the new loss sits above the old one, a guarantee on the new loss is a guarantee on the mistakes too. By the end of the lesson you will know exactly what “shaped like a bowl” means, which bowls can be learned from a finite label budget (not all of them, which is the surprise), and how much the switch costs you.
+The idea is simple to say. Counting mistakes is hard because the 0-1 loss, which charges 1 per mistake and 0 otherwise, is a landscape of flat terraces and cliffs. Replace it with a loss shaped like a bowl, one that is never smaller than the 0-1 loss, and minimize that instead. Bowls are easy: walk downhill and you reach the bottom. And because the new loss sits above the old one, a guarantee on the new loss is a guarantee on the mistakes too. By the end of the lesson you will know exactly what “shaped like a bowl” means, which bowls can be learned from a finite label budget (not all of them, which is the surprise), and how much the switch costs you.
 
 ## Worked example 1: what the 0-1 loss looks like from inside
 
@@ -111,7 +111,7 @@ Start with the space the weights live in. A set is convex when you can walk betw
 
 The point \(\alpha \mathbf u + (1 - \alpha) \mathbf v\) is called a **convex combination** of \(\mathbf u\) and \(\mathbf v\). As \(\alpha\) runs from 1 to 0 it slides from \(\mathbf u\) to \(\mathbf v\). In plain words: **every point on the segment between two members is also a member.** The walk of worked example 1 was exactly this, with \(\mathbf u = \mathbf w^\circ\) and \(\mathbf v = -\mathbf w^\circ\): at \(\alpha = 0.25\) it stood at \(0.25(-1, 2, -2) + 0.75(1, -2, 2) = (0.5, -1, 1)\), and the line `w = tuple(a * p + (1 - a) * q ...)` of that snippet computes it.
 
-A disc is convex, and so is a ball \(\{\mathbf w : \|\mathbf w\| \le B\}\) in any dimension: if \(\|\mathbf u\|, \|\mathbf v\| \le B\), the triangle inequality gives \(\|\alpha \mathbf u + (1 - \alpha)\mathbf v\| \le \alpha B + (1 - \alpha) B = B\). The whole space \(\mathbb R^d\) is convex. A crescent moon or a ring is not: pick two points on opposite sides of the hole, and the segment between them leaves the set.
+A disc is convex, and so is a ball \(\{\mathbf w : \|\mathbf w\| \le B\}\) in any dimension: if \(\|\mathbf u\|, \|\mathbf v\| \le B\), the triangle inequality (the length of a sum is at most the sum of the lengths) gives \(\|\alpha \mathbf u + (1 - \alpha)\mathbf v\| \le \alpha B + (1 - \alpha) B = B\). The whole space \(\mathbb R^d\) is convex. A crescent moon or a ring is not: pick two points on opposite sides of the hole, and the segment between them leaves the set.
 
 [[diagram:convex-set]]
 
@@ -166,7 +166,7 @@ for name, f in tests.items():
     print(name, round(worst, 2))
 ```
 
-It prints `x^2 0.0`, `softplus 0.0`, `abs 0.0` and `step 0.99`. The first three never violate the chord; the step violates it by almost the full height of the step, whenever \(u\) and \(v\) are on the same side of 0 at a distance from it and the combination lands on the other side. (A random test can only find violations; proving convexity takes an argument, which is what the next few sections supply.)
+It prints `x^2 0.0`, `softplus 0.0`, `abs 0.0` and `step 0.99`. The first three never violate the chord; the step violates it by almost its full height, when \(u\) is below 0, \(v\) just above it, and the mixed point lands at or below 0 while carrying most of its weight on \(v\): the left side is 1 and the chord barely above 0. (A random test can only find violations; proving convexity takes an argument, which is what the next few sections supply.)
 
 ## Every local minimum is global
 
@@ -267,7 +267,7 @@ It prints `0.5503 -0.1069 True`.
 
 \[ \frac{f(\mathbf w + \alpha(\mathbf u - \mathbf w)) - f(\mathbf w)}{\alpha} \le f(\mathbf u) - f(\mathbf w). \]
 
-The left side is a rise over a run: how much \(f\) changes when you step a fraction \(\alpha\) of the way towards \(\mathbf u\), divided by \(\alpha\). As \(\alpha \to 0\) (read “as \(\alpha\) shrinks towards 0”), the left side tends to the derivative of \(f\) at \(\mathbf w\) in the direction \(\mathbf u - \mathbf w\), which for a differentiable function is \(\langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle\). The right side does not depend on \(\alpha\), so the inequality survives the limit. Rearranging gives the claim. \(\square\)
+The left side is a rise over a run: how much \(f\) changes when you step a fraction \(\alpha\) of the way towards \(\mathbf u\), divided by \(\alpha\). As \(\alpha \to 0\) (read “as \(\alpha\) shrinks towards 0”), the left side tends to the slope of \(\alpha \mapsto f(\mathbf w + \alpha(\mathbf u - \mathbf w))\) at 0, and the chain rule says that slope is each weight’s rate times how fast that weight moves, \(\langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle\). The right side does not depend on \(\alpha\), so the inequality survives the limit. Rearranging gives the claim. \(\square\)
 
 [[diagram:tangent]]
 
@@ -283,7 +283,7 @@ For functions of one variable there is an easy test.
 
 *Proof.* (1 ⇒ 2.) Take \(a < c\). The tangent inequality at \(a\), with \(u = c\), gives \(f(c) \ge f(a) + f'(a)(c - a)\); at \(c\), with \(u = a\), it gives \(f(a) \ge f(c) + f'(c)(a - c)\). Add the two and cancel \(f(a) + f(c)\): \(0 \ge f'(a)(c - a) - f'(c)(c - a)\), that is, \((f'(c) - f'(a))(c - a) \ge 0\). Since \(c - a > 0\), \(f'(c) \ge f'(a)\).
 
-(2 ⇒ 1.) Take \(u < v\), \(\alpha \in (0, 1)\) and \(x = \alpha u + (1 - \alpha) v\), so \(u < x < v\). By the mean value theorem there are points \(\xi_1 \in (u, x)\) and \(\xi_2 \in (x, v)\) with \(f(x) - f(u) = f'(\xi_1)(x - u)\) and \(f(v) - f(x) = f'(\xi_2)(v - x)\). Since \(\xi_1 < \xi_2\) and \(f'\) is nondecreasing, \(f'(\xi_1) \le f'(\xi_2)\). Now \(x - u = (1 - \alpha)(v - u)\) and \(v - x = \alpha(v - u)\), so
+(2 ⇒ 1.) Take \(u < v\), \(\alpha \in (0, 1)\) and \(x = \alpha u + (1 - \alpha) v\), so \(u < x < v\). The mean value theorem says that between two points a differentiable function somewhere has slope equal to its average slope, so there are points \(\xi_1 \in (u, x)\) and \(\xi_2 \in (x, v)\) with \(f(x) - f(u) = f'(\xi_1)(x - u)\) and \(f(v) - f(x) = f'(\xi_2)(v - x)\). Since \(\xi_1 < \xi_2\) and \(f'\) is nondecreasing, \(f'(\xi_1) \le f'(\xi_2)\). Now \(x - u = (1 - \alpha)(v - u)\) and \(v - x = \alpha(v - u)\), so
 
 \[ \alpha\,(f(x) - f(u)) = \alpha (1 - \alpha)(v - u) f'(\xi_1) \le \alpha(1 - \alpha)(v - u) f'(\xi_2) = (1 - \alpha)(f(v) - f(x)). \]
 
@@ -545,11 +545,7 @@ Each term is the quadratic upper bound with \(\mathbf v - \mathbf w\) replaced b
 
 A function with this property is called **self-bounded**. The left side is the squared steepness, the right side \(2\beta\) times the height. In plain words: **where its value is small, its gradient must be small too.** For \(x^2\) (2-smooth) at \(w = 3\): \(6^2 = 36\) and \(2 \cdot 2 \cdot 9 = 36\), equality, as the next paragraph explains; the third line of the snippet below checks \(2\beta f - (f')^2 \ge 0\) for softplus. Lessons 13 and 14 lean on it.
 
-Examples. \(f(x) = x^2\) has \(f'(x) = 2x\), which is 2-Lipschitz, so \(x^2\) is 2-smooth. For this particular function the quadratic upper bound and the self-bounded inequality both hold with equality: \(v^2 = w^2 + 2w(v - w) + (v - w)^2\) and \((2w)^2 = 2 \cdot 2 \cdot w^2\). Softplus has \(f'(x) = 1/(1 + \exp(-x))\) and
-
-\[ |f''(x)| = \frac{\exp(-x)}{(1 + \exp(-x))^2} = \frac{1}{(1 + \exp(-x))(1 + \exp(x))} \le \frac14, \]
-
-where the bars are an absolute value and the middle step multiplies top and bottom by \(e^{x}\). At \(x = 0\) it is \(1/(2 \cdot 2) = 1/4\), the largest value, because the product \((1 + e^{-x})(1 + e^{x}) = 2 + e^x + e^{-x} \ge 4\) (the sum \(e^x + e^{-x}\) is at least 2, by the inequality between arithmetic and geometric means). So \(f'\) is \(\frac14\)-Lipschitz, softplus is \(\frac14\)-smooth, and since it is nonnegative it is self-bounded too.
+Examples. \(f(x) = x^2\) has \(f'(x) = 2x\), which is 2-Lipschitz, so \(x^2\) is 2-smooth, and for it both bounds hold with equality: \(v^2 = w^2 + 2w(v - w) + (v - w)^2\) and \((2w)^2 = 2 \cdot 2 \cdot w^2\). Softplus has second derivative \(f'(x) f'(-x) = 1/((1 + e^{-x})(1 + e^{x}))\), which the convexity grid already showed peaks at \(1/4\). To prove it, expand the bottom: \(2 + e^x + e^{-x} \ge 4\), because \(e^x + e^{-x} - 2 = (e^{x/2} - e^{-x/2})^2 \ge 0\). So \(f'\) is \(\frac14\)-Lipschitz (by the mean value theorem, as for Lipschitz functions), softplus is \(\frac14\)-smooth, and since it is nonnegative it is self-bounded too.
 
 ```python
 import math

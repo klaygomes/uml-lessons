@@ -290,27 +290,46 @@ Write \(\mathbf w = \sum_{j=1}^m \alpha_j \psi(x_j)\). Then, by linearity, each 
 
 \[ \langle \mathbf w, \psi(x_i) \rangle = \Big\langle \sum_j \alpha_j \psi(x_j), \psi(x_i) \Big\rangle = \sum_{j=1}^m \alpha_j \langle \psi(x_j), \psi(x_i) \rangle, \]
 
-and the squared norm is
+because the inner product passes through a weighted sum. In plain words: **the score of message \(i\) is a weighted sum of its inner products with the training messages.** The squared norm is
 
 \[ \|\mathbf w\|^2 = \Big\langle \sum_i \alpha_i \psi(x_i), \sum_j \alpha_j \psi(x_j) \Big\rangle = \sum_{i,j=1}^m \alpha_i \alpha_j \langle \psi(x_i), \psi(x_j) \rangle. \]
 
-Look at what survived. Neither formula mentions a coordinate of \(\psi\). Both use only inner products between pairs of embedded messages. That function deserves a name. Given an embedding \(\psi\) into a Hilbert space, its **kernel** is
+Here \(\sum_{i,j=1}^m\) runs over every pair of positions: **the squared length is a weighted sum over all pairs of training messages.** Look at what survived. Neither formula mentions a coordinate of \(\psi\). Both use only inner products between pairs of embedded messages. That function deserves a name. Given an embedding \(\psi\) into a Hilbert space, its **kernel** is
 
 \[ K(x, x') = \langle \psi(x), \psi(x') \rangle. \]
 
-You can read \(K\) as a similarity between messages: large when their embeddings point the same way. And for a training sequence, the \(m \times m\) matrix of all these similarities, \(G_{i,j} = K(x_i, x_j)\), is the **Gram matrix**.
+You can read \(K\) as a similarity between messages: large when their embeddings point the same way. And for a training sequence, the \(m \times m\) matrix of all these similarities, \(G_{i,j} = K(x_i, x_j)\) in row \(i\) and column \(j\), is the **Gram matrix**.
 
 With this notation, the general problem becomes a problem over \(\mathbb R^m\):
 
 \[ \min_{\boldsymbol\alpha \in \mathbb R^m} \; f\Big( \sum_{j} \alpha_j K(x_j, x_1), \dots, \sum_j \alpha_j K(x_j, x_m) \Big) + R\Big( \sqrt{\textstyle\sum_{i,j} \alpha_i \alpha_j K(x_j, x_i)} \Big). \]
 
-To solve it, you never touch the feature space. You need the Gram matrix and nothing else. For Soft-SVM in particular, \(\sum_j \alpha_j K(x_j, x_i)\) is the \(i\)-th entry of the vector \(G\boldsymbol\alpha\), and \(\sum_{i,j} \alpha_i \alpha_j G_{i,j} = \boldsymbol\alpha^\top G \boldsymbol\alpha\), so the problem reads
+It is the old objective with each score replaced by its kernel sum and the length by the square root of the double sum, and \(\min_{\boldsymbol\alpha \in \mathbb R^m}\) now searches over \(m\) numbers: **the same problem, written with coefficients and kernel values instead of a weight vector.** To solve it, you never touch the feature space. You need the Gram matrix and nothing else. For soft-SVM in particular, \(\sum_j \alpha_j K(x_j, x_i)\) is the \(i\)-th entry of the vector \(G\boldsymbol\alpha\) (row \(i\) of \(G\) times \(\boldsymbol\alpha\), entry by entry, added up), and \(\sum_{i,j} \alpha_i \alpha_j G_{i,j} = \boldsymbol\alpha^\top G \boldsymbol\alpha\), where \(^\top\), the transpose, lays the column \(\boldsymbol\alpha\) on its side, so the problem reads
 
 \[ \min_{\boldsymbol\alpha \in \mathbb R^m} \; \lambda\, \boldsymbol\alpha^\top G \boldsymbol\alpha + \frac{1}{m} \sum_{i=1}^m \max\{0, 1 - y_i (G\boldsymbol\alpha)_i\}. \]
 
 This can be written as a quadratic program and solved efficiently, and later in this lesson you will build an even simpler solver. Once \(\boldsymbol\alpha\) is learned, predicting the label of a new message also needs only the kernel:
 
 \[ \langle \mathbf w, \psi(x) \rangle = \sum_{j=1}^m \alpha_j \langle \psi(x_j), \psi(x) \rangle = \sum_{j=1}^m \alpha_j K(x_j, x). \]
+
+In plain words: **a new message is scored by its weighted similarity to the training messages.** Go back to the \(\mathbb R^3\) example, where \(\mathbf w = 2\psi_1 - \psi_2\), so \(\boldsymbol\alpha = (2, -1)\), and give \(\psi_1\) the label \(+1\) and \(\psi_2\) the label \(-1\). The Gram matrix has rows \((5, 2)\) and \((2, 2)\); \(G\boldsymbol\alpha = (8, 2)\), the scores from before; and \(\boldsymbol\alpha^\top G \boldsymbol\alpha = 14\), the squared norm from before, with no coordinate of \(\mathbf w\) in sight. With \(\lambda = 0.1\) the hinge losses are 0 and 3, so the soft-SVM objective is \(1.4 + 1.5 = 2.9\). A new embedded message \((1, 1, 1)\) scores \(2 \cdot 3 - 1 \cdot 2 = 4\):
+
+```python
+def dot(a, b):
+    return sum(i * j for i, j in zip(a, b))
+
+psis, ys, alpha = [(1, 0, 2), (0, 1, 1)], [1, -1], [2, -1]
+G = [[dot(p, q) for q in psis] for p in psis]
+Ga = [sum(a * g for a, g in zip(alpha, row)) for row in G]
+aGa = sum(alpha[i] * alpha[j] * G[i][j]
+          for i in range(2) for j in range(2))
+hinge = [max(0, 1 - y * s) for y, s in zip(ys, Ga)]
+print(G, Ga, aGa, round(0.1 * aGa + sum(hinge) / 2, 4))
+psi_new = (1, 1, 1)
+print(sum(a * dot(p, psi_new) for a, p in zip(alpha, psis)))
+```
+
+It prints `[[5, 2], [2, 2]] [8, 2] 14 2.9` and then `4`, which is also \(\langle (2, -1, 3), (1, 1, 1) \rangle\) computed the long way.
 
 That is the **kernel trick**: run a halfspace learner in the feature space using only kernel values, never the embedded vectors. The weight vector is stored implicitly, as \(m\) coefficients plus the \(m\) training messages. The trick pays off exactly when the feature space is huge but \(K\) is cheap to compute. Is that ever the case? Constantly.
 
@@ -322,7 +341,7 @@ The **polynomial kernel of degree \(k\)** is
 
 \[ K(\mathbf x, \mathbf x') = (1 + \langle \mathbf x, \mathbf x' \rangle)^k. \]
 
-Computing it costs one inner product in \(\mathbb R^n\), then a power: \(O(n)\) time. The claim is that it is the inner product of an embedding into all monomials of degree at most \(k\). Let’s prove it.
+Here \(\langle \mathbf x, \mathbf x' \rangle\) is the ordinary inner product of the two input vectors and \(k\) a whole-number power: **add 1 to the inner product and raise the result to the power \(k\).** For subject lines as 0/1 word vectors, the inner product counts shared words: “winner claim lunch” and “winner claim report” share 2, so the degree-2 kernel is \((1 + 2)^2 = 9\). The function `K` in the snippet below is this formula as written. Computing it costs one inner product in \(\mathbb R^n\), then a power: \(O(n)\) time, in lesson 8’s big-O notation, which names a growth rate (here, in proportion to \(n\)) and hides the constant. The claim is that it is the inner product of an embedding into all monomials of degree at most \(k\). Let’s prove it.
 
 *Proof.* Set \(x_0 = x'_0 = 1\), so that \(1 + \langle \mathbf x, \mathbf x' \rangle = \sum_{j=0}^n x_j x'_j\). The power is a product of \(k\) copies of this sum:
 
@@ -332,9 +351,9 @@ Multiply out. Each term of the expansion picks one index from each of the \(k\) 
 
 \[ = \sum_{J \in \{0, \dots, n\}^k} \prod_{i=1}^k x_{J_i} x'_{J_i} = \sum_{J \in \{0, \dots, n\}^k} \Big( \prod_{i=1}^k x_{J_i} \Big) \Big( \prod_{i=1}^k x'_{J_i} \Big). \]
 
-The last step only regroups the factors of \(\mathbf x\) and of \(\mathbf x'\). Now define \(\psi: \mathbb R^n \to \mathbb R^{(n+1)^k}\) with one coordinate per tuple \(J\), equal to \(\prod_{i=1}^k x_{J_i}\). The sum is exactly \(\langle \psi(\mathbf x), \psi(\mathbf x') \rangle\). \(\blacksquare\)
+Here \(\{0, \dots, n\}^k\) is the set of all lists of \(k\) indices, and \(\prod_{i=1}^k\) multiplies over the \(k\) picks: **multiplying out gives one term per list of picks.** With \(n = 1\) and \(k = 2\) the lists are \((0,0), (0,1), (1,0), (1,1)\), and \((1 + x_1 x'_1)^2 = 1 + x_1 x'_1 + x_1 x'_1 + x_1^2 x_1'^2\). The last step only regroups the factors of \(\mathbf x\) and of \(\mathbf x'\). Now define \(\psi: \mathbb R^n \to \mathbb R^{(n+1)^k}\) with one coordinate per tuple \(J\), equal to \(\prod_{i=1}^k x_{J_i}\). The sum is exactly \(\langle \psi(\mathbf x), \psi(\mathbf x') \rangle\). \(\blacksquare\)
 
-Because \(x_0 = 1\), a tuple that contains some zeros produces a monomial of lower degree, so \(\psi\) contains every monomial of degree at most \(k\) (several times, in different orders). A halfspace over \(\psi\) is therefore a polynomial threshold rule of degree \(k\) on the original space. The kernel costs \(O(n)\); the feature space has \((n+1)^k\) coordinates.
+Because \(x_0 = 1\), a tuple that contains some zeros produces a monomial of lower degree, so \(\psi\) contains every monomial of degree at most \(k\) (several times, in different orders). A halfspace over \(\psi\) is therefore a polynomial threshold rule of degree \(k\) on the original space. The kernel costs \(O(n)\); the feature space has \((n+1)^k\) coordinates. The snippet’s `psi` builds one coordinate per list with `itertools.product` and multiplies its entries with `math.prod`, and `K` is the shortcut:
 
 ```python
 import itertools, math, random
@@ -364,15 +383,15 @@ Here is a stranger one. On the real line, consider the embedding with one coordi
 
 \[ \psi(x)_n = \frac{1}{\sqrt{n!}} e^{-x^2/2} x^n. \]
 
-That is infinitely many coordinates. Can you even take an inner product? Let’s try:
+Here \(n!\), “\(n\) factorial”, is \(1 \cdot 2 \cdots n\) (with \(0! = 1\)), \(e^{-x^2/2}\) is the exponential function at \(-x^2/2\), a factor shared by every coordinate, and \(x^n\) is the \(n\)-th power: **coordinate \(n\) is \(x^n\), shrunk by \(\sqrt{n!}\) and by the common factor \(e^{-x^2/2}\).** At \(x = 0.7\), coordinate 0 is \(e^{-0.245} \approx 0.783\) and coordinate 1 is 0.7 times that, about 0.548. That is infinitely many coordinates. Can you even take an inner product? Let’s try:
 
 \[ \langle \psi(x), \psi(x') \rangle = \sum_{n=0}^\infty \frac{1}{\sqrt{n!}} e^{-x^2/2} x^n \cdot \frac{1}{\sqrt{n!}} e^{-x'^2/2} x'^n = e^{-\frac{x^2 + x'^2}{2}} \sum_{n=0}^\infty \frac{(x x')^n}{n!}. \]
 
-The first step multiplies the coordinates and pulls the two exponentials, which do not depend on \(n\), out of the sum. The remaining sum is the power series of the exponential function, so it equals \(e^{x x'}\). Combining exponents, \(-\frac{x^2 + x'^2}{2} + x x' = -\frac{(x - x')^2}{2}\), so
+The sum \(\sum_{n=0}^\infty\) runs over every coordinate, without end. The first step multiplies matching coordinates and pulls the two exponentials, which do not depend on \(n\), out of the sum. The remaining sum is the power series of the exponential function, a fact from calculus, so it equals \(e^{x x'}\). Combining exponents, \(-\frac{x^2 + x'^2}{2} + x x' = -\frac{(x - x')^2}{2}\), so
 
 \[ \langle \psi(x), \psi(x') \rangle = e^{-\frac{(x - x')^2}{2}}. \]
 
-An infinite-dimensional inner product that costs one subtraction and one exponential. Watch the partial sums close in on it:
+An infinite-dimensional inner product that costs one subtraction and one exponential. In the snippet, `psi` builds the first coordinates term by term, and the partial sums close in on the closed form:
 
 ```python
 import math
@@ -394,7 +413,22 @@ More generally, for a scale \(\sigma > 0\), the **Gaussian kernel** is
 
 \[ K(\mathbf x, \mathbf x') = e^{-\frac{\|\mathbf x - \mathbf x'\|^2}{2\sigma}}. \]
 
-(It is also called the RBF kernel, for radial basis function. Watch the convention: we divide by \(2\sigma\); many references divide by \(2\sigma^2\), which only renames the parameter.) Read it as a similarity. Two messages that are close in the original space get \(K\) near 1, two that are far apart get \(K\) near 0, and \(\sigma\) sets what “close” means. The same computation in many variables gives an embedding with a coordinate \(\frac{1}{\sqrt{n!}} e^{-\|\mathbf x\|^2/2} \prod_{i=1}^n x_{J_i}\) for every \(n\) and every monomial, so a halfspace over it can express any polynomial predictor at all.
+(It is also called the RBF kernel, for radial basis function. Watch the convention: we divide by \(2\sigma\); many references divide by \(2\sigma^2\), which only renames the parameter.) Here \(\|\mathbf x - \mathbf x'\|^2\) is the squared distance between the two inputs and \(\sigma > 0\) a scale you choose. Read it as a similarity: **it is 1 for identical messages and decays exponentially with their squared distance, at a rate set by \(\sigma\).** Two messages that are close get \(K\) near 1, two that are far apart get \(K\) near 0, and \(\sigma\) sets what “close” means. For subject lines as 0/1 vectors, the squared distance counts the words in one line but not the other, the symmetric difference, written \(a \triangle b\) (Python’s `a ^ b`). “winner claim lunch” and “winner claim report” differ in two words, so with \(\sigma = 1\) the kernel is \(e^{-1} \approx 0.37\):
+
+```python
+import math
+
+def K(a, b, sigma):
+    return math.exp(-len(a ^ b) / (2 * sigma))
+
+x = {"winner", "claim", "lunch"}
+for other in ({"winner", "claim", "report"},
+              {"verify", "password", "report"}):
+    print(len(x ^ other),
+          [round(K(x, other, s), 4) for s in (0.25, 1, 4)])
+```
+
+It prints `2 [0.0183, 0.3679, 0.7788]` and `6 [0.0, 0.0498, 0.4724]`. A small \(\sigma\) calls even a one-word swap far; a large one calls even disjoint lines fairly close. The same computation in many variables gives an embedding with a coordinate \(\frac{1}{\sqrt{n!}} e^{-\|\mathbf x\|^2/2} \prod_{i=1}^n x_{J_i}\) for every \(n\) and every monomial, so a halfspace over it can express any polynomial predictor at all.
 
 Wait. The class of all polynomial threshold rules has infinite VC dimension. Shouldn’t lesson 6 forbid learning with it? There is no contradiction, and the reason is the thread running through lessons 15 and 16: the sample complexity of a large-margin learner depends on the margin in the feature space, not on its dimension. If the data happen to be separable with a large margin in this feature space, few labels suffice. If not, the margin can be arbitrarily small, and the bound says nothing. Large margins are the luck you hope for, not something the kernel promises.
 

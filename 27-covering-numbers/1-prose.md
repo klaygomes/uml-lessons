@@ -246,7 +246,7 @@ print(round(R, 3), round(massart, 3))
 
 It prints `0.513 1.205`.
 
-Lesson 26 stated Massart’s lemma with the longest distance from the average vector \(\bar a\). Its proof first shifted the set so that \(\bar a\) sat at the origin, and from then on used only the length of the longest vector; skip the shift and you get the form above, which is the one we will apply. So that nothing rests on memory, here is the proof in four lines. If \(N = 1\) or \(L = 0\), the set is a single vector, every sign vector’s best fit averages to \(0\), and \(R(A) = 0\). Otherwise, for any \(\lambda > 0\), write \(L = \max_a \|a\|\). Then
+Lesson 26 stated Massart’s lemma with the longest distance from the average vector \(\bar a\). Its proof first shifted the set so that \(\bar a\) sat at the origin, and from then on used only the length of the longest vector; skip the shift and you get the form above, which is the one we will apply. So that nothing rests on memory, here is the proof in four lines. Write \(L = \max_a \|a\|\). If \(N = 1\) or \(L = 0\), the set is a single vector \(a\), its fit \(\langle \sigma, a\rangle\) averages to \(0\) over the signs, and \(R(A) = 0\). Otherwise, for any \(\lambda > 0\),
 
 \[ m R(A) = \frac{1}{\lambda} \mathbb E \Big[\log \max_{a} e^{\lambda \langle \sigma, a \rangle}\Big] \le \frac{1}{\lambda} \log \sum_{a \in A} \mathbb E\, e^{\lambda \langle \sigma, a \rangle} = \frac{1}{\lambda} \log \sum_{a \in A} \prod_{i=1}^m \frac{e^{\lambda a_i} + e^{-\lambda a_i}}{2}. \]
 
@@ -276,7 +276,7 @@ The first term is the price of rounding to the representatives: at most \(r\) pe
 
 The right side doesn’t depend on \(a\), so it also bounds the supremum over \(a \in A\). Average over \(\sigma\), divide by \(m\), and apply Massart’s lemma to \(A'\). \(\blacksquare\)
 
-How good is it? Here is a world we can compute exactly: \(m = 10\) messages, scores in \([-1,1]\), so \(c = \sqrt{10}\), and a two-feature filter whose features, after rescaling, are “on” for the first five messages and for the last five. On that flat set, the best fit to \(\sigma\) is \(c\) times the length of \(\sigma\)’s shadow on the slice, which we can average over all \(2^{10} = 1{,}024\) sign vectors.
+How good is it? Here is a world we can compute exactly: \(m = 10\) messages, scores in \([-1,1]\), so \(c = \sqrt{10}\), and a two-feature filter whose features, after rescaling, are “on” for the first five messages and for the last five. To keep the arithmetic exact, take as score set the whole disc of radius \(c\) in that slice; it holds every score vector of such a filter, so a bound for the disc is a bound for the filter. The slice has the orthonormal basis \(v_1 = (1,1,1,1,1,0,0,0,0,0)/\sqrt 5\) and \(v_2\), its mirror on the last five. For \(a\) in the slice, \(\langle \sigma, a\rangle = \langle u, a\rangle\), where \(u = \langle \sigma, v_1\rangle v_1 + \langle \sigma, v_2\rangle v_2\) is \(\sigma\)’s **shadow** on the slice (the part of \(\sigma\) at right angles to the slice contributes nothing). By Cauchy–Schwarz \(\langle u, a\rangle \le \|u\|\,c\), with equality when \(a\) points along \(u\) with length \(c\). So the best fit to \(\sigma\) is \(c\,\|u\|\), and \(\|u\| = \sqrt{\langle \sigma, v_1\rangle^2 + \langle \sigma, v_2\rangle^2}\) is the `proj` below. For a \(\sigma\) whose first five signs sum to \(3\) and last five to \(-3\), the best fit is \(\sqrt{10}\cdot\sqrt{9/5 + 9/5} = 6\). We can average the best fit over all \(2^{10} = 1{,}024\) sign vectors.
 
 ```python
 import itertools, math
@@ -400,7 +400,7 @@ The table suggests a question: is there a right depth \(M\), or should you alway
 
 \[ f(M) - f(M-1) = \frac{c\,2^{-M}}{\sqrt m}\Big( \frac{6\sqrt{\log N_M}}{\sqrt m} - 1 \Big). \]
 
-The factor in front is positive, so level \(M\) helps exactly when \(6 \sqrt{\log N_M} \le \sqrt m\). In plain words: **keep refining while the log of the next cover’s size is below \(m/36\).** Covering numbers grow as the radius shrinks, so once a level fails the test every deeper level fails it too; the best depth is the number of levels that pass. With the grid covers in two dimensions, level sizes are \(9, 36, 144, \dots\), independent of \(m\):
+The factor in front is positive, so level \(M\) helps exactly when \(6 \sqrt{\log N_M} \le \sqrt m\). In plain words: **keep refining while the log of the next cover’s size is below \(m/36\).** Covering numbers grow as the radius shrinks, so once a level fails the test every deeper level fails it too; the best depth is the number of levels that pass. At \(m = 100\), level 1 passes, \(6\sqrt{\log 9} \approx 8.89 \le 10\), and level 2 fails, \(6\sqrt{\log 36} \approx 11.36 > 10\). With the grid covers in two dimensions, level sizes are \(9, 36, 144, \dots\), independent of \(m\):
 
 ```python
 import math
@@ -415,7 +415,7 @@ for m in (100, 400, 1_000, 10_000):
     print(m, best_M(m))
 ```
 
-It prints `100 1`, `400 7`, `1000 19` and `10000 199`. With only 100 labels, one level is all the theory can pay for; with ten thousand, it pays for far more levels than make any visible difference. This rule is not a heuristic or a matter of taste: it is the derivative of the bound you are certifying, so it is the scale choice the theory itself justifies.
+It prints `100 1`, `400 7`, `1000 19` and `10000 199`. With only 100 labels, one level is all the theory can pay for; with ten thousand, it pays for far more levels than make any visible difference. This rule is not a heuristic or a matter of taste: it is the level-by-level change of the bound you are certifying, so it is the scale choice the theory itself justifies.
 
 ## Letting the chain run forever
 
@@ -529,7 +529,7 @@ BestDepth(m, sizes):
 
 **CoveringRadius** compares every sample vector with every representative: \(O(|A|\,|B|\,d)\) time and \(O(1)\) extra space. It can only check a finite sample of an infinite set, so it is a test, not a proof; the proof for the grid is the flat-set proposition. With a grid, the nearest representative is a rounding, so the check drops to \(O(|A|\, d)\).
 
-**ChainingBound** and **BestDepth** take \(O(M)\) arithmetic operations given the sizes, and \(O(M)\) space to hold them.
+**ChainingBound** and **BestDepth** count levels from 1, so `sizes[k]` is the size of the level-\(k\) cover; they take \(O(M)\) arithmetic operations given the sizes, and \(O(M)\) space to hold them.
 
 **Build it yourself.** Using only the Python standard library:
 
@@ -567,9 +567,9 @@ if __name__ == "__main__":
 
 Now the real job. The board’s rule, from lesson 26: with a loss between 0 and 1, with probability at least \(1 - \delta\) over the labelled messages, every hypothesis in the class has true risk at most its empirical risk plus
 
-\[ 2\,R(\text{loss vectors}) + \sqrt{\frac{2\log(2/\delta)}{m}}. \]
+\[ 2\,\mathbb E_{S'}\big[R(\text{loss vectors on } S')\big] + \sqrt{\frac{2\log(2/\delta)}{m}}, \]
 
-The ramp loss is 1-Lipschitz, so by lesson 26’s contraction lemma the loss vectors fit noise no better than the score vectors, and any bound on \(R(A)\) for the score set serves. To ship, the gap must be at most \(\varepsilon = 0.25\) with \(\delta = 0.05\), using the chaining bound, and you can buy at most 12,000 labels.
+where \(S'\) is a fresh set of \(m\) labelled messages. In plain words: **the gap between true and empirical risk is at most twice the loss class’s fit to noise plus a confidence term.** At \(m = 9{,}900\) and \(\delta = 0.05\), the confidence term is \(\sqrt{2 \log 40 / 9{,}900} \approx 0.0273\). Our bounds on \(R\) hold for every set of \(m\) messages, because every score stays in \([-1, 1]\) and so \(c = \sqrt m\) whatever the messages; a bound that holds for every \(S'\) also bounds the average. The ramp loss is 1-Lipschitz, so by lesson 26’s contraction lemma the loss vectors fit noise no better than the score vectors, and any bound on \(R(A)\) for the score set serves. To ship, the gap must be at most \(\varepsilon = 0.25\) with \(\delta = 0.05\), using the chaining bound, and you can buy at most 12,000 labels.
 
 In the lab you choose the number of labels \(m\), and you build the chain: for each level, a grid cover at the radius you pick. The lab checks every claimed cover against its radius and shows two numbers side by side. One is a **measured** Rademacher complexity, estimated from random sign vectors. It looks wonderful, and it is not a certificate: it is a random estimate of the thing you were asked to bound. The other is the chaining bound computed from your covers, and only that one counts.
 

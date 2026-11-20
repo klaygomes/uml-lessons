@@ -16,11 +16,34 @@ This lesson answers both. The method is called **nearest neighbour**, and it is 
 
 ## Similar messages, similar labels
 
-To say “the most similar message” we need a way to measure how far apart two messages are. A **metric** on the domain \(\mathcal X\) is a function \(\rho: \mathcal X \times \mathcal X \to \mathbb R\) that returns the distance between any two elements. When messages are vectors in \(\mathbb R^d\), the natural choice is the **Euclidean distance**,
+To say “the most similar message” we need a way to measure how far apart two messages are. Take a new invoice with payment score 0.70 and sender score 0.70, and a labelled one with 0.65 and 0.65 (you will meet both again in a moment). Draw them as two dots on a square whose sides are the two scores: they are 0.05 apart along each side, and the ruler between them reads about 0.071.
 
-\[ \rho(x, x') = \|x - x'\| = \sqrt{\textstyle\sum_{i=1}^d (x_i - x'_i)^2}, \]
+That ruler, made general, is a metric. Recall that the **domain** \(\mathcal X\) is the set of all messages that could ever arrive, and \(\mathbb R\) is the set of real numbers. A **metric** on \(\mathcal X\) is a function \(\rho: \mathcal X \times \mathcal X \to \mathbb R\) (the Greek letter rho) that takes a pair of messages and returns the distance between them; \(\mathcal X \times \mathcal X\) is the set of all such pairs. When each message is a list of \(d\) scores, a point of \(\mathbb R^d\), the natural choice is the **Euclidean distance**,
 
-the straight-line distance you would measure with a ruler. Throughout this lesson the domain is \(\mathcal X = [0, 1]^d\), each score between 0 and 1, and \(\rho\) is the Euclidean distance.
+\[ \rho(x, x') = \|x - x'\| = \sqrt{\textstyle\sum_{i=1}^d (x_i - x'_i)^2}. \]
+
+Read it from the inside out.
+
+- \(x_i\) is score number \(i\) of message \(x\), and \(x'_i\) (read “x prime i”) is the same score of the other message \(x'\).
+- \(x_i - x'_i\) is the gap on that one score, and squaring it makes every gap positive.
+- \(\sum_{i=1}^d\) adds those squared gaps for \(i = 1, 2, \dots, d\), one per score.
+- The square root undoes the squaring, so the answer is in score units again.
+- \(\|x - x'\|\), with double bars, is the **norm** of the difference: its length. It is a second name for the same number.
+
+In plain words: **the distance between two messages is the straight-line length you would measure with a ruler between their points.** For our two invoices both gaps are 0.05, the squares are 0.0025 each, their sum is 0.005, and its square root is 0.071.
+
+```python
+import math
+
+x, u = (0.70, 0.70), (0.65, 0.65)
+gaps = [round(a - b, 2) for a, b in zip(x, u)]
+squares = [g ** 2 for g in gaps]
+rho = math.sqrt(sum(squares))
+print(gaps, round(sum(squares), 4), round(rho, 3))
+print(round(math.dist(x, u), 3))
+```
+
+It prints `[0.05, 0.05] 0.005 0.071` and `0.071`: the hand computation, and Python’s own `math.dist`, which the rest of the lesson uses. Throughout this lesson the domain is \(\mathcal X = [0, 1]^d\), the set of lists of \(d\) scores each between 0 and 1, and \(\rho\) is the Euclidean distance.
 
 Let’s try the idea on paper first. Here are eight invoices your users labelled, described by just the payment score \(x_1\) and the sender score \(x_2\). Message G is the interesting one: a real invoice from a supplier you use, with a moderately high payment score and a slightly unfamiliar sending address.
 
@@ -48,17 +71,37 @@ Six new invoices arrive. For each one, we sort the eight labelled messages by di
 
 Notice q3 and q5. If you trust only the single closest message, q3 inherits G’s “keep”, even though everything else around it is junk. If you let three neighbours vote, q3 becomes junk, but q5 flips the other way: its closest message B is junk, while its second and third neighbours outvote B. Neither choice is right everywhere. The number of neighbours you consult is a real decision, and we will see what it trades.
 
-Now the general rule. Let \(S = ((x_1, y_1), \dots, (x_m, y_m))\) be the training sequence. For each message \(x \in \mathcal X\), let \(\pi_1(x), \dots, \pi_m(x)\) be the indices \(1, \dots, m\) reordered by distance to \(x\), closest first:
+Now the general rule. What we did for q3 was to number the eight labelled messages A to H as 1 to 8, then list those numbers again in order of distance from q3: G (number 7) first, then C (3), then A (1), and so on. The rest of the lesson needs a name for that list.
+
+Recall that the **training sequence** is the list of labelled examples, \(S = ((x_1, y_1), \dots, (x_m, y_m))\): message \(x_i\) with its label \(y_i\), for \(m\) examples. For each message \(x \in \mathcal X\) (read \(\in\) as “in”), let \(\pi_1(x), \dots, \pi_m(x)\) (the Greek letter pi) be the indices \(1, \dots, m\) reordered by distance to \(x\), closest first:
 
 \[ \rho(x, x_{\pi_i(x)}) \le \rho(x, x_{\pi_{i+1}(x)}) \quad \text{for all } i < m. \]
 
-When two training messages are at exactly the same distance, break the tie by the smaller index, so the reordering is well defined. Then \(x_{\pi_1(x)}\) is the **nearest neighbour** of \(x\) in \(S\), and \(x_{\pi_1(x)}, \dots, x_{\pi_k(x)}\) are its \(k\) nearest neighbours.
+- \(\pi_i(x)\) is a position in the training sequence: the number of the \(i\)-th closest message to \(x\).
+- \(x_{\pi_i(x)}\) is a subscript inside a subscript: the training message sitting at that position.
+- The inequality says each message on the list is no further from \(x\) than the next one.
 
-**The k-NN rule.** For a number \(k\), the **k-NN rule** for binary classification returns, for every \(x \in \mathcal X\), the majority label among \(\{y_{\pi_i(x)} : i \le k\}\). With \(k = 1\) it is the **1-NN rule**,
+In plain words: **\(\pi_1(x), \pi_2(x), \dots\) lists the training messages from nearest to furthest.** For q3, \(\pi_1 = 7\), \(\pi_2 = 3\), \(\pi_3 = 1\), with distances 0.071, 0.200 and 0.224.
+
+```python
+import math
+
+X = [(0.9, 0.8), (0.85, 0.4), (0.7, 0.9), (0.2, 0.2),
+     (0.3, 0.7), (0.1, 0.5), (0.65, 0.65), (0.4, 0.1)]
+x = (0.7, 0.7)
+rho = lambda i: math.dist(x, X[i - 1])
+pi = sorted(range(1, 9), key=lambda i: (rho(i), i))
+print(pi)
+print([round(rho(i), 3) for i in pi])
+```
+
+It prints `[7, 3, 1, 2, 5, 6, 8, 4]` and `[0.071, 0.2, 0.224, 0.335, 0.4, 0.632, 0.671, 0.707]`: every distance is at most the next. The sort key `(rho(i), i)` is the tie rule: when two training messages are at exactly the same distance, the smaller index goes first, so the reordering is well defined. Then \(x_{\pi_1(x)}\) is the **nearest neighbour** of \(x\) in \(S\), and \(x_{\pi_1(x)}, \dots, x_{\pi_k(x)}\) are its \(k\) nearest neighbours.
+
+**The k-NN rule.** For a number \(k\), the **k-NN rule** for binary classification returns, for every \(x \in \mathcal X\), the majority label among \(\{y_{\pi_i(x)} : i \le k\}\), the labels of the \(k\) nearest neighbours (the braces collect them, and the colon reads “such that”). For q3 with \(k = 3\) that is the labels of G, C and A: keep, junk, junk, so the majority says junk. With \(k = 1\) it is the **1-NN rule**,
 
 \[ h_S(x) = y_{\pi_1(x)}. \]
 
-(For binary labels, an odd \(k\) avoids tied votes.) The 1-NN rule carves the domain into cells, one per training message: a cell holds every point closer to its training message than to any other, and every point in it gets that message’s label. This picture of the domain is called a **Voronoi tessellation**.
+Here \(h_S\) is the hypothesis the rule builds from \(S\) (the subscript records which training sequence), and \(y_{\pi_1(x)}\) is the label of the nearest neighbour. In plain words: **the 1-NN rule copies the label of the single closest labelled message.** For q3 that is \(y_7\), G’s “keep”. (For binary labels, an odd \(k\) avoids tied votes.) The 1-NN rule carves the domain into cells, one per training message: a cell holds every point closer to its training message than to any other, and every point in it gets that message’s label. This picture of the domain is called a **Voronoi tessellation**.
 
 [[diagram:voronoi]]
 
@@ -83,11 +126,29 @@ print([knn(S, x, 3) for x in Q])
 
 It prints `[1, 0, 0, 0, 1, 0]` and `[1, 0, 1, 0, 0, 0]`: the two columns of the table, with 1 for junk.
 
-The same idea works for numbers instead of labels. If \(\mathcal Y = \mathbb R\), say a junk score you want to predict, the natural prediction is the average target of the \(k\) nearest neighbours, \(h_S(x) = \frac1k \sum_{i=1}^k y_{\pi_i(x)}\). More generally, for any function \(\phi: (\mathcal X \times \mathcal Y)^k \to \mathcal Y\), the k-NN rule with respect to \(\phi\) is
+The same idea works for numbers instead of labels. Recall that \(\mathcal Y\) is the **label set**, so far \(\{0, 1\}\) with 1 for junk. If \(\mathcal Y = \mathbb R\), say a junk score you want to predict, the natural prediction is the average target of the \(k\) nearest neighbours, \(h_S(x) = \frac1k \sum_{i=1}^k y_{\pi_i(x)}\): add up the targets of neighbours 1 to \(k\), and divide by \(k\). For q1 with \(k = 3\) the neighbours B, A, G carry 1, 1, 0, and the average is \(2/3\).
+
+More generally, any recipe that turns the \(k\) nearest examples into a prediction will do. Write it as a function \(\phi\) (the Greek letter phi), with \(\phi: (\mathcal X \times \mathcal Y)^k \to \mathcal Y\): its input is \(k\) message-label pairs, its output a label. The k-NN rule with respect to \(\phi\) is
 
 \[ h_S(x) = \phi\big( (x_{\pi_1(x)}, y_{\pi_1(x)}), \dots, (x_{\pi_k(x)}, y_{\pi_k(x)}) \big). \]
 
-Majority vote and the plain average are two choices of \(\phi\); a weighted average whose weights depend on the neighbours’ distances is another. For the rest of the lesson we stay with binary labels and the 0-1 loss.
+Inside the brackets sit the nearest example, the second nearest, up to the \(k\)-th, each as a (message, label) pair; \(\phi\) reads them and answers. In plain words: **find the \(k\) nearest labelled examples and let one fixed recipe turn them into a prediction.** Majority vote and the plain average are two choices of \(\phi\), and on q1 they answer 1 and \(2/3\):
+
+```python
+import math
+
+S = [((0.9, 0.8), 1), ((0.85, 0.4), 1), ((0.7, 0.9), 1),
+     ((0.2, 0.2), 0), ((0.3, 0.7), 0), ((0.1, 0.5), 0),
+     ((0.65, 0.65), 0), ((0.4, 0.1), 0)]
+x, k = (0.9, 0.55), 3
+near = sorted(S, key=lambda z: math.dist(z[0], x))[:k]
+ys = [y for _, y in near]
+mean = lambda ys: sum(ys) / len(ys)
+vote = lambda ys: int(mean(ys) > 1 / 2)
+print(ys, round(mean(ys), 3), vote(ys))
+```
+
+It prints `[1, 1, 0] 0.667 1`. A weighted average whose weights depend on the neighbours’ distances is a third choice of \(\phi\). For the rest of the lesson we stay with binary labels and the 0-1 loss.
 
 ## No class to search, but still a bias
 

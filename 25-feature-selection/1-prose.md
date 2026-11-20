@@ -2,35 +2,42 @@
 
 ## The filter that reads every word
 
-Last lesson you built a filter from a story about how mail is made. **Naive Bayes**, you will remember, pretends that once you know whether a message is junk or keep, the words in it appear independently of each other. Under that assumption the learner needs only a handful of numbers: the fraction of junk messages that contain each word, the same fraction for keep messages, and the overall share of junk. It estimates each of them by maximum likelihood, which here just means counting. Then, for a new message, it multiplies the matching fractions together for each label and answers with the label whose product is larger.
+Last lesson you built a filter from a story about how mail is made. **Naive Bayes**, you will remember, pretends that once you know whether a message is junk or keep, the words in it appear independently of each other. Under that assumption the learner needs only a handful of numbers: the fraction of junk messages that contain each word, the same fraction for keep messages, and the overall share of junk. It estimates each fraction by counting with add-one pseudo-counts, \((k + 1)/(m + 2)\) for a word seen in \(k\) of \(m\) messages, so that no estimate is ever exactly 0. Then, for a new message, it multiplies the matching probabilities together for each label, one factor per word of the dictionary (present or absent), and answers with the label whose product is larger.
 
 You shipped it with the company’s whole dictionary, 20,000 words. That is \(2 \cdot 20{,}000 + 1 = 40{,}001\) numbers to estimate, and twenty thousand factors to multiply for every message that arrives. Three complaints landed on your desk in the same week.
 
 The first is about speed. The filter touches every word of the dictionary for every message, even though a typical message uses a hundred of them. The operations team would like it to be a lot cheaper.
 
-The second is stranger. Every so often a perfectly ordinary message gets flagged as junk with total certainty. You trace one case and find the culprit: a rare word, a product code that happened to appear once in your training sequence, in a junk message. Its estimated fraction among keep messages is therefore exactly zero, so the keep product for any message containing it is zero, and no amount of evidence elsewhere can save it. How common is this? Here is a small simulation with a realistic shape: word frequencies fall off like \(1/r\) for the \(r\)-th most common word, each message draws about a hundred words, and the 2,000 training messages are 800 junk and 1,200 keep, all drawn from the same mix so that no word carries any real signal.
+The second is stranger. Every so often a perfectly ordinary message gets flagged as junk with near certainty. You trace one case and find the culprits: a few rare words, product codes that happened to appear once in your training sequence, each time in a junk message. Smoothing keeps their keep estimate off zero, but a word seen once among 800 junk messages and never among 1,200 keep messages gets the estimates \(2/802\) and \(1/1202\), so it triples the odds of junk on its own, and three such words multiply them by 27. How common is this? Here is a small simulation with a realistic shape: word frequencies fall off like \(1/r\) for the \(r\)-th most common word, each message draws about a hundred words, and the 2,000 training messages are 800 junk and 1,200 keep, all drawn from the same mix, so that no word carries any real signal and every message is junk with probability 0.4 whatever it says. The snippet trains the filter, adds up its log-odds of junk for 2,000 fresh messages, and counts how sure it is.
 
 ```python
 import random
+from math import exp, log
 
 rng, d = random.Random(0), 20_000
 weights = [1 / r for r in range(1, d + 1)]
-
-def message():
-    return set(rng.choices(range(d), weights, k=100))
-
-junk = [message() for _ in range(800)]
-keep = [message() for _ in range(1200)]
-seen_junk, seen_keep = set().union(*junk), set().union(*keep)
-only_junk = seen_junk - seen_keep
-fresh = [message() for _ in range(2000)]
-hit = sum(bool(x & only_junk) for x in fresh) / len(fresh)
-print(len(seen_junk | seen_keep), len(only_junk), round(hit, 3))
+draw = lambda n: [set(rng.choices(range(d), weights, k=100))
+                  for _ in range(n)]
+junk, keep, fresh = draw(800), draw(1200), draw(2000)
+n1, n0 = [0] * d, [0] * d
+for msgs, n in ((junk, n1), (keep, n0)):
+    for x in msgs:
+        for j in x: n[j] += 1
+p1 = [(c + 1) / 802 for c in n1]
+p0 = [(c + 1) / 1202 for c in n0]
+off = [log((1 - a) / (1 - b)) for a, b in zip(p1, p0)]
+on = [log(a / b) - o for a, b, o in zip(p1, p0, off)]
+base = log(800 / 1200) + sum(off)
+s = [base + sum(on[j] for j in x) for x in fresh]
+prob = [1 / (1 + exp(-t)) for t in s]
+only = sum(1 for a, b in zip(n1, n0) if a and not b)
+print(only, sum(p > 0.5 for p in prob),
+      sum(p > 0.99 for p in prob), sum(p < 0.01 for p in prob))
 ```
 
-It prints `16844 2637 0.91`. Of the 16,844 words that showed up at all, 2,637 showed up only in junk, purely by chance, and 91% of fresh messages contain at least one of them. The filter has memorized its rare words, the way the memorizer of lesson 1 memorized whole messages.
+It prints `2637 237 22 976`. Purely by chance, 2,637 words showed up in junk and never in keep. An honest filter would give every fresh message a junk probability of 0.4; this one calls 237 of the 2,000 junk, 22 of them with more than 99% certainty, and is more than 99% sure that 976 others are keep. The filter has memorized its rare words, the way the memorizer of lesson 1 memorized whole messages, and smoothing only softened the memory.
 
-The third complaint comes from a colleague who tried to fix things by switching to a linear junk score trained by **ridge regression**, the regularized least squares of lesson 13, and by adding two numeric features that seemed obviously useful: the message length in bytes, and the sender’s monthly volume, which for bulk senders runs into the millions. The new filter got worse. Those two numbers are thousands or millions of times larger than a yes/no word feature, and they swamp everything else.
+The third complaint comes from a colleague who tried to fix things by switching to a linear junk score trained by **ridge regression** (lesson 13: least squares plus a price \(\lambda\|\mathbf w\|^2\) on the squared length of the weight vector), and by adding two numeric features that seemed obviously useful: the message length in bytes, and the sender’s monthly volume, which for bulk senders runs into the millions. The new filter got worse. Those two numbers are thousands or millions of times larger than a yes/no word feature, and they swamp everything else.
 
 So the filter uses too many features, most of them noise, and a few of its features are on the wrong scale. Which features should it keep, and how should it present them to the learner? That is this lesson.
 
@@ -38,7 +45,7 @@ So the filter uses too many features, most of them noise, and a few of its featu
 
 Let’s start by saying exactly what a feature is. A **feature** is any measurement of a message: whether it contains the word “winner”, how long it is, how many links it has. Formally a feature is a function from real messages to numbers, sometimes called a **feature function**, and when we stack \(d\) of them we get a **feature vector** in \(\mathbb R^d\). Everything this course has done so far started after that step: lesson 1’s four bits F, L, U, N were already a choice of features.
 
-In lesson 1 you learned that the hypothesis class is prior knowledge. The representation is prior knowledge too, and it comes earlier. Before you choose halfspaces, or trees, or nearest neighbours, you have already decided what a message *is* to the learner. Lesson 16 made that explicit with an embedding \(\psi\) followed by halfspaces: the choice of \(\psi\) was a bet about the problem.
+In lesson 1 you learned that the hypothesis class is prior knowledge. The representation is prior knowledge too, and it comes earlier. Before you choose halfspaces, or trees, or nearest neighbours, you have already decided what a message *is* to the learner. Lesson 16 made that explicit with an embedding \(\psi\), a map from messages to feature vectors, followed by halfspaces: the choice of \(\psi\) was a bet about the problem. Lesson 20 let a network’s hidden layer learn its own \(\psi\) from labels.
 
 And here is a warning that will shape the whole lesson: how good a feature is depends on the learner that will use it. Picture two features of some numeric quantity \(y\) that a filter wants to predict. The first, \(x_1\), is drawn uniformly from \([-1, 1]\), and \(y = x_1^2\) exactly. The second is \(x_2 = y + z\), where \(z\) is a small noise drawn uniformly from \([-0.01, 0.01]\). If you could keep only one feature, which would you keep?
 
@@ -73,7 +80,7 @@ The lesson has three parts, and the map below shows how they fit together.
 
 ## Why keep only a few features?
 
-There are four good reasons to want a filter that looks at only \(k\) of its \(d\) features, with \(k\) much smaller than \(d\). A filter that uses few features needs less memory and runs faster. Some features cost something to measure: looking up the sender’s reputation means a network call, in the same way a medical test costs money, so a predictor that needs fewer of them can be worth a small loss of accuracy. And restricting the class to predictors that use few features shrinks it, which, as lessons 2 to 6 taught you, reduces the estimation error and fights overfitting. The rare-word disaster above is overfitting in its purest form.
+There are four good reasons to want a filter that looks at only \(k\) of its \(d\) features, with \(k\) much smaller than \(d\). A filter that uses few features needs less memory and runs faster. Some features cost something to measure: looking up the sender’s reputation means a network call, in the same way a medical test costs money, so a predictor that needs fewer of them can be worth a small loss of accuracy. And restricting the class to predictors that use few features shrinks it, which, as lessons 2 to 6 taught you, reduces the estimation error (the part of the risk that comes from learning on a finite sample) and fights overfitting. The rare-word disaster above is overfitting in its purest form.
 
 For the linear predictors of lesson 9, a halfspace or a linear score \(\langle \mathbf w, \mathbf x \rangle\), “uses only \(k\) features” has a clean meaning: the weight vector \(\mathbf w\) has at most \(k\) nonzero entries, because a feature with weight zero never affects the output. (A reminder: \(\langle \mathbf w, \mathbf x \rangle = \sum_j w_j x_j\) is the inner product, the weighted sum of the features.) Take a weight vector over five features, \(\mathbf w = (0, 0.7, 0, -1.2, 0)\). Only features 2 and 4 matter; you never even need to measure the other three. A vector with few nonzero entries is called **sparse**, and the number of nonzero entries has a name and a symbol. With it, feature selection becomes an optimization problem:
 
