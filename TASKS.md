@@ -221,7 +221,7 @@ Folder: `07-nonuniform-learnability/`
 Folder: `08-runtime-of-learning/`
 
 - [x] 1 prose and sheet (10,310 words, 12 snippets plus 4 build-it stubs run by the lead, no book references; opening aligned with lesson 7's cliffhanger (1.55e28 lists at size 22), rechecked by the lead, 2026-11-20)
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (CPU rule)
+- [x] 2 gates: clean-context review; book check (two book slips confirmed: conjunction bound fails at small n, 3-CNF bound wrong as a bound; two prose fixes) and sheet resync, 2026-11-20
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -677,7 +677,7 @@ Skipped on purpose to keep writing and save CPU (user, 2026-11-20: "keep writing
 
 ## Open items
 
-- Go-ahead 2026-11-20 (user: "great, you can go"), three phases. Phase 1: split lessons 6, 7, 9, 10, 12, 13, 14, 15, 17, 21, 23, 24 into a/b folders (`docs/split-brief.md`); originals move to `_archive/` once both halves check clean, and TASKS/series rows become 6a/6b etc. Done and folded in: 6, 9, 10, 12, 13. Running (resume by message or rerun the brief `scratchpad/brief-split-N.md`, regenerable from docs/split-brief.md): 7, 14, 15, 17, 21. Not started: 23, 24. Phase 2: book check plus sheet resync for every lesson (`docs/bookcheck-brief.md`): done 2 to 5; running 8; then 11, 16, 18, 19, 20, 22, 25 to 31, then each split half. Phase 3: figures (diagram-design) and labs (iwrzwr studies), lesson by lesson from lesson 2.
+- Go-ahead 2026-11-20 (user: "great, you can go"), three phases. Phase 1: split lessons 6, 7, 9, 10, 12, 13, 14, 15, 17, 21, 23, 24 into a/b folders (`docs/split-brief.md`); originals move to `_archive/` once both halves check clean, and TASKS/series rows become 6a/6b etc. Done and folded in: 6, 9, 10, 12, 13. Running (resume by message or rerun the brief `scratchpad/brief-split-N.md`, regenerable from docs/split-brief.md): 7, 14, 15, 17, 21. Not started: 23, 24. Phase 2: book check plus sheet resync for every lesson (`docs/bookcheck-brief.md`): done 2 to 5 and 8; then 11, 16, 18, 19, 20, 22, 25 to 31, then each split half. Phase 3: figures (diagram-design) and labs (iwrzwr studies), lesson by lesson from lesson 2.
 - Math now renders with KaTeX 0.19.1 (user asked for nicer formulas, 2026-11-20): `math.mjs` defaults to KaTeX, CSS and woff2 fonts vendored in `katex/` (MIT, see katex/NOTICE). Pages pass `--css` to link it. Bold or italic that spans math now renders (prose.py protects math first).
 - Every lesson's text and teacher's sheet render to `NN-slug/1-prose.html` and `1-sheet.html` via `python3 -I _kit/read.py` (user asked for sheet links, 2026-11-20); the index links both. Rerun after any prose or sheet edit, then `_kit/index.py`.
 

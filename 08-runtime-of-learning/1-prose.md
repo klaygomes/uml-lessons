@@ -191,7 +191,7 @@ ExhaustiveERM(H, S):
 
 **Time.** One check per hypothesis per example: \(k \, |\mathcal H| \, m\) if one check costs \(k\), which is the \(O(|\mathcal H| \, m_{\mathcal H}(\varepsilon, \delta))\) you read earlier. With \(k = 1\), 82 hypotheses and 181 examples, it is the 14,842 checks the definition’s snippet printed. **Space.** \(O(1)\) words beyond the input and one stored hypothesis, if \(\mathcal H\) can be enumerated one member at a time.
 
-The linear dependence on \(|\mathcal H|\) is the whole problem. Take a sequence with \(\log |\mathcal H_n| = n\), such as C++ programs of at most \(n\) bits: the sample complexity grows like \(n\), the search like \(2^n\). That is exactly the job that would never finish.
+The linear dependence on \(|\mathcal H|\) is the whole problem. Take a sequence in which \(\log |\mathcal H_n|\) grows like \(n\), such as C++ programs of at most \(n\) bits: the sample complexity grows like \(n\), the search like \(2^n\). That is exactly the job that would never finish.
 
 Here is a class you know well, which shows the gap at real scale: conjunctions over the thirty features of the real mail system (a conjunction is an AND of features or their negations; lesson 3’s second problem introduced them, and the next sections make them precise). There are \(3^{30} + 1\) of them.
 
@@ -969,7 +969,7 @@ Two remarks keep this honest. First, the argument assumes trapdoor one-way funct
 2. Runtime is measured in operations, asymptotically, along a sequence of problems, as a function of \(n\), \(1/\varepsilon\) and \(1/\delta\). A learner is efficient when that function is polynomial, and its hypothesis must predict within the same budget.
 3. Exhaustive ERM over a finite class costs \(O(|\mathcal H| \, m)\): fine for small classes, exponential when \(\log |\mathcal H_n|\) grows like \(n\), although the sample complexity stays polynomial.
 4. In the realizable case, ERM is fast for rectangles (the tightest box) and conjunctions (crossing out literals), both \(O(nm)\). In the agnostic case it is NP-hard for both; for rectangles in a fixed dimension, subset search runs in \(m^{O(n)}\).
-5. Proper learning of 3-term DNF is hard unless \(RP = NP\), but learning it through 3-CNF is efficient: \(O(n^3 m)\) time for \(O(n^3)\) times more examples. Changing the representation trades labels for time.
+5. Proper learning of 3-term DNF is hard unless \(RP = NP\), but learning it through 3-CNF is efficient: \(O(n^3 m)\) time, with \(O(n^3)\) examples in place of \(O(n)\). Changing the representation trades labels for time.
 6. To show a problem is hard for every learner, cryptographic assumptions help: if trapdoor one-way functions exist, their inverses form a class that is small but not efficiently learnable.
 
 Your filter learns the three kinds of junk in about half an hour. Then the analytics team sends a request. They have messages described by real-valued scores, dozens of them, and they want the filter to weigh them all: a little for each capital letter, more for each link, less for a known sender, and junk when the total passes a threshold. That is a huge, infinite class with real geometry. Rectangles had geometry too, and their agnostic ERM was NP-hard. Conjunctions were fast only because the problem was realizable. Is there a rich class, with real geometry, where finding the best hypothesis is fast? That is the next lesson: linear predictors.
