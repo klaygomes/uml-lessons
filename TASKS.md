@@ -28,6 +28,7 @@ All cloned locally under `~/.local/share/klay-learning-ladder/` (2026-11-20). Pi
 - Connect each idea to an algorithm and its time and space cost.
 - Notation of the book's Section 1.6: \(\mathcal X, \mathcal Y, \mathcal H\), \(S = (z_1, \dots, z_m) \sim \mathcal D^m\), \(\ell: \mathcal H \times Z \to \mathbb R_+\), \(L_{\mathcal D}(h)\), \(L_S(h)\), \(\|x\|\), \(O, \Theta, \tilde O\).
 - Writing: clear and natural, a teacher talking. No robotic short-sentence style, no limited vocabulary. Easy to read, exact on concepts.
+- Read every formula aloud for a learner meeting it for the first time (user, 2026-11-20: "everytime you show complex math, you have to explain as i'm learning it"). After each display formula, and any dense inline one: name every symbol and piece of notation in words (sets and set-builder braces, the colon as "such that", \(|\cdot|\), \([m]\), \(\sim\), \(\mathbb P\), \(\mathbb E\), subscripts, sums, sup, argmin, and so on), read it from the inside out, give the whole formula as one plain sentence in bold, work one tiny number from the story through it, and add a Python snippet that mirrors the formula term by term with its real output. A symbol explained in an earlier lesson still gets a one-line reminder the first time it appears in each lesson. Model: lesson 1, "The formal statements", the empirical and true risk.
 - Never advance to the next unit until the learner has answered the concept check and confirmed mastery.
 
 ## How each lesson is made
@@ -587,8 +588,10 @@ Skipped on purpose to keep writing and save CPU (user, 2026-11-20: "keep writing
 - [ ] Lessons 2 to 19: learner judges (step 6), ask before running (CPU)
 - [ ] Lesson 3: align key words with lesson 2 (the lesson 3 writer could not see lesson 2's sheet); lesson 3's Bayes-optimality proof is the writer's own, verify it
 - [ ] Lesson 6: decide whether to split into 06a/06b (about 10,400 words), and verify the claimed book error in the uniform-convergence proof's Hoeffding constant
+- [ ] Lessons 2 to 19 (and any draft written before 2026-11-20 evening): formula walkthrough pass, every formula read aloud as in lesson 1's risks (the learner's rule above); revision writers, then rerun `_kit/check_prose.py`. Lesson 1 done 2026-11-20
 - [ ] Lessons 20 to 31: prose drafts (12 to 19 drafting) (writers; the brief template is `docs/writer-brief.md`)
-- [ ] Commit the series repo and the skill changes in ~/dotfiles (when the user asks)
+- [x] Commit the series repo and publish it: github.com/klaygomes/uml-lessons, Pages at http://www.estacouveflor.com/uml-lessons/ (user asked, 2026-11-20). Push with the klaygomes gh account (`gh auth switch -u klaygomes`), then switch back to cleiton-loiola
+- [ ] Commit the skill changes in ~/dotfiles (when the user asks)
 
 ## Open items
 

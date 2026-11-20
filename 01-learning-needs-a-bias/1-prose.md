@@ -144,15 +144,51 @@ Let’s collect the definitions, then prove two facts. Everything below lives in
 
 **Setting.** The domain set is \(\mathcal X = \{0,1\}^4\) with \(|\mathcal X| = 16\). The label set is \(\mathcal Y = \{0, 1\}\). The true labelling is \(f(x) = x_F\). The distribution \(\mathcal D\) is uniform on \(\mathcal X\). An example is \(z_i = (x_i, y_i)\) with \(y_i = f(x_i)\), and a training sequence is \(S = (z_1, \dots, z_m)\). A learner is an algorithm \(A\), and \(A(S)\) is the hypothesis it returns on \(S\). When \(S\) is random, we write \(S \sim \mathcal D^m\): the messages \(x_1, \dots, x_m\) are drawn **independently and identically distributed** (i.i.d.) from \(\mathcal D\), meaning each is drawn from the same \(\mathcal D\) and no draw influences another.
 
-**Risks.** For a hypothesis \(h: \mathcal X \to \mathcal Y\),
+**Risks.** These two formulas are the two scores every later lesson keeps comparing, so let’s read them slowly. Here is the first one, the empirical risk of a hypothesis \(h: \mathcal X \to \mathcal Y\):
 
-\[ L_S(h) = \frac{1}{m} \left| \{ i \in [m] : h(x_i) \neq y_i \} \right|, \]
+\[ L_S(h) = \frac{1}{m} \left| \{ i \in [m] : h(x_i) \neq y_i \} \right|. \]
+
+Read it from the inside out.
+
+- \([m]\) is shorthand for the list of positions \(\{1, 2, \dots, m\}\): example 1, example 2, up to example \(m\).
+- \(h(x_i) \neq y_i\) asks one yes/no question about example \(i\): does the hypothesis’s label for message \(x_i\) differ from the label \(y_i\) your users gave it? “Yes” means a mistake.
+- The braces \(\{ i \in [m] : \dots \}\) collect every position where the answer is yes. Read the colon as “such that”: the set of positions \(i\) such that \(h\) gets example \(i\) wrong.
+- The vertical bars \(|\cdot|\) around a set mean “how many elements it has”. So \(|\{\dots\}|\) is the number of mistakes.
+- Dividing by \(m\) turns that count into a fraction, so \(L_S(h)\) is always between 0 and 1.
+- The subscript \(S\) in \(L_S\) says which messages are being scored: the training sequence and nothing else.
+
+In plain words: **the fraction of your labelled examples that \(h\) gets wrong.** Take the eight examples of the table and \(h_U\), “unknown sender means junk”. It is right on examples 1 to 6, then misses example 7 (1101: known sender, but junk) and example 8 (0010: unknown sender, but keep). The set of mistakes is \(\{7, 8\}\), its size is 2, and \(L_S(h_U) = 2/8 = 0.25\).
+
+The second formula is the true risk:
 
 \[ L_{(\mathcal D, f)}(h) = \mathbb P_{x \sim \mathcal D}\left[ h(x) \neq f(x) \right]. \]
 
-The true risk depends on both \(\mathcal D\) and \(f\), which is why it is written \(L_{(\mathcal D, f)}\). When \(f\) is clear from context, as it is throughout this lesson, we shorten it to \(L_{\mathcal D}(h)\). You will also see it called the generalization error or the true error.
+- \(f\) is the true labelling, the rule your users follow in their heads; \(f(x)\) is the label message \(x\) really deserves.
+- \(x \sim \mathcal D\) reads “\(x\) is drawn from \(\mathcal D\)”: a fresh message arrives at random, with each message as likely as \(\mathcal D\) says.
+- \(\mathbb P[\dots]\) is the probability of the event inside the brackets. Here the event is \(h(x) \neq f(x)\): \(h\) gets that fresh message wrong.
 
-Here \([m]\) is the set \(\{1, \dots, m\}\). The empirical risk counts mistakes on the examples; the true risk is the probability of a mistake on a fresh message. A hypothesis is consistent with \(S\) when \(L_S(h) = 0\).
+In plain words: **the chance that \(h\) mislabels the next message to arrive.** In our tiny world \(\mathcal D\) is uniform, so every message has probability \(1/16\) and the probability is just a count: \(L_{\mathcal D}(h)\) is the number of messages \(h\) gets wrong, divided by 16. The hypothesis \(h_U\) disagrees with the truth on 8 of the 16 messages, so its true risk is \(8/16 = 0.5\).
+
+The two formulas have the same shape on purpose. The first counts mistakes on the messages you happened to label; the second weighs mistakes over every message that could ever arrive. The whole course is about when the first is a trustworthy estimate of the second. Here they are side by side in Python, on the eight examples from the table above:
+
+```python
+from itertools import product
+
+f = lambda x: x[0]
+h_U = lambda x: x[2]
+bits = ["1111", "0000", "1110", "1011",
+        "0001", "0100", "1101", "0010"]
+S = [(tuple(map(int, b)), int(b[0])) for b in bits]
+mistakes = [i for i, (x, y) in enumerate(S, 1) if h_U(x) != y]
+L_S = len(mistakes) / len(S)
+X = list(product([0, 1], repeat=4))
+L_D = sum(h_U(x) != f(x) for x in X) / len(X)
+print(mistakes, L_S, L_D)
+```
+
+It prints `[7, 8] 0.25 0.5`: \(h_U\) looks only a little wrong on the examples, and is in fact wrong on half of all mail.
+
+The true risk depends on both \(\mathcal D\) and \(f\), which is why it is written \(L_{(\mathcal D, f)}\). When \(f\) is clear from context, as it is throughout this lesson, we shorten it to \(L_{\mathcal D}(h)\). You will also see it called the generalization error or the true error. A hypothesis is consistent with \(S\) when \(L_S(h) = 0\): it makes no mistakes on the examples.
 
 **Proposition 1 (the examples say nothing about unseen messages).** Let \(\mathcal X\) be any finite domain, with \(|\mathcal X|\) elements, and let \(S\) contain \(k\) distinct messages. Assume the labels in \(S\) don’t conflict: a message that appears more than once always carries the same label. Then exactly \(2^{|\mathcal X|-k}\) hypotheses \(h: \mathcal X \to \{0,1\}\) are consistent with \(S\). Moreover, for every message \(x'\) not in \(S\), exactly half of them have \(h(x') = 1\).
 
