@@ -45,7 +45,8 @@ Every lesson of the course, delivered or not. `_kit/index.py` reads this table f
 | 14b | SGD variants and faster rates | Can SGD solve a fixed regularized objective fast, and certify how close it gets? |
 | 15 | Support vector machines | What does it buy you to separate the mail with the widest possible margin? |
 | 16 | Kernel methods | How do you use a huge feature space without ever writing it down? |
-| 17 | Multiclass and ranking | What changes when the answer is one of many folders, or an ordering of the inbox? |
+| 17a | Multiclass and structured prediction | Why do four good yes/no filters make a bad folder sorter, and how do you learn one rule that picks among many folders at what each mistake costs? |
+| 17b | Ranking | Why is a 98%-accurate ranker worthless, and how do you train and certify an inbox order for the measure your users read? |
 | 18 | Decision trees | How do you grow a readable rule from questions, and when do you stop? |
 | 19 | Nearest neighbour | Can you label a message just by looking at the most similar ones you have seen? |
 | 20 | Neural networks | Can the filter learn its own features from raw messages? |
