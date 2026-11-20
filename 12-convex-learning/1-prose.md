@@ -94,7 +94,7 @@ The middle column is the risk along the walk; the last column is the straight li
 
 [[diagram:staircase]]
 
-That flatness is the real problem for any search that only looks nearby. Stand at \(-\mathbf w^\circ\). Its signed scores are \(-5, -1, -3, -1, -3, -3, -3, -1, 1, 3\), all at least 1 in absolute value, and every message has \(\|\mathbf x\| \le \sqrt{21} \approx 4.58\). Move the weights by any \(\boldsymbol\Delta\) with \(\|\boldsymbol\Delta\| < 1/\sqrt{21} \approx 0.218\). By the Cauchy–Schwarz inequality, each score changes by \(|\langle \boldsymbol\Delta, \mathbf x \rangle| \le \|\boldsymbol\Delta\| \|\mathbf x\| < 1\), so no score changes sign, and the risk stays exactly 0.8. Every nearby point is equally bad. A search that steps to a better neighbour has nowhere to go, even though 0.2 is available elsewhere. The 0-1 loss gives a searcher no sense of direction.
+That flatness is the real problem for any search that only looks nearby. Stand at \(-\mathbf w^\circ\). Its signed scores are \(-5, -1, -3, -1, -3, -3, -3, -1, 1, 3\), all at least 1 in absolute value. The double bars \(\|\mathbf x\|\) are the length (Euclidean norm) of a vector, the square root of the sum of its squared entries: for C, \(\|(1, 4, 2)\| = \sqrt{1 + 16 + 4} = \sqrt{21} \approx 4.58\), and no message is longer. Move the weights by any \(\boldsymbol\Delta\) with \(\|\boldsymbol\Delta\| < 1/\sqrt{21} \approx 0.218\). The Cauchy–Schwarz inequality says an inner product is never bigger in size than the product of the two lengths, \(|\langle \mathbf a, \mathbf b \rangle| \le \|\mathbf a\| \|\mathbf b\|\). So each score changes by \(|\langle \boldsymbol\Delta, \mathbf x \rangle| \le \|\boldsymbol\Delta\| \|\mathbf x\| < 1\), so no score changes sign, and the risk stays exactly 0.8. Every nearby point is equally bad. A search that steps to a better neighbour has nowhere to go, even though 0.2 is available elsewhere. The 0-1 loss gives a searcher no sense of direction.
 
 So what would a good landscape look like? The midpoint test above is the right instinct. Let’s make it a definition.
 
@@ -106,7 +106,10 @@ Start with the space the weights live in. A set is convex when you can walk betw
 
 \[ \alpha \mathbf u + (1 - \alpha) \mathbf v \in C. \]
 
-The point \(\alpha \mathbf u + (1 - \alpha) \mathbf v\) is called a **convex combination** of \(\mathbf u\) and \(\mathbf v\). As \(\alpha\) runs from 1 to 0 it slides from \(\mathbf u\) to \(\mathbf v\).
+- \(\mathbf u, \mathbf v \in C\) reads “\(\mathbf u\) and \(\mathbf v\) are elements of \(C\)”; \(\alpha \in [0, 1]\) says \(\alpha\) is a number between 0 and 1, ends included.
+- \(\alpha \mathbf u\) scales every entry of \(\mathbf u\) by \(\alpha\); \((1 - \alpha)\mathbf v\) scales \(\mathbf v\) by the leftover weight; adding them mixes the two vectors, with weights that sum to 1.
+
+The point \(\alpha \mathbf u + (1 - \alpha) \mathbf v\) is called a **convex combination** of \(\mathbf u\) and \(\mathbf v\). As \(\alpha\) runs from 1 to 0 it slides from \(\mathbf u\) to \(\mathbf v\). In plain words: **every point on the segment between two members is also a member.** The walk of worked example 1 was exactly this, with \(\mathbf u = \mathbf w^\circ\) and \(\mathbf v = -\mathbf w^\circ\): at \(\alpha = 0.25\) it stood at \(0.25(-1, 2, -2) + 0.75(1, -2, 2) = (0.5, -1, 1)\), and the line `w = tuple(a * p + (1 - a) * q ...)` of that snippet computes it.
 
 A disc is convex, and so is a ball \(\{\mathbf w : \|\mathbf w\| \le B\}\) in any dimension: if \(\|\mathbf u\|, \|\mathbf v\| \le B\), the triangle inequality gives \(\|\alpha \mathbf u + (1 - \alpha)\mathbf v\| \le \alpha B + (1 - \alpha) B = B\). The whole space \(\mathbb R^d\) is convex. A crescent moon or a ring is not: pick two points on opposite sides of the hole, and the segment between them leaves the set.
 
@@ -116,11 +119,24 @@ A disc is convex, and so is a ball \(\{\mathbf w : \|\mathbf w\| \le B\}\) in an
 
 \[ f(\alpha \mathbf u + (1 - \alpha)\mathbf v) \le \alpha f(\mathbf u) + (1 - \alpha) f(\mathbf v). \]
 
-In words: between any two points, the graph of \(f\) lies below the straight segment (the **chord**) joining \(f(\mathbf u)\) and \(f(\mathbf v)\). That is exactly the test the 0-1 risk failed: at \(\alpha = 1/2\) the left side was 1.0 and the right side 0.5. One counterexample is enough, so \(L^{0-1}_S\) is not convex.
+Read it from the inside out. \(f : C \to \mathbb R\) says \(f\) takes a point of \(C\) and returns one real number. On the left, \(f\) is evaluated at the mixed point, the height of the graph partway along. On the right, the two end heights \(f(\mathbf u)\) and \(f(\mathbf v)\) are mixed with the same weights, the height of the straight segment (the **chord**) joining them at the same spot. In plain words: **between any two points, the graph of \(f\) lies on or below its chord.** That is exactly the test the 0-1 risk failed: at \(\alpha = 1/2\) the left side was 1.0 and the right side 0.5, the middle and last columns of the walk snippet, whose `chord` line is the right side term for term. One counterexample is enough, so \(L^{0-1}_S\) is not convex.
 
-There is a second way to see the same property, through a set. The **epigraph** of \(f\) is everything on or above its graph:
+There is a second way to see the same property, through a set. Take \(f(x) = x^2\): the point \((1, 2)\) sits above the graph, since \(1^2 = 1 \le 2\), while \((2, 3)\) sits below it, since \(2^2 = 4 > 3\). The **epigraph** of \(f\) collects everything on or above its graph:
 
 \[ \operatorname{epigraph}(f) = \{ (\mathbf x, \beta) : f(\mathbf x) \le \beta \}. \]
+
+The braces build a set, and the colon reads “such that”: all pairs of an input \(\mathbf x\) and a height \(\beta\) such that the graph at \(\mathbf x\) is no higher than \(\beta\). In plain words: **the epigraph is the region on and above the graph.** For \(x^2\), mixing two of its points halfway, \((1, 2)\) and \((-2, 5)\), lands at \((-0.5, 3.5)\), still inside:
+
+```python
+f = lambda x: x * x
+in_epi = lambda p: f(p[0]) <= p[1]
+p, q, a = (1, 2), (-2, 5), 0.5
+mix = (a * p[0] + (1 - a) * q[0], a * p[1] + (1 - a) * q[1])
+print(in_epi(p), in_epi(q), in_epi((2, 3)))
+print(mix, in_epi(mix))
+```
+
+It prints `True True False` and `(-0.5, 3.5) True`.
 
 **Claim.** \(f\) is convex if and only if its epigraph is a convex set.
 

@@ -232,7 +232,7 @@ print(round(eps, 4), round(fail, 4))
 
 It prints `0.0607 0.0007`. The theorem promises that \(L_V\) lands within 0.0607 of 0.2 except with probability at most 0.05; the real failure probability is 0.0007. Hoeffding is conservative, but it never lies.
 
-How does this compare with the bounds of earlier lessons? Suppose \(h\) came from ERM (empirical risk minimization, lesson 2: return a hypothesis of the class with the smallest empirical risk) over a class of VC dimension \(d\). Lesson 6’s fundamental theorem gives \(L_{\mathcal D}(h) \le L_S(h) + C\sqrt{(d + \log(1/\delta))/m}\) for a universal constant \(C\), while the hold-out guarantee gives \(L_{\mathcal D}(h) \le L_V(h) + \sqrt{\log(2/\delta)/(2m_v)}\). With \(m = m_v = 1000\), \(d = 21\) (halfspaces over our 20 features, as lesson 9 counted) and, very generously, \(C = 1\):
+How does this compare with the bounds of earlier lessons? Suppose \(h\) came from ERM (empirical risk minimization, lesson 2: return a hypothesis of the class with the smallest empirical risk) over a class of VC dimension \(d\). Lesson 6’s fundamental theorem gives \(L_{\mathcal D}(h) \le L_S(h) + C\sqrt{(d + \log(1/\delta))/m}\) for a universal constant \(C\), while the hold-out guarantee gives \(L_{\mathcal D}(h) \le L_V(h) + \sqrt{\log(2/\delta)/(2m_v)}\). With \(m = m_v = 1000\), \(d = 21\) (halfspaces, lesson 9’s rules that threshold a weighted sum of the features, have VC dimension 21 over our 20 features) and, very generously, \(C = 1\):
 
 ```python
 from math import log, sqrt
@@ -261,11 +261,11 @@ This is learning a finite class, the problem lesson 2 solved, with one twist: \(
 
 Only two marks are new compared with the hold-out guarantee. \(\forall h \in H\) reads “for every \(h\) in \(H\)”, and \(|H|\), bars around a set, is how many candidates it has, so \(|H| = r\). The confidence cost \(\log(2|H|/\delta)\) is the single-hypothesis cost with \(\delta\) replaced by each candidate’s share \(\delta/|H|\). In plain words: **with probability at least \(1 - \delta\), every one of the \(r\) candidates has a validation risk within \(\sqrt{\log(2r/\delta)/(2m_v)}\) of its true risk, all at once.** For the team, \(r = 60\) and \(m_v = 200\): \(\log(2 \times 60/0.05) = \log 2400 \approx 7.78\), divided by 400 is 0.0195, and the square root is 0.139. The `margin` function below computes exactly this.
 
-*Proof.* Condition on \(H\), exactly as in steps 1 and 2 of the hold-out proof: given \(H\), its \(r\) members are fixed functions, and \(V\) is still i.i.d. from \(\mathcal D\). Set \(\varepsilon = \sqrt{\log(2r/\delta)/(2m_v)}\) and let \(B_j\) be the event that \(|L_V(h_j) - L_{\mathcal D}(h_j)| > \varepsilon\). For each fixed \(j\), the hold-out guarantee applied with confidence \(\delta/r\) gives
+*Proof.* Condition on \(H\), exactly as in steps 1 and 2 of the hold-out proof: given \(H\), its \(r\) members are fixed functions, and \(V\) is still i.i.d. from \(\mathcal D\). Set \(\varepsilon = \sqrt{\log(2r/\delta)/(2m_v)}\) and let \(B_j\) be the event that \(|L_V(h_j) - L_{\mathcal D}(h_j)| > \varepsilon\). For each fixed \(j\), step 4 of that proof gives the first inequality below, and since \(\varepsilon^2 = \log(2r/\delta)/(2m_v)\), the exponent \(2m_v\varepsilon^2\) is exactly \(\log(2r/\delta)\):
 
 \[ \mathbb P[B_j \mid H] \le 2e^{-2 m_v \varepsilon^2} = 2e^{-\log(2r/\delta)} = \frac{\delta}{r}. \]
 
-The events \(B_1, \dots, B_r\) are far from independent (all of them are about the same \(V\)), but the union bound does not care:
+In words, **each candidate misses by more than \(\varepsilon\) with probability at most its share \(\delta/r\)**; for the team, \(0.05/60 \approx 0.00083\). The events \(B_1, \dots, B_r\) are far from independent (all of them are about the same \(V\)), but the union bound does not care:
 
 \[ \mathbb P\Big[\bigcup_{j=1}^r B_j \,\Big|\, H\Big] \le \sum_{j=1}^r \frac{\delta}{r} = \delta. \]
 
@@ -348,7 +348,7 @@ Validation assumes you can afford to set examples aside. When labels are scarce,
 
 Partition the training sequence \(S\) of \(m\) examples into \(k\) parts, called **folds**, \(S_1, \dots, S_k\), each of size \(m/k\) (assume \(k\) divides \(m\)). For each fold \(i\), train on the other \(k - 1\) folds, \(S \setminus S_i\), and measure the result on fold \(i\). The average of these \(k\) errors is the estimate of the true risk. The special case \(k = m\), where each fold is a single example, is called **leave-one-out**.
 
-For model selection, do this for every parameter value \(\theta\) in a set \(\Theta\), pick the value with the smallest average, and then retrain with that value on all of \(S\). Write \(A(S'; \theta)\) for the learner run on \(S'\) with parameter \(\theta\):
+For model selection, do this for every parameter value \(\theta\) in a set \(\Theta\) (capital theta; this \(\theta\) is a setting such as the number of rounds, unrelated to Hoeffding’s \(\theta_i\)), pick the value with the smallest average, and then retrain with that value on all of \(S\). Write \(A(S'; \theta)\) for the learner run on \(S'\) with parameter \(\theta\):
 
 ```
 KFoldSelect(S, Θ, A, k):
@@ -450,7 +450,7 @@ There are many things you could change:
 
 Which one helps depends on why the hypothesis is bad, and lesson 5 gave us the language for “why”. The error of what you ship has two sources. Part of it is the class’s fault: even the best hypothesis in the class makes mistakes. The rest is the data’s fault: the learner, working from finitely many examples, picked something worse than that best one. On the plain mail room with the twenty one-feature hypotheses, the best is feature 1, with true risk 0.10, and every other feature is a coin flip with true risk 0.5. If the learner picked feature 3, the class is to blame for 0.10 and the data for the remaining 0.4.
 
-Now the symbols. Let \(h^*\) be a hypothesis with the smallest true risk in \(\mathcal H\), \(h^* \in \operatorname{argmin}_{h \in \mathcal H} L_{\mathcal D}(h)\): \(\operatorname{argmin}\) is the set of hypotheses at which \(L_{\mathcal D}\) is smallest, and \(\in\) says \(h^*\) is one of them (there may be ties). Let \(h_S\) be what the learner returned on \(S\). The **approximation error** is \(L_{\mathcal D}(h^*)\), and the **estimation error** is \(L_{\mathcal D}(h_S) - L_{\mathcal D}(h^*)\). In plain words: **the approximation error is the true risk of the best hypothesis in the class, and the estimation error is how much worse the learner’s pick is than that best one.**
+Now the symbols. Let \(h^*\) be a hypothesis with the smallest true risk in \(\mathcal H\), \(h^* \in \operatorname{argmin}_{h \in \mathcal H} L_{\mathcal D}(h)\), written with \(\in\) because there may be ties. Let \(h_S\) be what the learner returned on \(S\). The **approximation error** is \(L_{\mathcal D}(h^*)\), and the **estimation error** is \(L_{\mathcal D}(h_S) - L_{\mathcal D}(h^*)\). In plain words: **the approximation error is the true risk of the best hypothesis in the class, and the estimation error is how much worse the learner’s pick is than that best one.**
 
 ```python
 true_risk = {j: 0.5 for j in range(1, 21)}
@@ -489,7 +489,7 @@ It prints `1 [0.024, 0.081, 0.27] 0.375`, `11 [0.014, 0.044, 0.15] 0.208` and `6
 | 11 | 0.15 | 0.044 | 0.014 | 0.208 |
 | 64 | 0.15 | 0.081 | 0.018 | 0.249 |
 
-One stump underfits: its empirical risk alone is 0.27. Sixty-four rounds overfit: the empirical risk is no better than at 11 rounds, but the gap to the validation risk has doubled.
+One stump underfits: its empirical risk alone is 0.27. Sixty-four rounds overfit: the empirical risk is no better than at 11 rounds, but the gap to the validation risk has nearly doubled, from 0.044 to 0.081.
 
 [[diagram:decomposition]]
 
@@ -524,15 +524,15 @@ print(round(train_risk, 3), round(eps, 3),
       round(train_risk - eps, 3))
 ```
 
-It prints `0.485 0.068 0.417`: an empirical risk of 0.485 on 400 examples proves, with 95% confidence, that no constant has true risk below 0.417. (The truth is 0.5.) No amount of data will rescue this class. Enlarge it, change it, or change the features.
+It prints `0.485 0.068 0.417`: an empirical risk of 0.485 on 400 examples proves, with 95% confidence, that no constant has true risk below 0.417. (The truth is 0.5.) Here \(h_S\) is itself a best constant, so the three pieces of the split are \(0\), then \(0.485 - 0.5 = -0.015\), then \(0.5\). No amount of data will rescue this class. Enlarge it, change it, or change the features.
 
 There is one escape hatch in that argument, and it is the word ERM. The approximation error can be small while \(L_S(h_S)\) is large if the learner is *not* returning an ERM hypothesis. Maybe there is a bug in your implementation. Maybe finding an ERM hypothesis is computationally hard, so the learner runs a heuristic that only tries. Sometimes you can tell: some problems come with optimality conditions you can check, which certify that the optimizer really reached the minimum, and the next lesson is about exactly such problems. When the answer depends on a random starting point, restarting from several points and seeing whether better solutions appear is a cheap test.
 
 **When the empirical risk is small.** Now the ambiguity bites. Picture two situations, both with ERM over a class of VC dimension \(d\), and both with \(L_S(h_S) = 0\). In the first, there are fewer than \(d\) examples and the approximation error is high. In the second, there are more than \(2d\) examples and the approximation error is zero. The empirical risk cannot tell them apart. What can?
 
-**Learning curves.** Train the learner on growing prefixes of the training sequence (the first 10%, the first 20%, and so on), and for each prefix plot two numbers: the empirical risk on that prefix and the validation risk on a fixed validation set. In the first situation the validation risk sits near \(1/2\) for every prefix, because nothing is being learned. In the second, it starts high but then falls, and it must fall once the prefix is larger than the VC dimension.
+**Learning curves.** Train the learner on growing prefixes of the training sequence (the first 10%, the first 20%, and so on), and for each prefix plot two numbers: the empirical risk on that prefix and the validation risk on a fixed validation set. In the first situation the validation risk sits near \(1/2\) for every prefix, because nothing is being learned. In the second, it starts high and then falls, once the prefix is larger than the VC dimension.
 
-Here are two learners on the plain mail room (label = feature 1, 10% flipped, 20 features), with a validation set of 2,000: the memorizer, whose class has VC dimension \(2^{20}\), far more than any prefix, and ERM over one-feature hypotheses, a class of VC dimension at most 4 that contains a hypothesis with true risk 0.10. Each pair is (empirical risk, validation risk).
+Here are two learners on the plain mail room of the cross-validation snippet, with a validation set of 2,000: the memorizer, whose class has VC dimension \(2^{20}\), far more than any prefix, and ERM over one-feature hypotheses, a class of VC dimension at most 4 that contains a hypothesis with true risk 0.10. Each pair is (empirical risk, validation risk).
 
 ```python
 import random
@@ -567,7 +567,7 @@ It prints:
 1600 [(0.0, 0.48), (0.1, 0.1)]
 ```
 
-The memorizer is the first situation: empirical risk 0, validation risk stuck near \(1/2\) at every size. The one-feature learner has a class small enough that 25 examples already put it close to the end of its curve, and both of its numbers sit at 0.10, its approximation error.
+The memorizer is the first situation: empirical risk 0, validation risk stuck near \(1/2\) at every size. The one-feature learner has a class small enough that 25 examples already find feature 1, and from 100 examples on both of its numbers sit at 0.10, its approximation error.
 
 [[diagram:learning-curves]]
 
@@ -585,7 +585,7 @@ Put together, this is the procedure:
 
 ## The procedures as code
 
-Three procedures came up in this lesson. Write \(\mathrm{Train}(n)\) for the time the learner \(A\) needs on \(n\) examples and \(c\) for the time to evaluate one hypothesis on one example. As in earlier lessons, \(O(\cdot)\) reads “grows at most like, up to a constant factor”, and \(|\Theta|\) is how many parameter values you try.
+Three procedures came up in this lesson. Write \(\mathrm{Train}(n)\) for the time the learner \(A\) needs on \(n\) examples and \(c\) for the time to evaluate one hypothesis on one example. As in earlier lessons, \(O(\cdot)\) reads “grows at most like, up to a constant factor”, \(|\Theta|\) is how many parameter values you try, and \(\lceil \cdot \rceil\) rounds up.
 
 ```
 HoldOutSelect(S, V, Θ, A):

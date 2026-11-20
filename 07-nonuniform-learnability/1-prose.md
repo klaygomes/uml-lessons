@@ -208,7 +208,7 @@ print(round(sum(w_pi(n) for n in range(1, 10**6)), 6))
 print(sum(w_two(n) for n in range(1, 60)))
 ```
 
-It prints `1 0.6079 0.5 0.0304`, `2 0.152 0.25 0.0076`, `3 0.0675 0.125 0.00338` and `6 0.0169 0.015625 0.00084`, then `0.999999` and `1.0`: a million terms of the first already sum to 1 within a millionth, and the second reaches 1 to machine precision. We’ll use the first from now on. It gives size 1 about 61% of the budget, size 3 about 6.8%, size 6 about 1.7%, and every size something; the second starves the long sizes faster, giving size 6 only 1.6% and size 20 less than a millionth of the budget.
+It prints `1 0.6079 0.5 0.0304`, `2 0.152 0.25 0.0076`, `3 0.0675 0.125 0.00338` and `6 0.0169 0.015625 0.00084`, then `0.999999` and `1.0`: a million terms of the first already sum to 1 within a millionth, and the second reaches 1 to machine precision. We’ll use the first from now on. The second starves long sizes faster: size 20 gets less than a millionth of the budget.
 
 [[diagram:budget]]
 
