@@ -500,3 +500,129 @@ It prints `3 1751 2290`, `5 2628 3371` and `20 12217 13514`. Knowing the size in
 
 **A limit that remains.** You might now hope that every class is nonuniformly learnable. It is not. Over any infinite domain, the class of all functions to \(\{0, 1\}\) is not a countable union of classes of finite VC dimension, so by the characterization it is not nonuniformly learnable. That is No-Free-Lunch again, for the relaxed notion. (For each single function there is a trivial learner, ERM over the class containing only that function; there is no learner for all of them.) The proof is a diagonal construction we won’t do here.
 
+
+## SRM as code
+
+Here is the learner in pseudocode, as the theory states it.
+
+```
+SRM(S, δ):
+  prior knowledge: H = H_1 ∪ H_2 ∪ ..., each with gap ε_n
+                   weights w(1), w(2), ... with Σ w(n) ≤ 1
+  return h in argmin over h ∈ H of
+         L_S(h) + ε_{n(h)}(m, w(n(h)) · δ)
+```
+
+It takes an argmin over an infinite class. To run it at all, we need a way to stop.
+
+**A stopping rule for SRM.** Suppose the classes are nested and the gap \(g_n = \varepsilon_n(m, w(n)\delta)\) does not decrease with \(n\) (true for our lists: \(|\mathcal H_n|\) grows and \(w(n)\) shrinks). Then the SRM minimum equals \(\min_n \big[\min_{h \in \mathcal H_n} L_S(h) + g_n\big]\): for each \(n\), the best empirical risk in \(\mathcal H_n\) plus that class’s gap, then the smallest over \(n\). That is exactly the SRM table at 300 labels, row by row, with its smallest entry 0.2714 at \(n = 3\). Indeed, for \(h \in \mathcal H_n\) we have \(n(h) \le n\), so \(L_S(h) + g_{n(h)} \le L_S(h) + g_n\): the right-hand side is never smaller than the SRM minimum; and choosing \(n = n(h)\) for the SRM minimizer shows it is never larger. So SRM is “ERM in \(\mathcal H_1\), then in \(\mathcal H_2\), and so on, keeping the best bound”. And since \(L_S \ge 0\), once \(g_n\) reaches the best bound found so far, no larger \(n\) can win, and you can stop.
+
+```
+SRM-nested(S, δ):
+  best ← +∞
+  for n = 1, 2, 3, ...:
+    g ← ε_n(m, w(n) · δ)
+    if g ≥ best: stop
+    h_n ← ERM over H_n on S
+    if L_S(h_n) + g < best: best ← L_S(h_n) + g; ship ← h_n
+  return ship
+```
+
+**Cost.** Recall that \(O(\cdot)\) means “grows at most in proportion to”: \(O(m)\) time doubles at most when \(m\) doubles, ignoring constant factors. ERM over \(\mathcal H_n\) by brute force evaluates every list on every example; a list of size at most \(n\) is evaluated in \(O(n)\) time per message. So SRM-nested up to the stopping size \(N\) takes \(O(m N \sum_{n \le N} |\mathcal H_n|) = O(m N |\mathcal H_N|)\) time, since the last class dominates the sum, and \(O(m + N)\) space if lists are generated one at a time. In plain words: **the work is labels times list size times the number of lists tried, and the last class dominates.** At 300 labels, stopping at size 6:
+
+```python
+m, N, last = 300, 6, 151946
+print(m * N * last, 64 * N * last)
+```
+
+It prints `273502800 58347264`: about 270 million list-message checks, or 58 million when the 300 messages are grouped into the 64 distinct ones, as the build-it challenge does.
+
+In our simulated stream only features 1 to 6 ever appear, so a list in \(\mathcal H_n\) for \(n > 6\) behaves on the data like a list in \(\mathcal H_6\) (its tests on later features never fire), and stopping at size 6 is exact. The learner on the real stream cannot know that. How far the stopping rule has to go when it doesn’t is a question we will come back to at the end of the next lesson, and the answer is not pretty.
+
+**Build it yourself.** Using only the standard library. The starter code simulates the stream (the hidden list `TRUTH` is there only to generate labels; your learners must not read it).
+
+```python
+import itertools
+import math
+import random
+from collections import Counter
+
+TRUTH = (((3, 1), (1, 0), (2, 1), (5, 0), (4, 1)), 0)
+
+def predict(h, x):
+    tests, default = h
+    for j, b in tests:
+        if x[j - 1]:
+            return b
+    return default
+
+def draw(m, seed, d=6, noise=0.1):
+    rng = random.Random(seed)
+    S = []
+    for _ in range(m):
+        x = tuple(int(rng.random() < 0.5) for _ in range(d))
+        y = predict(TRUTH, x)
+        if rng.random() < noise:
+            y = 1 - y
+        S.append((x, y))
+    return S
+
+def lists(n): ...
+def size_H(n): ...
+def eps(n, m, delta): ...
+def erm(n, S): ...
+def srm(S, delta=0.05, n_max=6): ...
+def true_risk(h, d=6, noise=0.1): ...
+
+if __name__ == "__main__":
+    assert size_H(3) == 158 and size_H(6) == 151946
+    assert sum(1 for _ in lists(3)) == size_H(3)
+    bound, n, h = srm(draw(300, 7))
+    assert n == 3 and round(bound, 4) == 0.2715
+    assert round(true_risk(h), 3) == 0.125
+    bound, n, h = srm(draw(1000, 7))
+    assert n == 5 and true_risk(h) == 0.1
+    print("all asserts pass")
+```
+
+1. `lists(n)` generates every list in \(\mathcal H_n\) as `(tests, default)`, with distinct features among `1..n`; `size_H(n)` is the count formula; `eps` is the finite-class gap.
+2. `erm(n, S)` returns `(L_S, h)` for a best list in \(\mathcal H_n\). Group identical examples with `Counter` first: there are only 64 distinct messages, so each list is evaluated 64 times instead of \(m\).
+3. `srm` implements SRM-nested with \(w(n) = 6/(\pi^2 n^2)\), capped at `n_max`, and returns `(bound, n, h)`.
+4. `true_risk` is exact: average the disagreement with `TRUTH` over all 64 messages, then \(0.1 + 0.8p\).
+5. Reproduce the 30-label table from “Thirty labels, six sizes”, including the 720 tied lists at cap 6, and the SRM table at 300 labels.
+
+Keep your solution: the next lesson builds on it.
+
+## Fix the bug
+
+Back to the pull request. The reviewer agrees to a deal: lists of any length may ship, provided the shipped list comes with a certificate, an SRM bound at \(\delta = 0.05\), of at most 0.20, the weights are written into the change before any labels are drawn, and the labelling budget is 1,000 messages.
+
+In the lab below you set the weights across sizes 1 to 6 (the rest of the budget goes to larger sizes, which never win on this stream). Then you choose how many labels to buy, the weights lock, the labels are drawn, and the lab shows the bound for each size and which list SRM would ship. After it ships, you get to see next week’s inbox: the list’s true risk.
+
+Before your first try, a prediction. You put all of the weight on size 1, and buy all 1,000 labels. What ships, and does the reviewer sign?
+
+[[lab-act2]]
+
+## What people get wrong
+
+**“Nonuniform learnability means the class is learnable after all, just more slowly.”** It is a weaker promise, not a slower version of the same one. A PAC guarantee tells you before you collect any data how many examples you need. A nonuniform guarantee tells you how many you need to compete with a particular \(h\), and you do not know which \(h\) is best until you have learned. The fundamental theorem still stands: decision lists of any length are not PAC learnable.
+
+**“SRM picks the list with the smallest true risk.”** It picks the list with the smallest certified bound. At 30 labels on our stream, SRM ships “everything is junk”, with true risk 0.375, while ERM on \(\mathcal H_3\) would have found lists with true risk 0.125 to 0.175. SRM is not being stupid: with 30 labels it cannot tell those lists from their 720 neighbours at cap 6, and it refuses to certify what it cannot check. A bound is a promise about the worst case, and it is only as tight as the evidence.
+
+**“Choose the weights to match the data.”** Weights encode prior knowledge, and they must be fixed before the training sequence is seen. Weights tuned after looking at the labels void the union bound: the bad events \(B_n\) are then no longer the ones whose shares you budgeted, and the proof says nothing. Putting all the weight on size 3 is legal if you believed it in advance (and it ships a list with bound 0.1921 at 1,000 labels), but then a size-5 list can never ship, however much data arrives.
+
+## Recap and the next bug
+
+1. Nonuniformly learnable means: for each \(h\), enough examples, \(m^{\mathrm{NUL}}(\varepsilon, \delta, h)\), make the learner competitive with \(h\), for every distribution. Agnostic PAC learnable classes are nonuniformly learnable; the converse fails.
+2. A class is nonuniformly learnable exactly when it is a countable union of agnostic PAC learnable classes, equivalently of classes with finite VC dimension. Decision lists of any length are such a union, with infinite VC dimension.
+3. The SRM bound splits the confidence budget \(\delta\) across classes with weights summing to at most 1, so every hypothesis gets its own gap, \(\varepsilon_{n(h)}(m, w(n(h))\delta)\). SRM returns the hypothesis with the smallest bound, and it is a nonuniform learner with \(m^{\mathrm{NUL}} \le m^{\mathrm{UC}}_{\mathcal H_{n(h)}}(\varepsilon/2, w(n(h))\delta)\).
+4. With nested classes and gaps that grow with \(n\), SRM runs as ERM in \(\mathcal H_1, \mathcal H_2, \dots\), keeping the best bound, and stops once the gap alone reaches it.
+
+The reviewer signs. Your filter now ships the five-test list \(f\) with a certificate of 0.1938, and your teammate is happy. Then the help desk asks for the same filter. Its inbox gets one kind of junk, phishing, and the team has just added the newest feature to the catalogue: feature 20, P, the message asks for a password. On the help desk’s mail the junk follows a two-test list: password, junk; unknown sender, junk; otherwise keep. SRM, with the signed weights and the 1,500 labels the help desk can afford, finds the right list. Its certificate is 0.2381, and the bar is 0.20. What went wrong? The list tests feature 20, so its size is 20, and SRM prices it as one of the lists in \(\mathcal H_{20}\): about 8.4 septillion of them, a number with 25 digits. Two tests, priced like a septillion lists. Can the confidence budget be shared out list by list, so that a list pays for what it says rather than for the size class it lives in? That’s the next lesson.
+
+## Concept check
+
+Write your answers down before moving on to the next lesson, with your reasoning, not just the answer.
+
+1. Your teammate proposes the weights \(w(n) = 1/n\): “longer lists are less likely, but nothing is ruled out.” Which step of the SRM bound’s proof breaks, and what does the theorem then promise? Separately, she proposes \(w(7) = 0\) and \(w(n) = 6/(\pi^2 n^2)\) for every other \(n\). Is that a legal weight function, and what does it do to a list of size 7?
+2. In the “only if” half of the characterization proof, the classes were built from \(m^{\mathrm{NUL}}(1/10, 1/10, h)\). Redo the last step with accuracy 1/8 and confidence 1/7 instead: what upper bound on the expected risk do you get, and does the contradiction with No-Free-Lunch still go through? What condition on the accuracy and the confidence makes the argument work?
