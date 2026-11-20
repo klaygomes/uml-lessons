@@ -43,7 +43,8 @@ Every lesson of the course, delivered or not. `_kit/index.py` reads this table f
 | 13b | Strong convexity and the fitting-stability tradeoff | Can you prove a penalized learner is stable for every distribution, and pick the penalty that certifies its error? |
 | 14a | From gradient descent to SGD | How can a learner that reads one message per step still reach a filter it can guarantee? |
 | 14b | SGD variants and faster rates | Can SGD solve a fixed regularized objective fast, and certify how close it gets? |
-| 15 | Support vector machines | What does it buy you to separate the mail with the widest possible margin? |
+| 15a | Hard-SVM and the margin | Why does a filter that separates every labelled message still flip one on a single extra word, and which separator should a learner return? |
+| 15b | Soft-SVM and support vectors | What does a large-margin learner do when the mail is only almost separable, and does its guarantee keep no dimension? |
 | 16 | Kernel methods | How do you use a huge feature space without ever writing it down? |
 | 17a | Multiclass and structured prediction | Why do four good yes/no filters make a bad folder sorter, and how do you learn one rule that picks among many folders at what each mistake costs? |
 | 17b | Ranking | Why is a 98%-accurate ranker worthless, and how do you train and certify an inbox order for the measure your users read? |
