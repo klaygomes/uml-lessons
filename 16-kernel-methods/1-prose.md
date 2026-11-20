@@ -50,7 +50,7 @@ for k in (2, 3):
     print(k, f"{dim:.3e}", f"{8 * dim / 1e9:,.1f} GB")
 ```
 
-It prints `2 1.250e+09 10.0 GB` and `3 2.084e+13 166,686.7 GB`. With pairs, the weight vector alone has the 1.25 billion coordinates the data team warned about. With triples it has 21 trillion, which at 8 bytes each is about 167 terabytes. The team cannot even store the weight vector, let alone run SGD over it for thousands of steps.
+It prints `2 1.250e+09 10.0 GB` and `3 2.084e+13 166,686.7 GB`. With pairs, the weight vector alone has the 1.25 billion coordinates the data team warned about, 10 gigabytes that every SGD step would have to touch. With triples it has 21 trillion, about 167 terabytes: the team cannot even store it.
 
 So here is the bug. The features that would make the junk separable are too many to write down. The fix is one of the most elegant ideas in the subject: use those features, and never build them.
 
@@ -308,7 +308,7 @@ It is the old objective with each score replaced by its kernel sum and the lengt
 
 \[ \min_{\boldsymbol\alpha \in \mathbb R^m} \; \lambda\, \boldsymbol\alpha^\top G \boldsymbol\alpha + \frac{1}{m} \sum_{i=1}^m \max\{0, 1 - y_i (G\boldsymbol\alpha)_i\}. \]
 
-This can be written as a quadratic program (a quadratic objective under linear constraints) and solved efficiently, and later in this lesson you will build an even simpler solver. Once \(\boldsymbol\alpha\) is learned, predicting the label of a new message also needs only the kernel:
+In plain words: **soft-SVM’s penalty and hinge losses, all read off the Gram matrix.** The \(\mathbb R^3\) example below pushes numbers through it. This can be written as a quadratic program (a quadratic objective under linear constraints) and solved efficiently, and later in this lesson you will build an even simpler solver. Once \(\boldsymbol\alpha\) is learned, predicting the label of a new message also needs only the kernel:
 
 \[ \langle \mathbf w, \psi(x) \rangle = \sum_{j=1}^m \alpha_j \langle \psi(x_j), \psi(x) \rangle = \sum_{j=1}^m \alpha_j K(x_j, x). \]
 
@@ -341,7 +341,7 @@ The **polynomial kernel of degree \(k\)** is
 
 \[ K(\mathbf x, \mathbf x') = (1 + \langle \mathbf x, \mathbf x' \rangle)^k. \]
 
-Here \(\langle \mathbf x, \mathbf x' \rangle\) is the ordinary inner product of the two input vectors and \(k\) a whole-number power: **add 1 to the inner product and raise the result to the power \(k\).** For subject lines as 0/1 word vectors, the inner product counts shared words: “winner claim lunch” and “winner claim report” share 2, so the degree-2 kernel is \((1 + 2)^2 = 9\). The function `K` in the snippet below is this formula as written. Computing it costs one inner product in \(\mathbb R^n\), then a power: \(O(n)\) time, in lesson 8’s big-O notation, which names a growth rate (here, in proportion to \(n\)) and hides the constant. The claim is that it is the inner product of an embedding into all monomials of degree at most \(k\). Let’s prove it.
+Here \(\langle \mathbf x, \mathbf x' \rangle\) is the ordinary inner product of the two input vectors and \(k\) a whole-number power: **add 1 to the inner product and raise the result to the power \(k\).** For subject lines as 0/1 word vectors, the inner product counts shared words: “winner claim lunch” and “winner claim report” share 2, so the degree-2 kernel is \((1 + 2)^2 = 9\). Computing it costs one inner product in \(\mathbb R^n\), then a power: \(O(n)\) time, in lesson 8’s big-O notation, which names a growth rate (here, in proportion to \(n\)) and hides the constant. The claim is that it is the inner product of an embedding into all monomials of degree at most \(k\). Let’s prove it.
 
 *Proof.* Set \(x_0 = x'_0 = 1\), so that \(1 + \langle \mathbf x, \mathbf x' \rangle = \sum_{j=0}^n x_j x'_j\). The power is a product of \(k\) copies of this sum:
 
@@ -353,7 +353,7 @@ Multiply out. Each term of the expansion picks one index from each of the \(k\) 
 
 Here \(\{0, \dots, n\}^k\) is the set of all lists of \(k\) indices, and \(\prod_{i=1}^k\) multiplies over the \(k\) picks: **multiplying out gives one term per list of picks.** With \(n = 1\) and \(k = 2\) the lists are \((0,0), (0,1), (1,0), (1,1)\), and \((1 + x_1 x'_1)^2 = 1 + x_1 x'_1 + x_1 x'_1 + (x_1 x'_1)^2\). The last step only regroups the factors of \(\mathbf x\) and of \(\mathbf x'\). Now define \(\psi: \mathbb R^n \to \mathbb R^{(n+1)^k}\) with one coordinate per tuple \(J\), equal to \(\prod_{i=1}^k x_{J_i}\). The sum is exactly \(\langle \psi(\mathbf x), \psi(\mathbf x') \rangle\). \(\blacksquare\)
 
-Because \(x_0 = 1\), a tuple that contains some zeros produces a monomial of lower degree, so \(\psi\) contains every monomial of degree at most \(k\) (several times, in different orders). A halfspace over \(\psi\) is therefore a polynomial threshold rule of degree \(k\) on the original space. The kernel costs \(O(n)\); the feature space has \((n+1)^k\) coordinates. The snippet’s `psi` builds one coordinate per list with `itertools.product` and multiplies its entries with `math.prod`, and `K` is the shortcut:
+Because \(x_0 = 1\), a tuple that contains some zeros produces a monomial of lower degree, so \(\psi\) contains every monomial of degree at most \(k\) (several times, in different orders). A halfspace over \(\psi\) is therefore a polynomial threshold rule of degree \(k\) on the original space. The kernel costs \(O(n)\); the feature space has \((n+1)^k\) coordinates. The snippet’s `psi` builds one coordinate per list with `itertools.product` and multiplies its entries with `math.prod`, and `K` is the kernel formula as written:
 
 ```python
 import itertools, math, random
@@ -387,7 +387,7 @@ Here \(n!\), “\(n\) factorial”, is \(1 \cdot 2 \cdots n\) (with \(0! = 1\)),
 
 \[ \langle \psi(x), \psi(x') \rangle = \sum_{n=0}^\infty \frac{1}{\sqrt{n!}} e^{-x^2/2} x^n \cdot \frac{1}{\sqrt{n!}} e^{-x'^2/2} x'^n = e^{-\frac{x^2 + x'^2}{2}} \sum_{n=0}^\infty \frac{(x x')^n}{n!}. \]
 
-The sum \(\sum_{n=0}^\infty\) runs over every coordinate, without end. The first step multiplies matching coordinates and pulls the two exponentials, which do not depend on \(n\), out of the sum. The remaining sum is the power series of the exponential function, a fact from calculus, so it equals \(e^{x x'}\). Combining exponents, \(-\frac{x^2 + x'^2}{2} + x x' = -\frac{(x - x')^2}{2}\), so
+The sum \(\sum_{n=0}^\infty\) runs over every coordinate, without end. The first step multiplies matching coordinates and pulls the two exponentials, which do not depend on \(n\), out of the sum. The remaining sum is the power series of the exponential function, a fact from calculus, so it equals \(e^{x x'}\). Combining exponents, \(-\frac{x^2 + x'^2}{2} + x x' = -\frac{x^2 - 2 x x' + x'^2}{2} = -\frac{(x - x')^2}{2}\), so
 
 \[ \langle \psi(x), \psi(x') \rangle = e^{-\frac{(x - x')^2}{2}}. \]
 
@@ -413,7 +413,7 @@ More generally, for a scale \(\sigma > 0\), the **Gaussian kernel** is
 
 \[ K(\mathbf x, \mathbf x') = e^{-\frac{\|\mathbf x - \mathbf x'\|^2}{2\sigma}}. \]
 
-(It is also called the RBF kernel, for radial basis function. Watch the convention: we divide by \(2\sigma\); many references divide by \(2\sigma^2\), which only renames the parameter.) Here \(\|\mathbf x - \mathbf x'\|^2\) is the squared distance between the two inputs and \(\sigma > 0\) a scale you choose. Read it as a similarity: **it is 1 for identical messages and decays exponentially with their squared distance, at a rate set by \(\sigma\).** Two messages that are close get \(K\) near 1, two that are far apart get \(K\) near 0, and \(\sigma\) sets what “close” means. For subject lines as 0/1 vectors, the squared distance counts the words in one line but not the other, the symmetric difference, written \(a \triangle b\) (Python’s `a ^ b`). “winner claim lunch” and “winner claim report” differ in two words, so with \(\sigma = 1\) the kernel is \(e^{-1} \approx 0.37\):
+(It is also called the RBF kernel, for radial basis function. Watch the convention: we divide by \(2\sigma\); many references divide by \(2\sigma^2\), which only renames the parameter.) Here \(\|\mathbf x - \mathbf x'\|^2\) is the squared distance between the two inputs and \(\sigma > 0\) a scale you choose. Read it as a similarity: **it is 1 for identical messages and decays exponentially with their squared distance, so \(\sigma\) sets what “close” means.** For subject lines as 0/1 vectors, the squared distance counts the words in one line but not the other, the symmetric difference, written \(a \triangle b\) (Python’s `a ^ b`). “winner claim lunch” and “winner claim report” differ in two words, so with \(\sigma = 1\) the kernel is \(e^{-1} \approx 0.37\):
 
 ```python
 import math
@@ -569,7 +569,7 @@ We could hand the \(\boldsymbol\alpha\) form of soft-SVM to a quadratic-programm
 
 \[ \min_{\mathbf w} \; \frac{\lambda}{2} \|\mathbf w\|^2 + \frac{1}{m} \sum_{i=1}^m \max\{0, 1 - y_i \langle \mathbf w, \mathbf x_i \rangle\} \]
 
-(note the \(\frac{\lambda}{2}\), a convenience of SGD; it is the \(\lambda \|\mathbf w\|^2\) form with \(\lambda\) halved, so the two line vectors from the representer section now cost \(1.3\) and \(0.0909 + 0.325 = 0.4159\)) using SGD, lesson 14’s stochastic gradient descent, which steps along the gradient of one random example at a time, in this shape (\([m]\) is the positions \(1, \dots, m\)):
+with SGD, lesson 14’s stochastic gradient descent, which steps against the slope of one random example’s loss at a time. The \(\frac{\lambda}{2}\) is a convenience of SGD: it is the \(\lambda \|\mathbf w\|^2\) form with \(\lambda\) halved, so the two line vectors from the representer section now cost \(1.3\) and \(0.0909 + 0.325 = 0.4159\). The algorithm had this shape, where \([m]\) is the positions \(1, \dots, m\):
 
 ```
 SGD-SoftSVM(S, λ, T):
@@ -715,7 +715,7 @@ if __name__ == "__main__":
     assert sum(unseen) == 3
 ```
 
-1. Implement the six functions. `poly_kernel` is \((1 + |a \cap b|)^k\), since the inner product of two 0/1 word vectors counts shared words. `gaussian_kernel` is \(e^{-|a \triangle b|/(2\sigma)}\), since \(\|\mathbf x - \mathbf x'\|^2\) counts the words in one line and not the other (the symmetric difference). `kernel_sgd_svm` follows KernelSGD-SoftSVM exactly: at each step, first compute \(\boldsymbol\alpha\) and add \(\boldsymbol\alpha/T\) to \(\bar{\boldsymbol\alpha}\), then draw `i = rng.randrange(m)`, then test and update. Return \(\bar{\boldsymbol\alpha}\) as a list. `predict` returns \(+1\) when \(\sum_j \bar\alpha_j K(x_j, x) > 0\) and \(-1\) otherwise.
+1. Implement the six functions. `poly_kernel` is \((1 + |a \cap b|)^k\) and `gaussian_kernel` is \(e^{-|a \triangle b|/(2\sigma)}\), the set forms of the two kernels from earlier. `kernel_sgd_svm` follows KernelSGD-SoftSVM exactly: at each step, first compute \(\boldsymbol\alpha\) and add \(\boldsymbol\alpha/T\) to \(\bar{\boldsymbol\alpha}\), then draw `i = rng.randrange(m)`, then test and update. Return \(\bar{\boldsymbol\alpha}\) as a list. `predict` returns \(+1\) when \(\sum_j \bar\alpha_j K(x_j, x) > 0\) and \(-1\) otherwise.
 2. The odd \(\lambda = 0.0137\) is on purpose. With a round value such as 0.1, some step lands exactly on the boundary \(y_i \sum_j \alpha_j K(x_j, x_i) = 1\), and the order in which your code adds floating-point numbers decides the branch. Try 0.1 and see whether your `sum(a2)` still matches.
 3. Why must `train_mistakes(a1, S, K1)` be at least 1, whatever the learner does? Find the four messages in `S` that make it so.
 4. Train with the Gaussian kernel for \(\sigma \in \{0.25, 1, 4\}\) and count mistakes on `ALL`. Which \(\sigma\) does worst, and why, in terms of what “close” means?
