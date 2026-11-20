@@ -41,7 +41,8 @@ Every lesson of the course, delivered or not. `_kit/index.py` reads this table f
 | 12b | Convex learnability and surrogates | A convex loss can be minimised, but can it be learned from a finite label budget, and how does it become a promise about mistakes? |
 | 13a | Regularization and stability | Why does a penalty on the weights steady a jumpy learner, and why does a steady learner not overfit? |
 | 13b | Strong convexity and the fitting-stability tradeoff | Can you prove a penalized learner is stable for every distribution, and pick the penalty that certifies its error? |
-| 14 | Stochastic gradient descent | How does a learner that sees one example at a time still reach a good rule? |
+| 14a | From gradient descent to SGD | How can a learner that reads one message per step still reach a filter it can guarantee? |
+| 14b | SGD variants and faster rates | Can SGD solve a fixed regularized objective fast, and certify how close it gets? |
 | 15 | Support vector machines | What does it buy you to separate the mail with the widest possible margin? |
 | 16 | Kernel methods | How do you use a huge feature space without ever writing it down? |
 | 17 | Multiclass and ranking | What changes when the answer is one of many folders, or an ordering of the inbox? |
