@@ -413,6 +413,8 @@ The trade you just navigated is the bias-complexity tradeoff of lesson 5, reappe
 
 **“The loss is convex, so the problem is learnable.”** Convexity makes ERM an optimization problem without false bottoms. It says nothing about how many examples you need. One-dimensional linear regression with the square loss is convex and not learnable at all. You also need a bounded class and a Lipschitz or smooth loss.
 
+**“More labels always help.”** Not when the class or the loss is unconstrained. In the two-worlds game the smallest excess you could force the adversary down to rose with \(m\), from 0.956 at 10 labels to 0.999 at 10,000, because more labels let the adversary hide a rarer example.
+
 **“Bounding the weights fixes it.”** Not by itself. The bounded counterexample kept \(|w| \le 1\) and still failed, because one rare, huge example made the loss arbitrarily steep. The constants \(\rho\) or \(\beta\) must be fixed in advance, which in practice means bounding the messages, \(\|\mathbf x\| \le R\), as well.
 
 **“Minimizing the hinge loss minimizes the number of mistakes.”** It minimizes an upper bound on them. The two minimizers can differ, and the optimization error is exactly the price. In the lab world it was 0.17, more than three times the best possible 0-1 risk.

@@ -171,12 +171,27 @@ Folder: `05-no-free-lunch/`
 - [ ] 9 concept check: mastery confirmed
 - [ ] 10 end-of-chapter problems done
 
-### 6. Ch. 6 VC dimension (shattering, growth function, Sauer, fundamental theorem)
+### 6a. The VC dimension
 
-Folder: `06-vc-dimension/`
+Folder: `06a-vc-dimension/`
 
-- [x] 1 prose and sheet (about 10,400 words with code, 13 snippets plus the build-it stub run by the lead, no book references, 2026-11-20; long: consider a 6a/6b split)
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (CPU rule); verify the writer's claimed book error (Hoeffding constant in the VC uniform-convergence proof)
+- [x] 1 prose and sheet (split from lesson 6 on 2026-11-20; original in `_archive/06-vc-dimension`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
+- [ ] 3 review stop: user approved the prose
+- [ ] 4 figures
+- [ ] 5 page
+- [ ] 6 learner judge: ready
+- [ ] 7 verification
+- [ ] 8 delivery: series.md, index.html
+- [ ] 9 concept check: mastery confirmed
+- [ ] 10 end-of-chapter problems done
+
+### 6b. The growth function
+
+Folder: `06b-growth-function/`
+
+- [x] 1 prose and sheet (split from lesson 6 on 2026-11-20; original in `_archive/06-vc-dimension`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -291,12 +306,27 @@ Folder: `12-convex-learning/`
 - [ ] 9 concept check: mastery confirmed
 - [ ] 10 end-of-chapter problems done
 
-### 13. Ch. 13 regularization and stability
+### 13a. Regularization and stability
 
-Folder: `13-regularization-stability/`
+Folder: `13a-stability/`
 
-- [x] 1 prose and sheet (about 14,600 words with code, 18 snippets run by the lead; the failing fence is the build-it stub; no book references; written with the formula walkthrough rule, 19 plain-words readings; 2026-11-20). Writer's claims to verify: smooth stability rate 24β/(λm) against the book's 48 (sharper, implies the book's); strong-convexity modulus renamed σ; several proofs the writer's own
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
+- [x] 1 prose and sheet (split from lesson 13 on 2026-11-20; original in `_archive/13-regularization-stability`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
+- [ ] 3 review stop: user approved the prose
+- [ ] 4 figures
+- [ ] 5 page
+- [ ] 6 learner judge: ready
+- [ ] 7 verification
+- [ ] 8 delivery: series.md, index.html
+- [ ] 9 concept check: mastery confirmed
+- [ ] 10 end-of-chapter problems done
+
+### 13b. Strong convexity and the fitting-stability tradeoff
+
+Folder: `13b-strong-convexity/`
+
+- [x] 1 prose and sheet (split from lesson 13 on 2026-11-20; original in `_archive/13-regularization-stability`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page

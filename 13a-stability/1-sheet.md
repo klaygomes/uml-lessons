@@ -1,0 +1,87 @@
+# Regularization and Stability
+
+Objective: after this, you can explain why ERM is unstable when the empirical risk has a nearly flat valley; define regularized loss minimization and Tikhonov regularization and read RLM as SRM over nested norm balls; derive and solve ridge regression and prove its system is invertible and its solution unique; state and prove that the expected overfitting gap equals the expected replace-one change; define on-average-replace-one stability; split the expected production error into expected fit plus expected replace-one change; and choose \(\lambda\) so that both averages meet a target.
+
+Book: Chapter 13, PDF pp. 171 to 174 (PDF page = printed page). Opening, p. 171; §13.1 Regularized Loss Minimization, Equations 13.1, 13.2, Tikhonov, SRM reading with \(\mathcal H_i = \{\|\mathbf w\|^2 \le i\}\), pp. 171 to 172; §13.1.1 Ridge Regression, Equations 13.3 to 13.5, p. 172; Theorem 13.1 and Remark 13.1, p. 173 (the theorem itself is proved in lesson 13b); §13.2 Stable Rules Do Not Overfit, Theorem 13.2 (Equation 13.6), Definition 13.3, constant-learner remark, pp. 173 to 174; §13.7 Exercise 3, pp. 181 to 183. Uses least squares, Equation 9.6. Split from lesson 13 (`13-regularization-stability/`) at “Strong convexity”; lesson 13b covers §13.3 to §13.6.
+
+Bug: the campaign junk score (square loss, five near-twin words) is retrained every night on 20 labels with 3 replaced; ERM's weights swing (free: 2.2, −8.2, −2.2, −5.9; offer: −0.3 to 11.8) and production error swings (0.384, 0.632, 0.387, 0.485, 0.448, 0.478), because the empirical risk has a nearly flat valley in the directions that shuffle weight among the twins.
+Fix: act 2 of the lab: choose \(\lambda\) so that, averaged over 20,000 simulated nights of 20 labels, the replace-one change (= the overfitting gap, by the theorem) is at most 0.03 and the fit plus the replace-one change (= the expected production error) is at most 0.34.
+
+Key words: message, word, junk \(+1\) / keep \(-1\), example, training sequence (not "training set"), hypothesis / weight vector \(\mathbf w\) (not "model"), learner, score \(\langle \mathbf w, \mathbf x \rangle\), half square loss (not "squared loss"; "square loss" is lesson 9's without the half), empirical risk \(L_S\), true risk \(L_{\mathcal D}\), production error (the story's word for the true risk of the night's filter, computed exactly; never "test error"), fit / expected fit (\(\mathbb E[L_S(A(S))]\); not "training error"), regularized loss minimization (RLM), regularization function \(R\), Tikhonov regularization, regularization weight \(\lambda\) (not "regularization strength", "penalty parameter"; "regularization parameter" named once), penalty (plain word for \(\lambda\|\mathbf w\|^2\)), regularized objective \(f_S\), ridge regression, campaign world, one-word world, three-example world, valley (nearly flat direction of \(L_S\)), curvature, overfitting gap, replace-one sequence \(S^{(i)}\), replace-one change, on-average-replace-one-stable / stable with rate \(\varepsilon(m)\), promise (the manager's two targets in act 2), simulator (story word, introduced in the cliffhanger). Accuracy \(\varepsilon\), sample size \(m\).
+
+Terms:
+- RLM: \(A(S) \in \operatorname{argmin}_{\mathbf w}(L_S(\mathbf w) + R(\mathbf w))\); Tikhonov: \(R = \lambda\|\mathbf w\|^2\).
+- ridge regression: RLM with Tikhonov and the half square loss; \(\mathbf w = (2\lambda m I + A)^{-1}\mathbf b\), \(A = \sum \mathbf x_i\mathbf x_i^\top\), \(\mathbf b = \sum y_i\mathbf x_i\).
+- replace-one sequence \(S^{(i)}\): \(S\) with \(z_i\) replaced by an independent \(z' \sim \mathcal D\).
+- replace-one change: \(\ell(A(S^{(i)}), z_i) - \ell(A(S), z_i)\).
+- on-average-replace-one-stable with rate \(\varepsilon(m)\) (decreasing): \(\mathbb E[\ell(A(S^{(i)}), z_i) - \ell(A(S), z_i)] \le \varepsilon(m)\) for every \(\mathcal D\).
+- split of the production error: \(\mathbb E_S[L_{\mathcal D}(A(S))] = \mathbb E_S[L_S(A(S))] + \mathbb E[\text{replace-one change}]\).
+
+Misconception: "regularization is good because small weights are good". Why wrong: the penalty adds curvature \(2\lambda\) in every direction; it matters in the flat valley (0.0019 to 0.2019) and barely in steep directions (0.814 to 1.014); what it buys is stability, which equals a bound on overfitting.
+Second: "a stable learner is a good learner". Why wrong: the constant learner \(\mathbf 0\) has rate 0 and production error 0.5; in act 2, \(\lambda = 1\) has replace-one change 0.0092 but expected production error 0.413.
+Third (new in the split): "stability is only a hint that a learner generalizes". Why wrong: on average it is an identity: 0.128 = 0.128 in the one-word world; fit plus change 0.4256 against formula 0.4251 for ERM in the campaign world.
+
+Worked examples (scripts in `/private/tmp/claude-502/-Users-cleiton-loiola-personal/10412219-6ffb-4586-aa42-9a1b7eaa0636/scratchpad/lesson13/` for the original; new ones in `.../scratchpad/split13/`):
+1. Campaign world: \(y = \pm1\) fair; \(f = 0.4y\) w.p. 0.8, else \(-0.4y\); \(x_j = f + e_j\), \(e_j = \pm0.04\) i.i.d., \(d = 5\); \(\|\mathbf x\| \le 0.984\). \(L_{\mathcal D}(\mathbf w) = \frac12(0.16s^2 + 0.0016q - 0.48s + 1)\). Best \(w_j = 0.29940\), \(L^* = 0.32036\), norm 0.6695. Week (seed 16, 20 examples, 3 replaced per night via `rng.sample`): ERM rows as in the prose; ERM totals 1.619, 1.606, 1.577, 1.646, 1.698, 1.519; \(q\) = 78.4, 389.1, 83.4, 203.6, 155.7, 197.7; ERM training fit 0.203, 0.202, 0.185, 0.149, 0.166, 0.142. Ridge \(\lambda = 0.1\): production 0.321, 0.328, 0.321, 0.321, 0.321, 0.321. Curvatures on night 1: 0.814 (total), 0.0019, 0.0019 (shuffles). Averages over 3,000 independent sequences of 20: ERM 0.4272 (sd 0.0825), ridge 0.1: 0.3377.
+2. Three-example one-word world \(S = ((0.4, 1), (-0.4, -1), (0.4, -1))\), \(\lambda = 0.05\): \(L_S(1) = 0.4467\), objective 0.4967; ridge \(A = 0.48\), \(b = 0.4\), \(2\lambda m = 0.3\), \(w = 0.5128\) (grid 0.513, objective 0.4658); replace \(z_3\) by \((0.4, 1)\): \(w_i = 1.5385\), losses on \(z_3\) 1.3047 vs 0.7262, change 0.5786. (The snippet no longer prints the stability-inequality line `0.0526 0.2735`; lesson 13b prints it.)
+3. One-word world, ERM, \(m = 5\): exact \(\mathbb E[L_{\mathcal D}] = 0.384\), \(\mathbb E[L_S] = 0.256\), gap 0.128 = simulated swap 0.128.
+4. New, Fix the bug snippet (`snipA.py`, seed 1, 20,000 sequences, \(\lambda = 0\)): fit 0.24, replace-one change 0.184, sum 0.424, formula production 0.425. Seed 9 hits a singular ERM system (`ZeroDivisionError`), so the prose uses seed 1; seeds 2 and 3 give 0.426/0.426 and 0.428/0.424.
+
+Derivation:
+- Ridge: gradient \(2\lambda\mathbf w + \frac1m\sum(\langle\mathbf w, \mathbf x_i\rangle - y_i)\mathbf x_i\); invertibility via \(\mathbf v^\top(2\lambda mI + A)\mathbf v \ge 2\lambda m\|\mathbf v\|^2\) (the book: "eigenvalues bounded below by \(2\lambda m\)"); exact expansion shows uniqueness (ours).
+- Theorem 13.2: book's two-line proof; ours spells out conditioning on \(S\) and the exchange of positions \(i\) and \(m+1\) of an i.i.d. sequence.
+- Split of the production error (Fix the bug): add and subtract \(L_S(A(S))\), then Theorem 13.2; the book writes it as Equation 13.15 in §13.4 (lesson 13b).
+
+Algorithms: the Gauss–Jordan `fit` in the ridge regression section (5×5 system, \(O(md^2 + d^3)\)); the full pseudocode, complexity and build-it challenge are in lesson 13b's “Ridge regression as code”.
+
+Figures (one per new concept; colours from `lesson.css`; tool diagram-design unless noted):
+- [[diagram:valley]] (still): contour lines of night 1's \(L_S\) over a 2-D slice: x-axis the total direction \((1,1,1,1,1)/\sqrt5\) (coordinate \(s/\sqrt5\)), y-axis the shuffle direction \((1,-1,0,0,0)/\sqrt2\); ellipses about 20 times longer than wide (\(\sqrt{0.814/0.0019} \approx 20.7\)). Mark the six ERM nights by their projections (total coordinate, shuffle coordinate, off-slice length): 1 (0.724, −2.44, 8.83), 2 (0.718, −3.51, 19.71), 3 (0.705, −3.46, 9.11), 4 (0.736, −0.35, 14.25), 5 (0.759, −0.08, 12.45), 6 (0.679, −0.99, 14.04), with a note that most of each ERM vector's length lies off the slice; ridge nights clustered at (0.53 to 0.63, −0.04 to −0.01); the best point at (0.669, 0). Caption: "the data pin down the total, not the split".
+- [[diagram:penalty]] (still): three 1-D curves along the shuffle direction: \(L_S\) nearly flat and slightly tilted (curvature 0.0019), \(\lambda\|\mathbf w\|^2\) a parabola (curvature 0.2), their sum with a clear bottom near 0; dots for ERM's minimizer far out and ridge's near the centre.
+- [[diagram:replace-one]] (still): two rows of 20 boxes, \(S\) and \(S^{(i)}\), identical except box \(i\) (\(z_i\) vs \(z'\)); each row → learner → \(A(S)\), \(A(S^{(i)})\); both evaluated on \(z_i\) with a bracket "replace-one change"; underneath "average over \(S, z', i\) = overfitting gap". Tool: stack-diagram (pipeline).
+
+Lab:
+- World: the campaign world (exact production error by formula). Fit by the 5×5 solve.
+- Drawing code: act 1 adapts the iwrzwr visual archive study **Moment Balance** (Set 14, Visible Invariants, `sources/night-14-visible-invariants.html`, style `moment`: five loads on a beam with the support at their true centre of mass, each pulse changing one load) as the five weights: each weight a load on the beam, the support marking the total \(s\); on “Next night” the loads swing wildly while the support barely moves (“the data pin down the total, not the split”). Act 2 adapts **Error Escrow** (Set 15, Procedural Marks, `sources/night-15-procedural-marks.html`, style `escrow`: a solid body for the settled value and a short arm carrying the difference forward) as the production estimate: a solid bar for the expected fit with the replace-one change stacked as the arm, against the two target lines, with the formula's production error as a faint tick. Keep the MIT notice (Copyright (c) 2026 Kagan Yaldizkaya).
+- [[lab]] act 1, explore. \(m = 20\), seed 16 by default. Prediction first, input locked: "\(\lambda = 0\). Three of the twenty labels are replaced and the filter retrains. Typically, how far does the weight on ‘free’ move?" Options: about 0.01; about 0.1; about 2; about 20. Answer: about 2 (`act1.py`, 3,000 trials: median 1.65, mean 2.15, more than 5 in 8.3%). Controls: "Next night" (replace 3), "Replace one label", \(\lambda\) slider (0, then log scale 0.001 to 1). Readouts: five weight bars (ghost of previous night), total \(s\), \(\|\mathbf w\|^2\), training fit, production error sparkline. Regions: \(\lambda = 0\): production mean 0.425, sd 0.078; \(\lambda = 0.01\): median move 0.10, production 0.337; \(\lambda = 0.1\): median move 0.027, production 0.338; \(\lambda = 0.5\): median move 0.018, production 0.379 (over-shrunk). The slider is introduced in the prose only after RLM is defined; act 1 text says leave it at 0 first.
+- [[lab-act2]] act 2, fix the bug (new in the split). Story: the manager's two promises about the average night: (1) expected overfitting gap at most 0.03, measured as the average replace-one change; (2) expected production error at most 0.34, measured as average fit plus average replace-one change. Each \(\lambda\) is evaluated over 20,000 independent sequences of 20 labels, each with one fresh \(z'\) and a uniform \(i\). Slider snaps to the grid below; the page uses these precomputed values (`a2big.py`, seed 11), so pass/fail is deterministic and never depends on one night. Readouts: average fit, average replace-one change, their sum, formula production error (check only), tonight's production error (shown, never counts). Success: change ≤ 0.03 and sum ≤ 0.34.
+
+  | \(\lambda\) | fit | replace-one change (SE) | fit + change | formula production | promise 1 | promise 2 |
+  |---|---|---|---|---|---|---|
+  | 0 | 0.2402 | 0.1854 (0.0022) | 0.4256 | 0.4251 | fail | fail |
+  | 0.01 | 0.2955 | 0.0392 (0.0005) | 0.3347 | 0.3361 | fail | pass |
+  | 0.02 | 0.2998 | 0.0344 (0.0004) | 0.3342 | 0.3354 | fail | pass |
+  | 0.03 | 0.3018 | 0.0322 (0.0004) | 0.3340 | 0.3352 | fail | pass |
+  | 0.04 | 0.3032 | 0.0308 (0.0004) | 0.3340 | 0.3351 | fail | pass |
+  | 0.05 | 0.3045 | 0.0297 (0.0004) | 0.3342 | 0.3353 | pass | pass |
+  | 0.07 | 0.3069 | 0.0280 (0.0003) | 0.3350 | 0.3360 | pass | pass |
+  | 0.1 | 0.3108 | 0.0261 (0.0003) | 0.3369 | 0.3378 | pass | pass |
+  | 0.12 | 0.3135 | 0.0250 (0.0003) | 0.3385 | 0.3394 | pass | pass |
+  | 0.13 | 0.3150 | 0.0245 (0.0003) | 0.3394 | 0.3403 | pass | pass |
+  | 0.15 | 0.3178 | 0.0235 (0.0003) | 0.3413 | 0.3421 | pass | fail |
+  | 0.2 | 0.3252 | 0.0215 (0.0002) | 0.3467 | 0.3474 | pass | fail |
+  | 0.5 | 0.3642 | 0.0143 (0.0002) | 0.3784 | 0.3788 | pass | fail |
+  | 1 | 0.4038 | 0.0092 (0.0001) | 0.4129 | 0.4132 | pass | fail |
+
+  Window: \(\lambda \in [0.05, 0.13]\) on the grid; \(\lambda = 0.1\) (the prose's ridge choice) passes. The edge at 0.05 is within one SE of the target, so the page must use the table, not a fresh Monte Carlo run. Default \(\lambda = 0\) fails both. Prediction before the first try, from the prose: "if you push \(\lambda\) to 1, what happens to the replace-one change and to the expected production error?" Answer: the change falls to 0.0092 (promise 1 kept), the production error rises to 0.413 (promise 2 broken): stable but no longer fitting. Feedback: change too big: "the filter changes its mind by X about an example it has seen: that is X of overfitting, on average"; sum too big with small change: "stable, but the fit has risen to X: the filter is over-shrunk"; success: "gap X, expected production error X: both promises kept, on average".
+
+Concept check, answers (never shown to the learner):
+1. Constant learner: replace-one change identically 0, rate 0, gap 0; campaign true risk \(L_{\mathcal D}(\mathbf 0) = 0.5\). Ridge as \(\lambda \to \infty\): \((2\lambda mI + A)^{-1}\mathbf b \to \mathbf 0\); fit \(\to L_S(\mathbf 0) = \frac12\cdot\text{mean}(y^2) = 0.5\); replace-one change \(\to 0\) (both outputs tend to \(\mathbf 0\)); promise 1 holds, promise 2 fails (0.5 > 0.34); the act 2 table already shows the trend at \(\lambda = 1\) (0.0092, 0.413). Look for "stable but does not fit".
+2. The \(m+1\) examples are i.i.d., so their joint law is a product of identical factors and is invariant under exchanging positions \(i\) and \(m+1\); hence \((S^{(i)}, z_i) \sim (S, z')\). Independence of \(z'\) from \(S\) gives \(\mathbb E[\ell(A(S), z')] = \mathbb E[L_{\mathcal D}(A(S))]\). If \(z' \sim \mathcal D'\): the first step gives \(\mathbb E[L_{\mathcal D'}(A(S))]\) instead, and the exchange step fails because \(S^{(i)}\) is no longer \(\mathcal D^m\)-distributed; the right side then measures the sensitivity of \(A\) to inserting one \(\mathcal D'\) example, not the overfitting gap.
+
+End-of-chapter problems (§13.7, pp. 181 to 183). In the prose: Problem 1 = Exercise 3. Exercises 1 and 4 (parts 1 and 3) are lesson 13b's problems; Exercise 2 not chosen. Hints one rung at a time; never the solution.
+- Exercise 3 (stability + AERM ⇒ learning).
+  1. Write \(L_{\mathcal D}(A(S)) - \min_h L_{\mathcal D}(h)\) as a sum of three differences through \(L_S(A(S))\) and \(\min_h L_S(h)\).
+  2. The first has expectation at most \(\varepsilon_1(m)\) (stable rules do not overfit); the second at most \(\varepsilon_2(m)\) (definition).
+  3. For the third: for any fixed \(h'\), \(\min_h L_S(h) \le L_S(h')\); take expectations and then the infimum over \(h'\): \(\mathbb E[\min_h L_S(h)] \le \min_h L_{\mathcal D}(h)\), so the third term has expectation at most 0.
+
+Next bug: the promises were measured in a simulator that flips the campaign's own coins; the auditor asks what they say about the real campaign, or next month's. Can you prove stability for every distribution, from \(\lambda\) and \(m\) alone? Lesson 13b, strong convexity.
+
+Checks:
+- `python3 -I _kit/check_prose.py 13a-stability`: `13a-stability: 7855 words, 9 python fences, failing [], lines>66 0, book refs 0, em dashes 0, \epsilon 0`. No build-it fence in this half (it lives in 13b).
+- Snippet outputs pasted verbatim (all run with `python3 -I`): world check `0.321 0.32` / `0.32 0.5`; loss and \(L_{\mathcal D}\) terms `0.612 0.0753` / `[0.36, 0.00072, -0.72, 1] 0.32036`; curvature `0.814` / `0.0019` / `0.0019`; RLM grid `0.0 0.5 0.0 0.5`, `1.0 0.4467 0.05 0.4967`, `0.513 0.4527 0.0132 0.4658`; ridge system `0.48 0.4 0.3` / `0.5128 0.0`; week (ERM and ridge rows as tabled); replace-one `0.5128 1.5385`, `1.3047 0.7262 0.5786`; theorem `0.128 0.128`; Fix the bug `0.24 0.184` / `0.424 0.425`.
+
+Assumptions:
+- Every claim about the book was checked against the PDF text by the lesson 13 writer (pp. 160 to 183); the split added no new book claims.
+- Not in the book (ours, kept): the campaign world, the one-word world, the three-example world and all their numbers; the curvature/valley explanation; the exact expansion proof of ridge uniqueness; the explicit exchangeability argument; "production error" as story term; the act 2 promises, targets and table; the simulator and the auditor (story).
+- The act 2 numbers are Monte Carlo averages over 20,000 sequences (SE in the table); the page uses the table so that pass/fail is reproducible.
+- The square loss of lesson 12 has no \(\frac12\); this lesson uses the half square loss as the book's Equation 13.3; the prose says so.

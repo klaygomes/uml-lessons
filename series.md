@@ -27,7 +27,8 @@ Every lesson of the course, delivered or not. `_kit/index.py` reads this table f
 | 3 | A formal learning model | What exactly does it mean for a class to be learnable, and what if no rule is perfect? |
 | 4 | Uniform convergence | When does every hypothesis's training error track its true error at once? |
 | 5 | No free lunch | Why can no learner win on every problem, and how much error comes from the class versus the sample? |
-| 6 | VC dimension | Which infinite classes are learnable, and how many labels do they need? |
+| 6a | The VC dimension | Which infinite classes are learnable, and what measures how rich a class is? |
+| 6b | The growth function | Why does a finite VC dimension make every rule's training error track its true error, and how many noisy labels does that take? |
 | 7 | Nonuniform learnability | Can you learn from a class too rich for one sample size, by paying more for complex rules? |
 | 8 | The runtime of learning | When is learning possible in principle but too slow to compute? |
 | 9a | Halfspaces and the Perceptron | How can a filter that weighs every word be learned when its class is infinite, and how many updates can the Perceptron take? |
@@ -35,7 +36,8 @@ Every lesson of the course, delivered or not. `_kit/index.py` reads this table f
 | 10 | Boosting | Can many rules that are barely better than a guess add up to a strong one? |
 | 11 | Model selection | How do you pick among models without fooling yourself with the same data? |
 | 12 | Convex learning | Which learning problems can an optimiser solve reliably, and why convexity is the line? |
-| 13 | Regularization and stability | Why does a penalty on complexity make a learner stable, and why does stability mean it generalises? |
+| 13a | Regularization and stability | Why does a penalty on the weights steady a jumpy learner, and why does a steady learner not overfit? |
+| 13b | Strong convexity and the fitting-stability tradeoff | Can you prove a penalized learner is stable for every distribution, and pick the penalty that certifies its error? |
 | 14 | Stochastic gradient descent | How does a learner that sees one example at a time still reach a good rule? |
 | 15 | Support vector machines | What does it buy you to separate the mail with the widest possible margin? |
 | 16 | Kernel methods | How do you use a huge feature space without ever writing it down? |
