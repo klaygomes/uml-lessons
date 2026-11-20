@@ -361,6 +361,8 @@ KFoldSelect(S, Θ, A, k):
   return θ*, h_{θ*} = A(S; θ*)
 ```
 
+Reading the notation: \(S \setminus S_i\) is “\(S\) without fold \(i\)”, \(L_{S_i}(h_{i,\theta})\) is the empirical risk of the fold-\(i\) hypothesis on the fold it never saw, so `error(θ)` is the average of the \(k\) held-out errors, and \(\operatorname{argmin}_{\theta \in \Theta}\) returns the parameter value, not the error, at which `error(θ)` is smallest. With \(k = 5\) and 100 examples, each fold has 20 messages and each training run uses 80. The snippet below mirrors it: `rest` is \(S \setminus S_i\), `risk(A(rest), f)` is \(L_{S_i}(h_{i,\theta})\), and `sum(errs) / k` is `error(θ)`.
+
 Let’s watch it choose between two learners on 100 examples from a plain mail room, where label = feature 1 with 10% of labels flipped: ERM over the twenty one-feature hypotheses of lesson 1, and lesson 1’s memorizer.
 
 ```python
@@ -406,7 +408,7 @@ Now the fix assembles itself. In most practical work you split the labelled exam
 
 Each part has its own guarantee. The validation set gives the selection guarantee: \(\hat h\) is within \(2\varepsilon_v\) of the best candidate, with \(\varepsilon_v = \sqrt{\log(2r/\delta)/(2m_v)}\). The test set is independent of both \(S\) and \(V\), so it is independent of \(\hat h\), and the hold-out guarantee applies to it with \(\varepsilon_t = \sqrt{\log(2/\delta)/(2m_t)}\), no union bound needed. If each guarantee fails with probability at most \(\delta\), the union bound says both hold together with probability at least \(1 - 2\delta\).
 
-How many labels does that take? Turn the margins around: a margin \(\varepsilon\) over \(r\) hypotheses needs \(m \ge \log(2r/\delta)/(2\varepsilon^2)\). Suppose the manager wants the reported number within 0.05 of the truth, and the chosen filter within 0.1 of the best candidate (so \(\varepsilon_v = 0.05\)), each with probability at least 95%, from a budget of 2,500 labels:
+How many labels does that take? Turn the margins around: a margin \(\varepsilon\) over \(r\) hypotheses needs \(m \ge \log(2r/\delta)/(2\varepsilon^2)\). That is the margin formula squared and solved for the number of examples: **the set must be at least the confidence cost divided by twice the squared margin.** For \(r = 1\), \(\varepsilon = 0.05\) and \(\delta = 0.05\), that is \(\log 40 / 0.005 \approx 3.69/0.005\), which rounds up to 738; `size_for` below computes it. Suppose the manager wants the reported number within 0.05 of the truth, and the chosen filter within 0.1 of the best candidate (so \(\varepsilon_v = 0.05\)), each with probability at least 95%, from a budget of 2,500 labels:
 
 ```python
 from math import ceil, log
@@ -446,7 +448,21 @@ There are many things you could change:
 - change the features that describe each message;
 - change the optimization algorithm that carries out your learning rule.
 
-Which one helps depends on why the hypothesis is bad, and lesson 5 gave us the language for “why”. Let \(h^*\) be a hypothesis with the smallest true risk in \(\mathcal H\), \(h^* \in \operatorname{argmin}_{h \in \mathcal H} L_{\mathcal D}(h)\), and let \(h_S\) be what the learner returned. The **approximation error** is \(L_{\mathcal D}(h^*)\), and the **estimation error** is \(L_{\mathcal D}(h_S) - L_{\mathcal D}(h^*)\).
+Which one helps depends on why the hypothesis is bad, and lesson 5 gave us the language for “why”. The error of what you ship has two sources. Part of it is the class’s fault: even the best hypothesis in the class makes mistakes. The rest is the data’s fault: the learner, working from finitely many examples, picked something worse than that best one. On the plain mail room with the twenty one-feature hypotheses, the best is feature 1, with true risk 0.10, and every other feature is a coin flip with true risk 0.5. If the learner picked feature 3, the class is to blame for 0.10 and the data for the remaining 0.4.
+
+Now the symbols. Let \(h^*\) be a hypothesis with the smallest true risk in \(\mathcal H\), \(h^* \in \operatorname{argmin}_{h \in \mathcal H} L_{\mathcal D}(h)\): \(\operatorname{argmin}\) is the set of hypotheses at which \(L_{\mathcal D}\) is smallest, and \(\in\) says \(h^*\) is one of them (there may be ties). Let \(h_S\) be what the learner returned on \(S\). The **approximation error** is \(L_{\mathcal D}(h^*)\), and the **estimation error** is \(L_{\mathcal D}(h_S) - L_{\mathcal D}(h^*)\). In plain words: **the approximation error is the true risk of the best hypothesis in the class, and the estimation error is how much worse the learner’s pick is than that best one.**
+
+```python
+true_risk = {j: 0.5 for j in range(1, 21)}
+true_risk[1] = 0.10
+h_star = min(true_risk, key=true_risk.get)
+h_S = 3
+approx = true_risk[h_star]
+estim = true_risk[h_S] - true_risk[h_star]
+print(h_star, approx, round(estim, 2))
+```
+
+It prints `1 0.1 0.4`: `min(..., key=...)` is the argmin, returning the feature, not its risk.
 
 The approximation error depends only on \(\mathcal D\) and \(\mathcal H\): not on the number of examples, not on the learner. So if it is large, more examples are useless and a smaller class only makes it worse. What can help is a larger class, a different class that encodes different prior knowledge, or a different description of the messages (lesson 25 is about building features). The estimation error does depend on the number of examples. If it is large, more examples help, and so does a smaller class; a larger class makes it worse.
 
@@ -454,7 +470,18 @@ The trouble is that the approximation error involves \(h^*\) and \(\mathcal D\),
 
 \[ L_{\mathcal D}(h_S) = \big(L_{\mathcal D}(h_S) - L_V(h_S)\big) + \big(L_V(h_S) - L_S(h_S)\big) + L_S(h_S). \]
 
-The first term is small and known to be small: the hold-out guarantee bounds it. When the second term, the gap between validation and empirical risk, is large, we say the learner **overfits**. When the last term, the empirical risk, is large, we say it **underfits**. For the team’s boosted filters, with the 1,000-message validation set:
+Nothing here is new notation, only a trick: add and subtract \(L_V(h_S)\) and \(L_S(h_S)\), so the three brackets telescope back to \(L_{\mathcal D}(h_S)\). In plain words: **true risk equals (true minus validation) plus (validation minus empirical) plus empirical.** The first term is small and known to be small: the hold-out guarantee bounds it. When the second term, the gap between validation and empirical risk, is large, we say the learner **overfits**. When the last term, the empirical risk, is large, we say it **underfits**. For the team’s boosted filters, with the 1,000-message validation set, the three pieces add back up to the true risk:
+
+```python
+rows = {1: (0.27, 0.351, 0.375), 11: (0.15, 0.194, 0.208),
+        64: (0.15, 0.231, 0.249)}
+for T, (L_S, L_V, L_D) in rows.items():
+    parts = (L_D - L_V, L_V - L_S, L_S)
+    print(T, [round(p, 3) for p in parts],
+          round(sum(parts), 3))
+```
+
+It prints `1 [0.024, 0.081, 0.27] 0.375`, `11 [0.014, 0.044, 0.15] 0.208` and `64 [0.018, 0.081, 0.15] 0.249`, the rows of this table read right to left:
 
 | \(T\) | \(L_S\) | \(L_V - L_S\) | \(L_{\mathcal D} - L_V\) | \(L_{\mathcal D}\) |
 |---|---|---|---|---|
@@ -472,9 +499,13 @@ Be careful, though: these two terms are not the estimation and approximation err
 
 \[ L_S(h_S) = \big(L_S(h_S) - L_S(h^*)\big) + \big(L_S(h^*) - L_{\mathcal D}(h^*)\big) + L_{\mathcal D}(h^*). \]
 
+The same telescoping trick, now around the best hypothesis \(h^*\): **the empirical risk equals (how much better the learner’s pick looks than \(h^*\) on \(S\)) plus (how flattering \(S\) is to \(h^*\)) plus the approximation error.** The proposition below bounds the first two pieces.
+
 **Proposition (a large empirical risk means a large approximation error).** If \(h_S\) is an ERM hypothesis over \(\mathcal H\) and the loss lies in \([0, 1]\), then with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\),
 
 \[ L_{\mathcal D}(h^*) \ge L_S(h_S) - \sqrt{\frac{\log(2/\delta)}{2m}}. \]
+
+The square root is the hold-out margin again, with the training size \(m\) in place of \(m_v\). In plain words: **the approximation error is at least the empirical risk minus the single-hypothesis margin.** With \(m = 400\) and \(\delta = 0.05\) the margin is 0.068, so an empirical risk of 0.485 forces an approximation error of at least 0.417; the snippet after the proof computes exactly that.
 
 *Proof.* The first term of the split is at most 0: ERM returns a hypothesis with the smallest empirical risk in \(\mathcal H\), and \(h^*\) is in \(\mathcal H\), so \(L_S(h_S) \le L_S(h^*)\). For the second term, \(h^*\) is defined by \(\mathcal D\) and \(\mathcal H\) alone, so it is one fixed hypothesis that does not depend on \(S\). The training sequence therefore plays the role of a validation set for \(h^*\), and the hold-out guarantee gives, with probability at least \(1 - \delta\), \(L_S(h^*) - L_{\mathcal D}(h^*) \le \sqrt{\log(2/\delta)/(2m)}\). Putting the three terms back together, \(L_S(h_S) \le 0 + \sqrt{\log(2/\delta)/(2m)} + L_{\mathcal D}(h^*)\), which rearranges to the claim. \(\blacksquare\)
 
@@ -554,7 +585,7 @@ Put together, this is the procedure:
 
 ## The procedures as code
 
-Three procedures came up in this lesson. Write \(\mathrm{Train}(n)\) for the time the learner \(A\) needs on \(n\) examples and \(c\) for the time to evaluate one hypothesis on one example.
+Three procedures came up in this lesson. Write \(\mathrm{Train}(n)\) for the time the learner \(A\) needs on \(n\) examples and \(c\) for the time to evaluate one hypothesis on one example. As in earlier lessons, \(O(\cdot)\) reads “grows at most like, up to a constant factor”, and \(|\Theta|\) is how many parameter values you try.
 
 ```
 HoldOutSelect(S, V, Θ, A):
@@ -576,7 +607,7 @@ together with **KFoldSelect** from the cross-validation section.
 
 **HoldOutSelect** trains \(|\Theta|\) times and evaluates each candidate on \(V\): time \(O(|\Theta|(\mathrm{Train}(m) + m_v c))\), and space for one candidate at a time plus \(|\Theta|\) numbers. Some learners hand you many candidates for the price of one. Boosting for \(T_{\max}\) rounds produces \(h_1, \dots, h_{T_{\max}}\) along the way, and the vote of each example can be updated one stump at a time, so all \(T_{\max}\) validation risks cost \(O(T_{\max} m_v)\) stump evaluations in total.
 
-**KFoldSelect** trains \(k\) times per parameter value on \(m(k-1)/k\) examples, evaluates on \(m/k\) each time, and retrains once on all of \(S\): time \(O(|\Theta| k (\mathrm{Train}(m) + (m/k) c) + \mathrm{Train}(m))\), so \(k\) times the cost of hold-out, and leave-one-out costs \(m\) training runs per parameter value. Space is \(O(m)\) for the fold assignment, plus one hypothesis at a time.
+**KFoldSelect** trains \(k\) times per parameter value on \(m(k-1)/k\) examples, evaluates on \(m/k\) each time, and retrains once on all of \(S\): time \(O(|\Theta| k (\mathrm{Train}(m) + (m/k) c) + \mathrm{Train}(m))\), so \(k\) times the cost of hold-out (three parameter values and five folds mean fifteen training runs plus one), and leave-one-out costs \(m\) training runs per parameter value. Space is \(O(m)\) for the fold assignment, plus one hypothesis at a time.
 
 **LearningCurve** with prefixes of 10%, 20%, …, 100% trains on \(0.1m + 0.2m + \dots + m = 5.5m\) examples in total, so about \(5.5\,\mathrm{Train}(m)\) for a learner linear in its input, and evaluates on each prefix and on \(V\).
 

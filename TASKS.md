@@ -415,8 +415,8 @@ Folder: `21-online-learning/`
 
 Folder: `22-clustering/`
 
-- [ ] 1 prose and sheet (drafting by agent, started 2026-11-20; brief in the session scratchpad, template docs/writer-brief.md)
-- [ ] 2 gates: book check (PDF agents), read-aloud, fresh reader, greps
+- [x] 1 prose and sheet (about 13,400 words with code, 13 snippets run by the lead; the failing fences are build-it stubs; no book references; written with the walkthrough and concept-before-symbol rules; 2026-11-20). Writer's claims to verify: the book contradicts itself on whether k-means satisfies consistency (prose keeps 'fails', softened; no small counterexample found, the lab must not claim one); own termination proof and tie rules. Align opening with lesson 21's cliffhanger
+- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -518,9 +518,9 @@ Folder: `28-fundamental-theorem-proof/`
 
 ### 29. Ch. 29 multiclass learnability
 
-Folder: not created yet
+Folder: `29-multiclass-learnability/`
 
-- [ ] 1 prose and sheet
+- [ ] 1 prose and sheet (drafting by agent, started 2026-11-20; brief in the session scratchpad, template docs/writer-brief.md)
 - [ ] 2 gates: book check (PDF agents), read-aloud, fresh reader, greps
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures

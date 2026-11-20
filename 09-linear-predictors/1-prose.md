@@ -918,13 +918,25 @@ Should you now reach for degree 5? With six points it would hit every one exactl
 
 One more request, this time from the inbox designers. They want to grey out messages that are *probably* junk and show the filter’s confidence on hover. A halfspace says \(+1\) or \(-1\) and nothing else, even for a message whose score is a hair above zero. Can a linear learner say “junk, with probability 0.73”?
 
-In **logistic regression** the hypotheses map \(\mathbb R^d\) to the interval \([0, 1]\), and \(h(\mathbf x)\) is read as the probability that the label of \(\mathbf x\) is \(+1\). The class composes a **sigmoid** (“S-shaped”) function with the linear functions; specifically the **logistic function**
+In **logistic regression** the hypotheses map \(\mathbb R^d\) to the interval \([0, 1]\), and \(h(\mathbf x)\) is read as the probability that the label of \(\mathbf x\) is \(+1\). What we want is a squashing function: feed it the score, get back a number between 0 and 1 that is near 1 for big positive scores (A scores 5: surely junk), near 0 for big negative ones, and exactly one half at score 0, where the halfspace is undecided. The class composes such a **sigmoid** (“S-shaped”) function with the linear functions; specifically the **logistic function**
 
 \[ \varphi_{\text{sig}}(z) = \frac{1}{1 + \exp(-z)}, \]
 
-so, using homogeneous linear functions,
+Here \(z\) stands for the score, and \(\exp(-z)\) is \(e^{-z}\), the number \(e \approx 2.718\) raised to the power \(-z\); it is huge when \(z\) is very negative and tiny when \(z\) is large. Inside out: flip the sign of the score, raise \(e\) to it, add 1, and take one over the result. When \(z\) is large the bottom is close to 1, so the answer is close to 1; when \(z\) is very negative the bottom is huge, so the answer is close to 0. In plain words: **the logistic function squashes any score into a probability between 0 and 1, with score 0 landing on one half.** At \(z = 1\), message B’s score: \(e^{-1} \approx 0.368\), the bottom is 1.368, and the probability is 0.731.
+
+```python
+import math
+
+for z in (-3, 0, 1, 5):
+    e = math.exp(-z)
+    print(z, round(e, 3), round(1 + e, 3), round(1 / (1 + e), 3))
+```
+
+It prints `-3 20.086 21.086 0.047`, `0 1.0 2.0 0.5`, `1 0.368 1.368 0.731` and `5 0.007 1.007 0.993`: the score, \(\exp(-z)\), the bottom, and the probability. So, using homogeneous linear functions,
 
 \[ H_{\text{sig}} = \varphi_{\text{sig}} \circ L_d = \{ \mathbf x \mapsto \varphi_{\text{sig}}(\langle \mathbf w, \mathbf x \rangle) \; : \; \mathbf w \in \mathbb R^d \}. \]
+
+This reads exactly like \(HS_d\), with the logistic function in place of the sign: **score the message, then squash the score into a probability.**
 
 When \(\langle \mathbf w, \mathbf x \rangle\) is large, \(\varphi_{\text{sig}}\) is close to 1; when it is very negative, close to 0; and at 0 it is exactly \(\tfrac12\). So the logistic hypothesis and the halfspace with the same \(\mathbf w\) agree whenever \(|\langle \mathbf w, \mathbf x \rangle|\) is large. They differ near the boundary: there the halfspace still answers a flat \(\pm 1\), while the logistic hypothesis admits it is unsure and gives a probability just above or just below one half.
 
@@ -934,9 +946,11 @@ Now the loss. If the label is \(y = +1\), we want \(h_{\mathbf w}(\mathbf x)\) t
 
 \[ 1 - h_{\mathbf w}(\mathbf x) = 1 - \frac{1}{1 + \exp(-\langle \mathbf w, \mathbf x \rangle)} = \frac{\exp(-\langle \mathbf w, \mathbf x \rangle)}{1 + \exp(-\langle \mathbf w, \mathbf x \rangle)} = \frac{1}{1 + \exp(\langle \mathbf w, \mathbf x \rangle)}, \]
 
-where the last step multiplies top and bottom by \(\exp(\langle \mathbf w, \mathbf x \rangle)\). Look at the two cases side by side: the probability the hypothesis gives to the *true* label is \(1 / (1 + \exp(-y \langle \mathbf w, \mathbf x \rangle))\) for both \(y = +1\) and \(y = -1\). One formula, thanks to \(\pm 1\) labels once more. A sensible loss should grow as that probability falls, that is, as \(1 + \exp(-y \langle \mathbf w, \mathbf x \rangle)\) grows. The **logistic loss** takes its logarithm (natural log, an increasing function, so the order is kept):
+where the last step multiplies top and bottom by \(\exp(\langle \mathbf w, \mathbf x \rangle)\). The first step writes \(1\) as \((1 + \exp(-\langle \mathbf w, \mathbf x \rangle))\) over itself and subtracts the tops. In plain words: **the probability of keep is the logistic function of the negated score.** For message B, score 1, the probability of junk is 0.731 and of keep \(1/(1 + e^1) = 1/3.718 \approx 0.269\), and the two add to 1; the `assert` in the next snippet checks this identity at six scores. Look at the two cases side by side: the probability the hypothesis gives to the *true* label is \(1 / (1 + \exp(-y \langle \mathbf w, \mathbf x \rangle))\) for both \(y = +1\) and \(y = -1\). One formula, thanks to \(\pm 1\) labels once more. A sensible loss should grow as that probability falls, that is, as \(1 + \exp(-y \langle \mathbf w, \mathbf x \rangle)\) grows. The **logistic loss** takes its logarithm (natural log, an increasing function, so the order is kept):
 
 \[ \ell(h_{\mathbf w}, (\mathbf x, y)) = \log \left( 1 + \exp(-y \langle \mathbf w, \mathbf x \rangle) \right). \]
+
+Inside out: \(y \langle \mathbf w, \mathbf x \rangle\) is the signed score from the halfspace sections; the minus sign and \(\exp\) turn it into a number that is tiny when the signed score is large and huge when it is very negative; adding 1 gives the bottom of the probability of the true label; and \(\log\), the natural logarithm, the inverse of \(\exp\) (so \(\log e^3 = 3\)), turns that into a cost. Since the probability is one over that bottom, the loss is also \(-\log\) of the probability given to the true label. In plain words: **the loss is minus the log of the probability the hypothesis gave to the right answer.** Message B, signed score 1, gets probability 0.731 and pays \(\log 1.368 \approx 0.313\). The snippet mirrors this with `sigma` for \(\varphi_{\text{sig}}\) and `loss` for \(\ell\), as functions of the signed score \(z\):
 
 ```python
 import math
@@ -954,7 +968,21 @@ Given \(S\), the ERM problem of logistic regression is
 
 \[ \operatorname*{argmin}_{\mathbf w \in \mathbb R^d} \frac{1}{m} \sum_{i=1}^m \log \left( 1 + \exp(-y_i \langle \mathbf w, \mathbf x_i \rangle) \right). \]
 
-Its great advantage is that this objective is a **convex** function of \(\mathbf w\), which makes it efficiently solvable by standard methods, separable data or not. Here is why it is convex. A function \(f\) is convex when \(f(\theta \mathbf u + (1 - \theta) \mathbf v) \le \theta f(\mathbf u) + (1 - \theta) f(\mathbf v)\) for all \(\mathbf u, \mathbf v\) and \(\theta \in [0, 1]\): the chord lies above the graph. For one variable, write \(g(z) = \log(1 + e^{-z})\). Its derivatives are \(g'(z) = -\varphi_{\text{sig}}(-z)\) and \(g''(z) = \varphi_{\text{sig}}(z) \, \varphi_{\text{sig}}(-z) > 0\), and a function of one variable with a nonnegative second derivative is convex. Each term of the risk is \(g\) applied to \(z_i(\mathbf w) = y_i \langle \mathbf w, \mathbf x_i \rangle\), which is linear in \(\mathbf w\), so \(z_i(\theta \mathbf u + (1 - \theta) \mathbf v) = \theta z_i(\mathbf u) + (1 - \theta) z_i(\mathbf v)\), and convexity of \(g\) carries straight over to the term. An average of convex functions is convex. Lesson 12 develops this properly, and lesson 14 gives a simple algorithm for minimizing such functions.
+Every piece is already familiar: the logistic loss of example \(i\), averaged over the \(m\) examples, and \(\operatorname{argmin}\) returns the weights that make that average smallest. In plain words: **find the weights with the smallest average logistic loss.** At \(\mathbf w = \mathbf 0\) every signed score is 0 and every loss is \(\log 2 \approx 0.693\), so the average is 0.693; the gradient descent snippet below starts there and drives it down.
+
+Its great advantage is that this objective is a **convex** function of \(\mathbf w\), which makes it efficiently solvable by standard methods, separable data or not. Here is why it is convex. Picture the logistic loss as a curve over the signed score, and pick two points on it: \(-3\) with loss 3.049 and 1 with loss 0.313. Halfway between them, at \(-1\), the curve sits at 1.313, below the halfway point of the straight chord joining them, \((3.049 + 0.313)/2 = 1.681\). A curve that always sags below its chords like that is convex. In symbols, a function \(f\) is convex when \(f(\theta \mathbf u + (1 - \theta) \mathbf v) \le \theta f(\mathbf u) + (1 - \theta) f(\mathbf v)\) for all \(\mathbf u, \mathbf v\) and \(\theta \in [0, 1]\). Here \(\theta\) (theta) is a mixing weight between 0 and 1, and \([0, 1]\) is the interval of numbers from 0 to 1. The left side evaluates \(f\) at a point mixed from \(\mathbf u\) and \(\mathbf v\); the right side mixes the two values of \(f\) with the same weights, which is the height of the chord. In plain words: **the chord lies above the graph.**
+
+```python
+import math
+
+g = lambda z: math.log(1 + math.exp(-z))
+u, v, theta = -3, 1, 0.5
+mid = g(theta * u + (1 - theta) * v)
+chord = theta * g(u) + (1 - theta) * g(v)
+print(round(mid, 3), round(chord, 3), mid <= chord)
+```
+
+It prints `1.313 1.681 True`. One pair of points is an example, not a proof; here is the proof. For one variable, write \(g(z) = \log(1 + e^{-z})\). Its derivatives (the prime \(g'\) is the slope, the double prime \(g''\) is how fast the slope changes) are \(g'(z) = -\varphi_{\text{sig}}(-z)\) and \(g''(z) = \varphi_{\text{sig}}(z) \, \varphi_{\text{sig}}(-z) > 0\), and a function of one variable with a nonnegative second derivative is convex. Each term of the risk is \(g\) applied to \(z_i(\mathbf w) = y_i \langle \mathbf w, \mathbf x_i \rangle\), which is linear in \(\mathbf w\), so \(z_i(\theta \mathbf u + (1 - \theta) \mathbf v) = \theta z_i(\mathbf u) + (1 - \theta) z_i(\mathbf v)\), and convexity of \(g\) carries straight over to the term. An average of convex functions is convex. Lesson 12 develops this properly, and lesson 14 gives a simple algorithm for minimizing such functions.
 
 There is also a statistical reading. Suppose the labels really were drawn with \(\mathbb P[y = +1 \mid \mathbf x] = \varphi_{\text{sig}}(\langle \mathbf w, \mathbf x \rangle)\). By the identity above, the probability of the observed label is \(\varphi_{\text{sig}}(y \langle \mathbf w, \mathbf x \rangle)\) in both cases, so the probability of the whole training sequence, with its examples independent, is \(\prod_i \varphi_{\text{sig}}(y_i \langle \mathbf w, \mathbf x_i \rangle)\). Its negative logarithm is \(\sum_i \log(1 + \exp(-y_i \langle \mathbf w, \mathbf x_i \rangle))\), which is \(m\) times the logistic risk. So minimizing the logistic risk is the same as choosing the \(\mathbf w\) under which the data is most likely, the **maximum likelihood** approach that lesson 24 studies.
 

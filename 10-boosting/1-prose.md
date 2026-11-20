@@ -182,7 +182,7 @@ Let \(\mathcal H\) be the class of all three-piece hypotheses, and let the base 
 
 *Proof.* Fix \(\mathcal D\) and \(f\) with realizability. Then some \(h^\star = h_{\theta_1, \theta_2, b} \in \mathcal H\) has \(L_{(\mathcal D, f)}(h^\star) = 0\), so \(f = h^\star\) except on a set of probability zero, and for any stump \(g\), \(L_{(\mathcal D, f)}(g) = \mathcal D(\{x : g(x) \neq h^\star(x)\})\). Here \(\mathcal D(A)\), for a set \(A\) of points, is the probability that a point drawn from \(\mathcal D\) lands in \(A\), and the set is every \(x\) such that \(g\) and \(h^\star\) disagree: the true risk of a stump is the weight of the region where it disagrees with the truth.
 
-**Step 1: some stump is within \(1/3\) of perfect.** The two cuts split the line into three regions: \(R_1 = (-\infty, \theta_1)\), \(R_2 = [\theta_1, \theta_2]\) and \(R_3 = (\theta_2, \infty)\). They are disjoint and cover the line, so \(\mathcal D(R_1) + \mathcal D(R_2) + \mathcal D(R_3) = 1\), and the smallest of the three weights is at most \(1/3\) (if all three exceeded \(1/3\), their sum would exceed 1). We now show that, for each region \(R_k\) and each \(\eta > 0\), some stump disagrees with \(h^\star\) on a set of probability at most \(\mathcal D(R_k) + \eta\).
+**Step 1: some stump is within \(1/3\) of perfect.** The two cuts split the line into three regions: \(R_1 = (-\infty, \theta_1)\), \(R_2 = [\theta_1, \theta_2]\) and \(R_3 = (\theta_2, \infty)\) (a round bracket leaves its endpoint out, a square one keeps it in, and \(\infty\) means the piece runs on forever). They are disjoint and cover the line, so \(\mathcal D(R_1) + \mathcal D(R_2) + \mathcal D(R_3) = 1\), and the smallest of the three weights is at most \(1/3\) (if all three exceeded \(1/3\), their sum would exceed 1). We now show that, for each region \(R_k\) and each \(\eta > 0\), some stump disagrees with \(h^\star\) on a set of probability at most \(\mathcal D(R_k) + \eta\).
 
 - Region \(R_1\). The stump \(g = b \cdot \operatorname{sign}(x - \theta_2)\) gives \(+b\) for \(x > \theta_2\) and \(-b\) for \(x \le \theta_2\). It agrees with \(h^\star\) on \(R_2\) and \(R_3\), so it disagrees only on \(R_1\).
 - Region \(R_3\). Take \(g = -b \cdot \operatorname{sign}(x - \theta)\) with \(\theta < \theta_1\). It gives \(+b\) for \(x \le \theta\) and \(-b\) for \(x > \theta\), so it disagrees with \(h^\star\) on \(R_3\) and on the sliver \((\theta, \theta_1)\). As \(\theta\) rises to \(\theta_1\), the slivers shrink to the empty set, and by continuity of probability their weight tends to 0. So some \(\theta\) makes the sliver weigh at most \(\eta\).
@@ -223,22 +223,72 @@ It prints `0.3242`. In two thousand random worlds, the best stump never did wors
 
 ## Finding the best stump fast
 
-The weak learner has to be fast, or the whole plan is pointless. So how do you find the stump with the smallest weighted risk? Let’s make it concrete for \(b = +1\), the stumps that say junk when count \(j\) exceeds \(\theta\). Their weighted risk is
-\[ F_j(\theta) = \sum_{i : y_i = +1} D_i\, \mathbb 1[x_{i,j} \le \theta] + \sum_{i : y_i = -1} D_i\, \mathbb 1[x_{i,j} > \theta], \]
-the junk examples it lets through plus the keep examples it flags. What about \(b = -1\)? That stump flips every prediction, so it is wrong exactly where the \(b = +1\) stump is right, and its weighted risk is \(1 - F_j(\theta)\), because the weights add up to 1. So one function covers both signs, and we want
+The weak learner has to be fast, or the whole plan is pointless. So how do you find the stump with the smallest weighted risk? Let’s make it concrete for \(b = +1\), the stumps that say junk when count \(j\) exceeds \(\theta\). A stump like that can go wrong in two ways. It lets junk through when a junk message’s count is at or below the threshold, and it flags a keep message when its count is above. Take “junk if free \(> 2.5\)” with the weights from before (0.25 on messages 4 and 5, \(1/16\) on the rest). It lets through junk messages 6 and 7, whose “free” counts are 1 and 2, and flags no keep message, since none has more than two “free”s. Its weighted risk is \(1/16 + 1/16 = 0.125\). As a formula,
+\[ F_j(\theta) = \sum_{i : y_i = +1} D_i\, \mathbb 1[x_{i,j} \le \theta] + \sum_{i : y_i = -1} D_i\, \mathbb 1[x_{i,j} > \theta]. \]
+
+- \(x_{i,j}\), with two subscripts, is count \(j\) of message \(i\): the message first, the word second.
+- \(\sum_{i : y_i = +1}\) adds up over the junk examples only (the colon again reads “such that”), and \(\sum_{i : y_i = -1}\) over the keep examples only.
+- In the first sum, \(\mathbb 1[x_{i,j} \le \theta]\) is 1 when a junk example is at or below the threshold, so the stump calls it keep: a miss.
+- In the second sum, \(\mathbb 1[x_{i,j} > \theta]\) is 1 when a keep example is above the threshold, so the stump calls it junk: a false alarm.
+- \(F_j\) is named after the feature \(j\) and read as a function of the threshold \(\theta\).
+
+In plain words: **the weight of the junk the stump lets through plus the weight of the keep mail it flags.** What about \(b = -1\)? That stump flips every prediction, so it is wrong exactly where the \(b = +1\) stump is right, and its weighted risk is \(1 - F_j(\theta)\), because the weights add up to 1. For “free” at 2.5 that is \(1 - 0.125 = 0.875\). Here is \(F_j\), one sum per line:
+
+```python
+X = [(0, 0), (0, 1), (0, 3), (1, 1), (2, 0),
+     (1, 4), (2, 4), (3, 4), (4, 0), (4, 1)]
+y = [-1] * 5 + [1] * 5
+D = [1 / 16] * 3 + [1 / 4] * 2 + [1 / 16] * 5
+
+def F(j, th):
+    let = sum(d for x, l, d in zip(X, y, D)
+              if l == 1 and x[j] <= th)
+    flag = sum(d for x, l, d in zip(X, y, D)
+               if l == -1 and x[j] > th)
+    return let + flag
+
+print(F(0, 2.5), 1 - F(0, 2.5), F(0, 0.5))
+```
+
+It prints `0.125 0.875 0.5`. The last number is “junk if free \(> 0.5\)”, round 1’s stump, now flagging the two heavy keep messages. So one function covers both signs, and we want
 \[ \min_{j \in [d]} \ \min_{\theta \in \mathbb R} \ \min\{F_j(\theta),\, 1 - F_j(\theta)\}. \]
+Read it from the inside out: for one feature and one threshold, take the better of the two directions; then the best threshold for that feature; then the best feature. In plain words: **the smallest weighted risk of any stump at all.**
 
-**There are only \(m + 1\) thresholds worth trying.** Fix \(j\) and sort the examples so that \(x_{1,j} \le x_{2,j} \le \dots \le x_{m,j}\). A threshold \(\theta\) affects the predictions only through the set of examples with \(x_{i,j} \le \theta\), and that set is always a prefix of the sorted list. Any two thresholds that give the same prefix give the same predictions on \(S\). So it is enough to try one threshold per prefix:
+**There are only \(m + 1\) thresholds worth trying.** Fix \(j\) and sort the examples so that \(x_{1,j} \le x_{2,j} \le \dots \le x_{m,j}\). A threshold \(\theta\) affects the predictions only through the set of examples with \(x_{i,j} \le \theta\), and that set is always a prefix of the sorted list. On the “free” counts of the ten messages, sorted as 0, 0, 0, 1, 1, 2, 2, 3, 4, 4, the thresholds 2.2 and 2.7 both put the first seven at or below, so they make the same predictions. Any two thresholds that give the same prefix give the same predictions on \(S\). So it is enough to try one threshold per prefix:
 \[ \Theta_j = \{x_{1,j} - 1\} \cup \left\{ \tfrac{x_{i,j} + x_{i+1,j}}{2} : i \in [m-1] \right\} \cup \{x_{m,j} + 1\}. \]
+The symbol \(\cup\) is “union”, putting sets together. The first set is one threshold below the smallest value, the middle set is the midpoint between each pair of neighbours in the sorted list (for \(i\) from 1 to \(m - 1\)), and the last is one threshold above the largest. In plain words: **one threshold below everything, one between each pair of neighbours, and one above everything.**
 
-Trying every \(\theta \in \Theta_j\) for every \(j\), and summing over \(m\) examples each time, costs \(O(dm^2)\). There is a neat way to save a factor of \(m\).
+```python
+X = [(0, 0), (0, 1), (0, 3), (1, 1), (2, 0),
+     (1, 4), (2, 4), (3, 4), (4, 0), (4, 1)]
+y = [-1] * 5 + [1] * 5
+D = [1 / 16] * 3 + [1 / 4] * 2 + [1 / 16] * 5
+
+def F(j, th):
+    return sum(d for x, l, d in zip(X, y, D)
+               if (1 if x[j] > th else -1) != l)
+
+def Theta(j):
+    v = sorted(x[j] for x in X)
+    mids = [(a + b) / 2 for a, b in zip(v, v[1:])]
+    return sorted({v[0] - 1, *mids, v[-1] + 1})
+
+print(Theta(0))
+print(min(min(F(j, t), 1 - F(j, t))
+          for j in (0, 1) for t in Theta(j)))
+```
+
+It prints `[-1, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.5, 4.0, 5]` and `0.125`. Equal neighbours give a midpoint equal to their value, which only repeats a prefix that another threshold already covers, and the set keeps each value once. The best stump under these weights has weighted risk 0.125, the one round 2 of AdaBoost will pick below.
+
+Trying every \(\theta \in \Theta_j\) for every \(j\), and summing over \(m\) examples each time, costs \(O(dm^2)\). (Recall the big-O notation from lesson 8: \(O(dm^2)\) means at most a fixed multiple of \(d \cdot m^2\) steps.) There is a neat way to save a factor of \(m\).
 
 **Each step costs \(O(1)\).** Suppose we know \(F = F_j(\theta)\) for a threshold just below \(x_{i,j}\), and now move to a threshold \(\theta'\) just above it. Only example \(i\) changes sides: it was above the threshold, predicted junk, and now it is at or below it, predicted keep. If \(y_i = +1\), it was right and is now wrong, so \(F\) grows by \(D_i\). If \(y_i = -1\), it was wrong and is now right, so \(F\) shrinks by \(D_i\). Both cases in one line:
 \[ F_j(\theta') = F_j(\theta) + y_i D_i. \]
+The label \(y_i\) is \(+1\) or \(-1\), so the product \(y_i D_i\) is the weight with a sign: added for junk, subtracted for keep. In plain words: **sliding the threshold past one example changes the risk by that example’s weight, up for junk and down for keep.** Under the round-2 weights, slide “free” from 0.5 to 1.5: messages 4 (keep, 0.25) and 6 (junk, \(1/16\)) cross, so \(F\) goes from 0.5 to \(0.5 - 0.25 + 0.0625 = 0.3125\).
 
 [[diagram:sweep]]
 
-The sweep starts with a threshold below everything, where every example is predicted junk and \(F\) is the total weight of the keep examples, and then walks up the sorted list. Here is the check that the sweep and brute force agree on 200 random examples of one feature. The `groupby` handles ties: examples with equal counts must cross the threshold together, which is exactly why \(\Theta_j\) has no threshold between two equal values.
+The sweep starts with a threshold below everything, where every example is predicted junk and \(F\) is the total weight of the keep examples, and then walks up the sorted list. Here is the check that the sweep and brute force agree on 200 random examples of one feature. The `groupby` handles ties: examples with equal counts must cross the threshold together, which is exactly why \(\Theta_j\) has no threshold between two equal values. The line `F += sum(l * d ...)` is the update \(F_j(\theta') = F_j(\theta) + y_i D_i\), applied to every example in a group of ties at once.
 
 ```python
 import itertools, random
@@ -315,9 +365,13 @@ Now the big idea. Run the stump learner once and you get a stump with weighted r
 
 That is **AdaBoost**, short for adaptive boosting. It works in **rounds**. In round \(t\) it holds a distribution \(D^{(t)}\) over the examples, hands \(D^{(t)}\) and \(S\) to the weak learner, and gets back a hypothesis \(h_t\) with weighted risk
 \[ \varepsilon_t = L_{D^{(t)}}(h_t) = \sum_{i=1}^m D_i^{(t)}\, \mathbb 1[h_t(x_i) \neq y_i]. \]
-It gives \(h_t\) a **vote**
-\[ w_t = \tfrac12 \log\!\left(\frac{1}{\varepsilon_t} - 1\right), \]
-which is large when \(\varepsilon_t\) is small and shrinks to 0 as \(\varepsilon_t\) approaches \(\tfrac12\). (Two words, two things: a *weight* belongs to an example, a *vote* belongs to a hypothesis.) Then it moves weight onto the examples \(h_t\) got wrong. An example that \(h_t\) gets right has \(y_i h_t(x_i) = +1\), so its weight is multiplied by \(e^{-w_t}\) and shrinks. An example it gets wrong has \(y_i h_t(x_i) = -1\), so its weight is multiplied by \(e^{w_t}\) and grows. Dividing by the total keeps it a distribution. After \(T\) rounds, the final hypothesis is a weighted vote of everything it has collected.
+The superscript \((t)\) in \(D^{(t)}\) and \(D_i^{(t)}\) is a round number, not a power: \(D_i^{(t)}\) is the weight of example \(i\) in round \(t\). The subscript \(t\) on \(\varepsilon_t\) and \(h_t\) also names the round. The formula is the weighted risk from the stumps section, with this round’s weights: in round 1 every weight is 0.1 and the first stump misses two messages, so \(\varepsilon_1 = 0.2\).
+
+A stump with a small weighted risk should count for more in the final decision than one that is barely better than a coin. With \(\varepsilon_1 = 0.2\), the stump is right four times as often as it is wrong, so \(1/\varepsilon_1 - 1 = 4\) measures that; a coin with \(\varepsilon = 0.5\) gets \(1/0.5 - 1 = 1\). AdaBoost gives \(h_t\) a **vote**
+\[ w_t = \tfrac12 \log\!\left(\frac{1}{\varepsilon_t} - 1\right). \]
+Inside the brackets is that odds ratio, right versus wrong. The natural logarithm \(\log\) turns ratio 1 into 0 and makes larger ratios positive; the \(\tfrac12\) is a scale that the proof will explain. In plain words: **half the log of how many times more often \(h_t\) is right than wrong.** Round 1 gives \(\tfrac12 \log 4 = \log 2 \approx 0.693\), and a coin gets \(\tfrac12 \log 1 = 0\). So the vote is large when \(\varepsilon_t\) is small and shrinks to 0 as \(\varepsilon_t\) approaches \(\tfrac12\). (Two words, two things: a *weight* belongs to an example, a *vote* belongs to a hypothesis.)
+
+Then it moves weight onto the examples \(h_t\) got wrong. Here \(e\) is Euler’s number, about 2.718, and \(e^{u}\), also written \(\exp(u)\), is always positive, above 1 for positive \(u\) and below 1 for negative \(u\). An example that \(h_t\) gets right has \(y_i h_t(x_i) = +1\), so its weight is multiplied by \(e^{-w_t}\) and shrinks. An example it gets wrong has \(y_i h_t(x_i) = -1\), so its weight is multiplied by \(e^{w_t}\) and grows. Dividing by the total keeps it a distribution. In round 1, \(e^{-0.693} = 1/2\) and \(e^{0.693} = 2\). After \(T\) rounds, the final hypothesis is a weighted vote of everything it has collected. In the pseudocode, \(\Sigma_j\) in the denominator is the same total, written with another letter because \(i\) is already in use.
 
 ```
 AdaBoost(S, WL, T):
@@ -347,7 +401,22 @@ Let’s run three rounds on the ten messages by hand. Watch what happens to mess
 
 The vote after three rounds is
 \[ h_s(x) = \operatorname{sign}\big(0.693\, h_1(x) + 0.973\, h_2(x) + 1.282\, h_3(x)\big), \]
-and it gets all ten messages right. Three stumps, each wrong on two of ten messages, combine into a rule that is wrong on none. Here is the same run in Python, printing \(\varepsilon_t\), \(w_t\), the empirical risk of the vote so far, and the weight of message 4 after the update:
+and it gets all ten messages right. Read it from the inside out: each \(h_t(x)\) is one stump’s answer, \(+1\) or \(-1\); multiplying by its vote and adding gives a score; the sign of the score is the label. In plain words: **each stump votes junk or keep with its own strength, and the side with more total strength wins.** Message 6, \((1, 4)\), gets \(+1, -1, +1\) from the three stumps, so its score is \(0.693 - 0.973 + 1.282 = 1.003 > 0\): junk, correctly. Message 4, \((1, 1)\), gets \(+1, -1, -1\) and the score \(-1.562\): keep.
+
+```python
+import math
+
+w = [math.log(2), math.log(7) / 2, math.log(13) / 2]
+hs = [lambda x: 1 if x[0] > 0.5 else -1,
+      lambda x: 1 if x[0] > 2.5 else -1,
+      lambda x: 1 if x[1] > 3.5 else -1]
+for x in [(1, 4), (1, 1)]:
+    psi = [ht(x) for ht in hs]
+    s = sum(wt * p for wt, p in zip(w, psi))
+    print(x, psi, round(s, 3), 1 if s > 0 else -1)
+```
+
+It prints `(1, 4) [1, -1, 1] 1.003 1` and `(1, 1) [1, -1, -1] -1.562 -1`. Three stumps, each wrong on two of ten messages, combine into a rule that is wrong on none. Here is the same run in Python, printing \(\varepsilon_t\), \(w_t\), the empirical risk of the vote so far, and the weight of message 4 after the update:
 
 ```python
 import math

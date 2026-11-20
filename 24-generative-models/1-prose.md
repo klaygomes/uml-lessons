@@ -1046,6 +1046,26 @@ For the equality, put \(Q_{i,y} = \mathbb P_\theta[Y = y \mid X = x_i]\). By the
 
 since conditional probabilities over all kinds add up to 1. **With the E step’s beliefs, \(G\) equals the log-likelihood exactly.** (For a Gaussian mixture every joint probability is positive, so no terms are dropped.) So the E step’s \(Q\) attains the upper bound \(L(\theta)\): it maximizes \(G(\cdot, \theta)\) over \(\mathcal Q\), and \(G(Q^{(t+1)}, \theta^{(t)}) = L(\theta^{(t)})\). \(\blacksquare\)
 
+Here is the lemma on the one-message example from the previous section, \(x = 1\) with shares \((0.7, 0.3)\) and centres 1 and 4: the mixture density, \(F\) and \(G\) for the belief \((0.9, 0.1)\), and \(G\) for the E step’s belief, against the log-likelihood.
+
+```python
+import math
+c, mu, x = (0.7, 0.3), (1.0, 4.0), 1.0
+def bell(x, m):
+    return math.exp(-(x - m)**2 / 2) / math.sqrt(2 * math.pi)
+a = [c[y] * bell(x, mu[y]) for y in (0, 1)]
+L = math.log(sum(a))
+def F(Q):
+    return sum(Q[y] * math.log(a[y]) for y in (0, 1))
+def G(Q):
+    return F(Q) - sum(q * math.log(q) for q in Q if q > 0)
+post = [v / sum(a) for v in a]
+print(round(sum(a), 3), round(F((0.9, 0.1)), 2))
+print(round(G((0.9, 0.1)), 3), round(G(post), 3), round(L, 3))
+```
+
+It prints `0.281 -1.81`, then `-1.485 -1.271 -1.271`: the guessed belief gives a \(G\) below the log-likelihood, and the E step’s belief, \((0.995, 0.005)\), meets it exactly.
+
 **Theorem (EM never decreases the likelihood).** For every \(t\), \(L(\theta^{(t+1)}) \ge L(\theta^{(t)})\).
 
 *Proof.* Three links, each from the lemma:
