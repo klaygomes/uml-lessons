@@ -89,7 +89,8 @@ from math import log, sqrt
 m, delta, c = 10_000, 0.05, 1
 step = 2 * c / m
 radius = step * sqrt(m * log(2 / delta) / 2)
-print(round(radius, 4), round(c * sqrt(2 * log(2 / delta) / m), 4))
+term = c * sqrt(2 * log(2 / delta) / m)
+print(round(radius, 4), round(term, 4))
 ```
 
 It prints `0.0272 0.0272`: McDiarmid’s radius with one example’s reach \(2c/m\) is the bound’s confidence term.
@@ -562,6 +563,20 @@ Second, for any nonnegative random quantity \(X\), \(\mathbb E[\sqrt X] \le \sqr
 Each of the \(m\) examples lands on \(c_i\) with chance \(\frac1d\), so \(\mathbb E_j[n_i] = m/d\). Averaging the per-message bound over the positions \(j\):
 
 \[ \mathbb E_j \left[ \frac12\left(1 - \sqrt{2\rho^2 n_i}\right) \right] = \frac12 \left( 1 - \sqrt{2\rho^2} \, \mathbb E_j\big[\sqrt{n_i}\big] \right) \ge \frac12\left(1 - \sqrt{\frac{2\rho^2 m}{d}}\right). \]
+
+The equality pulls the constants out of the average; the inequality is Jensen with \(\mathbb E_j[n_i] = m/d\). For the beams, \(d = 10\) and \(m = 30\), so \(n_i\) counts how many of 30 coins with chance \(1/10\) come up, and its exact distribution gives \(\mathbb E_j[\sqrt{n_i}]\):
+
+```python
+from math import comb, sqrt
+
+d, m = 10, 30
+p = 1 / d
+mean_root = sum(comb(m, n) * p**n * (1 - p)**(m - n) * sqrt(n)
+                for n in range(m + 1))
+print(round(mean_root, 4), round(sqrt(m / d), 4))
+```
+
+It prints `1.6413 1.7321`: the average of \(\sqrt{n_i}\) sits below \(\sqrt{3}\), as Jensen promises.
 
 Now sum over the \(d\) messages in Step 1’s right-hand side: \(\frac{\rho}{d}\) times \(d\) copies of the same bound.
 
