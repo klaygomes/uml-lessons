@@ -405,7 +405,7 @@ for m in (100, 1000):
         print(m, n, f"{subsets:.3g}", f"{bound:.3g}")
 ```
 
-It prints six rows, \(m\), \(n\), the subsets and the bound, from `100 1 5.05e+03 1.02e+04` to `1000 3 1.38e+15 1.01e+18`: every count under its bound, and each step in \(n\) multiplies the count by about \(m^2\), the degree growing with \(n\).
+It prints six rows, \(m\), \(n\), the subsets and the bound, from `100 1 5.05e+03 1.02e+04` to `1000 3 1.38e+15 1.01e+18`: every count under its bound, and each step in \(n\) multiplies the count by hundreds at \(m = 100\) and by tens of thousands at \(m = 1{,}000\). Polynomial in \(m\) for each fixed \(n\), with the degree growing with \(n\).
 
 For a fixed \(n\), the sample complexity of rectangles is polynomial in \(1/\varepsilon\) and \(\log(1/\delta)\) (lesson 6’s fundamental theorem, with VC dimension \(2n\)), so this learner runs in time polynomial in \(1/\varepsilon\) and \(1/\delta\). There is no contradiction with the hardness fact: that one forbids a runtime polynomial in \(n\) as well, and ours is exponential in \(n\).
 

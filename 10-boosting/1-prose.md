@@ -528,10 +528,11 @@ So the unnormalized new weights are proportional to \(e^{-y_i f_t(x_i)}\), with 
 \]
 The \(1/m\) in \(Z_{t+1}\) and \(Z_t\) cancelled in the first line. Now split the sum by whether \(h_{t+1}\) is right (\(y_i h_{t+1}(x_i) = 1\)) or wrong (\(y_i h_{t+1}(x_i) = -1\)) on example \(i\). By definition, the total weight under \(D^{(t+1)}\) of the wrong ones is \(\varepsilon_{t+1}\), so the right ones weigh \(1 - \varepsilon_{t+1}\):
 \[ \frac{Z_{t+1}}{Z_t} = e^{-w_{t+1}} \sum_{i:\, y_i h_{t+1}(x_i) = 1} D_i^{(t+1)} + e^{w_{t+1}} \sum_{i:\, y_i h_{t+1}(x_i) = -1} D_i^{(t+1)} = e^{-w_{t+1}}(1 - \varepsilon_{t+1}) + e^{w_{t+1}}\varepsilon_{t+1}. \]
-Now plug in the vote. From \(w = \tfrac12 \log(1/\varepsilon - 1)\) we get \(e^{w} = \sqrt{1/\varepsilon - 1} = \sqrt{(1 - \varepsilon)/\varepsilon}\), and \(e^{-w} = \sqrt{\varepsilon/(1 - \varepsilon)}\). Writing \(\varepsilon\) for \(\varepsilon_{t+1}\),
+In plain words: **\(Z\) shrinks by the right examples’ weight times \(e^{-w}\) plus the wrong examples’ weight times \(e^{w}\).** In round 1 that is \(0.5 \cdot 0.8 + 2 \cdot 0.2 = 0.8\), the ratio \(Z_1/Z_0\). Now plug in the vote. From \(w = \tfrac12 \log(1/\varepsilon - 1)\) we get \(e^{w} = \sqrt{1/\varepsilon - 1} = \sqrt{(1 - \varepsilon)/\varepsilon}\), and \(e^{-w} = \sqrt{\varepsilon/(1 - \varepsilon)}\). Writing \(\varepsilon\) for \(\varepsilon_{t+1}\),
 \[ \frac{Z_{t+1}}{Z_t} = \sqrt{\frac{\varepsilon}{1 - \varepsilon}}\,(1 - \varepsilon) + \sqrt{\frac{1 - \varepsilon}{\varepsilon}}\,\varepsilon = \sqrt{\varepsilon(1 - \varepsilon)} + \sqrt{\varepsilon(1 - \varepsilon)} = 2\sqrt{\varepsilon_{t+1}(1 - \varepsilon_{t+1})}. \]
+In plain words: **with AdaBoost’s vote, a round with weighted risk \(\varepsilon\) shrinks \(Z\) by exactly \(2\sqrt{\varepsilon(1 - \varepsilon)}\).** For round 1, \(2\sqrt{0.2 \cdot 0.8} = 2 \cdot 0.4 = 0.8\) again.
 
-Both Step 3 and Step 4 are easy to check on the ten messages. This version of the run never uses AdaBoost’s multiplicative update: it computes the weights straight from Step 3’s formula. If the formula were wrong, the weak learner’s risks would come out different from the previous run’s 0.2, 0.125 and 0.071. Then it prints each ratio \(Z_{t+1}/Z_t\) beside \(2\sqrt{\varepsilon(1 - \varepsilon)}\).
+Both Step 3 and Step 4 are easy to check on the ten messages. This version of the run never uses AdaBoost’s multiplicative update: it computes the weights straight from Step 3’s formula. If the formula were wrong, the weak learner’s risks would come out different from the previous run’s 0.2, 0.125 and 0.071. Then it prints each ratio \(Z_{t+1}/Z_t\) beside \(2\sqrt{\varepsilon(1 - \varepsilon)}\). The line `e = ...` is the list of terms \(e^{-y_i f_t(x_i)}\), `D = ...` is Step 3’s formula, and `root` is Step 4’s.
 
 ```python
 import math
@@ -564,11 +565,11 @@ Same risks, and each ratio matches the formula to four places. Multiply the thre
 
 **Step 5: bound the ratio.** Let \(g(a) = a(1 - a)\). Its derivative is \(1 - 2a \ge 0\) on \([0, \tfrac12]\), so \(g\) is increasing there. Since \(0 < \varepsilon_{t+1} \le \tfrac12 - \gamma \le \tfrac12\),
 \[ 2\sqrt{\varepsilon_{t+1}(1 - \varepsilon_{t+1})} \le 2\sqrt{\left(\tfrac12 - \gamma\right)\left(\tfrac12 + \gamma\right)} = 2\sqrt{\tfrac14 - \gamma^2} = \sqrt{1 - 4\gamma^2}. \]
-Finally, use \(1 - a \le e^{-a}\), which holds for every real \(a\). (Lesson 2 used it too. To see it, let \(\phi(a) = e^{-a} - 1 + a\). Then \(\phi(0) = 0\) and \(\phi'(a) = 1 - e^{-a}\), which is negative for \(a < 0\) and positive for \(a > 0\), so \(\phi\) has its minimum at 0 and is never negative.) With \(a = 4\gamma^2\), and because the square root is increasing,
+In plain words: **the more risk a round is allowed, the less it shrinks \(Z\), so the worst allowed round, \(\varepsilon = \tfrac12 - \gamma\), gives the largest factor.** With \(\gamma = 0.3\), that worst factor is \(\sqrt{1 - 0.36} = 0.8\), exactly round 1’s ratio, because round 1 sat right at \(\varepsilon = 0.2 = \tfrac12 - 0.3\). Finally, use \(1 - a \le e^{-a}\), which holds for every real \(a\). (Lesson 2 used it too. To see it, let \(\phi(a) = e^{-a} - 1 + a\). Then \(\phi(0) = 0\) and \(\phi'(a) = 1 - e^{-a}\), which is negative for \(a < 0\) and positive for \(a > 0\), so \(\phi\) has its minimum at 0 and is never negative.) With \(a = 4\gamma^2\), and because the square root is increasing,
 \[ \sqrt{1 - 4\gamma^2} \le \sqrt{e^{-4\gamma^2}} = e^{-2\gamma^2}. \]
-That is the per-round bound of Step 2, and the proof is complete. \(\blacksquare\)
+(The square root of \(e^{-4\gamma^2}\) halves the exponent.) For \(\gamma = 0.3\) it reads \(0.8 \le 0.835\). That is the per-round bound of Step 2, and the proof is complete. \(\blacksquare\)
 
-How fast is “exponentially”? Here is the per-round factor \(\sqrt{1 - 4\gamma^2}\), the bound \(e^{-2\gamma^2}\) that replaced it, and the number of rounds after which \(e^{-2\gamma^2 T}\) is at most 1%:
+How fast is “exponentially”? Here is the per-round factor \(\sqrt{1 - 4\gamma^2}\), the bound \(e^{-2\gamma^2}\) that replaced it, and the number of rounds after which \(e^{-2\gamma^2 T}\) is at most 1%. That last number solves \(e^{-2\gamma^2 T} \le 1/100\) for \(T\): taking logs, \(T \ge \log(100)/(2\gamma^2)\), and `math.ceil` rounds up to a whole round:
 
 ```python
 import math
@@ -612,11 +613,22 @@ It prints `0.693 0.693` and `0.8 0.8`: a grid search lands on \(\log 2\), round 
 
 **A sharper reading.** Step 4 is an equality, so the proof actually shows
 \[ L_S(h_s) \le Z_T = \prod_{t=1}^T 2\sqrt{\varepsilon_t(1 - \varepsilon_t)}, \]
-whatever the \(\varepsilon_t\) are. Writing \(\gamma_t = \tfrac12 - \varepsilon_t\) for the edge of round \(t\), Step 5 applied round by round gives \(Z_T \le e^{-2 \sum_t \gamma_t^2}\). You don’t need the same edge every round; each round contributes its own. This product is what the lab draws as “the bound”.
+whatever the \(\varepsilon_t\) are. The capital pi \(\prod_{t=1}^T\) is to multiplication what \(\sum\) is to addition: multiply the factor for every round from 1 to \(T\). In plain words: **the empirical risk is at most the product of every round’s exact shrink factor.** Writing \(\gamma_t = \tfrac12 - \varepsilon_t\) for the edge of round \(t\), Step 5 applied round by round gives \(Z_T \le e^{-2 \sum_t \gamma_t^2}\). You don’t need the same edge every round; each round contributes its own. On the ten messages the edges are 0.3, 0.375 and about 0.429:
+
+```python
+import math
+
+eps = [0.2, 0.125, 1 / 14]
+Z = math.prod(2 * math.sqrt(e * (1 - e)) for e in eps)
+g = [0.5 - e for e in eps]
+print(round(Z, 3), round(math.exp(-2 * sum(v * v for v in g)), 3))
+```
+
+It prints `0.273 0.437`: the exact product, and the looser bound from the edges, which is still far below the constant-edge 0.583. This product is what the lab draws as “the bound”.
 
 ## When the weak learner fails
 
-The theorem assumed that the weak learner succeeded in every round. A \(\gamma\)-weak learner only promises success with probability at least \(1 - \delta\), and AdaBoost calls it \(T\) times. By the union bound, the probability that it fails in at least one of the \(T\) rounds is at most \(\delta T\), so the theorem’s conclusion holds with probability at least \(1 - \delta T\). That is not a real obstacle. The sample complexity of a learner can always be made to depend on \(\delta\) only through \(\log(1/\delta)\) (run the learner on several independent chunks of examples and keep the one that does best on a final chunk), so asking each call for a tiny \(\delta\) is cheap. Better still, the weak learner here only ever sees distributions over the training sequence, and it can often be built to never fail at all. ERM over stumps is such a learner: it minimizes the weighted risk exactly, so it has \(\delta = 0\).
+The theorem assumed that the weak learner succeeded in every round. A \(\gamma\)-weak learner only promises success with probability at least \(1 - \delta\), and AdaBoost calls it \(T\) times. By the union bound, the probability that it fails in at least one of the \(T\) rounds is at most \(\delta T\), so the theorem’s conclusion holds with probability at least \(1 - \delta T\). With \(\delta = 0.001\) per call and \(T = 100\) rounds, that is \(1 - 0.1 = 0.9\). That is not a real obstacle. The sample complexity of a learner can always be made to depend on \(\delta\) only through \(\log(1/\delta)\) (run the learner on several independent chunks of examples and keep the one that does best on a final chunk), so asking each call for a tiny \(\delta\) is cheap. Better still, the weak learner here only ever sees distributions over the training sequence, and it can often be built to never fail at all. ERM over stumps is such a learner: it minimizes the weighted risk exactly, so it has \(\delta = 0\).
 
 What it cannot do is promise an edge that isn’t there. The theorem needs an edge of at least \(\gamma\) on *every* reweighting AdaBoost produces. In the lab, on the twenty thousand messages, the weighted risks \(\varepsilon_t\) creep up toward \(\tfrac12\) as the rounds go on: around 0.37 in the first rounds, around 0.45 by round 100. The edge shrinks, so the constant-\(\gamma\) bound is pessimistic, and the product above is the honest one.
 
