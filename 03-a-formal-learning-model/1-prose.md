@@ -6,19 +6,19 @@ Last time you gave the filter a real guarantee. You fixed a finite hypothesis cl
 
 Then two things happened in the same week.
 
-First, the newsletters. The company's design team signs up for a weekly digest that arrives with a link, from a sender nobody has in their contacts. Half the design team reads it every Monday. Most people in finance click "junk" the moment it lands. Same message, same four features, opposite labels. One person's newsletter is another person's junk.
+First, the newsletters. The company’s design team signs up for a weekly digest that arrives with a link, from a sender nobody has in their contacts. Half the design team reads it every Monday. Most people in finance click “junk” the moment it lands. Same message, same four features, opposite labels. One person’s newsletter is another person’s junk.
 
-Second, the honest mistakes. People label in a hurry. Somebody marks a "FREE" prize draw as keep because they were scrolling past it with their coffee in the other hand. Nobody is lying; they are just people.
+Second, the honest mistakes. People label in a hurry. Somebody marks a “FREE” prize draw as keep because they were scrolling past it with their coffee in the other hand. Nobody is lying; they are just people.
 
-The learner from last lesson doesn't cope. Its proof leaned on one assumption, **realizability**: some hypothesis in the class agrees with every example. Now no hypothesis does. Not one of the four one-feature hypotheses. Not even the memorizer: the same message turns up once as junk and once as keep, and a hypothesis has to give it one label. A learner written to return a consistent hypothesis, one with no mistakes on the examples, now returns nothing at all. A learner that breaks ties on its own returns something arbitrary.
+The learner from last lesson doesn’t cope. Its proof leaned on one assumption, **realizability**: some hypothesis in the class agrees with every example. Now no hypothesis does. Not one of the four one-feature hypotheses. Not even the memorizer: the same message turns up once as junk and once as keep, and a hypothesis has to give it one label. A learner written to return a consistent hypothesis, one with no mistakes on the examples, now returns nothing at all. A learner that breaks ties on its own returns something arbitrary.
 
-So what *should* a learner return when the labels themselves disagree? And, the harder question, what could you possibly promise about it? This lesson answers both, and along the way it turns lesson 2's single result into the definition everything after it is built on.
+So what *should* a learner return when the labels themselves disagree? And, the harder question, what could you possibly promise about it? This lesson answers both, and along the way it turns lesson 2’s single result into the definition everything after it is built on.
 
 ## What the last learner promised
 
-Before we break the old promise, let's write it down carefully, because the new one will be built in its image.
+Before we break the old promise, let’s write it down carefully, because the new one will be built in its image.
 
-Recall the setting of lesson 2. Messages arrive from a distribution \(\mathcal D\) over the domain set \(\mathcal X\), the set of every possible message (16 of them in lesson 1's four-feature world). A labelling function \(f: \mathcal X \to \{0, 1\}\) gives each message its true label. The learner sees a training sequence \(S\) of \(m\) examples drawn i.i.d. (independently, each from the same distribution), which we write \(S \sim \mathcal D^m\), and returns a hypothesis. (The tilde \(\sim\) reads “is drawn from”, and \(\mathcal D^m\) means \(m\) independent draws from \(\mathcal D\), one per example.) Its true risk is \(L_{(\mathcal D, f)}(h)\), the probability that \(h\) disagrees with \(f\) on a fresh message; the subscript \((\mathcal D, f)\) names the two things that risk depends on, where messages come from and who labels them.
+Recall the setting of lesson 2. Messages arrive from a distribution \(\mathcal D\) over the domain set \(\mathcal X\), the set of every possible message (16 of them in lesson 1’s four-feature world). A labelling function \(f: \mathcal X \to \{0, 1\}\) gives each message its true label. The learner sees a training sequence \(S\) of \(m\) examples drawn i.i.d. (independently, each from the same distribution), which we write \(S \sim \mathcal D^m\), and returns a hypothesis. (The tilde \(\sim\) reads “is drawn from”, and \(\mathcal D^m\) means \(m\) independent draws from \(\mathcal D\), one per example.) Its true risk is \(L_{(\mathcal D, f)}(h)\), the probability that \(h\) disagrees with \(f\) on a fresh message; the subscript \((\mathcal D, f)\) names the two things that risk depends on, where messages come from and who labels them.
 
 Lesson 2 proved a guarantee for ERM over a finite class \(\mathcal H\) when realizability holds. Pick a tolerated true risk, say 0.1, and a tolerated chance of failure, say 0.05. Once the number of examples passed a threshold, 44 for lesson 1’s four one-feature hypotheses, the returned hypothesis had true risk at most 0.1 on all but 5% of training sequences. The threshold grows slowly with the size of the class and quickly as the tolerance shrinks; its exact formula comes back in the next section. Call the tolerated true risk \(\varepsilon\) (the Greek letter epsilon) and the tolerated failure chance \(\delta\) (delta). Then the guarantee reads: true risk at most \(\varepsilon\), with probability at least \(1 - \delta\). That is two promises nested inside each other, and their names give the whole theory its title.
 
@@ -46,13 +46,13 @@ Read the quantifiers slowly, because they are where the strength lives. The func
 
 [[diagram:pac]]
 
-Why two parameters, and not just "the learner returns the right hypothesis"? There are two reasons, and you have already watched both happen. The training sequence is random, so there is always a small chance it is useless. Imagine a training sequence that contains only one message, drawn over and over again. No learner can do anything with that, which is why \(\delta\) can never be zero. And even when the training sequence does reflect \(\mathcal D\) faithfully, it is finite, so some fine details of \(\mathcal D\) will be missing from it. The accuracy parameter forgives the learner for small mistakes on those details, which is why \(\varepsilon\) can never be zero either.
+Why two parameters, and not just “the learner returns the right hypothesis”? There are two reasons, and you have already watched both happen. The training sequence is random, so there is always a small chance it is useless. Imagine a training sequence that contains only one message, drawn over and over again. No learner can do anything with that, which is why \(\delta\) can never be zero. And even when the training sequence does reflect \(\mathcal D\) faithfully, it is finite, so some fine details of \(\mathcal D\) will be missing from it. The accuracy parameter forgives the learner for small mistakes on those details, which is why \(\varepsilon\) can never be zero either.
 
 ## Sample complexity
 
 The function \(m_{\mathcal H}\) is the **sample complexity** of learning \(\mathcal H\): how many examples guarantee a probably approximately correct answer. It depends on \(\varepsilon\), on \(\delta\), and on properties of the class. If one function works, any larger function works too, so there are many valid choices. We pin it down by taking the minimal one. For each \(\varepsilon\) and \(\delta\), \(m_{\mathcal H}(\varepsilon, \delta)\) is the smallest integer that meets the requirements of PAC learning with that accuracy and confidence.
 
-With that, lesson 2's result becomes a one-line statement.
+With that, lesson 2’s result becomes a one-line statement.
 
 **The finite-class guarantee.** Every finite hypothesis class is PAC learnable with sample complexity
 
@@ -69,11 +69,11 @@ Read it from the inside out.
 
 In plain words: **the number of examples you need is at most the log of “class size over failure chance”, divided by the accuracy, rounded up.** With \(|\mathcal H| = 4\), \(\delta = 0.05\) and \(\varepsilon = 0.1\): the ratio is \(4/0.05 = 80\), its log is about 4.38, divided by 0.1 that is 43.8, and the ceiling makes it 44. The first three lines of the snippet below are this formula term by term, `math.ceil(math.log(H / delta) / eps)`, and the first number it prints is that 44.
 
-*Proof.* Take ERM over \(\mathcal H\) as the algorithm. Lesson 2's bound says that every integer \(m \ge \log(|\mathcal H|/\delta)/\varepsilon\) meets the requirement. The smallest such integer is the ceiling on the right, and the minimal function can only be smaller. \(\blacksquare\)
+*Proof.* Take ERM over \(\mathcal H\) as the algorithm. Lesson 2’s bound says that every integer \(m \ge \log(|\mathcal H|/\delta)/\varepsilon\) meets the requirement. The smallest such integer is the ceiling on the right, and the minimal function can only be smaller. \(\blacksquare\)
 
-Put numbers in. In lesson 1's tiny world, the class of one-feature hypotheses has \(|\mathcal H| = 4\). Ask for \(\varepsilon = 0.1\) and \(\delta = 0.05\), and the bound says 44 labelled examples are enough. The real mail system has 30 features, so a one-feature class has 30 members, and the bound grows only to 64. That gentle growth comes from the logarithm: doubling the class adds a fixed number of examples instead of doubling them.
+Put numbers in. In lesson 1’s tiny world, the class of one-feature hypotheses has \(|\mathcal H| = 4\). Ask for \(\varepsilon = 0.1\) and \(\delta = 0.05\), and the bound says 44 labelled examples are enough. The real mail system has 30 features, so a one-feature class has 30 members, and the bound grows only to 64. That gentle growth comes from the logarithm: doubling the class adds a fixed number of examples instead of doubling them.
 
-Here is the bound, and then the claim itself, simulated in lesson 1's world. There are four features, all messages are equally likely, and a message is junk exactly when the subject says "FREE". ERM over the one-feature class picks one of its consistent hypotheses at random, as lesson 1's ConsistentFeature did. A miss is a run whose true risk is above \(\varepsilon\). An impostor, as in lesson 1, is a wrong feature that happens to agree with every example; it has true risk 0.5, so every impostor is a miss.
+Here is the bound, and then the claim itself, simulated in lesson 1’s world. There are four features, all messages are equally likely, and a message is junk exactly when the subject says “FREE”. ERM over the one-feature class picks one of its consistent hypotheses at random, as lesson 1’s ConsistentFeature did. A miss is a run whose true risk is above \(\varepsilon\). An impostor, as in lesson 1, is a wrong feature that happens to agree with every example; it has true risk 0.5, so every impostor is a miss.
 
 ```python
 import math, random
@@ -100,7 +100,7 @@ Finite classes are not the only learnable ones. Some infinite classes are PAC le
 
 ## Where realizability breaks
 
-Now back to the bad week. Here is a training sequence of twelve examples from the mail room, in lesson 1's notation. Each message is four bits FLUN (says "FREE", has a link, unknown sender, sent at night), followed by its label. Three rows deserve a mark. Rows 3 and 6 are the same newsletter, 0110, labelled by two different people. Row 7 is the coffee-in-hand mistake: a "FREE" message labelled keep.
+Now back to the bad week. Here is a training sequence of twelve examples from the mail room, in lesson 1’s notation. Each message is four bits FLUN (says “FREE”, has a link, unknown sender, sent at night), followed by its label. Three rows deserve a mark. Rows 3 and 6 are the same newsletter, 0110, labelled by two different people. Row 7 is the coffee-in-hand mistake: a “FREE” message labelled keep.
 
 The last four columns grade each one-feature hypothesis. The hypothesis \(h_F\) says junk exactly when the F bit is 1, \(h_L\) when the L bit is 1, and so on; in symbols \(h_j(x) = x_j\), “the label is feature \(j\)’s bit”. A cross marks a mistake. Before reading them, guess which hypothesis will make the fewest mistakes, and whether any will make none.
 
@@ -121,11 +121,11 @@ The last four columns grade each one-feature hypothesis. The hypothesis \(h_F\) 
 
 A reminder from lesson 1: \(L_S(h)\), the empirical risk, is the fraction of the examples in \(S\) that \(h\) gets wrong, so here it is the number of crosses in a column divided by 12. Count the crosses: \(L_S(h_F) = 3/12 = 0.25\), \(L_S(h_U) = 4/12 \approx 0.33\), \(L_S(h_L) = 5/12 \approx 0.42\), \(L_S(h_N) = 6/12 = 0.5\). No hypothesis in the class is consistent.
 
-It is worse than that. Look at rows 3 and 6. Every hypothesis, of any kind, gives 0110 one label, so it is wrong on one of those two rows. No function from \(\mathcal X\) to \(\{0, 1\}\) has empirical risk below \(1/12\) on this training sequence. Realizability isn't merely false for our small class. It is false for every class.
+It is worse than that. Look at rows 3 and 6. Every hypothesis, of any kind, gives 0110 one label, so it is wrong on one of those two rows. No function from \(\mathcal X\) to \(\{0, 1\}\) has empirical risk below \(1/12\) on this training sequence. Realizability isn’t merely false for our small class. It is false for every class.
 
-Here is the encouraging part. ERM, as lesson 2 defined it, never asked for a consistent hypothesis. It asks for one that minimizes \(L_S\), and that still makes sense: it returns \(h_F\), with three mistakes out of twelve. The code fix is one line. Instead of "return a hypothesis with \(L_S(h) = 0\), or fail", write "return a hypothesis with the smallest \(L_S(h)\)".
+Here is the encouraging part. ERM, as lesson 2 defined it, never asked for a consistent hypothesis. It asks for one that minimizes \(L_S\), and that still makes sense: it returns \(h_F\), with three mistakes out of twelve. The code fix is one line. Instead of “return a hypothesis with \(L_S(h) = 0\), or fail”, write “return a hypothesis with the smallest \(L_S(h)\)”.
 
-What breaks is the promise. Write \(h_S\) for the hypothesis ERM returns on the training sequence \(S\). Lesson 2's proof ran like this. ERM returns a hypothesis with \(L_S(h_S) = 0\), so if \(h_S\) is bad, some bad hypothesis looked perfect on \(S\), and that is unlikely. Every link in that chain needed \(L_S(h_S) = 0\). Now ERM returns a hypothesis with \(L_S(h_S) = 0.25\), and the chain has nothing to hold on to. We need a new account of where labels come from, a new benchmark for what "good" means, and eventually a new proof. This lesson supplies the first two. The proof is the cliffhanger.
+What breaks is the promise. Write \(h_S\) for the hypothesis ERM returns on the training sequence \(S\). Lesson 2’s proof ran like this. ERM returns a hypothesis with \(L_S(h_S) = 0\), so if \(h_S\) is bad, some bad hypothesis looked perfect on \(S\), and that is unlikely. Every link in that chain needed \(L_S(h_S) = 0\). Now ERM returns a hypothesis with \(L_S(h_S) = 0.25\), and the chain has nothing to hold on to. We need a new account of where labels come from, a new benchmark for what “good” means, and eventually a new proof. This lesson supplies the first two. The proof is the cliffhanger.
 
 ## Labels from a distribution
 
@@ -136,7 +136,7 @@ Picture each example as a two-step draw. First a message arrives, drawn from a d
 - the **marginal distribution** of unlabelled messages, written \(\mathcal D_x\): how often each message arrives, so \(\mathcal D_x(x)\) is the probability that the next message is \(x\);
 - the **conditional probability** of the label given the message, \(\mathcal D((x, y) \mid x)\): how likely a message \(x\) is to be labelled junk. The bar \(\mid\) reads “given”: we only look at draws where this particular message arrived, and ask about its label.
 
-For binary labels we'll shorten the second part to one number per message, the share of labellers who call it junk, 0.7 for the newsletter:
+For binary labels we’ll shorten the second part to one number per message, the share of labellers who call it junk, 0.7 for the newsletter:
 
 \[ \eta(x) = \mathbb P_{(x, y) \sim \mathcal D}[\, y = 1 \mid x \,], \]
 
@@ -163,14 +163,14 @@ print(eta_newsletter, sum(labels) / len(labels))
 
 It prints `0.7 0.6992`: in 10,000 labellings of the newsletter, 69.92% said junk.
 
-Lesson 2's world, where \(f\) decides every label, is the special case where \(\eta(x)\) is always exactly 0 or exactly 1; realizability asks, on top of that, for \(f\) to agree with some hypothesis in the class. Disagreement and honest mistakes are what you get when \(\eta(x)\) sits strictly in between.
+Lesson 2’s world, where \(f\) decides every label, is the special case where \(\eta(x)\) is always exactly 0 or exactly 1; realizability asks, on top of that, for \(f\) to agree with some hypothesis in the class. Disagreement and honest mistakes are what you get when \(\eta(x)\) sits strictly in between.
 
-Here is the noisy mail room we'll use for the rest of the lesson. As in lesson 1, all 16 messages are equally likely, so \(\mathcal D_x\) is uniform. The labels follow three kinds of message.
+Here is the noisy mail room we’ll use for the rest of the lesson. As in lesson 1, all 16 messages are equally likely, so \(\mathcal D_x\) is uniform. The labels follow three kinds of message.
 
 | kind | messages | how many | \(\eta(x)\) | what is going on |
 |---|---|---|---|---|
-| "FREE" | every message starting with 1 | 8 | 0.9 | junk, but one person in ten labels it keep by mistake |
-| newsletter | 0110 and 0111 (link, unknown sender, no "FREE") | 2 | 0.7 | seven in ten readers call it junk, three call it keep |
+| “FREE” | every message starting with 1 | 8 | 0.9 | junk, but one person in ten labels it keep by mistake |
+| newsletter | 0110 and 0111 (link, unknown sender, no “FREE”) | 2 | 0.7 | seven in ten readers call it junk, three call it keep |
 | everything else | the other six | 6 | 0.1 | keep, but one person in ten labels it junk by mistake |
 
 [[diagram:joint]]
@@ -202,9 +202,9 @@ print(len(pairs), len(wrong), round(sum(D(*z) for z in wrong), 3))
 
 It prints `32 16 0.175`: 32 possible pairs, 16 of them mistakes for \(h_F\), with total probability 0.175. The next paragraphs do the same sum by hand.
 
-The subscript is now just \(\mathcal D\), because \(\mathcal D\) carries the labels as well as the messages. The empirical risk keeps its old definition, \(L_S(h) = |\{i \in [m] : h(x_i) \ne y_i\}|/m\): \([m]\) is the list of positions 1 to \(m\), the braces collect the positions \(i\) such that \(h\) is wrong on example \(i\), the bars count them, and dividing by \(m\) makes the count a fraction, 3/12 for \(h_F\) on the table above. Here is a neat observation: \(L_S(h)\) is the true risk of \(h\) under the distribution that picks one of the \(m\) examples of \(S\) uniformly at random. The empirical risk is a true risk, just for a tiny, lopsided world made of your training sequence.
+The subscript is now just \(\mathcal D\), because \(\mathcal D\) carries the labels as well as the messages. The empirical risk keeps its old definition, \(L_S(h) = |\{i \in [m] : h(x_i) \ne y_i\}|/m\): \([m]\) is the list of positions 1 to \(m\), the braces collect the positions \(i\) such that \(h\) is wrong on example \(i\), the bars count them, and dividing by \(m\) makes the count a fraction, 3/12 for \(h_F\) on the table above. Here is a neat observation: \(L_S(h)\) is the true risk of \(h\) under the distribution that picks one of the \(m\) examples of \(S\) uniformly at random: each of our twelve rows has probability \(1/12\), three of them are \(h_F\)‘s mistakes, and \(3 \cdot 1/12 = 0.25\). The empirical risk is a true risk, just for a tiny, lopsided world made of your training sequence.
 
-Let's compute the true risk of \(h_F\) in the noisy mail room. On the 8 "FREE" messages it says junk, and the label is keep one time in ten, so it errs with probability 0.1 on each. On the two newsletters it says keep, and the label is junk seven times in ten, so it errs with probability 0.7. On the other six it says keep and errs with probability 0.1. Averaging over the 16 equally likely messages:
+Let’s compute the true risk of \(h_F\) in the noisy mail room. On the 8 “FREE” messages it says junk, and the label is keep one time in ten, so it errs with probability 0.1 on each. On the two newsletters it says keep, and the label is junk seven times in ten, so it errs with probability 0.7. On the other six it says keep and errs with probability 0.1. Averaging over the 16 equally likely messages:
 
 \[ L_{\mathcal D}(h_F) = \frac{8 \cdot 0.1 + 2 \cdot 0.7 + 6 \cdot 0.1}{16} = \frac{2.8}{16} = 0.175. \]
 
@@ -228,7 +228,7 @@ for j, name in enumerate("FLUN"):
 
 It prints 0.175, 0.425, 0.425 and 0.5.
 
-Time to play with that. The lab below draws training sequences from the noisy mail room. You choose how many examples, and you watch each one-feature hypothesis's empirical risk wander around its true risk, along with the hypothesis ERM picks.
+Time to play with that. The lab below draws training sequences from the noisy mail room. You choose how many examples, and you watch each one-feature hypothesis’s empirical risk wander around its true risk, along with the hypothesis ERM picks.
 
 [[lab]]
 
@@ -236,7 +236,7 @@ Time to play with that. The lab below draws training sequences from the noisy ma
 
 Here is a question the realizable world never raised. In the noisy mail room, even a perfect learner, one that somehow knew \(\mathcal D\) exactly, could not get every label right. The newsletter is junk for seven readers and keep for three; whatever you say, someone disagrees. So what is the smallest true risk that *any* hypothesis can reach?
 
-Think about one message at a time. For the newsletter 0110, saying junk is wrong with probability \(1 - 0.7 = 0.3\), and saying keep is wrong with probability \(0.7\). The choice is easy: say junk. For a "FREE" message, junk is wrong with probability 0.1, keep with 0.9: say junk. For the other six, say keep. In each case you pick the label that is more likely, and you are wrong only with the smaller of the two probabilities.
+Think about one message at a time. For the newsletter 0110, saying junk is wrong with probability \(1 - 0.7 = 0.3\), and saying keep is wrong with probability \(0.7\). The choice is easy: say junk. For a “FREE” message, junk is wrong with probability 0.1, keep with 0.9: say junk. For the other six, say keep. In each case you pick the label that is more likely, and you are wrong only with the smaller of the two probabilities.
 
 That rule has a name.
 
@@ -265,7 +265,7 @@ for x in ((1, 0, 0, 0), (0, 1, 1, 0), (0, 0, 1, 1)):
 
 It prints one line per kind of message: `(1, 0, 0, 0) 0.9 1`, `(0, 1, 1, 0) 0.7 1` and `(0, 0, 1, 1) 0.1 0`, so junk, junk, keep.
 
-We'll call its true risk, \(L_{\mathcal D}(f_{\mathcal D})\), the **Bayes risk**: the chance that even this best guess mislabels a fresh message.
+We’ll call its true risk, \(L_{\mathcal D}(f_{\mathcal D})\), the **Bayes risk**: the chance that even this best guess mislabels a fresh message.
 
 [[diagram:bayes]]
 
@@ -273,7 +273,7 @@ Here is the whole calculation for the noisy mail room.
 
 | kind | how many | \(\eta(x)\) | wrong if it says junk | wrong if it says keep | \(f_{\mathcal D}\) says | \(h_F\) says |
 |---|---|---|---|---|---|---|
-| "FREE" | 8 | 0.9 | 0.1 | 0.9 | junk | junk |
+| “FREE” | 8 | 0.9 | 0.1 | 0.9 | junk | junk |
 | newsletter | 2 | 0.7 | 0.3 | 0.7 | junk | keep |
 | everything else | 6 | 0.1 | 0.9 | 0.1 | keep | keep |
 
@@ -290,9 +290,9 @@ print([round(t, 2) for t in terms], round(sum(terms) / 16, 3))
 
 It prints `[0.8, 0.6, 0.6] 0.125`: the three products on top of the fraction, then the Bayes risk.
 
-The Bayes optimal predictor junks "FREE" messages and newsletters, and keeps everything else. In feature language: junk when F is on, or when L and U are both on. That is not a one-feature hypothesis. The best one-feature hypothesis, \(h_F\), gets the newsletters wrong, and pays for it: 0.175 against 0.125.
+The Bayes optimal predictor junks “FREE” messages and newsletters, and keeps everything else. In feature language: junk when F is on, or when L and U are both on. That is not a one-feature hypothesis. The best one-feature hypothesis, \(h_F\), gets the newsletters wrong, and pays for it: 0.175 against 0.125.
 
-The claim is that \(f_{\mathcal D}\) is optimal: no hypothesis \(g: \mathcal X \to \{0, 1\}\) has smaller true risk. The proof is short, and important enough to do in full. We'll prove it for a finite domain like ours, where every probability is a sum. The general case is the same argument with integrals.
+The claim is that \(f_{\mathcal D}\) is optimal: no hypothesis \(g: \mathcal X \to \{0, 1\}\) has smaller true risk. The proof is short, and important enough to do in full. We’ll prove it for a finite domain like ours, where every probability is a sum. The general case is the same argument with integrals.
 
 **Claim.** For every distribution \(\mathcal D\) over \(\mathcal X \times \{0, 1\}\) and every \(g: \mathcal X \to \{0, 1\}\), \(L_{\mathcal D}(f_{\mathcal D}) \le L_{\mathcal D}(g)\).
 
@@ -339,7 +339,7 @@ It prints 0.125 twice. Not one of the 65,536 hypotheses beats the Bayes optimal 
 
 Notice what kind of proof that was. There is no clever global trick, just a decision made separately for every message, each one locally best. A message where \(\eta(x) = 1/2\) exactly is a coin, and either label is equally good there; the rule as written happens to say junk.
 
-So the Bayes risk is a floor, and \(\min\{\eta(x), 1 - \eta(x)\}\), averaged over messages, is how high that floor sits. It is zero exactly when every label is certain. If, on top of that, the class contains \(f_{\mathcal D}\), we are back in realizability's world.
+So the Bayes risk is a floor, and \(\min\{\eta(x), 1 - \eta(x)\}\), averaged over messages, is how high that floor sits. It is zero exactly when every label is certain. If, on top of that, the class contains \(f_{\mathcal D}\), we are back in realizability’s world.
 
 Then why not just return \(f_{\mathcal D}\)? Because computing it needs \(\eta\), and \(\eta\) is part of \(\mathcal D\), which the learner never sees. All it has is the training sequence.
 
@@ -347,9 +347,9 @@ Then why not just return \(f_{\mathcal D}\)? Because computing it needs \(\eta\)
 
 So what should the new promise say? Two natural candidates fail before we land on the right one.
 
-"True risk at most \(\varepsilon\)" is impossible. In the noisy mail room every hypothesis has true risk at least 0.125, so asking for \(\varepsilon = 0.1\) asks for the impossible, however many examples arrive.
+“True risk at most \(\varepsilon\)” is impossible. In the noisy mail room every hypothesis has true risk at least 0.125, so asking for \(\varepsilon = 0.1\) asks for the impossible, however many examples arrive.
 
-"True risk within \(\varepsilon\) of the Bayes risk" is the next idea, and it is also out of reach. Once we make no prior assumptions about \(\mathcal D\), no algorithm can be guaranteed to find a hypothesis as good as the Bayes optimal one. The proof is the No-Free-Lunch theorem of lesson 5, the formal version of lesson 1's lesson that learning needs a bias.
+“True risk within \(\varepsilon\) of the Bayes risk” is the next idea, and it is also out of reach. Once we make no prior assumptions about \(\mathcal D\), no algorithm can be guaranteed to find a hypothesis as good as the Bayes optimal one. The proof is the No-Free-Lunch theorem of lesson 5, the formal version of lesson 1’s lesson that learning needs a bias.
 
 What is left is to compare the learner with a benchmark it could actually hope to match: the best hypothesis in a class you fixed in advance. In the noisy mail room, the best one-feature hypothesis is \(h_F\), with true risk 0.175. With \(\varepsilon = 0.05\), the learner would be asked to land at \(0.175 + 0.05 = 0.225\) or below, on all but a \(\delta\) share of training sequences. The definition says exactly that, for every distribution at once.
 
@@ -366,15 +366,15 @@ Read it from the inside out.
 
 In plain words: **the returned hypothesis is at most \(\varepsilon\) worse than the best hypothesis in the class.** With the one-feature class the right side is \(\min\{0.175, 0.425, 0.425, 0.5\} + 0.05 = 0.225\). The simulation a little further down mirrors it term by term: `min(L_D)` is the minimum over the class, `+ eps` is the slack, and a run counts as a miss when `L_D[j]`, the returned hypothesis’s true risk, is above that.
 
-Two words in the name are doing work. "Agnostic" because the learner no longer assumes the class contains a perfect hypothesis; it doesn't need to believe anything about \(\mathcal D\). And the guarantee is relative: success means "not much worse than the best in \(\mathcal H\)", not "small in absolute terms". Be candid about what that means: the strength of such a promise depends entirely on the choice of the class.
+Two words in the name are doing work. “Agnostic” because the learner no longer assumes the class contains a perfect hypothesis; it doesn’t need to believe anything about \(\mathcal D\). And the guarantee is relative: success means “not much worse than the best in \(\mathcal H\)”, not “small in absolute terms”. Be candid about what that means: the strength of such a promise depends entirely on the choice of the class.
 
 In the noisy mail room with the one-feature class, three numbers now line up, and you should be able to say what each one is.
 
 [[diagram:ladder]]
 
 - The Bayes risk, 0.125. No hypothesis can beat it.
-- The best in the class, \(\min_{h \in \mathcal H} L_{\mathcal D}(h) = L_{\mathcal D}(h_F) = 0.175\). The gap of 0.05 between these two is the price of the bias: the class cannot express "junk when L and U are both on".
-- The learner's own true risk. An agnostic PAC learner with \(\varepsilon = 0.05\) promises \(L_{\mathcal D}(h_S) \le 0.175 + 0.05 = 0.225\), with probability at least \(1 - \delta\).
+- The best in the class, \(\min_{h \in \mathcal H} L_{\mathcal D}(h) = L_{\mathcal D}(h_F) = 0.175\). The gap of 0.05 between these two is the price of the bias: the class cannot express “junk when L and U are both on”.
+- The learner’s own true risk. An agnostic PAC learner with \(\varepsilon = 0.05\) promises \(L_{\mathcal D}(h_S) \le 0.175 + 0.05 = 0.225\), with probability at least \(1 - \delta\).
 
 Here is that promise put to the test with \(m = 50\) examples and \(\delta = 0.05\). Each run draws a training sequence from the noisy mail room and runs ERM over the one-feature class. It counts a miss when the returned hypothesis is more than \(\varepsilon\) above the best in the class.
 
@@ -404,11 +404,11 @@ When realizability does hold, the best in the class has true risk 0, and the agn
 
 ## Beyond junk and keep
 
-So far a hypothesis has answered one yes/no question. The same framework covers far more, once we stop hard-wiring "count the wrong labels" into the definition of risk.
+So far a hypothesis has answered one yes/no question. The same framework covers far more, once we stop hard-wiring “count the wrong labels” into the definition of risk.
 
-**Multiclass classification.** Suppose the mail room adds folders: keep, junk, newsletters, invoices. Now \(\mathcal Y\) is a set of several labels. Sorting documents by topic (news, sports, biology, medicine) is the same kind of problem, with features such as counts of key words, the document's size or its origin. Nothing else in the framework changes. An example is still a pair \((x, y)\), a hypothesis is still a function from \(\mathcal X\) to \(\mathcal Y\), and success is still measured by the probability of a wrong label.
+**Multiclass classification.** Suppose the mail room adds folders: keep, junk, newsletters, invoices. Now \(\mathcal Y\) is a set of several labels. Sorting documents by topic (news, sports, biology, medicine) is the same kind of problem, with features such as counts of key words, the document’s size or its origin. Nothing else in the framework changes. An example is still a pair \((x, y)\), a hypothesis is still a function from \(\mathcal X\) to \(\mathcal Y\), and success is still measured by the probability of a wrong label.
 
-**Regression.** Now suppose the mail room wants to predict a number, say how many minutes a message will sit unread. The labels are real numbers, and in this case \(\mathcal Y\) is often called the target set. Other examples are tomorrow's temperature at 9 p.m., or a baby's birth weight predicted from three ultrasound measurements, where \(\mathcal X \subseteq \mathbb R^3\). Here "wrong or right" is the wrong question, since a prediction of 41 minutes for a message read after 40 is nearly right. Instead, square the gap: 41 against 40 costs \(1^2 = 1\), and 41 against 50 costs \(9^2 = 81\). Squaring makes every gap count as positive and makes big misses cost much more than small ones.
+**Regression.** Now suppose the mail room wants to predict a number, say how many minutes a message will sit unread. The labels are real numbers, and in this case \(\mathcal Y\) is often called the target set. Other examples are tomorrow’s temperature at 9 p.m., or a baby’s birth weight predicted from three ultrasound measurements, where \(\mathcal X \subseteq \mathbb R^3\). Here “wrong or right” is the wrong question, since a prediction of 41 minutes for a message read after 40 is nearly right. Instead, square the gap: 41 against 40 costs \(1^2 = 1\), and 41 against 50 costs \(9^2 = 81\). Squaring makes every gap count as positive and makes big misses cost much more than small ones.
 
 The label is random, though. Say the same message sits 40 minutes for half its readers and 50 for the other half. Then the cost of predicting 41 is 1 half the time and 81 the other half, and its **expected value**, the average you would see over many draws with each outcome weighted by its probability, is \(0.5 \cdot 1 + 0.5 \cdot 81 = 41\). So we measure a hypothesis by its expected squared difference from the label:
 
@@ -478,7 +478,17 @@ The two losses we have met so far are both instances.
 - The **0-1 loss**, \(\ell_{0-1}(h, (x, y)) = 0\) if \(h(x) = y\) and 1 if \(h(x) \ne y\), for binary and multiclass classification. The subscript \(0-1\) is only a name. On row 7, \(h_F(1100) = 1\) and \(y = 0\), so the loss is 1.
 - The **square loss**, \(\ell_{sq}(h, (x, y)) = (h(x) - y)^2\), for regression; the subscript \(sq\) stands for square. On the same row it is \((1 - 0)^2 = 1\).
 
-Is the new definition of true risk consistent with the old one? For the 0-1 loss, yes, thanks to a small fact worth keeping. Average a list of 0s and 1s, and you get the share of 1s: the average of 1, 0, 0, 0 is 0.25, and so is the share of 1s. The same holds for expected values. A random variable \(\alpha\) that only takes the values 0 and 1 has \(\mathbb E[\alpha] = \mathbb P[\alpha = 1]\), because \(\mathbb E[\alpha] = 0 \cdot \mathbb P[\alpha = 0] + 1 \cdot \mathbb P[\alpha = 1]\) and the first term vanishes. The 0-1 loss is exactly such a variable, so its expected value is the probability of a wrong label. The expected-loss definition gives back exactly the true risk we started with.
+Is the new definition of true risk consistent with the old one? For the 0-1 loss, yes, thanks to a small fact worth keeping. Average a list of 0s and 1s, and you get the share of 1s: the average of 1, 0, 0, 0 is 0.25, and so is the share of 1s. The same holds for expected values. A random variable \(\alpha\) that only takes the values 0 and 1 has \(\mathbb E[\alpha] = \mathbb P[\alpha = 1]\), because \(\mathbb E[\alpha] = 0 \cdot \mathbb P[\alpha = 0] + 1 \cdot \mathbb P[\alpha = 1]\) and the first term vanishes. The 0-1 loss is exactly such a variable, so its expected value is the probability of a wrong label. The expected-loss definition gives back exactly the true risk we started with. On the newsletter, \(h_F\)‘s loss is 1 with probability 0.7, so its expected loss is \(0 \cdot 0.3 + 1 \cdot 0.7 = 0.7\):
+
+```python
+alpha = [1, 0, 0, 0]
+print(sum(alpha) / len(alpha), alpha.count(1) / len(alpha))
+p_wrong = 0.7
+E_alpha = 0 * (1 - p_wrong) + 1 * p_wrong
+print(E_alpha, p_wrong)
+```
+
+It prints `0.25 0.25` and `0.7 0.7`: the average of the list is its share of 1s, and the expected 0-1 loss is the chance of a mistake.
 
 In code, a loss function is just a function of a hypothesis and an example, and the empirical risk is its average over the training sequence. Here are both losses on the twelve examples from earlier:
 
@@ -504,9 +514,9 @@ It prints 0.25 twice, the three crosses in the \(h_F\) column. The next paragrap
 
 [[diagram:losses]]
 
-Here is a small observation. Suppose a hypothesis only ever outputs 0 or 1, and the label is 0 or 1. Then the square loss and the 0-1 loss are the same number, since \((1 - 0)^2 = 1\) and \(0^2 = 0\). The two losses only part ways when a hypothesis may answer with something in between, like "0.7 junk". What should such a hypothesis say for the newsletter? That is the third question of the concept check.
+Here is a small observation. Suppose a hypothesis only ever outputs 0 or 1, and the label is 0 or 1. Then the square loss and the 0-1 loss are the same number, since \((1 - 0)^2 = 1\) and \(0^2 = 0\). The two losses only part ways when a hypothesis may answer with something in between, like “0.7 junk”. What should such a hypothesis say for the newsletter? That is the third question of the concept check.
 
-Now the most general definition of all, the one every later lesson means when it says "PAC".
+Now the most general definition of all, the one every later lesson means when it says “PAC”.
 
 **Definition (Agnostic PAC learnability for general loss functions).** A hypothesis class \(\mathcal H\) is agnostic PAC learnable with respect to a set \(Z\) and a loss function \(\ell: \mathcal H \times Z \to \mathbb R_+\) if there exist a function \(m_{\mathcal H}: (0, 1)^2 \to \mathbb N\) and a learning algorithm with the following property. For every \(\varepsilon, \delta \in (0, 1)\) and every distribution \(\mathcal D\) over \(Z\), when the algorithm runs on \(m \ge m_{\mathcal H}(\varepsilon, \delta)\) i.i.d. examples generated by \(\mathcal D\), it returns \(h \in \mathcal H\) such that, with probability at least \(1 - \delta\) over the choice of the \(m\) training examples,
 
@@ -518,7 +528,7 @@ Two fine points are worth a sentence each.
 
 **Measurability.** For \(L_{\mathcal D}(h)\) to be an expected value at all, each function \(z \mapsto \ell(h, z)\) (read “the function that sends each example \(z\) to its cost”) has to be a random variable, something \(\mathcal D\) can assign probabilities to. So we assume it is measurable with respect to the \(\sigma\)-algebra on which \(\mathcal D\) is defined, the collection of events that \(\mathcal D\) gives a probability. For a finite domain like ours this holds automatically, and you can safely read past it.
 
-**Proper versus representation-independent learning.** The definition requires the returned hypothesis to lie in \(\mathcal H\). Sometimes it is natural to allow a hypothesis from a larger set \(\mathcal H' \supseteq \mathcal H\) (the symbol reads “contains”: every member of \(\mathcal H\) is also in \(\mathcal H'\)), as long as it still satisfies \(L_{\mathcal D}(h') \le \min_{h \in \mathcal H} L_{\mathcal D}(h) + \varepsilon\). That is **representation-independent** learning; insisting on \(\mathcal H\) is **proper** learning. The first is sometimes called "improper", although there is nothing improper about it.
+**Proper versus representation-independent learning.** The definition requires the returned hypothesis to lie in \(\mathcal H\). Sometimes it is natural to allow a hypothesis from a larger set \(\mathcal H' \supseteq \mathcal H\) (the symbol reads “contains”: every member of \(\mathcal H\) is also in \(\mathcal H'\)), as long as it still satisfies \(L_{\mathcal D}(h') \le \min_{h \in \mathcal H} L_{\mathcal D}(h) + \varepsilon\). That is **representation-independent** learning; insisting on \(\mathcal H\) is **proper** learning. The first is sometimes called “improper”, although there is nothing improper about it.
 
 ## The learner as code
 
@@ -539,7 +549,7 @@ ERM(H, loss, S):
   return h_best
 ```
 
-Dividing by \(m\) doesn't change which hypothesis wins, so the code compares totals. Ties go to the first hypothesis found, which is one legal choice: ERM may return any member of the argmin, the set of hypotheses tied for the smallest empirical risk.
+Dividing by \(m\) doesn’t change which hypothesis wins, so the code compares totals. Ties go to the first hypothesis found, which is one legal choice: ERM may return any member of the argmin, the set of hypotheses tied for the smallest empirical risk.
 
 **Cost.** Count the work. The loop prices every hypothesis on every example, so with the twelve examples and the four one-feature hypotheses it calls the loss \(12 \cdot 4 = 48\) times. If one loss evaluation costs \(c\) time, the total is \(m \cdot |\mathcal H| \cdot c\), up to the small bookkeeping around it. Computer science writes this \(O(m \cdot |\mathcal H| \cdot c)\): the big \(O\) reads “grows at most in proportion to”, so doubling \(m\) at most doubles the time, give or take a fixed factor. In plain words: **ERM’s time is the number of examples times the size of the class times the price of one loss.** The count is easy to check:
 
@@ -556,13 +566,13 @@ best = min(range(4), key=lambda j: sum(loss(j, z) for z in S))
 print(len(S), calls, "FLUN"[best])
 ```
 
-It prints `12 48 F`: twelve examples, 48 loss evaluations, and ERM picks \(h_F\). Beyond the input it needs only \(O(1)\) extra space, meaning a fixed amount that does not grow with \(m\) or \(|\mathcal H|\), for the running total and the best so far. For the one-feature class over \(d\) features, \(c = O(1)\) and \(|\mathcal H| = d\), so ERM costs \(O(md)\). That is the same as lesson 1's ConsistentFeature, and it never has to return FAIL.
+It prints `12 48 F`: twelve examples, 48 loss evaluations, and ERM picks \(h_F\). Beyond the input it needs only \(O(1)\) extra space, meaning a fixed amount that does not grow with \(m\) or \(|\mathcal H|\), for the running total and the best so far. For the one-feature class over \(d\) features, \(c = O(1)\) and \(|\mathcal H| = d\), so ERM costs \(O(md)\). That is the same as lesson 1’s ConsistentFeature, and it never has to return FAIL.
 
-Brute force is not always the smart way to run ERM. Take the class of *all* hypotheses on the 16 messages, \(2^{16} = 65{,}536\) of them. Looping over them would be silly, because the 0-1 loss splits message by message. The empirical risk is a sum over distinct messages, and each hypothesis chooses each message's label independently. So ERM over all hypotheses is a tally: count junk and keep votes for every message seen, return the majority label, and pick a default for ties and unseen messages. That is \(O(m)\) expected time with a hash map. It is also lesson 1's memorizer, repaired so that it can cope with disagreement. On the twelve examples above it reaches \(L_S = 1/12\), the lowest possible, and its true risk is 0.35, double that of \(h_F\). It memorized the coffee-in-hand mistake as if it were the truth, and it says keep for the three "FREE" messages it never saw. Overfitting, now with noisy labels.
+Brute force is not always the smart way to run ERM. Take the class of *all* hypotheses on the 16 messages, \(2^{16} = 65{,}536\) of them. Looping over them would be silly, because the 0-1 loss splits message by message. The empirical risk is a sum over distinct messages, and each hypothesis chooses each message’s label independently. So ERM over all hypotheses is a tally: count junk and keep votes for every message seen, return the majority label, and pick a default for ties and unseen messages. That is \(O(m)\) expected time with a hash map. It is also lesson 1’s memorizer, repaired so that it can cope with disagreement. On the twelve examples above it reaches \(L_S = 1/12\), the lowest possible, and its true risk is 0.35, double that of \(h_F\). It memorized the coffee-in-hand mistake as if it were the truth, and it says keep for the three “FREE” messages it never saw. Overfitting, now with noisy labels.
 
 What about the Bayes optimal predictor, as code? If \(\eta\) were known, it would be a lookup: \(O(|\mathcal X|)\) to tabulate, \(O(1)\) per message. Its cost is not computational. Its cost is that \(\eta\) is never known.
 
-One more point about cost matters later. Valiant's original definition of PAC learning also required the learner's runtime to be polynomial. This course separates the statistical question (how many examples?) from the computational one (how much time?), and returns to the second in lesson 8.
+One more point about cost matters later. Valiant’s original definition of PAC learning also required the learner’s runtime to be polynomial. This course separates the statistical question (how many examples?) from the computational one (how much time?), and returns to the second in lesson 8.
 
 **Build it yourself.** Using only the Python standard library:
 
@@ -576,13 +586,13 @@ def erm(H, S): ...         # 0-1 loss, ties go to the first
 
 1. Reproduce the true risks of this lesson: 0.125 for \(f_{\mathcal D}\), 0.175 for \(h_F\), 0.425 for \(h_L\) and \(h_U\), 0.5 for \(h_N\).
 2. Reproduce the twelve-row table: empirical risks 0.25, 0.42, 0.33, 0.5.
-3. Implement the tally version of ERM over all hypotheses and confirm \(L_S = 1/12\) and true risk 0.35 on the twelve examples, with "keep" as the default.
+3. Implement the tally version of ERM over all hypotheses and confirm \(L_S = 1/12\) and true risk 0.35 on the twelve examples, with “keep” as the default.
 4. For each \(m\) in 10, 20, 50, 100, 200, draw 20,000 training sequences. Estimate the probability that ERM over the one-feature class returns a hypothesis with true risk above \(0.175 + 0.05\). Before you run it, predict the shape.
 5. Try to use the finite-class guarantee to predict the answer to step 4. Explain why it does not apply.
 
 ## Three classes, one budget
 
-Now let's put three classes side by side in the noisy mail room. Each is a different bias.
+Now let’s put three classes side by side in the noisy mail room. Each is a different bias.
 
 - The **one-feature class**: 4 hypotheses. Best true risk 0.175. It cannot express the newsletter rule.
 - **Any rule on F, L and U**: every hypothesis that ignores the night bit, \(2^8 = 256\) of them. Its best is the Bayes optimal predictor itself, 0.125, because \(\eta\) never depends on N. This is the right bias for this world.
@@ -597,35 +607,35 @@ For each class and several values of \(m\), we drew 20,000 training sequences an
 | 100 | 0.175, misses 0.01% | 0.130, misses 0.6% | 0.147, misses 8.9% |
 | 200 | 0.175, misses 0% | 0.126, misses 0.01% | 0.131, misses 0.2% |
 
-Read the table along each column first. Every class gets close to its own best, and the bigger the class, the more examples that takes. Then read across the rows. At \(m = 20\) the tiny class wins outright. By \(m = 50\) the 256-hypothesis class has overtaken it, and by \(m = 100\) even "anything goes" is ahead. The one-feature class is stuck at 0.175 forever, because no number of examples can buy back what its bias left out.
+Read the table along each column first. Every class gets close to its own best, and the bigger the class, the more examples that takes. Then read across the rows. At \(m = 20\) the tiny class wins outright. By \(m = 50\) the 256-hypothesis class has overtaken it, and by \(m = 100\) even “anything goes” is ahead. The one-feature class is stuck at 0.175 forever, because no number of examples can buy back what its bias left out.
 
 This is the rat and the pigeon from lesson 1, with numbers. A small class learns its best quickly, but its best may be poor. A large class has a better best, but needs more examples to find it. Lesson 5 gives the two gaps their names. And notice which class does best overall: the one whose bias is *right*, which ignores exactly the feature that carries no information.
 
 ## Fix the bug
 
-Back to the mail room. The newsletter fight and the hurried clicks aren't going away, so the filter has to live with them. Your manager asks for a promise in writing, in the form you now know how to state. With probability at least 95%, the shipped filter's true risk must be at most 0.05 above the best hypothesis in whatever class you choose. That is \(\varepsilon = 0.05\) and \(\delta = 0.05\).
+Back to the mail room. The newsletter fight and the hurried clicks aren’t going away, so the filter has to live with them. Your manager asks for a promise in writing, in the form you now know how to state. With probability at least 95%, the shipped filter’s true risk must be at most 0.05 above the best hypothesis in whatever class you choose. That is \(\varepsilon = 0.05\) and \(\delta = 0.05\).
 
-Labels cost people's time, so the fewer you ask for, the better. In the lab you choose the class and the label budget. The lab redraws the training sequence many times, so you can see how often your choice misses the target. On every run it shows three numbers: the learner's true risk, the best in your class, and the Bayes risk. Find the smallest budget that keeps the miss rate under 5%. Then ask yourself whether the cheapest promise is also the best filter.
+Labels cost people’s time, so the fewer you ask for, the better. In the lab you choose the class and the label budget. The lab redraws the training sequence many times, so you can see how often your choice misses the target. On every run it shows three numbers: the learner’s true risk, the best in your class, and the Bayes risk. Find the smallest budget that keeps the miss rate under 5%. Then ask yourself whether the cheapest promise is also the best filter.
 
 [[lab-act2]]
 
 ## What people get wrong
 
-**"Agnostic PAC with \(\varepsilon = 0.01\) means the filter is wrong at most 1% of the time."** It means the filter's true risk is at most 0.01 above the best hypothesis in the class. In the noisy mail room, with the one-feature class, that is up to 18.5%. The promise is relative to the class, and the class may be weak.
+**“Agnostic PAC with \(\varepsilon = 0.01\) means the filter is wrong at most 1% of the time.”** It means the filter’s true risk is at most 0.01 above the best hypothesis in the class. In the noisy mail room, with the one-feature class, that is up to 18.5%. The promise is relative to the class, and the class may be weak.
 
-**"If I had enough data, I could reach zero true risk."** Not when labels disagree. The Bayes risk is a floor under every hypothesis, and in the noisy mail room it is 0.125. Three readers in ten will always call the newsletter keep, and one hurried click in ten will always go the wrong way.
+**“If I had enough data, I could reach zero true risk.”** Not when labels disagree. The Bayes risk is a floor under every hypothesis, and in the noisy mail room it is 0.125. Three readers in ten will always call the newsletter keep, and one hurried click in ten will always go the wrong way.
 
-**"Minimizing empirical risk is the goal."** It is the method, not the goal. ERM over all 65,536 hypotheses reached the smallest possible empirical risk on our twelve examples, 1/12, and had true risk 0.35, double that of \(h_F\). The goal is a small true risk. Empirical risk is only useful as long as it tracks true risk, and that is exactly what the next lesson must show.
+**“Minimizing empirical risk is the goal.”** It is the method, not the goal. ERM over all 65,536 hypotheses reached the smallest possible empirical risk on our twelve examples, 1/12, and had true risk 0.35, double that of \(h_F\). The goal is a small true risk. Empirical risk is only useful as long as it tracks true risk, and that is exactly what the next lesson must show.
 
-**"PAC learnable means the learner finds the best hypothesis."** It finds a hypothesis that is probably approximately as good. Both words stay in. Neither \(\varepsilon\) nor \(\delta\) can be zero, for the two reasons we met at the start. A training sequence can be useless with small but positive probability, and a finite one always misses fine details.
+**“PAC learnable means the learner finds the best hypothesis.”** It finds a hypothesis that is probably approximately as good. Both words stay in. Neither \(\varepsilon\) nor \(\delta\) can be zero, for the two reasons we met at the start. A training sequence can be useless with small but positive probability, and a finite one always misses fine details.
 
 ## Where these definitions come from
 
-PAC learning was introduced by Valiant (1984), who won the 2010 Turing Award for it. Valiant's definition required the sample complexity to be polynomial in \(1/\varepsilon\), \(1/\delta\) and the size of the hypotheses' representation, and the runtime to be polynomial too. Lesson 6 will show that whenever a problem is PAC learnable at all, its sample complexity depends polynomially on \(1/\varepsilon\) and \(\log(1/\delta)\). The agnostic formalization is due to Haussler (1992), and the general setting with loss functions follows Vapnik and Chervonenkis (1971) and Vapnik's later work. From here on, "PAC learning" means the most general model, agnostic with a general loss, and the loss is understood from context. When the realizable case is meant, we will say so. Lesson 7 discusses other notions of learnability.
+PAC learning was introduced by Valiant (1984), who won the 2010 Turing Award for it. Valiant’s definition required the sample complexity to be polynomial in \(1/\varepsilon\), \(1/\delta\) and the size of the hypotheses’ representation, and the runtime to be polynomial too. Lesson 6 will show that whenever a problem is PAC learnable at all, its sample complexity depends polynomially on \(1/\varepsilon\) and \(\log(1/\delta)\). The agnostic formalization is due to Haussler (1992), and the general setting with loss functions follows Vapnik and Chervonenkis (1971) and Vapnik’s later work. From here on, “PAC learning” means the most general model, agnostic with a general loss, and the loss is understood from context. When the realizable case is meant, we will say so. Lesson 7 discusses other notions of learnability.
 
 ## Recap and the next bug
 
-1. **PAC learnability** asks for a sample complexity \(m_{\mathcal H}(\varepsilon, \delta)\) that does not depend on \(\mathcal D\) or \(f\). After that many examples, the learner's true risk is at most \(\varepsilon\) with probability at least \(1 - \delta\). Every finite class is PAC learnable, with \(m_{\mathcal H}(\varepsilon, \delta) \le \lceil \log(|\mathcal H|/\delta)/\varepsilon \rceil\).
+1. **PAC learnability** asks for a sample complexity \(m_{\mathcal H}(\varepsilon, \delta)\) that does not depend on \(\mathcal D\) or \(f\). After that many examples, the learner’s true risk is at most \(\varepsilon\) with probability at least \(1 - \delta\). Every finite class is PAC learnable, with \(m_{\mathcal H}(\varepsilon, \delta) \le \lceil \log(|\mathcal H|/\delta)/\varepsilon \rceil\).
 2. Realizable labels are rare. The agnostic model lets \(\mathcal D\) be a distribution over messages *and* labels, and redefines the true risk as \(\mathbb P_{(x, y) \sim \mathcal D}[h(x) \ne y]\).
 3. The **Bayes optimal predictor** labels each message with its more likely label. No hypothesis has smaller true risk, by a message-by-message argument. It needs \(\mathcal D\), so no learner can use it directly.
 4. **Agnostic PAC learnability** promises a true risk within \(\varepsilon\) of the best in the class, \(\min_{h \in \mathcal H} L_{\mathcal D}(h)\). That is not within \(\varepsilon\) of zero, and not within \(\varepsilon\) of the Bayes risk.
@@ -640,7 +650,7 @@ Look at what would be enough. Suppose every hypothesis in the class had its empi
 Answer these in the chat before we move on to lesson 4. Show your reasoning.
 
 1. Suppose \(\eta(x) = 1/2\) for every message: users split evenly on everything. What is the Bayes risk? Which hypotheses are Bayes optimal? What does an agnostic PAC learner for the one-feature class promise in this world, and is the promise worth anything?
-2. A colleague writes: "Our learner is agnostic PAC for the one-feature class with \(\varepsilon = 0.02\) and \(\delta = 0.01\). So, given enough examples, at most 2% of messages will be mislabelled, guaranteed." Find every mistake in that sentence, and give the correct statement for the noisy mail room with numbers.
+2. A colleague writes: “Our learner is agnostic PAC for the one-feature class with \(\varepsilon = 0.02\) and \(\delta = 0.01\). So, given enough examples, at most 2% of messages will be mislabelled, guaranteed.” Find every mistake in that sentence, and give the correct statement for the noisy mail room with numbers.
 3. A hypothesis may now answer any number \(c \in [0, 1]\) (any number from 0 to 1, both ends included), and we score it with the square loss. For the newsletter 0110, with \(\eta = 0.7\), which \(c\) minimizes the expected square loss on that message, and what is the minimum? Under the 0-1 loss, with answers in \(\{0, 1\}\), which answer is best? Why do the two losses pick different answers?
 
 ## Problems
@@ -648,5 +658,5 @@ Answer these in the chat before we move on to lesson 4. Show your reasoning.
 Once the concept check is done, try these. Hints come one at a time in the chat, and no full solutions.
 
 - **Problem 1 (monotonicity of the sample complexity).** Show that \(m_{\mathcal H}(\varepsilon, \delta)\) never increases when \(\varepsilon\) grows, and never increases when \(\delta\) grows.
-- **Problem 2 (Boolean conjunctions).** Messages are \(d\) bits, and a hypothesis is an AND of features or their negations, such as "F and not N". Prove the class is PAC learnable, bound its sample complexity, and give an ERM algorithm whose runtime is polynomial in \(d \cdot m\).
+- **Problem 2 (Boolean conjunctions).** Messages are \(d\) bits, and a hypothesis is an AND of features or their negations, such as “F and not N”. Prove the class is PAC learnable, bound its sample complexity, and give an ERM algorithm whose runtime is polynomial in \(d \cdot m\).
 - **Problem 3 (harder).** A probabilistic hypothesis says junk with probability \(h(x) \in [0, 1]\), and its loss is \(|h(x) - y|\). Show that the Bayes optimal predictor still has the smallest risk, even against these.

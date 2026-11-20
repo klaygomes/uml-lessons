@@ -235,11 +235,11 @@ For thresholds, step 1 is any single point, and step 2 is the missing labelling 
 
 ## Four classes, measured
 
-**Intervals.** Suppose junk is not “above a line” but “inside a band of scores”. The class of **intervals** is \(\mathcal H_{\mathrm{int}} = \{ h_{a,b} : a \le b \}\) with
+**Intervals.** Suppose junk is not “above a line” but “inside a band of scores”: say junk between 0.4 and 0.8, so 0.5 is junk while 0.3 and 0.9 are kept. The class of **intervals** is \(\mathcal H_{\mathrm{int}} = \{ h_{a,b} : a \le b \}\), one rule for every pair of ends \(a\) (the bottom of the band) and \(b\) (the top), with
 
 \[ h_{a,b}(x) = \mathbb 1[a \le x \le b]. \]
 
-(Whether the endpoints belong to the interval changes nothing below.) Two points \(\{1, 2\}\) are shattered: an interval can cover neither, either one, or both. Three points \(c_1 < c_2 < c_3\) are never shattered, because the labelling \((1, 0, 1)\) would need an interval containing \(c_1\) and \(c_3\) but not \(c_2\), which sits between them. So \(\mathrm{VCdim}(\mathcal H_{\mathrm{int}}) = 2\). Python agrees, trying intervals whose ends sit at the points themselves (and one past the end for the empty labelling), which again covers every labelling:
+The chain \(a \le x \le b\) is one yes/no question, “is the score at least \(a\) and at most \(b\)?”, and the indicator turns the answer into 1 or 0. In plain words: **\(h_{a,b}\) says junk exactly when the score lies inside the band from \(a\) to \(b\).** With \(a = 0.4\), \(b = 0.8\), the scores 0.3, 0.5 and 0.9 get 0, 1 and 0. The `interval` function in the snippet below is this formula, the chained comparison included. (Whether the endpoints belong to the interval changes nothing below.) Two points \(\{1, 2\}\) are shattered: an interval can cover neither, either one, or both. Three points \(c_1 < c_2 < c_3\) are never shattered, because the labelling \((1, 0, 1)\) would need an interval containing \(c_1\) and \(c_3\) but not \(c_2\), which sits between them. So \(\mathrm{VCdim}(\mathcal H_{\mathrm{int}}) = 2\). Python agrees, trying intervals whose ends sit at the points themselves (and one past the end for the empty labelling), which again covers every labelling:
 
 ```python
 def interval(a, b):
@@ -260,11 +260,23 @@ print("missing:", {(1, 0, 1)} - HC)
 
 It prints `[1, 2] 4 of 4`, then `[1, 2, 3] 7 of 8`, then `missing: {(1, 0, 1)}`.
 
-**Axis-aligned rectangles.** Now give each message two scores: its spam score \(x_1\) and a second score \(x_2\) for its sender’s reputation. A rectangle rule says junk when both scores fall in a range:
+**Axis-aligned rectangles.** Now give each message two scores: its spam score \(x_1\) and a second score \(x_2\) for its sender’s reputation. A rectangle rule says junk when both scores fall in a range, for instance a spam score of at least 0.5 together with a reputation of at most 0.3:
 
 \[ h_{(a_1, a_2, b_1, b_2)}(x_1, x_2) = \mathbb 1[a_1 \le x_1 \le a_2 \text{ and } b_1 \le x_2 \le b_2], \]
 
-for \(a_1 \le a_2\) and \(b_1 \le b_2\). Call this class \(\mathcal H_{\mathrm{rec}}\). Its VC dimension is 4.
+for \(a_1 \le a_2\) and \(b_1 \le b_2\). Call this class \(\mathcal H_{\mathrm{rec}}\).
+
+Read it from the inside out. \(a_1 \le x_1 \le a_2\) asks whether the spam score lies in the band from \(a_1\) to \(a_2\); \(b_1 \le x_2 \le b_2\) asks the same of the reputation score with its own band; “and” demands both; the indicator turns the answer into 1 or 0. The four numbers in the subscript name the rule, two ends per score. Drawn with \(x_1\) across and \(x_2\) up, the junk region is a rectangle with sides parallel to the axes, hence the name. In plain words: **junk exactly when the spam score is in one range and the reputation score is in another.** The rule from the opening sentence is \(a_1 = 0.5\), \(a_2 = 1\), \(b_1 = 0\), \(b_2 = 0.3\):
+
+```python
+def rect(a1, a2, b1, b2):
+    return lambda x1, x2: int(a1 <= x1 <= a2 and b1 <= x2 <= b2)
+
+h = rect(0.5, 1.0, 0.0, 0.3)
+print(h(0.8, 0.2), h(0.8, 0.6), h(0.3, 0.2))
+```
+
+It prints `1 0 0`: a spammy message from a bad sender is junk, the same message from a well-known sender is kept, and a clean message from a bad sender is kept. Its VC dimension is 4.
 
 For step 1, place four points in a diamond: top, right, bottom, left. Whatever subset you want labelled junk, a rectangle can wrap exactly those points, because each point of a diamond sticks out in its own direction and can be left out by pulling in one edge.
 
@@ -297,7 +309,7 @@ print(shatters(diamond), sum(map(shatters, fives)))
 
 It prints `True 0`: the diamond is shattered, and not one of ten thousand random five-point sets is. (The point \((9, 9)\) stands in for “no junk points”: a tiny rectangle far away contains nothing.) The random sets are evidence, not proof; the proof is the leftmost, rightmost, lowest, highest argument.
 
-**Finite classes.** If \(\mathcal H\) is finite, then \(|\mathcal H_C| \le |\mathcal H|\) for every \(C\), since each labelling comes from at least one hypothesis. Shattering \(C\) needs \(2^{|C|}\) labellings, so it is impossible once \(2^{|C|} > |\mathcal H|\). Hence \(\mathrm{VCdim}(\mathcal H) \le \log_2 |\mathcal H|\). This bound can be very loose. Take the scores \(\{1, 2, \dots, 16\}\) and thresholds on them:
+**Finite classes.** If \(\mathcal H\) is finite, then \(|\mathcal H_C| \le |\mathcal H|\) for every \(C\), since each labelling comes from at least one hypothesis. Shattering \(C\) needs \(2^{|C|}\) labellings, so it is impossible once \(2^{|C|} > |\mathcal H|\). Hence \(\mathrm{VCdim}(\mathcal H) \le \log_2 |\mathcal H|\). Here \(\log_2\) is the logarithm base 2, the power you must raise 2 to: \(\log_2 16 = 4\), because \(2^4 = 16\). In plain words: **a class of \(|\mathcal H|\) rules can shatter at most as many points as there are doublings in \(|\mathcal H|\).** Lesson 1’s four one-feature rules give \(\log_2 4 = 2\): four rules can make at most four labellings, exactly enough for two points and short of the eight that three points need. The last column of the snippet below computes \(\log_2 |\mathcal H|\) with `log2`. This bound can be very loose. Take the scores \(\{1, 2, \dots, 16\}\) and thresholds on them:
 
 ```python
 from itertools import combinations
@@ -340,7 +352,17 @@ print(len(realized), 2 ** len(C))
 
 It prints `4096 4096`: all \(2^{12}\) labellings of twelve random scores. So \(\mathrm{VCdim}(\mathcal H_{\cup}) = \infty\), and by the theorem above, \(\mathcal H_{\cup}\) is not PAC learnable. It is the memorizer of lesson 1, dressed up for the score line: it can wrap every junk example in its own little band and say nothing useful about the rest.
 
-**VC dimension and the number of parameters.** In these examples the VC dimension equals the number of numbers that define a hypothesis: one for a threshold, two for an interval, four for a rectangle. That is often the case, and a handy first guess. It is not a law. The class \(\{ x \mapsto \lceil 0.5 \sin(\theta x) \rceil : \theta \in \mathbb R \}\) on the real line has one parameter and infinite VC dimension: for every \(d\) there are \(d\) points it shatters. (Proving it is a good exercise in binary expansions.)
+**VC dimension and the number of parameters.** In these examples the VC dimension equals the number of numbers that define a hypothesis: one for a threshold, two for an interval, four for a rectangle. That is often the case, and a handy first guess. It is not a law. Here is a rule with a single knob \(\theta\) (theta): multiply the input, any real number, by \(\theta\), take the sine, and call it junk when the sine is positive. With \(\theta = 1\), the inputs 1 and 2 have positive sines (0.84, 0.91) and are junk, while 4 and 5 have negative sines and are kept. As a class, that is \(\{ x \mapsto \lceil 0.5 \sin(\theta x) \rceil : \theta \in \mathbb R \}\). The arrow \(x \mapsto \dots\) reads “the rule that sends \(x\) to”; \(\sin(\theta x)\) lies between \(-1\) and 1, so half of it lies between \(-0.5\) and 0.5; and the ceiling \(\lceil \cdot \rceil\), rounding up to a whole number, turns anything in \((0, 0.5]\) into 1 and anything in \([-0.5, 0]\) into 0. In plain words: **junk exactly when \(\sin(\theta x) > 0\).**
+
+```python
+from math import ceil, sin
+
+h = lambda theta, x: ceil(0.5 * sin(theta * x))
+print([round(sin(x), 2) for x in (1, 2, 4, 5)])
+print([h(1.0, x) for x in (1, 2, 4, 5)])
+```
+
+It prints `[0.84, 0.91, -0.76, -0.96]` and `[1, 1, 0, 0]`. This class on the real line has one parameter and infinite VC dimension: for every \(d\) there are \(d\) points it shatters, because turning the single knob \(\theta\) makes the sine wave swing faster or slower, enough to place the junk and keep regions wherever you need. (Proving it is a good exercise in binary expansions.)
 
 Now it’s your turn to hunt for labellings no class can make.
 
@@ -349,6 +371,26 @@ Now it’s your turn to hunt for labellings no class can make.
 ## The fundamental theorem
 
 We have shown one direction: infinite VC dimension rules out PAC learning. The converse is also true, and together they form the central result of this part of the course. It ties together every idea from lessons 2 to 5: learnability, ERM, uniform convergence and now the VC dimension. Recall from lesson 4 that a class has the **uniform convergence property** when there is a function \(m^{\mathrm{UC}}_{\mathcal H}(\varepsilon, \delta)\) such that, for every distribution \(\mathcal D\), a training sequence of at least that many i.i.d. examples is \(\varepsilon\)-representative (every \(h \in \mathcal H\) has \(|L_S(h) - L_{\mathcal D}(h)| \le \varepsilon\)) with probability at least \(1 - \delta\).
+
+The idea first, with lesson 1’s numbers. There, the rule “unknown sender means junk” got 25% of its labelled examples wrong but 50% of all mail: a gap of 0.25 between how good it looked and how good it was. A training sequence is representative when no rule in the class has a large gap. In the condition, \(L_S(h)\) is the empirical risk, the share of the training sequence \(h\) gets wrong; \(L_{\mathcal D}(h)\) is the true risk; the bars \(|\cdot|\) around a number mean its absolute value, the size of the gap whichever way it points; and “every \(h \in \mathcal H\)” asks it of all rules at once. The superscript in \(m^{\mathrm{UC}}_{\mathcal H}\) just marks this as the uniform-convergence sample size, as opposed to the learning one. In plain words: **a class has uniform convergence when enough labels make every rule’s training score close to its true score, for every rule at once and whatever the mail looks like.** Thresholds on 200 uniform scores with \(t^\star = 0.6\), checked over cut-offs \(0, 0.01, \dots, 1\), where the true risk of \(h_t\) is just the distance \(|t - 0.6|\):
+
+```python
+import random
+
+rng, t_star, m, eps = random.Random(0), 0.6, 200, 0.1
+xs = [rng.random() for _ in range(m)]
+
+def L_S(t):
+    return sum((x > t) != (x > t_star) for x in xs) / m
+
+ts = [i / 100 for i in range(101)]
+gap = max(abs(L_S(t) - abs(t - t_star)) for t in ts)
+print(round(gap, 4), gap <= eps)
+```
+
+It prints `0.035 True`: the worst gap over 101 thresholds is 3.5 points, so this training sequence is 0.1-representative. The `max` over `ts` is the “every \(h\)” of the definition.
+
+Two more reminders from lesson 3. The **0-1 loss** charges 1 for a wrong label and 0 for a right one, so average loss is the share of mistakes. A class is **agnostic PAC learnable** when, with no assumption that any rule is perfect, some learner gets within \(\varepsilon\) of the best rule in the class, with probability at least \(1 - \delta\).
 
 **The fundamental theorem of statistical learning.** Let \(\mathcal H\) be a class of functions from a domain \(\mathcal X\) to \(\{0, 1\}\), with the 0-1 loss. The following are equivalent:
 
@@ -372,6 +414,27 @@ The VC dimension does more than decide learnability. It also sets the price.
 3. \(\mathcal H\) is PAC learnable with
 \[ C_1 \frac{d + \log(1/\delta)}{\varepsilon} \le m_{\mathcal H}(\varepsilon, \delta) \le C_2 \frac{d \log(1/\varepsilon) + \log(1/\delta)}{\varepsilon}. \]
 
+All three read the same way, so take the first from the inside out.
+
+- \(d\) is the VC dimension and \(\log(1/\delta)\) is the price of confidence: \(d + \log(1/\delta)\) adds the two.
+- Dividing by \(\varepsilon^2\) means halving the tolerance quadruples the labels; in the third line, where some rule is perfect, the division is by \(\varepsilon\) alone, so halving the tolerance only doubles them.
+- \(C_1\) and \(C_2\) are **absolute constants**: fixed numbers, the same for every class, distribution and tolerance. The theorem says they exist but not what they are.
+- The two \(\le\) signs trap the true sample size between a floor and a ceiling of the same shape.
+
+In plain words: **the labels a class needs grow in step with its VC dimension plus the log of one over the failure chance, divided by the tolerance squared (or, when some rule is perfect, roughly by the tolerance).** For thresholds, \(d = 1\), at \(\varepsilon = \delta = 0.05\):
+
+```python
+from math import log
+
+d, eps, delta = 1, 0.05, 0.05
+agnostic = (d + log(1 / delta)) / eps ** 2
+pac_low = (d + log(1 / delta)) / eps
+pac_high = (d * log(1 / eps) + log(1 / delta)) / eps
+print(round(agnostic), round(pac_low), round(pac_high))
+```
+
+It prints `1598 80 120`. These are the shapes without the unknown constants: the agnostic answer is some constant times 1,598, and the realizable one lies between a constant times 80 and a constant times 120. The direct argument’s 74 fits that picture.
+
 Compare with lessons 2 and 4: wherever \(\log |\mathcal H|\) stood, \(d\) now stands. That is the answer to the reviewer in one line. This quantitative version is proved in a later lesson. Its proof needs tools we don’t have yet; the proof below gives a weaker bound with the same message.
 
 One caution about scope. Both versions are about binary classification with the 0-1 loss. Similar results hold for some other problems, such as regression with the absolute or squared loss, but not for every learning problem: there are problems that can be learned even though uniform convergence fails, and problems where ERM fails while some other learner succeeds. Later lessons meet both.
@@ -386,7 +449,7 @@ Most of the proof is a chain of short steps. Let’s walk around the circle.
 
 **2 implies 3.** An ERM rule is a learner. If it succeeds, the class is agnostic PAC learnable.
 
-**3 implies 4, and 2 implies 5.** PAC learning is the special case of agnostic PAC learning in which some \(h \in \mathcal H\) has true risk 0. In that case \(\min_{h \in \mathcal H} L_{\mathcal D}(h) = 0\), and the agnostic promise “true risk at most \(\min_h L_{\mathcal D}(h) + \varepsilon\)” becomes the PAC promise “true risk at most \(\varepsilon\)”. The same learner, with the same sample complexity, keeps it.
+**3 implies 4, and 2 implies 5.** PAC learning is the special case of agnostic PAC learning in which some \(h \in \mathcal H\) has true risk 0. In that case \(\min_{h \in \mathcal H} L_{\mathcal D}(h) = 0\), where \(\min_{h \in \mathcal H}\) means “the smallest value over all rules in the class”, the true risk of the best rule, and the agnostic promise “true risk at most \(\min_h L_{\mathcal D}(h) + \varepsilon\)” becomes the PAC promise “true risk at most \(\varepsilon\)”. The same learner, with the same sample complexity, keeps it.
 
 **4 implies 6, and 5 implies 6.** Read them backwards. If the VC dimension were infinite, the theorem in “The VC dimension” says no learner PAC learns \(\mathcal H\), so 4 fails. And 5 implies 4, since a successful ERM rule is a PAC learner, so 5 fails too.
 

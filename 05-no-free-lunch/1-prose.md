@@ -254,41 +254,119 @@ print(by_pairs, by_count)
 
 It prints `1.0 0.25 0` and `0.5 0.5`: the probabilities add up to 1, (10, junk) gets a quarter and (10, keep) nothing, and the two ways of computing the risk agree.
 
-**Step 2: the expectation is an average over sequences.** There are \(k = (2m)^m\) sequences of \(m\) messages from \(C\); call them \(S_1, \dots, S_k\). If \(S_j = (x_1, \dots, x_m)\), write \(S_j^i = ((x_1, f_i(x_1)), \dots, (x_m, f_i(x_m)))\) for the same messages labelled by \(f_i\). When the task is \(\mathcal D_i\), the training sequence is always one of \(S_1^i, \dots, S_k^i\). Each \(x_t\) is uniform on \(C\) and the draws are independent, so the probability of any particular sequence of messages is the product \((1/2m)^m = 1/k\): all \(k\) are equally likely. An expectation over finitely many equally likely outcomes is their plain average, so
+**Step 2: the expectation is an average over sequences.** There are \(k = (2m)^m\) sequences of \(m\) messages from \(C\), since each of the \(m\) positions holds one of \(2m\) messages; in the duel that is \(4^2 = 16\). Call them \(S_1, \dots, S_k\). If \(S_j = (x_1, \dots, x_m)\), write \(S_j^i = ((x_1, f_i(x_1)), \dots, (x_m, f_i(x_m)))\) for the same messages labelled by \(f_i\). The superscript \(i\) here is a tag, not a power: it says which target did the labelling. When the task is \(\mathcal D_i\), the training sequence is always one of \(S_1^i, \dots, S_k^i\). Each \(x_t\) is uniform on \(C\) and the draws are independent, so the probability of any particular sequence of messages is the product \((1/2m)^m = 1/k\): all \(k\) are equally likely. An expectation over finitely many equally likely outcomes is their plain average, so
 
 \[ \mathbb E_{S \sim \mathcal D_i^m}\left[L_{\mathcal D_i}(A(S))\right] = \frac1k \sum_{j=1}^{k} L_{\mathcal D_i}(A(S_j^i)). \]
 
-**Step 3: maximum, average, minimum.** We want to show that \(\max_{i \in [T]}\) of that expectation is at least \(1/4\). Two elementary facts carry the step: the maximum of a list of numbers is at least their average (each number is at most the maximum, so their sum is at most \(T\) times it), and the average is at least the minimum (by the same argument turned upside down). Between them we swap the order of two finite sums, which changes nothing:
+- \(\mathbb E_{S \sim \mathcal D_i^m}[\cdot]\) is the expectation: the average value of the bracket over random training sequences drawn from task \(i\), each weighted by its probability.
+- \(A(S_j^i)\) is the hypothesis the learner returns on the \(j\)-th sequence of messages labelled by the \(i\)-th target, and \(L_{\mathcal D_i}\) scores it on task \(i\).
+- \(\sum_{j=1}^{k}\) adds over \(j = 1, 2, \dots, k\), every sequence once, and \(\frac1k\) divides by how many there are.
+
+In plain words: **the expected true risk on task \(i\) is the plain average of the true risk over all \(k\) equally likely training sequences.** For the memorizer on “everything is junk” that is the average of four risks of \(3/4\) and twelve of \(2/4\), the 0.5625 we computed by hand. The function `expected_risk` in the duel’s snippet is this formula line for line: it runs the learner on each \(S_j^i\), scores the result, and divides by \(k = 16\) (and by 4 for the messages inside the true risk).
+
+**Step 3: maximum, average, minimum.** Write \([T]\) for the list of target numbers \(\{1, \dots, T\}\), as lesson 1 wrote \([m]\) for positions. Then \(\max_{i \in [T]}\) reads “the largest value as \(i\) runs over the targets”, and \(\min_{j \in [k]}\) “the smallest value as \(j\) runs over the sequences”. In the duel, the memorizer’s largest expected risk over the 16 targets was 0.5625 and its average over them 0.28125. We want to show that \(\max_{i \in [T]}\) of that expectation is at least \(1/4\), for every learner. Two elementary facts carry the step: the maximum of a list of numbers is at least their average (each number is at most the maximum, so their sum is at most \(T\) times it), and the average is at least the minimum (by the same argument turned upside down). Between them we swap the order of two finite sums, which changes nothing:
 
 \[ \max_{i \in [T]} \frac1k \sum_{j=1}^{k} L_{\mathcal D_i}(A(S_j^i)) \;\ge\; \frac1T \sum_{i=1}^{T} \frac1k \sum_{j=1}^{k} L_{\mathcal D_i}(A(S_j^i)) \;=\; \frac1k \sum_{j=1}^{k} \frac1T \sum_{i=1}^{T} L_{\mathcal D_i}(A(S_j^i)) \;\ge\; \min_{j \in [k]} \frac1T \sum_{i=1}^{T} L_{\mathcal D_i}(A(S_j^i)). \]
 
+Read it left to right, as four numbers.
+
+- The first is the worst target’s expected true risk: for each \(i\), the average over sequences, and then the largest.
+- The second averages that same expected risk over all targets instead, with \(\frac1T \sum_{i=1}^{T}\), so it can only be smaller or equal.
+- The third adds exactly the same \(T \cdot k\) risks in the other order: for each sequence, average over targets, then average over sequences. Same numbers, same total.
+- The fourth keeps only the kindest sequence: the one whose average over targets is smallest, which no average over sequences can fall below.
+
+In plain words: **the worst target is at least as bad as the average target, the average can be taken in either order, and an average over sequences is at least its kindest sequence.** The snippet fills a grid of true risks for the memorizer in the duel, one row per target and one column per sequence, and reads the four numbers off it:
+
+```python
+import itertools
+
+C, m = ["00", "01", "10", "11"], 2
+F = list(itertools.product([0, 1], repeat=4))
+Ss = list(itertools.product(C, repeat=m))
+
+def L(f, xs):
+    seen = dict((x, f[C.index(x)]) for x in xs)
+    return sum(seen.get(c, 0) != f[C.index(c)] for c in C) / 4
+
+grid = [[L(f, xs) for xs in Ss] for f in F]
+by_target = [sum(row) / len(Ss) for row in grid]
+by_seq = [sum(col) / len(F) for col in zip(*grid)]
+print(max(by_target), sum(by_target) / len(F),
+      sum(by_seq) / len(Ss), min(by_seq))
+```
+
+It prints `0.5625 0.28125 0.28125 0.25`. The kindest sequences are those with two different messages, where two of the four are unseen and each is wrong for half the targets, a quarter in all.
+
 The right-hand end fixes one sequence of messages \(S_j\) and averages over all targets. That is exactly what the twins argument handles. It remains to show that, for every \(j\), this average over targets is at least \(1/4\).
 
-**Step 4: keep only the unseen messages.** Fix \(j\), and let \(v_1, \dots, v_p\) be the messages of \(C\) that do not appear in \(S_j\). Since \(S_j\) has \(m\) entries, it contains at most \(m\) distinct messages, so \(p \ge 2m - m = m\). For every \(h: C \to \{0, 1\}\) and every \(i\), dropping the seen messages from the sum in step 1 can only lower it, since every term is 0 or 1, and \(\frac{1}{2m} \ge \frac{1}{2p}\) because \(p \ge m\):
+**Step 4: keep only the unseen messages.** Fix \(j\), and let \(v_1, \dots, v_p\) be the messages of \(C\) that do not appear in \(S_j\). Since \(S_j\) has \(m\) entries, it contains at most \(m\) distinct messages, so \(p \ge 2m - m = m\). In the duel, the sequence (01, 01) leaves \(v_1, v_2, v_3 = 00, 10, 11\) unseen, so \(p = 3\). For every \(h: C \to \{0, 1\}\) and every \(i\), dropping the seen messages from the sum in step 1 can only lower it, since every term is 0 or 1, and \(\frac{1}{2m} \ge \frac{1}{2p}\) because \(p \ge m\):
 
 \[ L_{\mathcal D_i}(h) = \frac{1}{2m} \sum_{x \in C} \mathbb 1[h(x) \neq f_i(x)] \;\ge\; \frac{1}{2m} \sum_{r=1}^{p} \mathbb 1[h(v_r) \neq f_i(v_r)] \;\ge\; \frac{1}{2p} \sum_{r=1}^{p} \mathbb 1[h(v_r) \neq f_i(v_r)]. \]
 
-**Step 5: from the average over unseen messages to the worst one.** Apply step 4 with \(h = A(S_j^i)\), average over \(i\), and swap the two finite sums again. Then use “an average is at least the minimum” once more, this time over \(r\):
+The first expression is the true risk from step 1. The second keeps the same \(\frac{1}{2m}\) but sums only over the unseen messages, \(r = 1\) to \(p\), so it counts only the mistakes \(h\) makes on \(v_1, \dots, v_p\). The third divides that count by the larger \(2p\), so it is smaller again. In plain words: **the true risk is at least half the fraction of unseen messages that \(h\) gets wrong.** Take the memorizer on (01, 01) with the target “everything is junk”: it says keep on all three unseen messages, so the three expressions are \(3/4\), \(3/4\) and \(3/6\).
+
+```python
+C, m = ["00", "01", "10", "11"], 2
+f_i = dict(zip(C, (1, 1, 1, 1)))
+xs = ("01", "01")
+h = {c: (f_i[c] if c in xs else 0) for c in C}
+v = [c for c in C if c not in xs]
+p = len(v)
+full = sum(h[x] != f_i[x] for x in C) / (2 * m)
+unseen = sum(h[x] != f_i[x] for x in v)
+print(v, p, full, unseen / (2 * m), unseen / (2 * p))
+```
+
+It prints `['00', '10', '11'] 3 0.75 0.75 0.5`.
+
+**Step 5: from the average over unseen messages to the worst one.** Apply step 4 with \(h = A(S_j^i)\), average over \(i\), and swap the two finite sums again. Then use “an average is at least the minimum” once more, this time over \(r\). One new piece of notation appears: \(A(S_j^i)(v_r)\) is the learner’s hypothesis on \(S_j^i\), applied to the unseen message \(v_r\), so it is the label the learner guesses there. The fraction of targets that catch the learner out at \(v_r\) we call its **catch rate** at \(v_r\).
 
 \[ \frac1T \sum_{i=1}^{T} L_{\mathcal D_i}(A(S_j^i)) \;\ge\; \frac{1}{2p} \sum_{r=1}^{p} \frac1T \sum_{i=1}^{T} \mathbb 1[A(S_j^i)(v_r) \neq f_i(v_r)] \;\ge\; \frac12 \cdot \min_{r \in [p]} \frac1T \sum_{i=1}^{T} \mathbb 1[A(S_j^i)(v_r) \neq f_i(v_r)]. \]
 
-The \(\frac12\) comes from writing \(\frac{1}{2p} \sum_{r=1}^{p}\) as \(\frac12\) times the average over \(r\).
+The \(\frac12\) comes from writing \(\frac{1}{2p} \sum_{r=1}^{p}\) as \(\frac12\) times the average over \(r\). The inner \(\frac1T \sum_{i=1}^{T} \mathbb 1[\dots]\) is the catch rate at \(v_r\): add 1 for every target the guess disagrees with, divide by \(T\). Then \(\min_{r \in [p]}\) picks the unseen message with the lowest catch rate. In plain words: **for a fixed sequence, the true risk averaged over targets is at least half the catch rate at the hardest-to-catch unseen message.** For the memorizer on (01, 01), the left end is \(3/8\), the middle drops the seen message’s share and gives \(\frac16 (\frac12 + \frac12 + \frac12) = \frac14\), and every catch rate is \(\frac12\), so the right end is \(\frac12 \cdot \frac12 = \frac14\):
+
+```python
+import itertools
+
+C, m, xs = ["00", "01", "10", "11"], 2, ("01", "01")
+F = list(itertools.product([0, 1], repeat=4))
+v = [c for c in C if c not in xs]
+
+def wrong(f, c):
+    g = dict(zip(C, f))
+    h = {x: (g[x] if x in xs else 0) for x in C}
+    return h[c] != g[c]
+
+left = sum(sum(wrong(f, c) for c in C) / 4 for f in F) / 16
+per_r = [sum(wrong(f, r) for f in F) / 16 for r in v]
+print(left, sum(per_r) / (2 * len(v)), 0.5 * min(per_r))
+```
+
+It prints `0.375 0.25 0.25`.
 
 **Step 6: the twins.** Fix \(r\). Pair each target \(f_i\) with the target \(f_{i'}\) that agrees with it everywhere on \(C\) except at \(v_r\). Flipping the same label twice gives back the original, so this pairing splits \(f_1, \dots, f_T\) into \(T/2\) disjoint pairs. Since \(v_r\) does not appear in \(S_j\), the twins label every message of \(S_j\) identically, so \(S_j^i = S_j^{i'}\), and because \(A\) is a function of its input, \(A(S_j^i) = A(S_j^{i'})\). Call that hypothesis \(h\). The bit \(h(v_r)\) equals exactly one of \(f_i(v_r)\) and \(f_{i'}(v_r)\), since those two differ, so
 
 \[ \mathbb 1[A(S_j^i)(v_r) \neq f_i(v_r)] + \mathbb 1[A(S_j^{i'})(v_r) \neq f_{i'}(v_r)] = 1. \]
 
+The first indicator asks whether the learner’s guess at \(v_r\) is wrong for target \(f_i\), the second whether the same guess is wrong for its twin \(f_{i'}\) (the prime on \(i'\) just marks the twin’s number). In plain words: **of each pair of twins, exactly one catches the learner at \(v_r\).** In the duel, take (01, 01), \(v_r = 00\), the target “everything is junk” and its twin “junk everywhere except 00”. The memorizer sees (01, junk) twice under both and guesses keep at 00, so it is wrong for the first and right for the twin: \(1 + 0 = 1\).
+
 Summing over the \(T/2\) pairs gives \(T/2\), so for every \(r\),
 
 \[ \frac1T \sum_{i=1}^{T} \mathbb 1[A(S_j^i)(v_r) \neq f_i(v_r)] = \frac12. \]
+
+In plain words: **at every unseen message, exactly half the targets catch the learner, whatever the learner is.** That is the catch rate of \(\frac12\) the last snippet found at all three unseen messages, and the machine check below confirms it for an arbitrary learner.
 
 Chaining steps 3, 5 and 6: for every \(j\) the average over targets is at least \(\frac12 \cdot \frac12 = \frac14\), so the minimum over \(j\) is at least \(1/4\), and therefore
 
 \[ \max_{i \in [T]} \mathbb E_{S \sim \mathcal D_i^m}\left[L_{\mathcal D_i}(A(S))\right] \ge \frac14. \]
 
+Every symbol here has been read already: **some target’s task gives the learner an expected true risk of at least a quarter**, as the memorizer’s 0.5625 on “everything is junk” illustrates.
+
 So far \(A\) was a learner that receives examples from \(C\) and returns a function on \(C\). Now take any learner \(A'\) over the whole domain \(\mathcal X\). Under any \(\mathcal D_i\), every training sequence lies in \(C\), and the true risk of \(A'(S)\) depends only on its values on \(C\), because \(\mathcal D_i\) puts no probability outside \(C\). So define \(A(S)\) as \(A'(S)\) restricted to \(C\); the bound applies to it, and the risks agree. Let \(i^\star\) be an index achieving the maximum, set \(\mathcal D = \mathcal D_{i^\star}\), and extend \(f_{i^\star}\) to all of \(\mathcal X\) in any way, say with keep outside \(C\); call the result \(f\). Then \(L_{\mathcal D}(f) = 0\), which is part 1, and
 
 \[ \mathbb E_{S \sim \mathcal D^m}\left[L_{\mathcal D}(A'(S))\right] \ge \frac14. \]
+
+This is the previous display with the worst task named \(\mathcal D\) and the learner allowed to live on all of \(\mathcal X\); the star in \(i^\star\) only marks the chosen index.
 
 Here is a machine check of step 6, the one step that does real work. The learner below is as arbitrary as I could make it: for each training sequence, it labels every message by a coin flip seeded with that sequence, so it is deterministic but follows no pattern at all. For every one of the 16 sequences and every message the sequence misses, the snippet collects the fraction of the 16 targets that catch the learner out at that message.
 
@@ -316,6 +394,12 @@ It prints `{0.5}`. Every sequence, every unseen message, the same answer: exactl
 **Step 7: from an average to a probability.** Let \(\theta = L_{\mathcal D}(A'(S))\). It is a random variable, because \(S\) is random, and it takes values in \([0, 1]\), with \(\mathbb E[\theta] \ge 1/4\). Let \(q = \mathbb P[\theta \ge 1/8]\). Split the expectation according to whether \(\theta\) is at least \(1/8\). On the event \(\theta \ge 1/8\), which has probability \(q\), the value is at most 1. On its complement, which has probability \(1 - q\), the value is below \(1/8\). So
 
 \[ \frac14 \le \mathbb E[\theta] \le 1 \cdot q + \frac18 (1 - q). \]
+
+- \(\theta\) is the true risk of the one hypothesis you actually get, random because \(S\) is, and \(\mathbb E[\theta]\) is its expected value.
+- \(q\) is the probability of the bad event \(\theta \ge 1/8\), so \(1 \cdot q\) is the most the bad sequences can add to the average: their weight times the largest risk possible.
+- \(\frac18 (1 - q)\) is the most the good sequences can add: their weight times a risk below an eighth.
+
+In plain words: **the average risk can be no more than the bad sequences’ most plus the good sequences’ most, and that ceiling must still reach a quarter.** For the memorizer on “everything is junk”, every sequence is bad, so \(q = 1\) and the ceiling is \(1\), far above \(\frac14\). The ceiling is tightest when \(q\) is as small as the quarter allows, which is the case the snippet after the proof builds.
 
 Multiply by 8 to get \(2 \le 8q + 1 - q\), so \(7q \ge 1\) and \(q \ge 1/7\). That is part 2. (The same bound follows from **Markov’s inequality**, which says that a nonnegative random variable \(Z\) has \(\mathbb P[Z \ge a] \le \mathbb E[Z]/a\) for every \(a > 0\). Apply it to \(Z = 1 - \theta\) with \(a = 7/8\): \(\mathbb P[\theta \le 1/8] \le (3/4)/(7/8) = 6/7\).) \(\blacksquare\)
 

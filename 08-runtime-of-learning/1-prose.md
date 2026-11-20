@@ -106,6 +106,8 @@ Of course nothing has been gained. The work moved from training to prediction: e
 
 Now we can say exactly what “learning is fast” means. We count **operations** of an abstract machine, such as a Turing machine (or a Turing machine over the reals, when the inputs are real numbers), and we assume that every machine implementing it does each operation in at most some constant number of seconds.
 
+Before the definition, its ingredients, all from earlier lessons. A learning task is a triple \((\mathcal Z, \mathcal H, \ell)\): \(\mathcal Z\) is the set of possible examples (in the mail room, a message with its label), \(\mathcal H\) is the benchmark hypothesis class, and \(\ell(h, z)\) is the loss of hypothesis \(h\) on example \(z\) (1 for a mistake and 0 otherwise, for the filter). \(\mathcal D\) is the unknown distribution the examples come from, and **i.i.d.** says each example is drawn from the same \(\mathcal D\) with no draw influencing another. \(L_{\mathcal D}(h)\) is the true risk, the expected loss of \(h\) on a fresh example. In words, the definition will say: a learner runs in time \(f\) when, for every accuracy and confidence you ask for, both its training and its predictions stay within a constant times \(f\) operations, and it keeps the agnostic PAC promise.
+
 **Definition (the runtime of a learner).** Recall that a learning task is a triple \((\mathcal Z, \mathcal H, \ell)\): a domain of examples, a benchmark hypothesis class, and a loss function.
 
 1. Let \(f : (0,1)^2 \to \mathbb N\) be a function, \((\mathcal Z, \mathcal H, \ell)\) a learning task and \(A\) a learning algorithm. We say \(A\) **solves the learning task in time** \(O(f)\) if there is a constant \(c\) such that for every distribution \(\mathcal D\) over \(\mathcal Z\) and every \(\varepsilon, \delta \in (0, 1)\), when \(A\) has access to examples drawn i.i.d. from \(\mathcal D\):
@@ -116,9 +118,38 @@ Now we can say exactly what “learning is fast” means. We count **operations*
 
 We call \(A\) **efficient** with respect to the sequence if its runtime is \(O(p(n, 1/\varepsilon, 1/\delta))\) for some polynomial \(p\).
 
+Read it from the inside out.
+
+- \(f : (0,1)^2 \to \mathbb N\) says \(f\) takes a pair of numbers strictly between 0 and 1, the \(\varepsilon\) and the \(\delta\), and returns a natural number \(\mathbb N\), a count of operations. It is the budget.
+- \(c f(\varepsilon, \delta)\) is that budget times the machine’s constant \(c\), the same \(c\) for every \(\varepsilon\) and \(\delta\).
+- \(h_A\) is the hypothesis \(A\) returns. The subscript names who produced it.
+- \(\min_{h' \in \mathcal H} L_{\mathcal D}(h')\) is the smallest true risk of any \(h'\) in the class \(\mathcal H\) (the symbol \(\in\) reads “in”): the best the benchmark can do.
+- \(L_{\mathcal D}(h_A) \le \min_{h'} L_{\mathcal D}(h') + \varepsilon\) says \(h_A\) is at most \(\varepsilon\) worse than that best.
+- In part 2, \(g : \mathbb N \times (0,1)^2 \to \mathbb N\) is a budget that also takes the problem’s index \(n\), and \(f_n\) is \(g\) with \(n\) held fixed. A polynomial \(p(n, 1/\varepsilon, 1/\delta)\) is a sum of products of powers of \(n\), \(1/\varepsilon\) and \(1/\delta\), such as \(n^2/\varepsilon\).
+
+In plain words: **\(A\) solves the task in time \(O(f)\) when it trains in at most \(c f(\varepsilon, \delta)\) operations, its hypothesis predicts in at most as many, and with probability at least \(1 - \delta\) that hypothesis is within \(\varepsilon\) of the best in the class.** Take a class of 82 rules over the four mail-room features, and suppose the best of them has true risk 0. Ask for \(\varepsilon = 0.05\): the third bullet accepts only hypotheses with true risk at most 0.05. Loosen it to \(\varepsilon = 0.2\) and a hypothesis with true risk 0.125 passes too, while the budget shrinks. In the snippet, the budget is the cost of checking all 82 rules on as many examples as lesson 2’s bound asks for (the next section says why), and three candidate hypotheses, `h1`, `h2` and `h3`, face the third bullet.
+
+```python
+import math
+size = 82
+def f(eps, delta):
+    m = math.ceil(math.log(size / delta) / eps)
+    return size * m
+c = 1
+risks = {"h1": 0.0, "h2": 0.125, "h3": 0.25}
+best = min(risks.values())
+for eps in (0.05, 0.2):
+    ok = [h for h, r in risks.items() if r <= best + eps]
+    print(eps, c * f(eps, 0.01), ok)
+```
+
+It prints `0.05 14842 ['h1']` and `0.2 3772 ['h1', 'h2']`: a looser \(\varepsilon\) buys a smaller budget and a wider set of acceptable answers.
+
 Read the three bullets again with the lazy learner in mind. The first bounds training, the second bounds prediction by the same budget, and the third is the agnostic PAC promise of lesson 3. Notice also what “has access to examples” implies: the learner draws its own examples, and drawing one costs at least one operation. So an efficient learner can only ever use polynomially many examples. Efficient learning implies a polynomial sample complexity, never the other way round.
 
 The definition makes one thing very plain: whether a learning problem is “efficiently solvable” depends on which sequence you embed it in. Take finite classes. Lesson 2 and lesson 4 showed that ERM over \(\mathcal H\) learns with \(m_{\mathcal H}(\varepsilon, \delta)\) of order \(\log(|\mathcal H|/\delta)/\varepsilon^2\) examples in general (and \(\log(|\mathcal H|/\delta)/\varepsilon\) under realizability). If evaluating one hypothesis on one example takes constant time, ERM by exhaustive search runs in time \(O(|\mathcal H| \, m_{\mathcal H}(\varepsilon, \delta))\). For one fixed finite class that is polynomial in \(1/\varepsilon\) and \(1/\delta\). For a sequence with \(|\mathcal H_n| = n\), it is still efficient. For a sequence with \(|\mathcal H_n| = 2^n\), the sample complexity is still polynomial in \(n\), but the search is exponential.
+
+Those inline formulas deserve a slow reading. \(m_{\mathcal H}(\varepsilon, \delta)\) is the sample complexity of \(\mathcal H\): the number of examples that is enough for accuracy \(\varepsilon\) and confidence \(\delta\). In \(\log(|\mathcal H|/\delta)/\varepsilon\), \(|\mathcal H|\) is how many hypotheses the class holds, \(\log\) is the natural logarithm, and dividing by \(\delta\) inside the logarithm adds \(\log(1/\delta)\), the price of confidence. Squaring \(\varepsilon\) in the agnostic version is what the missing realizability costs. \(O(|\mathcal H| \, m_{\mathcal H}(\varepsilon, \delta))\) is that many hypotheses, each checked on that many examples. In plain words: **the examples needed grow with the logarithm of the class size, but the search grows with the class size itself.** With \(|\mathcal H| = 10\), \(\varepsilon = 0.05\) and \(\delta = 0.01\), the realizable bound is \(\log(10/0.01)/0.05 = \log(1000)/0.05 \approx 138.2\), so 139 examples, and the search makes \(10 \times 139 = 1{,}390\) checks. In the snippet, `m_H(size)` is the realizable formula rounded up, and the first row prints exactly that 1,390.
 
 Here are both sequences side by side, using the realizable bound with \(\varepsilon = 0.05\), \(\delta = 0.01\). The columns are \(n\), the search work when \(|\mathcal H_n| = n\), the examples needed when \(|\mathcal H_n| = 2^n\), and the search work for that class.
 
@@ -138,13 +169,35 @@ It prints `10 1390 231 2.4e+05`, `20 3060 370 3.9e+08`, `40 6640 647 7.1e+14` an
 
 ## ERM by brute force
 
-Let’s state the most natural learner precisely, because every algorithm in this lesson is a cleverer version of it. Given a class \(\mathcal H\), a domain \(\mathcal Z\) and a loss \(\ell\), the rule \(\mathrm{ERM}_{\mathcal H}\) is: on a finite input sequence \(S \in \mathcal Z^m\), return some \(h \in \mathcal H\) that minimizes the empirical risk
+Let’s state the most natural learner precisely, because every algorithm in this lesson is a cleverer version of it. Given a class \(\mathcal H\), a domain \(\mathcal Z\) and a loss \(\ell\), the rule \(\mathrm{ERM}_{\mathcal H}\) is: on a finite input sequence \(S \in \mathcal Z^m\), return some \(h \in \mathcal H\) that minimizes the empirical risk, the average loss of \(h\) over the training examples. For the filter, the loss is 1 for a mistake and 0 otherwise, so the empirical risk is the fraction of training examples \(h\) gets wrong: a rule that misses 2 of 8 examples scores 0.25. As a formula,
 
 \[ L_S(h) = \frac{1}{|S|} \sum_{z \in S} \ell(h, z). \]
 
+Read it from the inside out.
+
+- \(z\) is one example, a message with its label, and \(\ell(h, z)\) is the loss of \(h\) on it.
+- \(\sum_{z \in S}\), the capital sigma, adds that loss over every example \(z\) in the training sequence \(S\).
+- \(|S|\) is how many examples \(S\) holds, the \(m\) from before, and \(1/|S|\) turns the total into an average.
+- The subscript \(S\) in \(L_S\) records that only the training examples are scored.
+
+In plain words: **the empirical risk is the average loss of \(h\) on the training sequence.** Take eight labelled messages over the four mail-room features FLUN (F for “FREE”, L for a link, U for an unknown sender, N for sent at night), and the rule “junk exactly when F”. It says junk to 1001 and 1011, which are keep, and gets the other six right: \(L_S(h) = 2/8 = 0.25\).
+
+```python
+S = [("1100", 1), ("0110", 0), ("1110", 1), ("1001", 0),
+     ("0010", 0), ("1010", 1), ("0101", 0), ("1011", 0)]
+def h(x):
+    return int(x[0] == "1")
+def loss(h, z):
+    x, y = z
+    return int(h(x) != y)
+print(sum(loss(h, z) for z in S) / len(S))
+```
+
+It prints `0.25`. The `sum` is the sigma, `loss` is \(\ell\), and `len(S)` is \(|S|\).
+
 For binary classification, lesson 6 showed that if learning is possible at all, ERM does it. So the question “how fast can we learn?” starts as “how fast can we run ERM?”.
 
-Restricting yourself to a finite class sounds mild. The class of every hypothesis a C++ program of at most 10,000 bits can compute is finite. So is any class described by finitely many parameters, if you store each parameter with finitely many bits: rectangles with corners written to three decimal places, say. And the sample complexity of a finite class barely notices its size, because it pays only \(\log |\mathcal H|\). For the C++ class, \(|\mathcal H| = 2^{10{,}000}\) and \(\log |\mathcal H| = 10{,}000 \log 2 \approx 6{,}931\), a perfectly reasonable number of examples.
+Restricting yourself to a finite class sounds mild. The class of every hypothesis a C++ program of at most 10,000 bits can compute is finite. So is any class described by finitely many parameters, if you store each parameter with finitely many bits: rectangles with corners written to three decimal places, say. And the sample complexity of a finite class barely notices its size, because it pays only \(\log |\mathcal H|\). For the C++ class, there are \(2^{10{,}000}\) strings of 10,000 bits, so \(|\mathcal H| \le 2^{10{,}000}\), and its natural logarithm is \(\log |\mathcal H| \le 10{,}000 \log 2 \approx 6{,}931\), because the logarithm of a power brings the exponent down in front (\(\log 2 \approx 0.693\)). That is a perfectly reasonable number of examples.
 
 The obvious ERM for a finite class is **exhaustive search**: compute \(L_S(h)\) for every \(h \in \mathcal H\) and return one with the smallest value. You built it in lesson 2. Here it is again with its cost written in.
 
@@ -160,7 +213,7 @@ ExhaustiveERM(H, S):
   return best
 ```
 
-**Time.** If evaluating \(\ell(h, z)\) on one example takes constant time \(k\), the search takes \(k \, |\mathcal H| \, m\). With \(m\) set to the sample complexity, \(k \, |\mathcal H| \log(|\mathcal H|/\delta)/\varepsilon\) under realizability. **Space.** \(O(1)\) words beyond the input and one stored hypothesis, if \(\mathcal H\) can be enumerated one member at a time.
+**Time.** If evaluating \(\ell(h, z)\) on one example takes constant time \(k\), the search takes \(k \, |\mathcal H| \, m\). With \(m\) set to the sample complexity, \(k \, |\mathcal H| \log(|\mathcal H|/\delta)/\varepsilon\) under realizability. That is three factors multiplied: the cost \(k\) of one check, the \(|\mathcal H|\) hypotheses, and the realizable count of examples you read earlier. In plain words: **exhaustive search costs one check per hypothesis per example.** With \(k = 1\), 82 hypotheses and 181 examples, it is 14,842 checks, the budget the definition’s snippet printed; the conjunction snippet below multiplies the same three factors as `size * m`. **Space.** \(O(1)\) words beyond the input and one stored hypothesis, if \(\mathcal H\) can be enumerated one member at a time.
 
 The linear dependence on \(|\mathcal H|\) is the whole problem. Take a sequence with \(\log |\mathcal H_n| = n\), such as C++ programs of at most \(n\) bits: the sample complexity grows like \(n\), the search like \(2^n\). That is exactly the job that would never finish.
 

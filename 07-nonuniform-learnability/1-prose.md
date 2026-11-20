@@ -208,11 +208,11 @@ print(round(sum(w_pi(n) for n in range(1, 10**6)), 6))
 print(sum(w_two(n) for n in range(1, 60)))
 ```
 
-It prints `1 0.6079 0.5 0.0304`, `2 0.152 0.25 0.0076`, `3 0.0675 0.125 0.00338` and `6 0.0169 0.015625 0.00084`, then `0.999999` and `1.0`: a million terms of the first already sum to 1 within a millionth, and the second reaches 1 to machine precision. We’ll use the first from now on. It gives size 1 about 61% of the budget, size 3 about 6.8%, size 6 about 1.7%, and every size something; the second starves the long sizes faster, giving size 6 only 1.6% and size 20 less than a millionth of a percent.
+It prints `1 0.6079 0.5 0.0304`, `2 0.152 0.25 0.0076`, `3 0.0675 0.125 0.00338` and `6 0.0169 0.015625 0.00084`, then `0.999999` and `1.0`: a million terms of the first already sum to 1 within a millionth, and the second reaches 1 to machine precision. We’ll use the first from now on. It gives size 1 about 61% of the budget, size 3 about 6.8%, size 6 about 1.7%, and every size something; the second starves the long sizes faster, giving size 6 only 1.6% and size 20 less than a millionth of the budget.
 
 [[diagram:budget]]
 
-The price is visible. A list of size \(n\) now gets the gap computed with \(w(n)\delta\) instead of \(\delta\), which adds \(\log(1/w(n))\) inside the square root. For long lists, whose share is tiny, that is extra evidence they must pay for. And now the learner has an obvious thing to do: pick the list whose **bound**, empirical risk plus its own gap, is smallest. That learner is called **structural risk minimization** (SRM).
+The price is visible. A list of size \(n\) now gets the gap computed with \(w(n)\delta\) instead of \(\delta\). Dividing by a smaller number makes \(2|\mathcal H_n|/(w(n)\delta)\) bigger by a factor \(1/w(n)\), and a logarithm turns a factor into an addition, so this adds \(\log(1/w(n))\) inside the square root. For size 3 that is \(\log(1/0.0675) = 2.70\), on top of the 8.75 we had, and the gap at 300 labels grows from 0.121 to 0.138. For long lists, whose share is tiny, that is extra evidence they must pay for. And now the learner has an obvious thing to do: pick the list whose **bound**, empirical risk plus its own gap, is smallest. That learner is called **structural risk minimization** (SRM).
 
 Let’s run it at \(m = 300\) labels. The empirical risks below are the best in each class on one draw of 300 messages from our stream.
 
@@ -243,7 +243,7 @@ for n, r in enumerate(LS, start=1):
 | 5 | 0.0243 | 0.1133 | 0.1676 | 0.2809 |
 | 6 | 0.0169 | 0.1133 | 0.1812 | 0.2945 |
 
-(The snippet prints these rows; the exact empirical risks are 111/300, 40/300 and 34/300, which is why the build-it challenge below reports 0.2715 for size 3.) Size 1 and 2 lists cannot fit the data. Size 5 fits it best, but its gap eats the advantage. Size 3 has the smallest bound, so SRM ships the three-test list from the opening: “unknown sender, junk; FREE, keep; link, junk; otherwise keep”. Its true risk is 0.125. With 1,000 labels, the same procedure ships the five-test list \(f\), true risk 0.100, because now the evidence pays for the extra length. With 30 labels it ships the size-1 list “everything is junk”, with a bound of 0.58: it is telling you honestly that thirty labels certify almost nothing.
+(The snippet prints these rows: `eps` is the gap formula from before, called with the share `w(n) * 0.05` in place of the whole budget, and the last column is the best empirical risk plus that gap. The exact empirical risks are 111/300, 40/300 and 34/300, which is why the build-it challenge below reports 0.2715 for size 3.) Size 1 and 2 lists cannot fit the data. Size 5 fits it best, but its gap eats the advantage. Size 3 has the smallest bound, so SRM ships the three-test list from the opening: “unknown sender, junk; FREE, keep; link, junk; otherwise keep”. Its true risk is 0.125. With 1,000 labels, the same procedure ships the five-test list \(f\), true risk 0.100, because now the evidence pays for the extra length. With 30 labels it ships the size-1 list “everything is junk”, with a bound of 0.58: it is telling you honestly that thirty labels certify almost nothing.
 
 That is your teammate’s wish, granted with a guarantee attached. Long lists are allowed. They just have to earn it.
 
@@ -251,29 +251,76 @@ That is your teammate’s wish, granted with a guarantee attached. Long lists ar
 
 ## The formal statements
 
-Let’s make all of this exact. From here on, \(\mathcal D\) is any distribution over \(\mathcal X \times \{0, 1\}\), as in lesson 3’s agnostic setting, and the loss is the 0-1 loss.
+Let’s make all of this exact. From here on, \(\mathcal D\) is any distribution over \(\mathcal X \times \{0, 1\}\), pairs of a message and a label, as in lesson 3’s **agnostic** setting, where labels may be noisy and no hypothesis need be perfect. The loss is the **0-1 loss**: 1 for a wrong label, 0 for a right one, so a risk is a fraction of mistakes.
 
-**Recap from earlier lessons.** A class \(\mathcal H\) is *agnostic PAC learnable* (lesson 3) if there are a learner \(A\) and a function \(m_{\mathcal H}: (0,1)^2 \to \mathbb N\) such that for every \(\varepsilon, \delta \in (0, 1)\) and every \(\mathcal D\), if \(m \ge m_{\mathcal H}(\varepsilon, \delta)\) then with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\),
+**Recap from earlier lessons.** First, in words. A class is agnostic PAC learnable when you can name, before seeing any data, how many labels make the learner’s true risk at most \(\varepsilon\) worse than the best list in the class, with probability at least \(1 - \delta\), whatever the stream. In symbols, a class \(\mathcal H\) is *agnostic PAC learnable* (lesson 3) if there are a learner \(A\) and a function \(m_{\mathcal H}: (0,1)^2 \to \mathbb N\) such that for every \(\varepsilon, \delta \in (0, 1)\) and every \(\mathcal D\), if \(m \ge m_{\mathcal H}(\varepsilon, \delta)\) then with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\),
 
 \[ L_{\mathcal D}(A(S)) \le \min_{h' \in \mathcal H} L_{\mathcal D}(h') + \varepsilon. \]
 
-A class has the *uniform convergence property* (lesson 4) with function \(m^{\mathrm{UC}}_{\mathcal H}\) if for every \(\varepsilon, \delta\) and \(\mathcal D\), a sample of \(m \ge m^{\mathrm{UC}}_{\mathcal H}(\varepsilon, \delta)\) i.i.d. examples is \(\varepsilon\)-representative with probability at least \(1 - \delta\): every \(h \in \mathcal H\) has \(|L_S(h) - L_{\mathcal D}(h)| \le \varepsilon\). A finite class has it with \(m^{\mathrm{UC}}_{\mathcal H}(\varepsilon, \delta) \le \lceil \log(2|\mathcal H|/\delta)/(2\varepsilon^2) \rceil\). And the *fundamental theorem* (lesson 6) says that for binary classification with the 0-1 loss, uniform convergence, agnostic PAC learnability, PAC learnability and finite VC dimension are all equivalent.
+Read the pieces. \(A(S)\) is the hypothesis the learner returns on the training sequence \(S\). \(S \sim \mathcal D^m\) reads “\(S\) is drawn from \(\mathcal D^m\)”: \(m\) examples, each drawn independently from \(\mathcal D\). \((0,1)\) is the set of numbers strictly between 0 and 1, and \((0,1)^2\) is a pair of them, so \(m_{\mathcal H}: (0,1)^2 \to \mathbb N\) is a rule that takes the two dials \(\varepsilon, \delta\) and returns a whole number of labels. On the right of the display, \(\min_{h' \in \mathcal H} L_{\mathcal D}(h')\) is the smallest true risk of any \(h'\) in the class, the best you could hope to find. In plain words: **with enough labels, fixed in advance, the learner lands within \(\varepsilon\) of the best hypothesis in the class, except with probability \(\delta\).** In \(\mathcal H_3\) on our stream the best list has true risk 0.125, so with \(\varepsilon = 0.1\) the returned list must have true risk at most 0.225.
 
-**Competing with one hypothesis.** Say that a hypothesis \(h\) is \((\varepsilon, \delta)\)-**competitive** with another hypothesis \(h'\) if, with probability higher than \(1 - \delta\), \(L_{\mathcal D}(h) \le L_{\mathcal D}(h') + \varepsilon\). Agnostic PAC learning asks the returned hypothesis to be competitive with every \(h' \in \mathcal H\) at once, at one sample size. The relaxation is to let the sample size depend on which \(h'\) you compete with.
+```python
+best_in_class, eps = 0.125, 0.1
+for risk in (0.125, 0.175, 0.375):
+    print(risk, risk <= best_in_class + eps)
+```
+
+It prints `0.125 True`, `0.175 True` and `0.375 False`: the lists ERM found at cap 3 on thirty labels would meet this target, and “everything is junk” would not.
+
+A class has the *uniform convergence property* (lesson 4) when enough labels make every hypothesis’s empirical risk close to its true risk at the same time. In symbols, with function \(m^{\mathrm{UC}}_{\mathcal H}\): for every \(\varepsilon, \delta\) and \(\mathcal D\), a training sequence of \(m \ge m^{\mathrm{UC}}_{\mathcal H}(\varepsilon, \delta)\) i.i.d. examples is \(\varepsilon\)-**representative** with probability at least \(1 - \delta\): every \(h \in \mathcal H\) has \(|L_S(h) - L_{\mathcal D}(h)| \le \varepsilon\). The superscript UC is a name tag, “uniform convergence”, not a power. A finite class has it with \(m^{\mathrm{UC}}_{\mathcal H}(\varepsilon, \delta) \le \lceil \log(2|\mathcal H|/\delta)/(2\varepsilon^2) \rceil\). That is the gap formula from “Thirty labels, six sizes” turned around: set the gap equal to \(\varepsilon\) and solve for \(m\). The brackets \(\lceil \cdot \rceil\) round up to the next whole number, since you cannot label part of a message. In plain words: **a finite class needs about \(\log(2|\mathcal H|/\delta)\) divided by \(2\varepsilon^2\) labels before every member is within \(\varepsilon\) of its true risk.** For \(\mathcal H_3\), \(\varepsilon = 0.05\) and \(\delta = 0.05\): \(\log 6{,}320 = 8.751\), divided by \(2 \times 0.0025 = 0.005\), is 1,750.2, so 1,751 labels.
+
+```python
+import math
+
+size, eps, delta = 158, 0.05, 0.05
+inside = math.log(2 * size / delta)
+print(round(inside, 3), math.ceil(inside / (2 * eps**2)))
+```
+
+It prints `8.751 1751`. And the *fundamental theorem* (lesson 6) says that for binary classification with the 0-1 loss, uniform convergence, agnostic PAC learnability, PAC learnability and finite VC dimension are all equivalent.
+
+**Competing with one hypothesis.** Say that a hypothesis \(h\) is \((\varepsilon, \delta)\)-**competitive** with another hypothesis \(h'\) if, with probability higher than \(1 - \delta\), \(L_{\mathcal D}(h) \le L_{\mathcal D}(h') + \varepsilon\). With \(\varepsilon = 0.1\), a list is competitive with \(f\) when, except with probability \(\delta\), its true risk is at most \(0.1 + 0.1 = 0.2\). Agnostic PAC learning asks the returned hypothesis to be competitive with every \(h' \in \mathcal H\) at once, at one sample size. The relaxation is to let the sample size depend on which \(h'\) you compete with: to be competitive with “everything is junk” you might need 500 labels, and to be competitive with \(f\) you might need 3,400.
 
 **Definition (nonuniform learnability).** A hypothesis class \(\mathcal H\) is **nonuniformly learnable** if there exist a learner \(A\) and a function \(m^{\mathrm{NUL}}_{\mathcal H}: (0,1)^2 \times \mathcal H \to \mathbb N\) such that for every \(\varepsilon, \delta \in (0, 1)\) and every \(h \in \mathcal H\), if \(m \ge m^{\mathrm{NUL}}_{\mathcal H}(\varepsilon, \delta, h)\), then for every distribution \(\mathcal D\), with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\),
 
 \[ L_{\mathcal D}(A(S)) \le L_{\mathcal D}(h) + \varepsilon. \]
 
+The new piece is the signature \(m^{\mathrm{NUL}}_{\mathcal H}: (0,1)^2 \times \mathcal H \to \mathbb N\). The cross \(\times\) means “together with”: the function takes the two dials and also a hypothesis, and returns a number of labels. NUL is a name tag for “nonuniform learnability”. The display itself is the competitive inequality with \(A(S)\) on the left. In plain words: **for each hypothesis \(h\) there is a number of labels, possibly different for each \(h\), beyond which the learner is within \(\varepsilon\) of \(h\) on every stream, except with probability \(\delta\).** With the made-up numbers above and 2,500 labels in hand, the learner is guaranteed to compete with the short lists but not yet with \(f\).
+
+```python
+m_nul = {"everything junk": 500, "three tests": 2300,
+         "five tests": 3400}
+m = 2500
+for h, need in m_nul.items():
+    print(h, need, m >= need)
+```
+
+It prints `everything junk 500 True`, `three tests 2300 True` and `five tests 3400 False`. The dictionary is the function \(m^{\mathrm{NUL}}\) at one fixed \(\varepsilon, \delta\); the SRM theorem below replaces these made-up entries with real ones.
+
 Compare the order of the words. In agnostic PAC learning, one \(m_{\mathcal H}(\varepsilon, \delta)\) serves every hypothesis. Here, \(m^{\mathrm{NUL}}\) may grow with \(h\): to compete with a long list, you may need many more examples than to compete with a short one. It still may not depend on \(\mathcal D\).
 
-Agnostic PAC learnability implies nonuniform learnability: the agnostic guarantee gives \(L_{\mathcal D}(A(S)) \le \min_{h'} L_{\mathcal D}(h') + \varepsilon \le L_{\mathcal D}(h) + \varepsilon\) for every \(h\), so \(m^{\mathrm{NUL}}_{\mathcal H}(\varepsilon, \delta, h) = m_{\mathcal H}(\varepsilon, \delta)\) works. The converse fails, as the decision lists will show.
+Agnostic PAC learnability implies nonuniform learnability: the best in the class is never worse than any particular \(h\), so the agnostic guarantee gives \(L_{\mathcal D}(A(S)) \le \min_{h'} L_{\mathcal D}(h') + \varepsilon \le L_{\mathcal D}(h) + \varepsilon\) for every \(h\), so \(m^{\mathrm{NUL}}_{\mathcal H}(\varepsilon, \delta, h) = m_{\mathcal H}(\varepsilon, \delta)\) works. The converse fails, as the decision lists will show.
 
-**The gap function.** Let \(\mathcal H = \bigcup_{n \in \mathbb N} \mathcal H_n\), where each \(\mathcal H_n\) has the uniform convergence property with \(m^{\mathrm{UC}}_{\mathcal H_n}\). Define
+**The gap function.** The uniform convergence function answers “how many labels for this accuracy?”. SRM needs the question turned around: “with the labels I have, how small an accuracy can I certify?”. With 1,751 labels, \(\mathcal H_3\) at \(\delta = 0.05\) certifies 0.05, as we just computed; with 300 it certifies only 0.121. Let \(\mathcal H = \bigcup_{n \in \mathbb N} \mathcal H_n\), where each \(\mathcal H_n\) has the uniform convergence property with \(m^{\mathrm{UC}}_{\mathcal H_n}\). Define
 
-\[ \varepsilon_n(m, \delta) = \min\{\varepsilon \in (0, 1) : m^{\mathrm{UC}}_{\mathcal H_n}(\varepsilon, \delta) \le m\}, \]
+\[ \varepsilon_n(m, \delta) = \min\{\varepsilon \in (0, 1) : m^{\mathrm{UC}}_{\mathcal H_n}(\varepsilon, \delta) \le m\}. \]
 
-the smallest gap that \(m\) examples can certify for \(\mathcal H_n\) at confidence \(\delta\). Two facts follow from the definition, and they are all the proofs below use:
+Read it from the inside out. \(m^{\mathrm{UC}}_{\mathcal H_n}(\varepsilon, \delta) \le m\) asks one yes/no question about an accuracy \(\varepsilon\): do the \(m\) labels you have suffice for it? The braces \(\{\varepsilon \in (0, 1) : \dots\}\) collect every accuracy between 0 and 1 for which the answer is yes; read the colon as “such that”. Then \(\min\) takes the smallest of them. (Strictly, the smallest might only be approached, never reached; then read \(\min\) as the largest number below every member of the set, which changes nothing here.) In plain words: **\(\varepsilon_n(m, \delta)\) is the smallest gap that \(m\) examples can certify for \(\mathcal H_n\) at confidence \(\delta\).** The snippet tries every accuracy on a grid of steps of 0.0001 for \(\mathcal H_3\) and keeps the smallest one that \(m\) labels pay for, next to the square-root formula.
+
+```python
+import math
+
+def m_uc(size, eps, delta):
+    return math.ceil(math.log(2 * size / delta) / (2 * eps**2))
+
+grid = [i / 10000 for i in range(1, 10000)]
+for m in (300, 1751):
+    ok = [e for e in grid if m_uc(158, e, 0.05) <= m]
+    root = math.sqrt(math.log(2 * 158 / 0.05) / (2 * m))
+    print(m, min(ok), round(root, 4))
+```
+
+It prints `300 0.1208 0.1208` and `1751 0.05 0.05`: the search and the formula agree. Two facts follow from the definition, and they are all the proofs below use:
 
 1. For every \(m\), \(\delta\) and \(\mathcal D\), with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\), every \(h \in \mathcal H_n\) has \(|L_{\mathcal D}(h) - L_S(h)| \le \varepsilon_n(m, \delta)\).
 2. If \(m \ge m^{\mathrm{UC}}_{\mathcal H_n}(\varepsilon, \delta)\), then \(\varepsilon_n(m, \delta) \le \varepsilon\).

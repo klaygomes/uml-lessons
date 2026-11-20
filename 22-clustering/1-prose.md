@@ -290,7 +290,7 @@ KMeans(X ⊂ R^n, k):
   return C_1, ..., C_k
 ```
 
-Two pieces of notation. \([k]\) is the list \(\{1, \dots, k\}\), and \(\operatorname{argmin}_j \|x - \mu_j\|\) is the index \(j\) whose centre is nearest to \(x\). If two centres are equally near, a tie rule decides; we break ties in favour of the cluster \(x\) is already in, and otherwise toward the smaller index. If a cluster comes out empty, its mean is undefined, and we keep its old centre.
+Two pieces of notation. \([k]\) is the list \(\{1, \dots, k\}\), and \(\operatorname{argmin}_j \|x - \mu_j\|\) is the index \(j\) whose centre is nearest to \(x\). If two centres are equally near, a tie rule decides, and the choice matters, as you are about to see; unless we say otherwise, ties go to the smaller index \(j\). If a cluster comes out empty, its mean is undefined, and we keep its old centre.
 
 **A worked run.** Take the twelve messages with \(k = 2\) and start the centres at messages 1 and 2, \(\mu_1 = (0, 0)\) and \(\mu_2 = (1, 0)\). Two numbers are tracked each iteration: the **assignment cost**, the total squared distance of every message to the centre it was just assigned to (old centres), and \(G\), the cost after the centres moved to the means.
 
@@ -301,7 +301,7 @@ Two pieces of notation. \([k]\) is the list \(\{1, \dots, k\}\), and \(\operator
 | 3 | link share 0, 1, 2 | 23 | \((1, 1)\), \((4, 1)\) | 20 |
 | 4 | no change | 20 | | 20 |
 
-Notice the zigzag: 84, then 32, 26, 23, 23, 20, 20. Every number is at most the one before it. The run ends at the halves, cost 20, the best possible. Now start instead at messages 1 and 7, \((0, 0)\) and \((0, 2)\). The first assignment puts each row with the centre in its own row, the means move to \((2.5, 0)\) and \((2.5, 2)\), and nothing ever changes again. The run stops at the rows, cost 35, and has no idea that 20 exists.
+Notice the zigzag: 84, then 32, 26, 23, 23, 20, 20. Every number is at most the one before it. The run ends at the halves, cost 20, the best possible. Look closely at iteration 3, though. The two messages with link share 2 are exactly 1.5 from both centres, \((0.5, 1)\) and \((3.5, 1)\): a tie. The smaller-index rule sends them to cluster 1, and the run reaches 20. A rule that keeps a tied message where it already is would stop right there, at cost 23, which is also a place where neither step changes anything. Now start instead at messages 1 and 7, \((0, 0)\) and \((0, 2)\). The first assignment puts each row with the centre in its own row, the means move to \((2.5, 0)\) and \((2.5, 2)\), and nothing ever changes again. The run stops at the rows, cost 35, and has no idea that 20 exists.
 
 ```python
 P = [(x, 0) for x in range(6)] + [(x, 2) for x in range(6)]
@@ -347,7 +347,7 @@ The right-hand side is the old clusters measured from their own means, which is 
 
 Two consequences, and one honest limit.
 
-**It stops.** With ties broken in favour of the current cluster, a message changes cluster only when some other centre is strictly nearer, so whenever the clusters change, the right inequality is strict and \(G\) strictly drops. A strictly dropping cost can never revisit a clustering, and there are finitely many clusterings of \(m\) messages, so the algorithm stops after finitely many iterations. The proof gives no useful bound on how many: the number of clusterings is astronomically large.
+**It stops.** Suppose ties are broken in favour of the cluster a message is already in. Then a message changes cluster only when some other centre is strictly nearer, so whenever the clusters change, the right inequality is strict and \(G\) strictly drops. A strictly dropping cost can never revisit a clustering, and there are finitely many clusterings of \(m\) messages, so the algorithm stops after finitely many iterations. With the smaller-index rule, the same argument goes through if you also stop as soon as \(G\) fails to drop strictly, which is what the build-it challenge below does. Either way, the proof gives no useful bound on how many iterations: the number of clusterings is astronomically large.
 
 **Where it stops is a fixed point.** At the end, every message is already with its nearest centre and every centre is already the mean of its cluster: neither step can lower the cost on its own. That is all the guarantee says.
 
@@ -375,7 +375,7 @@ if __name__ == "__main__":
     assert cost == 20
 ```
 
-1. Implement `kmeans(points, centres)` for any \(k\) and any number of scores, returning the final labels, the final centres and the list of \(G\) values after each update step. Use the tie rule above, keep the old centre of an empty cluster, and stop when an assignment changes nothing.
+1. Implement `kmeans(points, centres)` for any \(k\) and any number of scores, returning the final labels, the final centres and the list of \(G\) values after each update step. Break ties toward the smaller index, keep the old centre of an empty cluster, and stop when an assignment changes nothing or \(G\) fails to drop strictly.
 2. Implement `best_of`, which starts from `k` distinct random messages `restarts` times and returns the lowest final cost with its labels.
 3. Add an assertion inside `kmeans` that checks both inequalities of the proposition at every iteration, then run it on 1,000 random point sets. It should never fire.
 
@@ -569,7 +569,7 @@ for _ in range(3000):
 print([round(x, 2) for x in v])
 ```
 
-It prints `[-0.42, -0.42, -0.38, 0.18, 0.22, 0.24, 0.6]` (possibly with every sign flipped, which describes the same split). The first triangle is negative and everything else positive: spectral clustering with \(k = 2\) cuts the bridge, which is the RatioCut optimum, and leaves the straggler where it hangs.
+It prints `[0.42, 0.42, 0.38, -0.18, -0.22, -0.24, -0.6]`. (An eigenvector with every sign flipped is still an eigenvector, so another start could print the same numbers with opposite signs, which describes the same split.) The first triangle is positive and everything else negative: spectral clustering with \(k = 2\) cuts the bridge, which is the RatioCut optimum, and leaves the straggler where it hangs.
 
 **Cost.** Building \(W\) takes \(O(m^2 n)\) time and \(O(m^2)\) space, and so does \(L\). A full symmetric eigendecomposition takes \(O(m^3)\) time with standard methods; k-means on \(m\) rows of length \(k\) then costs \(O(mk^2)\) per iteration. The \(m^2\) memory is what limits spectral clustering in practice.
 
@@ -610,39 +610,36 @@ In plain words: **squeeze the messages into as few distinguishable groups as you
 
 ```python
 from math import log2
+from collections import Counter
 
-docs = {"n1": ["news", "unsubscribe"],
-        "n2": ["news", "unsubscribe", "link"],
-        "i1": ["invoice", "pay"], "i2": ["invoice", "pay", "due"]}
+docs = [["news", "unsubscribe"], ["news", "unsubscribe", "link"],
+        ["invoice", "pay"], ["invoice", "pay", "due"]]
 
 def mi(joint):
-    pa, pb = {}, {}
+    pa, pb = Counter(), Counter()
     for (a, b), p in joint.items():
-        pa[a] = pa.get(a, 0) + p
-        pb[b] = pb.get(b, 0) + p
+        pa[a] += p
+        pb[b] += p
     return sum(p * log2(p / (pa[a] * pb[b]))
                for (a, b), p in joint.items())
 
-def bottleneck(C, beta):
-    pxc = {(x, C[x]): 1 / 4 for x in docs}
-    pcy = {}
-    for x, words in docs.items():
-        for w in words:
-            pcy[C[x], w] = pcy.get((C[x], w), 0) + 1 / 4 / len(words)
-    return round(mi(pxc), 3), round(mi(pcy), 3), round(
-        mi(pxc) - beta * mi(pcy), 3)
-
 for C in ("0000", "0011", "0101", "0123"):
-    print(C, bottleneck(dict(zip(docs, C)), 2))
+    xc, cy = Counter(), Counter()
+    for x, words in enumerate(docs):
+        xc[x, C[x]] += 1 / 4
+        for w in words:
+            cy[C[x], w] += 1 / 4 / len(words)
+    i_xc, i_cy = abs(round(mi(xc), 3)), abs(round(mi(cy), 3))
+    print(C, i_xc, i_cy, round(i_xc - 2 * i_cy, 3))
 ```
 
-It prints
+Each line gives the clustering, \(I(x; C)\), \(I(C; y)\) and the objective. It prints
 
 ```
-0000 (0.0, 0.0, 0.0)
-0011 (1.0, 1.0, -1.0)
-0101 (1.0, 0.191, 0.618)
-0123 (2.0, 1.191, -0.382)
+0000 0.0 0.0 0.0
+0011 1.0 1.0 -1.0
+0101 1.0 0.191 0.618
+0123 2.0 1.191 -0.382
 ```
 
 Read the four lines in order: one cluster for everything (`0000`), the two kinds (`0011`), a mixed pairing (`0101`), and every message alone (`0123`). The kinds cost 1 bit of compression and keep 1 bit about the words, the best value at \(\beta = 2\). The mixed pairing pays the same bit and keeps only 0.191 bits. Keeping every message apart keeps the most, 1.191 bits, but pays 2 bits for it. Turn \(\beta\) up and relevance wins: from \(\beta = 1/0.191 \approx 5.2\) on, the singletons beat the kinds. Turn it below 1 and one cluster for everything wins. So, once again, the answer depends on a number someone has to choose.
@@ -692,34 +689,31 @@ Step 5, the contradiction. Steps 3 and 4 give \(F(\mathcal X, d_2) = F(\mathcal 
 
 [[diagram:impossibility]]
 
-It is worth running the proof against a real clustering function to see exactly where it bites. Take single linkage with a scaled distance upper bound, \(\alpha = 0.5\): merge as long as the closest clusters are at most half the largest distance apart. Three messages \(a, b, c\). Under \(d_1\) all three pairs are at distance 1, the bound is 0.5, and nothing merges: singletons. Under \(d_2\), with \(d_2(a, b) = 1\), \(d_2(b, c) = 1.6\) and \(d_2(a, c) = 2.6\), the bound is 1.3, so \(a\) and \(b\) merge and \(c\) stays alone.
+It is worth running the proof against a real clustering function to see exactly where it bites. Take single linkage with a scaled distance upper bound, \(\alpha = 0.5\): merge as long as the closest clusters are at most half the largest distance apart. Three messages \(a, b, c\). Under \(d_1\) all three pairs are at distance 2, the bound is 1, and nothing merges: singletons. Under \(d_2\), with \(d_2(a, b) = 1\), \(d_2(b, c) = 1.6\) and \(d_2(a, c) = 2.6\), the bound is 1.3, so \(a\) and \(b\) merge and \(c\) stays alone.
 
 ```python
-from itertools import combinations
-
-X = "abc"
+from itertools import combinations as pairs
 
 def F(d, frac=0.5):
-    r = frac * max(d.values())
-    C = [{x} for x in X]
+    r, C = frac * max(d.values()), [{x} for x in "abc"]
     while True:
-        D = {(i, j): min(d[frozenset((x, y))] for x in C[i] for y in C[j])
-             for i, j in combinations(range(len(C)), 2)}
+        D = {(i, j): min(d["".join(sorted(x + y))]
+                         for x in C[i] for y in C[j])
+             for i, j in pairs(range(len(C)), 2)}
         if not D or min(D.values()) > r:
             return sorted("".join(sorted(c)) for c in C)
         i, j = min(D, key=D.get)
         C[i] |= C.pop(j)
 
-pair = lambda x, y: frozenset((x, y))
-d1 = {pair(*p): 1.0 for p in combinations(X, 2)}
-d2 = {pair("a", "b"): 1.0, pair("b", "c"): 1.6, pair("a", "c"): 2.6}
+d1 = {"ab": 2.0, "bc": 2.0, "ac": 2.0}
+d2 = {"ab": 1.0, "bc": 1.6, "ac": 2.6}
 alpha = max(d1[p] / d2[p] for p in d1)
 d3 = {p: alpha * d2[p] for p in d2}
 print(F(d1), F(d2), F(d3), alpha)
 print(all(d3[p] >= d1[p] for p in d1))
 ```
 
-It prints `['a', 'b', 'c'] ['ab', 'c'] ['ab', 'c'] 1.0` and `True`. This function is scale invariant (the bound scales with the data) and its output under \(d_3\) matches \(d_2\). But \(d_3\) is a consistent change of \(d_1\), every pair moved apart or stayed, and the output changed from singletons to \(\{a, b\}, \{c\}\). The property that gave way is consistency: raising the largest distance raised the bound, and that merged a pair that had not moved at all.
+It prints `['a', 'b', 'c'] ['ab', 'c'] ['ab', 'c'] 2.0` and `True`: step 2 found \(\alpha = 2\), so \(d_3\) puts the pairs at 2, 3.2 and 5.2, each at least 2. This function is scale invariant (the bound scales with the data) and its output under \(d_3\) matches \(d_2\). But \(d_3\) is a consistent change of \(d_1\), every pair moved apart or stayed, and the output changed from singletons to \(\{a, b\}, \{c\}\). The property that gave way is consistency: raising the largest distance raised the bound, and that merged a pair that had not moved at all.
 
 **No single bad property.** The theorem does not say that one of the three is to blame. For every *pair* of the three properties, there are natural clustering functions with both; you can even get each pair from single linkage alone, just by changing the stopping rule among the three you met. Working out which rule gives which pair is the third problem at the end of this lesson. What is known about the costs: every method that minimizes a center-based cost, such as k-means, fails consistency, while minimizing the sum of in-cluster distances satisfies it. We state these two without proof.
 

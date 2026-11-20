@@ -321,7 +321,7 @@ print(round(var, 5), round(p * (1 - p) / m, 5))
 
 It prints `0.00351 0.0035`: the variance of 100,000 simulated weekly averages, against the formula. The second display is the `chebyshev` column of the snippet after Hoeffding’s inequality.
 
-For our row \(h_{11}\), each loss is 1 with probability 0.3, so its variance is \(0.3 \times 0.7 = 0.21\). With \(m = 60\) and \(\varepsilon = 0.1\), Chebyshev says the row is off by 0.1 or more with probability at most \(0.21/0.6 = 0.35\).
+For our row \(h_{11}\), the variance of one loss is \(0.3 \times 0.7 = 0.21\), as we found above. With \(m = 60\) and \(\varepsilon = 0.1\), Chebyshev says the row is off by 0.1 or more with probability at most \(0.21/0.6 = 0.35\).
 
 That bound shrinks like \(1/m\). For one row, fine. For a dashboard, it is the wrong shape, as you’ll see when we add up the rows: we will need a bound that shrinks *exponentially* in \(m\). That is Hoeffding’s inequality, and its engine is a small lemma about one bounded variable.
 
@@ -482,7 +482,7 @@ Here is the surprise. At \(m = 60\), Hoeffding is the *worse* of the two bounds:
 
 ## From one row to every row
 
-Now we put the two pieces together: Hoeffding for each row, the union bound for the dashboard.
+Now we put the two pieces together: Hoeffding for each row, the union bound for the dashboard. With \(\varepsilon = 0.05\), Hoeffding says each row is off by more than 0.05 with chance at most \(2e^{-2m \times 0.0025}\). The union bound says the chance that some row of thirty is off is at most thirty times that. So choose \(m\) to push thirty times that below the 5% of bad weeks we tolerate: 1,419 examples do it, as we are about to compute.
 
 **Theorem (finite classes have uniform convergence).** Let \(\mathcal H\) be a finite hypothesis class, \(Z\) a domain, and \(\ell: \mathcal H \times Z \to [0, 1]\) a loss function. Then \(\mathcal H\) has the uniform convergence property with
 
@@ -494,11 +494,23 @@ and therefore \(\mathcal H\) is agnostic PAC learnable by ERM with
 
 Here \(\log\) is the natural logarithm.
 
-*Proof.* Fix \(\varepsilon\), \(\delta\) and any distribution \(\mathcal D\) over \(Z\). We want \(\mathcal D^m(\{S : \forall h \in \mathcal H,\ |L_S(h) - L_{\mathcal D}(h)| \le \varepsilon\}) \ge 1 - \delta\). Equivalently, the complement, the set of training sequences that are *not* \(\varepsilon\)-representative, must have probability at most \(\delta\).
+Read the first bound from the inside out.
+
+- The type \(\ell: \mathcal H \times Z \to [0, 1]\) says the loss takes a hypothesis and an example and returns a number between 0 and 1; the 0-1 loss is one such.
+- \(|\mathcal H|\), with the bars of lesson 1 around a set, is how many hypotheses the class has: the number of rows.
+- \(2|\mathcal H|/\delta\) grows with the class and with the confidence you demand, and \(\log\) shrinks it drastically.
+- Dividing by \(2\varepsilon^2\) charges for accuracy: halve \(\varepsilon\) and you pay four times as much.
+- The brackets \(\lceil \cdot \rceil\) are the ceiling: round up to the next whole number, since you cannot label part of an example.
+
+The second bound is the first evaluated at \(\varepsilon/2\): halving \(\varepsilon\) quarters \(\varepsilon^2\), which turns \(2\varepsilon^2\) in the denominator into \(\varepsilon^2/2\), the same as a 2 on top over \(\varepsilon^2\). In plain words: **for a finite class with losses between 0 and 1, \(\log(2|\mathcal H|/\delta)/(2\varepsilon^2)\) examples, rounded up, make every row \(\varepsilon\)-accurate with probability \(1 - \delta\), and four times as many make ERM \(\varepsilon\)-close to the best.** For the 30-row dashboard with \(\varepsilon = \delta = 0.05\): \(\log 1200 \approx 7.09\), divided by \(2 \times 0.0025 = 0.005\), is 1,418.02, rounded up to 1,419. The `m_uc` snippet after the proof computes exactly this.
+
+*Proof.* Fix \(\varepsilon\), \(\delta\) and any distribution \(\mathcal D\) over \(Z\). We want the representative training sequences to have probability at least \(1 - \delta\). To write that down we need one more piece of notation: for a set \(A\) of training sequences, \(\mathcal D^m(A)\) is the probability that \(S \sim \mathcal D^m\) lands in \(A\). With lesson 1’s set-builder braces, where the colon reads “such that”, the goal is \(\mathcal D^m(\{S : \forall h \in \mathcal H,\ |L_S(h) - L_{\mathcal D}(h)| \le \varepsilon\}) \ge 1 - \delta\). Equivalently, the complement, the set of training sequences that are *not* \(\varepsilon\)-representative, must have probability at most \(\delta\).
 
 *Step 1, name the bad event row by row.* A training sequence fails to be representative exactly when at least one row is off by more than \(\varepsilon\):
 
 \[ \{S : \exists h \in \mathcal H,\ |L_S(h) - L_{\mathcal D}(h)| > \varepsilon\} = \bigcup_{h \in \mathcal H} \{S : |L_S(h) - L_{\mathcal D}(h)| > \varepsilon\}. \]
+
+Two symbols are new. \(\exists\) reads “there exists”, so the left side is the set of training sequences such that some row is off by more than \(\varepsilon\). \(\bigcup_{h \in \mathcal H}\) is a union: everything that belongs to at least one of the sets after it, one set per row. In plain words: **a week is bad exactly when it is bad for at least one row.** The typical week is in the bad set for \(\varepsilon = 0.1\), because it is in row \(h_{18}\)’s, whose luck was 0.132.
 
 *Step 2, the union bound.* The class is finite, so this is a finite union, and its probability is at most the sum:
 
@@ -506,13 +518,35 @@ Here \(\log\) is the natural logarithm.
 
 The union bound asks nothing about how the events overlap. The rows of a real dashboard are anything but independent (they are computed on the same examples), and that is fine.
 
+Here \(\sum_{h \in \mathcal H}\) adds one term per row, thirty terms for our dashboard. In plain words: **the chance that some row is bad is at most the sum of each row’s chance of being bad.** In our world with \(m = 60\) and \(\varepsilon = 0.1\), Python can estimate both sides, and the total that Hoeffding allows in the next step:
+
+```python
+import random
+from math import exp
+
+rng, m, eps, weeks = random.Random(0), 60, 0.1, 10_000
+r = [0.25 + 0.005 * j for j in range(30)]
+per_row, any_row = [0] * 30, 0
+for _ in range(weeks):
+    bad = [abs(rng.binomialvariate(m, p) / m - p) > eps
+           for p in r]
+    per_row = [c + b for c, b in zip(per_row, bad)]
+    any_row += any(bad)
+print(round(any_row / weeks, 3), round(sum(per_row) / weeks, 3))
+print(round(30 * 2 * exp(-2 * m * eps**2), 2))
+```
+
+It prints `0.954 2.843` and then `18.07`: some row is bad in 95% of weeks, the thirty rows’ chances add up to 2.84, and Hoeffding’s total is 18. All three are true, and the last two are useless at 60 examples, since a bound above 1 says nothing. The union bound pays for overlaps it never looks at, and Hoeffding pays for distributions it never sees. Step 5 is where we choose \(m\) to bring the last number below \(\delta\).
+
 *Step 3, Hoeffding for one fixed row.* Fix one \(h\) and set \(\theta_i = \ell(h, z_i)\). Because \(h\) is fixed in advance, before the sample is drawn, each \(\theta_i\) is a function of \(z_i\) alone, so \(\theta_1, \dots, \theta_m\) are i.i.d., because \(z_1, \dots, z_m\) are. Each has expectation \(L_{\mathcal D}(h)\), and each lies in \([0, 1]\), the range of the loss. Their average is \(L_S(h)\). Hoeffding with \(a = 0\), \(b = 1\) gives
 
 \[ \mathcal D^m\big(\{S : |L_S(h) - L_{\mathcal D}(h)| > \varepsilon\}\big) \le 2 e^{-2 m \varepsilon^2}. \]
 
+This is Hoeffding’s inequality with \(\mu = L_{\mathcal D}(h)\) and width 1, its probability written as \(\mathcal D^m\) of a set; for one row at \(m = 60\) and \(\varepsilon = 0.1\) it is the 0.60 we met before.
+
 *Step 4, add up.* Each of the \(|\mathcal H|\) terms of the sum is at most \(2e^{-2m\varepsilon^2}\), so the probability of a non-representative sample is at most \(2 |\mathcal H| e^{-2 m \varepsilon^2}\).
 
-*Step 5, solve for \(m\).* We need \(2|\mathcal H| e^{-2m\varepsilon^2} \le \delta\). Divide by \(2|\mathcal H|\), take logarithms (both sides are positive and \(\log\) is increasing), and rearrange: \(-2m\varepsilon^2 \le \log(\delta / 2|\mathcal H|)\), that is, \(m \ge \log(2|\mathcal H|/\delta)/(2\varepsilon^2)\). The smallest integer with that property is the ceiling in the statement.
+*Step 5, solve for \(m\).* We need \(2|\mathcal H| e^{-2m\varepsilon^2} \le \delta\). Divide by \(2|\mathcal H|\), take logarithms (both sides are positive and \(\log\) is increasing), and rearrange: \(-2m\varepsilon^2 \le \log(\delta / 2|\mathcal H|)\), that is, \(m \ge \log(2|\mathcal H|/\delta)/(2\varepsilon^2)\). The smallest integer with that property is the ceiling in the statement. For the 30-row dashboard at \(m = 1{,}419\) and \(\varepsilon = 0.05\), the total is \(60\,e^{-7.095} \approx 0.0498\), just under \(\delta = 0.05\).
 
 *Step 6, learning.* The agnostic PAC bound is the corollary of the last section, applied with \(\varepsilon/2\): replacing \(\varepsilon\) by \(\varepsilon/2\) turns \(2\varepsilon^2\) in the denominator into \(\varepsilon^2/2\). \(\blacksquare\)
 
@@ -532,7 +566,7 @@ for size in (30, 465, 4525):
     print(size, m_uc(size, 0.05, 0.05), m_uc(size, 0.025, 0.05))
 ```
 
-It prints `30 1419 5673`, `465 1967 7865` and `4525 2422 9686`. Fifteen times more rows cost 1.4 times more examples; 150 times more rows cost 1.7 times more.
+The function `m_uc` is the first bound, term by term: `log(2 * size / delta)` on top, `2 * eps**2` below, and `ceil` for the brackets. It prints `30 1419 5673`, `465 1967 7865` and `4525 2422 9686`. Fifteen times more rows cost 1.4 times more examples; 150 times more rows cost 1.7 times more.
 
 Does the promise hold in our world? Give the 30-row dashboard 1,419 examples a week, and count, over 10,000 weeks, how often some row is off by more than 0.05, and how often the shipped hypothesis is more than \(2\varepsilon = 0.1\) worse than the best.
 
@@ -554,13 +588,15 @@ It prints `0.0019 0.0`. The theorem allowed 5% of weeks to be non-representative
 
 ## Infinite classes, the engineer’s way
 
-The theorem needs a finite class. Many classes we care about are not finite. Take the domain \(\mathcal X = \mathbb R\) (a single number per message, say its length), labels \(\pm 1\), and the **threshold** hypotheses \(h_\theta(x) = \operatorname{sign}(x - \theta)\): say \(+1\) above \(\theta\) and \(-1\) below. There is one hypothesis for every real \(\theta\), infinitely many, and \(\log |\mathcal H|\) is infinite.
+The theorem needs a finite class. Many classes we care about are not finite. Take the domain \(\mathcal X = \mathbb R\) (a single number per message, say its length), labels \(\pm 1\), and the **threshold** hypotheses: pick a cutoff, say 500 characters, and call every longer message \(+1\) and every shorter one \(-1\). Written with the cutoff \(\theta\), these are \(h_\theta(x) = \operatorname{sign}(x - \theta)\), where \(\operatorname{sign}\) gives \(+1\) for a positive number and \(-1\) for a negative one; with \(\theta = 500\), a message of length 620 gets \(\operatorname{sign}(120) = +1\). There is one hypothesis for every real \(\theta\), infinitely many, and \(\log |\mathcal H|\) is infinite.
 
 But your computer never stores a real number. It stores \(\theta\) as a 64-bit floating-point number, and there are at most \(2^{64}\) of those. So the class you actually learn has at most \(2^{64}\) members. More generally, a class described by \(d\) numbers is, in practice, a class of at most \(2^{64 d}\) hypotheses. Call this the **discretization trick**. Plugging it into the agnostic PAC bound,
 
 \[ \frac{2 \log(2 \cdot 2^{64d}/\delta)}{\varepsilon^2} = \frac{128\,d \log 2 + 2\log(2/\delta)}{\varepsilon^2} \le \frac{128\,d + 2\log(2/\delta)}{\varepsilon^2}, \]
 
 where the last step uses \(\log 2 < 1\) to get a cleaner formula.
+
+Read it from the inside out. \(2^{64d}\) is how many different settings \(d\) numbers of 64 bits each can take, so it stands in for \(|\mathcal H|\) in the agnostic PAC bound. The logarithm turns powers into products, \(\log(2^{64d}) = 64d \log 2\), and turns the product and quotient inside into a sum, \(\log(2 \cdot 2^{64d}/\delta) = 64d\log 2 + \log(2/\delta)\). The 2 in front doubles both terms, which gives the \(128\,d\log 2\). In plain words: **a class described by \(d\) floating-point numbers needs at most \((128d + 2\log(2/\delta))/\varepsilon^2\) examples, a cost that grows only linearly in \(d\).** For one threshold, \(d = 1\), with \(\varepsilon = 0.1\) and \(\delta = 0.05\): \((128 + 2\log 40)/0.01 \approx (128 + 7.38)/0.01 \approx 13{,}538\). In the snippet, `size` is \(2^{64d}\), the first print is the left side of the display and the second is the right.
 
 ```python
 from math import log

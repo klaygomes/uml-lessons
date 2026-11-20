@@ -340,8 +340,8 @@ Folder: `16-kernel-methods/`
 
 Folder: `17-multiclass-ranking/`
 
-- [ ] 1 prose and sheet (drafting by agent, started 2026-11-20; brief in the session scratchpad, template docs/writer-brief.md)
-- [ ] 2 gates: book check (PDF agents), read-aloud, fresh reader, greps
+- [x] 1 prose and sheet (about 24,500 words with code, 65 snippets run by the lead; the failing fences are build-it stubs; no book references; written with the formula walkthrough and concept-before-symbol rules; 2026-11-20). Too long for one sitting: the writer recommends splitting into 17a (multiclass, structured output) and 17b (ranking) at "Ranking the inbox"; ask the user. Writer's claims to verify: the zero-one formula (b+d) typo, the printed λ in the SVM corollary, the Kendall rewrite holding only as ≤
+- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -592,8 +592,8 @@ Skipped on purpose to keep writing and save CPU (user, 2026-11-20: "keep writing
 - [ ] Lessons 2 to 19: learner judges (step 6), ask before running (CPU)
 - [ ] Lesson 3: align key words with lesson 2 (the lesson 3 writer could not see lesson 2's sheet); lesson 3's Bayes-optimality proof is the writer's own, verify it
 - [ ] Lesson 6: decide whether to split into 06a/06b (about 10,400 words), and verify the claimed book error in the uniform-convergence proof's Hoeffding constant
-- [ ] Lessons 2 to 19 (and any draft written before 2026-11-20 evening): formula walkthrough pass, every formula read aloud as in lesson 1's risks (the learner's rule above); revision writers, then rerun `_kit/check_prose.py`. Lesson 1 done 2026-11-20; lessons 2 to 7 running (2026-11-20, brief in the session scratchpad as brief-walkthrough.md, a copy of the rule is in docs/writer-brief.md); lessons 5 to 19 next. Writers for 13 and 17, 20 to 25 were told the rule mid-draft
-- [ ] Lessons 1 to 31: clean-context reviewer (step 1b, `docs/reviewer-brief.md`) after each lesson's writer and walkthrough pass. Lesson 2 running after its walkthrough pass (8,156 to 13,102 words). Lesson 3 running after its walkthrough pass (7,595 to 11,140 words, 7 snippets added). Lesson 1 done 2026-11-20 (13 findings fixed: 6 used before explained, 3 formulas without walkthrough, 3 proof gaps, 1 formula before intuition; page rebuilt, fit OK)
+- [ ] Lessons 2 to 19 (and any draft written before 2026-11-20 evening): formula walkthrough pass, every formula read aloud as in lesson 1's risks (the learner's rule above); revision writers, then rerun `_kit/check_prose.py`. Lesson 1 done 2026-11-20; lessons 2 to 11 started (2026-11-20, brief in the session scratchpad as brief-walkthrough.md, a copy of the rule is in docs/writer-brief.md); lessons 5 to 19 next. Writers for 13 and 17, 20 to 25 were told the rule mid-draft
+- [ ] Lessons 1 to 31: clean-context reviewer (step 1b, `docs/reviewer-brief.md`) after each lesson's writer and walkthrough pass. Lesson 2 running after its walkthrough pass (8,156 to 13,102 words). Lesson 3 done 2026-11-20 (walkthrough pass 7,595 to 11,140 words; review: 6 findings fixed incl. the realizability definition, verdict ready). Lesson 1 done 2026-11-20 (13 findings fixed: 6 used before explained, 3 formulas without walkthrough, 3 proof gaps, 1 formula before intuition; page rebuilt, fit OK)
 - [ ] Lessons 20 to 31: prose drafts (12 to 19 drafting) (writers; the brief template is `docs/writer-brief.md`)
 - [x] Commit the series repo and publish it: github.com/klaygomes/uml-lessons, Pages at http://www.estacouveflor.com/uml-lessons/ (user asked, 2026-11-20). Push with the klaygomes gh account (`gh auth switch -u klaygomes`), then switch back to cleiton-loiola
 - [ ] Commit the skill changes in ~/dotfiles (when the user asks)

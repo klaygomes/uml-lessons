@@ -66,19 +66,51 @@ It prints `2`, then `[5, 1, 3, 1, -3, -3, -3, -1]`, then `0`. The best single-fe
 
 ## Weighing the evidence
 
-Let’s name what we just built. A **linear function** in the strict sense is \(\mathbf x \mapsto \langle \mathbf w, \mathbf x \rangle\), where \(\langle \mathbf w, \mathbf x \rangle = \sum_{i=1}^d w_i x_i\) is the inner product. Adding a constant gives an **affine function**:
+Let’s name what we just built. Scoring message E took three moves: multiply each count by its word’s weight (\(2 \cdot 1 = 2\) for “free”, \(-2 \cdot 2 = -4\) for “meeting”), add those products (\(2 - 4 = -2\)), then add the constant (\(-2 - 1 = -3\)). The first two moves, “multiply matching entries and add”, have a name: the **inner product** of the weights and the counts, written \(\langle \mathbf w, \mathbf x \rangle\). Here it is \(-2\). A **linear function** in the strict sense is \(\mathbf x \mapsto \langle \mathbf w, \mathbf x \rangle\), where the arrow \(\mapsto\) reads “the message \(\mathbf x\) is sent to”, and \(\langle \mathbf w, \mathbf x \rangle = \sum_{i=1}^d w_i x_i\). Adding the constant gives an **affine function**:
 
 \[ h_{\mathbf w, b}(\mathbf x) = \langle \mathbf w, \mathbf x \rangle + b = \left( \sum_{i=1}^d w_i x_i \right) + b. \]
 
-Here \(\mathbf w \in \mathbb R^d\) is the **weight vector**, one weight per word, and \(b \in \mathbb R\) is the **bias term**. (The name is standard, and unfortunate: the bias term has nothing to do with the inductive bias of lesson 1. We will always say “bias term” for \(b\).) The class of all of them is
+Here \(\mathbf w \in \mathbb R^d\) is the **weight vector**, one weight per word, and \(b \in \mathbb R\) is the **bias term**. (The name is standard, and unfortunate: the bias term has nothing to do with the inductive bias of lesson 1. We will always say “bias term” for \(b\).) Read the formula from the inside out.
+
+- \(w_i x_i\) is one product: the weight of word \(i\) times how many times word \(i\) appears.
+- \(\sum_{i=1}^d\) is a sum: let \(i\) run from 1 up to \(d\), one word at a time, and add up what follows. So the bracket adds one product per word.
+- The angle brackets \(\langle \mathbf w, \mathbf x \rangle\) are shorthand for exactly that bracket, the inner product.
+- \(+\, b\) adds the bias term, the score of a message with no words at all.
+- The subscripts in \(h_{\mathbf w, b}\) say which weights and which bias term this particular function uses; \(h_{\mathbf w, b}(\mathbf x)\) is its score on message \(\mathbf x\).
+
+In plain words: **the score of a message is each word count times its weight, all added up, plus a constant.** Push message E through it with \(\mathbf w = (2, -2)\), \(b = -1\) and \(\mathbf x = (1, 2)\):
+
+```python
+w, b = (2, -2), -1
+x = (1, 2)
+terms = [w_i * x_i for w_i, x_i in zip(w, x)]
+inner = sum(terms)
+print(terms, inner, inner + b)
+```
+
+It prints `[2, -4] -2 -3`: the two products, their sum \(\langle \mathbf w, \mathbf x \rangle = -2\), and the score \(-3\), the same number as in the table check above.
+
+Every choice of weights and bias term gives one such scoring function. The score we found uses \(((2, -2), -1)\); the production filter’s old instinct, “just count the frees”, is \(((1, 0), 0)\); a silly filter that ignores the message and always says 5 is \(((0, 0), 5)\). The collection of all of them is
 
 \[ L_d = \{ \mathbf x \mapsto \langle \mathbf w, \mathbf x \rangle + b \; : \; \mathbf w \in \mathbb R^d, \, b \in \mathbb R \}. \]
 
-Read it as: \(L_d\) is a set of functions, each one named by a pair \((\mathbf w, b)\), and each takes a vector \(\mathbf x\) and returns the number \(\langle \mathbf w, \mathbf x \rangle + b\).
+Read it from the inside out. The part before the colon, \(\mathbf x \mapsto \langle \mathbf w, \mathbf x \rangle + b\), describes one member: the function that sends a message to its score. The colon reads “such that”, or here “where”: the part after it says which choices are allowed, any list of \(d\) real weights and any real bias term. The braces \(\{ \cdots \}\) collect every member you get that way into one set, and \(L_d\) is the name of that set, with \(d\) recording how many words there are. In plain words: **\(L_d\) is the set of all scoring functions you get by choosing \(d\) weights and a bias term.** Here are the three members above, each applied to message B, \((2, 1)\):
+
+```python
+def h(w, b):
+    return lambda x: sum(p * q for p, q in zip(w, x)) + b
+
+members = [h((2, -2), -1), h((1, 0), 0), h((0, 0), 5)]
+print([f((2, 1)) for f in members])
+```
+
+It prints `[1, 2, 5]`: one message, three members of \(L_2\), three scores.
 
 There is a cheap trick that makes the bias term disappear, and we will use it constantly. Glue \(b\) onto the front of the weights and a constant 1 onto the front of every message: \(\mathbf w' = (b, w_1, \dots, w_d) \in \mathbb R^{d+1}\) and \(\mathbf x' = (1, x_1, \dots, x_d) \in \mathbb R^{d+1}\). Then
 
 \[ \langle \mathbf w', \mathbf x' \rangle = b \cdot 1 + \sum_{i=1}^d w_i x_i = \langle \mathbf w, \mathbf x \rangle + b. \]
+
+The prime in \(\mathbf w'\) and \(\mathbf x'\) only marks the longer, glued lists. Read left to right: the inner product of the glued lists multiplies matching entries, and the first entries are \(b\) and 1, so the first product is \(b \cdot 1\); the remaining entries are the old weights and counts, giving the old sum; and that total is the old score. In plain words: **gluing the bias term onto the weights and a 1 onto the message leaves every score unchanged.** For message B, \(\mathbf w' = (-1, 2, -2)\) and \(\mathbf x' = (1, 2, 1)\), so \(\langle \mathbf w', \mathbf x' \rangle = -1 + 4 - 2 = 1\), the same as \(2 \cdot 2 - 2 \cdot 1 - 1\).
 
 So every affine function on \(\mathbb R^d\) is a **homogeneous** linear function, one with no bias term, on \(\mathbb R^{d+1}\), applied after appending the constant 1. Whenever it simplifies things, we drop \(b\) and work with \(h_{\mathbf w}(\mathbf x) = \langle \mathbf w, \mathbf x \rangle\), with the understanding that the 1 is already inside \(\mathbf x\). People say “linear” for both kinds.
 
@@ -90,27 +122,57 @@ linear = sum(wi * xi for wi, xi in zip(w_prime, x_prime))
 print(affine, linear)
 ```
 
-It prints `1 1`: message B scored the same way, once with a bias term and once with the 1 glued on.
+It prints `1 1`: message B scored the same way, once with a bias term and once with the 1 glued on, exactly the hand computation above.
 
-A linear function returns a number. To get a label, compose it with a function \(\varphi: \mathbb R \to \mathcal Y\). For regression, where \(\mathcal Y = \mathbb R\), \(\varphi\) is the identity, and we will get there. For classification, \(\varphi\) is the **sign** function, \(\operatorname{sign}(a) = +1\) if \(a > 0\) and \(-1\) otherwise. This is why the labels became \(\pm 1\): the sign of the score *is* the label.
+A linear function returns a number, but the filter has to return a label. Remember from lesson 1 that \(\mathcal X\) is the **domain set**, every message that could arrive, and \(\mathcal Y\) is the **label set**, every answer the filter may give. To get a label, feed the score into a second function \(\varphi: \mathbb R \to \mathcal Y\); the notation \(\varphi: \mathbb R \to \mathcal Y\) says “\(\varphi\) takes a real number and returns a label”. For regression, where \(\mathcal Y = \mathbb R\), \(\varphi\) is the identity, which returns its input unchanged, and we will get there. For classification, \(\varphi\) is the **sign** function, \(\operatorname{sign}(a) = +1\) if \(a > 0\) and \(-1\) otherwise: \(\operatorname{sign}(5) = +1\), \(\operatorname{sign}(-3) = -1\), and \(\operatorname{sign}(0) = -1\). This is why the labels became \(\pm 1\): the sign of the score *is* the label.
 
 **Definition (halfspaces).** Let \(\mathcal X = \mathbb R^d\) and \(\mathcal Y = \{-1, +1\}\). The class of **halfspaces** is
 
 \[ HS_d = \operatorname{sign} \circ L_d = \{ \mathbf x \mapsto \operatorname{sign}(\langle \mathbf w, \mathbf x \rangle + b) \; : \; \mathbf w \in \mathbb R^d, \, b \in \mathbb R \}. \]
 
-Each halfspace is named by \((\mathbf w, b)\), and on a message \(\mathbf x\) it answers \(\operatorname{sign}(\langle \mathbf w, \mathbf x \rangle + b)\).
+The small circle \(\circ\) means **composition**, “do one function, then feed its answer to the next”: \(\operatorname{sign} \circ L_d\) means “take any member of \(L_d\), compute its score, then take the sign”. The set on the right spells that out with the same braces and “such that” colon as \(L_d\): one member for each choice of \(\mathbf w\) and \(b\), and the member sends \(\mathbf x\) to the sign of its score. The name \(HS_d\) is short for “halfspaces in \(d\) dimensions”. In plain words: **a halfspace scores the message with weights and a bias term, then answers junk if the score is positive and keep otherwise.** With our weights, A scores 5 and gets \(+1\), E scores \(-3\) and gets \(-1\), and the empty message H scores \(-1\) and gets \(-1\):
+
+```python
+sign = lambda a: 1 if a > 0 else -1
+affine = lambda x: 2 * x[0] - 2 * x[1] - 1
+halfspace = lambda x: sign(affine(x))
+msgs = [(3, 0), (1, 2), (0, 0)]
+print([affine(x) for x in msgs], [halfspace(x) for x in msgs])
+```
+
+It prints `[5, -3, -1] [1, -1, -1]`: first the scores, then the labels the composition gives them.
 
 Why the name? Look at the picture in two dimensions. The points where the score is exactly zero, \(\{\mathbf x : \langle \mathbf w, \mathbf x \rangle + b = 0\}\), form a line (in \(d\) dimensions, a **hyperplane**), and that line is perpendicular to \(\mathbf w\). In the homogeneous case it passes through the origin, and the sign of \(\langle \mathbf w, \mathbf x \rangle\) tells you which side \(\mathbf x\) is on: positive when \(\mathbf x\) makes an acute angle with \(\mathbf w\), negative when the angle is obtuse. The hyperplane cuts the space into two halves, and the hypothesis labels one half junk and the other keep. For our score \(2x_1 - 2x_2 - 1\), the boundary is the line \(x_2 = x_1 - \tfrac12\), and the junk side is below it, where “free” outweighs “meeting”.
 
+That set deserves a slow reading too. In \(\{\mathbf x : \langle \mathbf w, \mathbf x \rangle + b = 0\}\) the braces collect messages, and the colon reads “such that”: all messages \(\mathbf x\) such that the score is exactly zero. In plain words: **the boundary is every message the filter scores as perfectly balanced.** Half a “free” and no “meeting”, \((0.5, 0)\), scores \(1 - 0 - 1 = 0\), and so do \((1.5, 1)\) and \((3.5, 3)\). Walking along the line from one of them to the next moves by \((1, 1)\), and \(\langle \mathbf w, (1, 1) \rangle = 2 - 2 = 0\), which is what “the line is perpendicular to \(\mathbf w\)” means: a direction with zero inner product with \(\mathbf w\).
+
+```python
+w, b = (2, -2), -1
+score = lambda x: w[0] * x[0] + w[1] * x[1] + b
+on_line = [(0.5, 0), (1.5, 1), (3.5, 3)]
+print([score(x) for x in on_line])
+along = (1, 1)
+print(w[0] * along[0] + w[1] * along[1])
+```
+
+It prints `[0.0, 0.0, 0.0]` and then `0`.
+
 [[diagram:halfspace]]
 
-One convention needs stating, because it bites in proofs: a message exactly on the boundary has score 0, and our sign function calls it keep. In training we will be stricter than that and ask for \(y \langle \mathbf w, \mathbf x \rangle > 0\), which says “the score has the label’s sign, and is not zero”. It is a compact way of writing “correct”, and it is the second reason for the \(\pm 1\) labels.
+One convention needs stating, because it bites in proofs: a message exactly on the boundary has score 0, and our sign function calls it keep. In training we will be stricter than that. Multiply the score by the label: junk message A has label \(+1\) and score 5, product 5; keep message E has label \(-1\) and score \(-3\), product 3. Both right, both positive. A junk message scored \(-1\) would give \(-1\), and a keep message scored 0 would give 0. So we ask for \(y \langle \mathbf w, \mathbf x \rangle > 0\) (with the 1 glued onto \(\mathbf x\), so the score already includes the bias term). Inside out: \(\langle \mathbf w, \mathbf x \rangle\) is the score, \(y\) in front multiplies it by the label, and \(> 0\) demands a strictly positive product. We call that product the **signed score**. In plain words: **the score has the label’s sign, and is not zero.** It is a compact way of writing “correct”, and it is the second reason for the \(\pm 1\) labels.
+
+```python
+for y, score in [(1, 5), (-1, -3), (-1, 0), (1, -1)]:
+    print(y, score, y * score, y * score > 0)
+```
+
+It prints `1 5 5 True`, `-1 -3 3 True`, `-1 0 0 False` and `1 -1 -1 False`: the two correct messages pass, the boundary case and the mistake fail.
 
 ## Why brute force is hopeless, and what saves us
 
-So the hypothesis class is \(HS_d\), and we would like to run ERM on it: return a halfspace with the smallest empirical risk under the 0-1 loss. Two separate worries stand in the way.
+So the hypothesis class is \(HS_d\), and we would like to run ERM on it. As a reminder from lesson 2, **ERM**, empirical risk minimization, means: return a hypothesis with the smallest **empirical risk**, the fraction of labelled examples it gets wrong. Counting plain mistakes like that is the **0-1 loss**: a mistake costs 1, a correct answer costs 0. The production rule, wrong on E and G, has empirical risk \(2/8 = 0.25\); our weighted score has 0. Two separate worries stand in the way.
 
-The first is statistical. \(HS_d\) is infinite, so lesson 2’s finite-class bound says nothing. But lesson 6 gave us the tool for infinite classes, the VC dimension, and later in this lesson we will prove that the VC dimension of \(HS_d\) is \(d + 1\). By the fundamental theorem of lesson 6, ERM over halfspaces is then a PAC learner with a number of examples that grows roughly like \((d + \log(1/\delta))/\varepsilon\). So statistically, halfspaces are fine.
+The first is statistical. \(HS_d\) is infinite, so lesson 2’s finite-class bound says nothing. But lesson 6 gave us the tool for infinite classes, the **VC dimension**, a single number measuring how many points a class can label in every possible way, and later in this lesson we will prove that the VC dimension of \(HS_d\) is \(d + 1\). Recall the two dials of PAC learning: \(\varepsilon\) is the accuracy you ask for (true risk at most \(\varepsilon\)), and \(\delta\) is the chance of failure you tolerate (the guarantee holds with probability at least \(1 - \delta\)). By the fundamental theorem of lesson 6, ERM over halfspaces is then a PAC learner with a number of examples that grows roughly like \((d + \log(1/\delta))/\varepsilon\). Read it inside out: \(\log(1/\delta)\), the natural logarithm of \(1/\delta\), grows slowly as you demand more confidence (\(\delta = 0.05\) gives about 3); add the number of words \(d\); and divide by the accuracy \(\varepsilon\), so halving \(\varepsilon\) doubles the count. In plain words: **the examples needed grow with the number of words and the log of the confidence, divided by the accuracy.** With thirty words, \(\delta = 0.05\) and \(\varepsilon = 0.1\), that is about \((30 + 3)/0.1 = 330\), times a constant; we will compute it properly at the end of the VC section. So statistically, halfspaces are fine.
 
 The second worry is computational, and it is the one from the opening: how do you *find* the empirical risk minimizer among infinitely many halfspaces? In general, when no halfspace gets every example right (the **agnostic** case of lesson 3), this is known to be computationally hard. The usual way around it is to minimize a different, friendlier loss instead of the 0-1 loss; logistic regression at the end of this lesson is one example, and lesson 12 studies the idea in depth.
 
@@ -120,7 +182,18 @@ In the separable case the minimum empirical risk is 0, so an ERM hypothesis is e
 
 \[ y_i \langle \mathbf w, \mathbf x_i \rangle > 0 \quad \text{for all } i = 1, \dots, m. \]
 
-We will see two ways to find one: a linear program, and the Perceptron.
+Here \(m\) is the number of labelled examples, eight for us, and the subscript \(i\) picks one of them: \(\mathbf x_i\) is message \(i\) (with the 1 glued on) and \(y_i\) its label. Inside out: \(\langle \mathbf w, \mathbf x_i \rangle\) is the score of message \(i\), \(y_i\) times it is the signed score, \(> 0\) says message \(i\) is classified correctly, and “for all \(i = 1, \dots, m\)” demands that for every one of the \(m\) messages at once. In plain words: **find weights whose signed score is positive on every training message.** With \(\mathbf w = (-1, 2, -2)\), bias term first, the eight signed scores are all positive:
+
+```python
+S = [((3, 0), 1), ((2, 1), 1), ((4, 2), 1), ((1, 0), 1),
+     ((1, 2), -1), ((0, 1), -1), ((2, 3), -1), ((0, 0), -1)]
+w = (-1, 2, -2)
+dot = lambda u, v: sum(a * b for a, b in zip(u, v))
+signed = [y * dot(w, (1,) + x) for x, y in S]
+print(signed, all(s > 0 for s in signed))
+```
+
+It prints `[5, 1, 3, 1, 3, 3, 3, 1] True`. We will see two ways to find such weights when nobody hands them to you: a linear program, and the Perceptron.
 
 ## Separable mail is a linear program
 

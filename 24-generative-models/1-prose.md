@@ -682,3 +682,170 @@ for k, m in ((3, 10), (30, 100)):
 It prints `3 10 0.5` and `30 100 0.3`.
 
 [[diagram:bayes]]
+
+## Naive Bayes
+
+Now we can rebuild Ines’s filter on solid ground. Messages are vectors \(x = (x_1, \dots, x_d)\) of yes/no word features, labels are \(y \in \{0, 1\}\), and the best possible hypothesis is the Bayes optimal predictor, which picks the label that is more probable given the message:
+
+\[ h_{\mathrm{Bayes}}(x) = \operatorname*{argmax}_{y \in \{0, 1\}} \mathbb P[Y = y \mid X = x]. \]
+
+- \(X\) and \(Y\) are the random message and label of a fresh example; \(\mathbb P[Y = y \mid X = x]\) is the probability that the label is \(y\) given that the message is \(x\).
+- \(\operatorname*{argmax}_{y \in \{0,1\}}\) picks whichever of the two labels gives the larger value.
+
+In one sentence: **label each message with whichever label is more probable for it.** This is the predictor of lesson 3, whose true risk is the smallest possible.
+
+Why not estimate \(\mathbb P[Y = 1 \mid X = x]\) directly, one number per message? Count them. With \(d\) yes/no words there are \(2^d\) possible messages, so \(2^d\) numbers to estimate. Ines’s seven words already mean 128 numbers; a dictionary of 200 words means \(2^{200} \approx 1.6 \times 10^{60}\). Most messages would never appear in any training sequence, and the number of examples needed would grow exponentially with the number of words.
+
+The **naive Bayes** assumption cuts this down with one bold simplification, the one Ines made with her independent coins: **given the label, the words are independent of each other.** Knowing that a junk message contains “free” tells you nothing extra about whether it contains “click”. Formally,
+
+\[ \mathbb P[X = x \mid Y = y] = \prod_{j=1}^{d} \mathbb P[X_j = x_j \mid Y = y]. \]
+
+- \(X_j\) is the random yes/no feature for word \(j\), and \(\mathbb P[X_j = x_j \mid Y = y]\) is the chance that a message of kind \(y\) has the value \(x_j\) for word \(j\): \(\theta_{j,y}\) if \(x_j = 1\), and \(1 - \theta_{j,y}\) if \(x_j = 0\).
+- The product over \(j\) is valid exactly because of the assumption: independent events multiply.
+
+In one sentence: **within each kind of message, the probability of the whole message is the product of the probabilities of its words, one by one.** This is Ines’s recipe from the start of the lesson; “free, click” under junk gave \(9/64\).
+
+The assumption is called naive because it is usually false: “claim” and “prize” travel together. But it turns an impossible estimation problem into an easy one. Plug it into Bayes’ rule. The denominator of Bayes’ rule, \(\mathbb P[X = x]\), is the same for both labels, so it cannot change which label wins, and we may drop it:
+
+\[ h_{\mathrm{Bayes}}(x) = \operatorname*{argmax}_{y \in \{0,1\}} \mathbb P[Y = y]\,\mathbb P[X = x \mid Y = y] = \operatorname*{argmax}_{y \in \{0,1\}} \mathbb P[Y = y]\prod_{j=1}^{d}\mathbb P[X_j = x_j \mid Y = y]. \]
+
+- The first equality is Bayes’ rule with the shared denominator removed: the numerators are compared directly.
+- The second plugs in the naive Bayes assumption.
+
+In one sentence: **pick the label whose prior share times the product of its word probabilities is larger.** For “free, click” with Ines’s numbers: \(0.5 \cdot 0.1406 = 0.0703\) against \(0.0015\), junk.
+
+Now count parameters: one prior share \(\mathbb P[Y = 1]\), plus \(\theta_{j,y}\) for \(d\) words and 2 labels. That is \(2d + 1\), instead of \(2^d\). For 200 words, 401 numbers. The generative assumption has done what an inductive bias always does: it bought a small number of parameters with a strong belief about the world.
+
+When the parameters are estimated by maximum likelihood (the counted fractions, as Ines did), the result is the classical **naive Bayes classifier**. You now know that this is exactly the version that crashes, and that the right estimator for each \(\theta_{j,y}\) is \(\hat\theta_\alpha\) with \(\alpha > 0\). In what follows the **naive Bayes filter** means naive Bayes with add-\(\alpha\) estimates.
+
+Rerun Ines’s two bug-report messages with add-one estimates, which we can now do with confidence:
+
+```python
+import math
+W = ["free", "prize", "click", "invoice",
+     "meeting", "lunch", "winner"]
+junk = [{"free", "prize", "click"}, {"free", "click"},
+        {"prize", "click"}, {"free", "prize"}]
+keep = [{"meeting", "lunch"}, {"invoice", "meeting"},
+        {"lunch", "click"}, {"free", "lunch", "meeting"}]
+def freq(msgs, a):
+    m = len(msgs)
+    return {w: (sum(w in x for x in msgs) + a) / (m + 2 * a)
+            for w in W}
+def P(x, th):
+    return math.prod(th[w] if w in x else 1 - th[w] for w in W)
+th1, th0 = freq(junk, 1), freq(keep, 1)
+for x in ({"free", "click", "meeting"}, {"winner", "click"}):
+    p1, p0 = 0.5 * P(x, th1), 0.5 * P(x, th0)
+    print(sorted(x), round(p1 / (p1 + p0), 3))
+```
+
+It prints `['click', 'free', 'meeting'] 0.69` and `['click', 'winner'] 0.758`. The junk-looking message with “meeting” in it is now junk with probability 0.69, a sensible hedge from four examples per pile. “winner, click” no longer crashes: “winner” is equally unknown to both piles, so it cancels out, and “click” tips the balance toward junk.
+
+**A guarantee for the whole filter.** The pseudo-count theorem speaks about one parameter. The filter has \(2d\) word parameters, and we want all of them to behave at once. Lesson 2’s union bound does it: the probability that at least one of several bad events happens is at most the sum of their probabilities. Suppose your users label \(m\) messages of each kind, and the share of junk \(\mathbb P[Y = 1]\) is known from traffic logs, so only the \(2d\) word frequencies are estimated. Apply part (a) of the theorem to each of them with confidence \(\delta/(2d)\) instead of \(\delta\). Each fails with probability at most \(\delta/(2d)\), so all \(2d\) hold together with probability at least \(1 - \delta\):
+
+\[ \mathbb P_S\left[\forall j \in [d],\ \forall y \in \{0,1\}:\ |\hat\theta_{j,y} - \theta^\star_{j,y}| \le \sqrt{\frac{\log(4d/\delta)}{2m}} + \frac{\alpha}{m + 2\alpha}\right] \ge 1 - \delta. \]
+
+- \(\forall\) reads “for every”, and \([d]\) is the set of word positions \(\{1, \dots, d\}\), as \([m]\) was in lesson 1.
+- \(\theta^\star_{j,y}\) is the true frequency of word \(j\) in messages of kind \(y\), and \(\hat\theta_{j,y}\) its add-\(\alpha\) estimate from the \(m\) messages of that kind.
+- \(\log(4d/\delta)\) is \(\log(2/\delta')\) with \(\delta' = \delta/(2d)\): the price of the union bound is a logarithm of the number of parameters.
+
+In one sentence: **with probability at least \(1 - \delta\), every word frequency in both piles is estimated within the same distance of the truth.** Part (b), meanwhile, needs no union bound, because it is a statement about each word’s expected excess risk: **every word, seen or unseen, costs at most \((m/4 + \alpha^2)/(\alpha(m + \alpha))\) nats of expected excess log loss.** With \(d = 200\), \(\delta = 0.05\), \(m = 600\) and \(\alpha = 1\): every frequency within \(0.0915\), and every word’s expected excess at most \(0.2512\) nats.
+
+## Naive Bayes as code
+
+Training only counts. Prediction adds logarithms instead of multiplying probabilities, so that 200 small factors do not underflow to 0, and compares the two sums.
+
+```
+NaiveBayesTrain(S, d, α):
+  for y in {0, 1}:
+    m_y ← number of examples in S with label y
+    for j = 1..d:
+      k ← number of examples with label y and x_j = 1
+      θ[j, y] ← (k + α) / (m_y + 2α)
+  return θ
+
+NaiveBayesPredict(θ, π, x):
+  for y in {0, 1}:
+    s[y] ← log(π_y)
+    for j = 1..d:
+      s[y] ← s[y] + log(θ[j, y]) if x_j = 1
+                    else log(1 − θ[j, y])
+  return 1 if s[1] > s[0] else 0
+```
+
+Here \(\pi_1 = \mathbb P[Y = 1]\) and \(\pi_0 = 1 - \pi_1\) are the prior shares, known or estimated by counting. The probability of junk, if you want it rather than the label, is \(1/(1 + e^{s[0] - s[1]})\), which is Bayes’ rule divided through by its numerator.
+
+**Training** reads every feature of every example once: \(O(md)\) time, and \(O(d)\) space for the \(2d\) counts. **Prediction** is \(O(d)\) time per message. A message usually contains only a few dictionary words, and that can be exploited: precompute \(B_y = \sum_j \log(1 - \theta_{j,y})\) once, and then for each word present add \(\log\theta_{j,y} - \log(1 - \theta_{j,y})\). Prediction then costs time proportional to the number of words in the message. Notice also what \(\alpha > 0\) does for the code: every \(\theta\) is strictly between 0 and 1, so every \(\log\) is finite, and the crash is impossible by construction rather than by luck.
+
+Compare this with every learner since lesson 9. There is no optimization at all: no gradient, no iterations, no convergence to worry about. That is the computational argument for generative models from the start of the lesson, in its purest form.
+
+**Build it yourself.** Using only the Python standard library:
+
+```python
+import math
+
+W = ["free", "prize", "click", "invoice",
+     "meeting", "lunch", "winner"]
+S = [({"free", "prize", "click"}, 1), ({"free", "click"}, 1),
+     ({"prize", "click"}, 1), ({"free", "prize"}, 1),
+     ({"meeting", "lunch"}, 0), ({"invoice", "meeting"}, 0),
+     ({"lunch", "click"}, 0), ({"free", "lunch", "meeting"}, 0)]
+
+def train(S, words, alpha): ...
+def junk_probability(theta, prior, x, words): ...
+
+if __name__ == "__main__":
+    theta = train(S, W, 1)
+    assert theta[("winner", 1)] == 1 / 6
+    assert theta[("free", 0)] == 2 / 6
+    p = junk_probability(theta, 0.5, {"winner", "click"}, W)
+    assert round(p, 3) == 0.758
+    p = junk_probability(theta, 0.5, {"lunch", "meeting"}, W)
+    assert round(p, 3) == 0.008
+    theta0 = train(S, W, 0)
+    p = junk_probability(theta0, 0.5, {"free", "click"}, W)
+    assert round(p, 3) == 0.98
+```
+
+1. Implement `train`, returning a dictionary keyed by `(word, label)`, and `junk_probability`, working in logarithms and returning \(\mathbb P[Y = 1 \mid x]\).
+2. With `alpha = 0`, decide what `junk_probability` should do on “winner, click”. Raise a clear exception? Return `None`? Write down why each choice is worse than smoothing.
+3. Build the 200-word world of the lab: word \(j\) (from 0) with rank \(r = j + 1\) has frequency \(0.6\,r^{-0.8}\) in junk and \(0.15\,r^{-0.8}\) in keep when \(j\) is even, the other way round when \(j\) is odd. Draw training sequences and fresh messages, and measure how often maximum likelihood crashes for \(m = 10, 30, 100, 300, 1000\) messages per kind.
+4. Implement the sparse prediction trick and check it returns the same probabilities.
+
+## Fix the bug
+
+Ines is back, and she has the 200-word dictionary from the lab, with its long tail of rare words. Users will label up to 600 messages of each kind; the traffic logs say half of all mail is junk, so the prior share is known. Your manager will ship the filter only with a certificate from this lesson’s theorems, holding for every possible set of true word frequencies, not just for the frequencies in this week’s mail:
+
+1. **Accurate:** with probability at least 95%, every one of the 400 word frequencies is estimated within 0.1 of the truth.
+2. **Safe on unseen words:** every word, including words never seen in training, has expected excess log loss at most 0.4 nats.
+
+You choose two things: the number \(m\) of labelled messages of each kind, and the estimator, given by its pseudo-count \(\alpha\). Here are both certificates as code, so you can work out the settings before you try them:
+
+```python
+import math
+d, delta = 200, 0.05
+def accuracy(m, a):
+    return math.sqrt(math.log(4 * d / delta) / (2 * m)) \
+        + a / (m + 2 * a)
+def excess(m, a):
+    return math.inf if a == 0 else (m / 4 + a * a) / (a * (m + a))
+for m, a in ((600, 0), (600, 0.5), (600, 1), (400, 1), (600, 20)):
+    print(m, a, round(accuracy(m, a), 4), round(excess(m, a), 4))
+```
+
+It prints:
+
+```
+600 0 0.0898 inf
+600 0.5 0.0906 0.5004
+600 1 0.0915 0.2512
+400 1 0.112 0.2519
+600 20 0.1211 0.0444
+```
+
+Read the rows before you open the lab. Maximum likelihood is accurate and has no certificate at all on unseen words. Half a pseudo-count is not enough. Too few labels break the accuracy certificate, and so do too many pseudo-counts.
+
+In the lab, each round draws a fresh set of true frequencies and a fresh training sequence. A setting that happens to classify this round’s test messages well does not pass; only a setting whose certificates meet both targets does.
+
+[[lab-act2]]
