@@ -238,13 +238,22 @@ The k-means cost has a natural reading in communication. If every message must b
 
 - **k-medoids**: the same formula, but the centres must be messages: \(\min_{\mu_1, \dots, \mu_k \in \mathcal X}\).
 - **k-median**: centres among the messages, and the penalty is the distance itself, \(d(x, \mu_i)\), not its square. Placing \(k\) fire stations among the houses of a town to minimize the total distance from a house to its nearest station is a k-median problem.
-- More generally, any increasing function \(f : \mathbb R_+ \to \mathbb R_+\) gives a **center-based** cost \(G_f = \min_{\mu_1, \dots, \mu_k \in \mathcal X'} \sum_{i=1}^k \sum_{x \in C_i} f(d(x, \mu_i))\), with \(\mathcal X'\) either \(\mathcal X\) itself or a larger space. A center-based cost is decided by \(k\) centres, and the clustering assigns each message to its closest centre.
+- More generally, any increasing function \(f : \mathbb R_+ \to \mathbb R_+\) gives a **center-based** cost \(G_f = \min_{\mu_1, \dots, \mu_k \in \mathcal X'} \sum_{i=1}^k \sum_{x \in C_i} f(d(x, \mu_i))\), with \(\mathcal X'\) either \(\mathcal X\) itself or a larger space. Here \(f\) turns a message’s distance to its centre into its charge: \(f(u) = u^2\) with centres anywhere gives the k-means cost (a message 1.5 away pays 2.25), and \(f(u) = u\) with centres among the messages gives k-median (it pays 1.5). A center-based cost is decided by \(k\) centres, and the clustering assigns each message to its closest centre.
 
 Not every cost is center-based. The **sum of in-cluster distances**,
 
 \[ G_{\text{SOD}}((\mathcal X, d), (C_1, \dots, C_k)) = \sum_{i=1}^k \sum_{x, y \in C_i} d(x, y), \]
 
-adds, for each cluster, the distance of every ordered pair of its messages: no centre appears anywhere. With \(C_1 = \{0, 6, 8\}\) on a single score, the ordered pairs give \(2 \times (6 + 8 + 2) = 32\).
+adds, for each cluster, the distance of every ordered pair of its messages: \(x, y \in C_i\) runs over all pairs inside cluster \(C_i\), each pair in both orders (and \(x = y\) adds 0). In plain words: **the sum of in-cluster distances adds up how far apart the members of each group are, with no centre anywhere.** With \(C_1 = \{0, 6, 8\}\) on a single score, the ordered pairs give \(2 \times (6 + 8 + 2) = 32\).
+
+```python
+from itertools import permutations
+
+C1 = [0, 6, 8]
+print(sum(abs(x - y) for x, y in permutations(C1, 2)))
+```
+
+It prints `32`.
 
 Here is the bad news, stated without proof: finding a clustering that minimizes the k-means cost is NP-hard, and even NP-hard to approximate within some constant factor, and the same holds for most of these costs. (Lesson 8 explained what NP-hard means for learning.) So in practice “k-means” usually names not the cost, but a fast algorithm that tries to lower it. Before we meet it, one small fact about centres.
 
@@ -345,7 +354,7 @@ def kmeans(P, mu):
 print(kmeans(P, [(0, 0), (1, 0)]), kmeans(P, [(0, 0), (0, 2)]))
 ```
 
-It prints `[84, 32.0, 26.0, 23.0, 23.0, 20.0, 20.0] [110, 35.0, 35.0]`: the whole zigzag of the table, and a second run that settles at 35. (This snippet has no ties to break, so it skips the tie rule.)
+It prints `[84, 32.0, 26.0, 23.0, 23.0, 20.0, 20.0] [110, 35.0, 35.0]`: the whole zigzag of the table, and a second run that settles at 35. (Python’s `min` returns the first of equally near centres, which is the smaller-index rule, so iteration 3 breaks its tie as the table does.)
 
 [[diagram:zigzag]]
 
@@ -373,7 +382,7 @@ Two consequences, and one honest limit.
 
 **Where it stops is a fixed point.** At the end, every message is already with its nearest centre and every centre is already the mean of its cluster: neither step can lower the cost on its own. That is all the guarantee says.
 
-**The limit.** A fixed point need not be good. The second run above stopped at cost 35 when 20 was available, and the ratio between where k-means stops and the best possible cost can be made as large as you like: put four messages at the corners of a rectangle \(w\) wide and \(h\) tall, start the centres at the two left corners, and k-means stops at the top and bottom pairs, cost \(w^2\), while the left and right pairs cost \(h^2\). The first problem at the end of this lesson shows that a fixed point need not even be a local minimum of the cost as a function of the centres. The usual remedy is cheap: run k-means several times from different random starts and keep the lowest cost. On the twelve messages, starting from two random messages, 1,000 runs ended at cost 20 in 692 runs, at 23 in 208 and at the rows, 35, in 100.
+**The limit.** A fixed point need not be good. The second run above stopped at cost 35 when 20 was available, and the ratio between where k-means stops and the best possible cost can be made as large as you like: put four messages at the corners of a rectangle \(w\) wide and \(h\) tall, with \(w\) much larger than \(h\), start the centres at the two left corners, and k-means stops at the top and bottom pairs, cost \(w^2\), while the left and right pairs cost \(h^2\). The first problem at the end of this lesson shows that a fixed point need not even be a local minimum of the cost as a function of the centres. The usual remedy is cheap: run k-means several times from different random starts and keep the lowest cost. On the twelve messages, starting from two random messages, 1,000 runs ended at cost 20 in 692 runs, at 23 in 208 and at the rows, 35, in 100.
 
 **Cost.** One iteration computes the distance from each of the \(m\) messages to each of the \(k\) centres, \(n\) scores each, so the assignment step costs \(O(mkn)\) time, and the update step \(O(mn)\). Space is \(O(mn)\) for the messages plus \(O(kn)\) for the centres. With \(T\) iterations and \(R\) restarts, \(O(RTmkn)\) in total.
 
@@ -571,9 +580,9 @@ Why should the rows of \(U\) be easy for k-means? Look at the ideal case. If \(U
 
 **Proposition (separate pieces are free).** Suppose the clustering \(C_1, \dots, C_k\) has no edges between clusters: \(W_{r,s} = 0\) whenever \(r\) and \(s\) are in different clusters. Then its matrix \(H\) achieves \(\operatorname{trace}(H^\top L H) = 0\), the smallest value any matrix with orthonormal columns can achieve, and each column \(h_j\) is an eigenvector of \(L\) with eigenvalue 0.
 
-*Proof.* RatioCut adds only weights of edges between clusters, all 0 here, so by the trace proposition \(\operatorname{trace}(H^\top L H) = 0\). For any \(H'\) with orthonormal columns, the trace is a sum of quadratic forms \(h'^\top L h' \ge 0\), so it is at least 0. And for each column, \(h_j^\top L h_j = 0\) means every term \(W_{r,s}(h_{r,j} - h_{s,j})^2\) of the identity is 0. Then \((L h_j)_r = \sum_s W_{r,s}(h_{r,j} - h_{s,j})\), the row-\(r\) form of \(L = D - W\), has every term equal to 0 too: wherever \(W_{r,s} > 0\), \(h_{r,j} = h_{s,j}\). So \(L h_j = 0 = 0 \cdot h_j\). \(\blacksquare\)
+*Proof.* RatioCut adds only weights of edges between clusters, all 0 here, so by the trace proposition \(\operatorname{trace}(H^\top L H) = 0\). For any \(H'\) with orthonormal columns, the trace is a sum of quadratic forms \(h'^\top L h' \ge 0\), so it is at least 0. And for each column, \(h_j^\top L h_j = 0\) means every term \(W_{r,s}(h_{r,j} - h_{s,j})^2\) of the identity is 0. Then \((L h_j)_r = D_{r,r} h_{r,j} - \sum_s W_{r,s} h_{s,j} = \sum_s W_{r,s}(h_{r,j} - h_{s,j})\), since \(D_{r,r} = \sum_s W_{r,s}\), and this has every term equal to 0 too: wherever \(W_{r,s} > 0\), \(h_{r,j} = h_{s,j}\). So \(L h_j = 0 = 0 \cdot h_j\). \(\blacksquare\)
 
-When the pieces are joined by weak edges, as the triangles are by the bridge, the second-smallest eigenvector is no longer exactly a scaled indicator, but it stays close to one, and its signs give the split. You can watch that happen with a few lines of power iteration: repeatedly multiply by \(cI - L\), where \(I\) is the identity matrix (1 on the diagonal, 0 elsewhere) and \(c = 5\) (for a large enough \(c\), this turns the smallest eigenvalues of \(L\) into the largest), subtract the part along \(\mathbf 1\), and normalize.
+When the pieces are joined by weak edges, as the triangles are by the bridge, the second-smallest eigenvector is no longer exactly a scaled indicator, but it stays close to one, and its signs give the split. You can watch that happen with a few lines of power iteration: repeatedly multiply by \(cI - L\), where \(I\) is the identity matrix (1 on the diagonal, 0 elsewhere) and \(c = 5\) (for a large enough \(c\), this turns the smallest eigenvalues of \(L\) into the largest), subtract the part along \(\mathbf 1\) (its eigenvalue 0 becomes the largest, 5, so it would otherwise win), and normalize.
 
 ```python
 import math

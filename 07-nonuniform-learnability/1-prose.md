@@ -496,7 +496,7 @@ for n in (3, 5, 20):
     print(n, math.ceil(alone), math.ceil(inside))
 ```
 
-It prints `3 1751 2290`, `5 2628 3371` and `20 12217 13514`. Knowing the size in advance would save 539 labels at size 3. That is the value of prior knowledge about the order of the classes, made into a number. For classes of VC dimension \(n\) the same calculation, with lesson 6’s quantitative bound, gives a difference of order \(\log(2n)/\varepsilon^2\).
+It prints `3 1751 2290`, `5 2628 3371` and `20 12217 13514`. Knowing the size in advance would save \(2{,}290 - 1{,}751 = 539\) labels at size 3. That is the value of prior knowledge about the order of the classes, made into a number. For classes of VC dimension \(n\) the same calculation, with lesson 6’s quantitative bound, gives a difference of order \(\log(2n)/\varepsilon^2\).
 
 **A limit that remains.** You might now hope that every class is nonuniformly learnable. It is not. Over any infinite domain, the class of all functions to \(\{0, 1\}\) is not a countable union of classes of finite VC dimension, so by the characterization it is not nonuniformly learnable. That is No-Free-Lunch again, for the relaxed notion. (For each single function there is a trivial learner, ERM over the class containing only that function; there is no learner for all of them.) The proof is a diagonal construction we won’t do here.
 
@@ -560,7 +560,7 @@ print(len(code(f[:3], 0)), len(code(f, 0)))
 
 It prints the five feature codes with lengths 1, 3, 3, 5, 5, matching the formula, then `1011100 01` and `15 29`. `bin(j)[2:]` is \(j\) in binary, and `gamma` puts the zeros in front.
 
-Why is this prefix-free? Read any codeword from the left, the way a decoder would. Each flag bit says whether a test follows, each feature code announces its own length, and after the end flag exactly one bit remains. So the decoder knows where the codeword ends from the symbols alone. If one codeword were a proper prefix of another, decoding the longer one would reach that point and stop, so the longer one could have nothing after it, which is a contradiction.
+Why is this prefix-free? Read any codeword from the left, the way a decoder would. Each flag bit says whether a test follows, each feature code announces its own length, and after the end flag exactly one bit remains. So the decoder knows where the codeword ends from the symbols alone. If one codeword were a prefix of another, longer one, decoding the longer one would reach that point and stop, so the longer one could have nothing after it, which is a contradiction.
 
 Now give each codeword the weight 1 over 2 to the power of its length: “everything is junk”, 2 bits, gets 1/4; the 7-bit list gets 1/128. Can a prefix-free code overspend, so that these weights add to more than 1? Try the small prefix-free set `0`, `10`, `110`, `111`: \(1/2 + 1/4 + 1/8 + 1/8 = 1\), exactly the whole budget. Shorten any word and you create a prefix. That is the general rule. (In this lemma \(S\) names a set of strings, not a training sequence.)
 
@@ -589,8 +589,6 @@ Now the key step. For two distinct \(\sigma, \sigma' \in S\), the events \(E_\si
 This is the lemma’s sum, written with a negative exponent, equal to the chance that some codeword is spelled out by the tosses. For `0`, `10`, `110`, `111`, the toss sequences starting 0, 10, 110 and 111 cover every outcome exactly once, so the chance is 1.
 
 For an infinite \(S\), every finite subset is prefix-free too, so every partial sum of the series is at most 1, and so is the series. \(\blacksquare\)
-
-You can think of the coin as a process: toss until the outcome so far is in \(S\), then stop. Prefix-freeness means the process stops at \(\sigma\) exactly when the tosses follow \(\sigma\), so \(2^{-|\sigma|}\) is the probability of stopping at \(\sigma\), and stopping probabilities add up to at most 1.
 
 [[diagram:kraft-tree]]
 
@@ -626,7 +624,7 @@ total = sum(one_test**k * 0.5 for k in range(200))
 print(round(feature, 6), round(one_test, 6), round(total, 6))
 ```
 
-It prints `0.999999 0.5 0.999999`: features up to about a million already reach 1 within a millionth. This code wastes no budget at all.
+It prints `0.999999 0.5 0.999999`: features up to about a million already reach 1 within a millionth.
 
 So any prefix-free language hands you a weight function for free: \(w(h) = 2^{-|h|}\). Kraft says it sums to at most 1.
 
@@ -646,9 +644,9 @@ The bound suggests its learner: trade empirical risk against description length.
 
 \[ \mathrm{MDL}(S) \in \operatorname*{argmin}_{h \in \mathcal H} \bigg[ L_S(h) + \sqrt{\frac{|h| + \log(2/\delta)}{2m}} \bigg]. \]
 
-The bracket is the MDL bound of one list, and the argmin, as for SRM, returns one of the lists where it is smallest. In plain words: **MDL ships the list whose fit plus a cost for its length in bits is smallest.** At 100 labels on our stream that is the 7-bit list, with value 0.4012, beating “everything is junk”, whose 2 bits do not make up for its worse fit.
+The bracket is the MDL bound of one list. In plain words: **MDL ships the list whose fit plus a cost for its length in bits is smallest.** At 100 labels on our stream that is the 7-bit list, with value 0.4012, beating “everything is junk”, whose 2 bits do not make up for its worse fit.
 
-Here is the bound for a list of a given description length; `mdl_bound` is the bracket, term by term. Two lists with the same empirical risk 0.12 at \(m = 300\), one of 15 bits and one of 60; and how many examples a 29-bit list needs before its complexity term drops to 0.05.
+In the snippet, `mdl_bound` is the bracket, term by term. Two lists with the same empirical risk 0.12 at \(m = 300\), one of 15 bits and one of 60; and how many examples a 29-bit list needs before its complexity term drops to 0.05.
 
 ```python
 import math
@@ -664,7 +662,7 @@ print(math.ceil(need))
 
 It prints `0.2965`, `0.4458` and `6538`. The last line sets the complexity term \(\sqrt{(29 + \log 40)/(2m)}\) equal to 0.05 and solves for \(m\). Same fit, very different certificates. On our stream, MDL ships 2 bits (“everything is junk”) at 30 labels, the 7-bit list “unknown sender, junk; otherwise keep” at 100 labels, the 15-bit three-test list at 300 and 1,000 labels, and the 29-bit list \(f\) at 3,000. The same staircase as SRM, with steps in different places, because it is a different prior.
 
-The language need not be ours. Take the class of every filter you could write in some programming language, and describe each program by the bits of its compressed source file. That is a prefix-free description language too, and the MDL bound applies to it: it covers every program you could ever write.
+The language need not be ours. Take the class of every filter you could write in some programming language, and describe each program by its source file in bits, preceded by that file’s length written in the feature-number code. The length tells a reader where the description ends, so this is a prefix-free description language too, and the MDL bound applies to it: it covers every program you could ever write.
 
 ## Occam’s razor, and its catch
 
@@ -717,7 +715,14 @@ SRM-nested(S, δ):
 
 MDL stops the same way: enumerate hypotheses in order of description length, and stop at the first length \(\ell\) with \(\sqrt{(\ell + \log(2/\delta))/(2m)} \ge\) the best bound so far.
 
-**Cost.** Recall that \(O(\cdot)\) means “grows at most in proportion to”: \(O(m)\) time doubles at most when \(m\) doubles, ignoring constant factors. ERM over \(\mathcal H_n\) by brute force evaluates every list on every example; a list of size at most \(n\) is evaluated in \(O(n)\) time per message. So SRM-nested up to the stopping size \(N\) takes \(O(m N \sum_{n \le N} |\mathcal H_n|) = O(m N |\mathcal H_N|)\) time, since the last class dominates the sum, and \(O(m + N)\) space if lists are generated one at a time. MDL up to length \(\ell^*\) examines at most \(2^{\ell^* + 1}\) codewords (there are at most \(2^\ell\) strings of length \(\ell\)), so \(O(m \ell^* 2^{\ell^*})\) time.
+**Cost.** Recall that \(O(\cdot)\) means “grows at most in proportion to”: \(O(m)\) time doubles at most when \(m\) doubles, ignoring constant factors. ERM over \(\mathcal H_n\) by brute force evaluates every list on every example; a list of size at most \(n\) is evaluated in \(O(n)\) time per message. So SRM-nested up to the stopping size \(N\) takes \(O(m N \sum_{n \le N} |\mathcal H_n|) = O(m N |\mathcal H_N|)\) time, since the last class dominates the sum, and \(O(m + N)\) space if lists are generated one at a time. MDL up to length \(\ell^*\) examines at most \(2^{\ell^* + 1}\) codewords (there are at most \(2^\ell\) strings of length \(\ell\)), so \(O(m \ell^* 2^{\ell^*})\) time. In plain words: **the work is labels times list size times the number of lists tried, and the last class or length dominates.** At 300 labels, stopping at size 6:
+
+```python
+m, N, last = 300, 6, 151946
+print(m * N * last, 64 * N * last)
+```
+
+It prints `273502800 58347264`: about 270 million list-message checks, or 58 million when the 300 messages are grouped into the 64 distinct ones, as the build-it challenge does.
 
 In our simulated stream only features 1 to 6 ever appear, so a list in \(\mathcal H_n\) for \(n > 6\) behaves on the data like a list in \(\mathcal H_6\) (its tests on later features never fire), and stopping at size 6 is exact. The learner on the real stream cannot know that. How far does the stopping rule have to go when it doesn’t?
 
@@ -830,15 +835,15 @@ In words first: a consistent learning rule, given enough labels, gets within \(\
 
 **Definition (consistency).** Let \(Z\) be a domain set, \(\mathcal P\) a set of probability distributions over \(Z\), and \(\mathcal H\) a hypothesis class. A learning rule \(A\) is **consistent** with respect to \(\mathcal H\) and \(\mathcal P\) if there is a function \(m^{\mathrm{CON}}_{\mathcal H}: (0,1)^2 \times \mathcal H \times \mathcal P \to \mathbb N\) such that for every \(\varepsilon, \delta \in (0, 1)\), every \(h \in \mathcal H\) and every \(\mathcal D \in \mathcal P\), if \(m \ge m^{\mathrm{CON}}_{\mathcal H}(\varepsilon, \delta, h, \mathcal D)\) then with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\), \(L_{\mathcal D}(A(S)) \le L_{\mathcal D}(h) + \varepsilon\). If \(\mathcal P\) is the set of all distributions, \(A\) is **universally consistent** with respect to \(\mathcal H\).
 
-Here \(Z\) plays the role of message-label pairs, \(\mathcal X \times \{0,1\}\), and \(\mathcal P\) is the family of streams you are willing to face. The only change from nonuniform learnability is the signature: \(m^{\mathrm{CON}}_{\mathcal H}: (0,1)^2 \times \mathcal H \times \mathcal P \to \mathbb N\) takes the two dials, a hypothesis and also a distribution, and returns a number of labels. In plain words: **for each stream and each hypothesis there is some number of labels beyond which the rule competes with that hypothesis on that stream.** The two streams just mentioned get two very different entries of \(m^{\mathrm{CON}}\), as the snippet below shows.
+Here \(Z\) plays the role of message-label pairs, \(\mathcal X \times \{0,1\}\), and \(\mathcal P\) is the family of streams you are willing to face. The only change from nonuniform learnability is the extra \(\times \mathcal P\) in the signature: the sample size may also read the distribution. In plain words: **for each stream and each hypothesis there is some number of labels beyond which the rule competes with that hypothesis on that stream.** The two streams just mentioned get two very different entries of \(m^{\mathrm{CON}}\), as the snippet below shows.
 
 A nonuniform learner for \(\mathcal H\) is universally consistent for \(\mathcal H\) (take \(m^{\mathrm{CON}}\) to ignore \(\mathcal D\)). The converse fails, and the counterexample is an old friend: lesson 1’s memorizer. Let Memorize return, on a message \(x\), the majority label among the copies of \(x\) in the training sequence, and a fixed default label if \(x\) never appeared. Over any countable domain with a finite label set, Memorize is universally consistent for the class of all classifiers. Yet over an infinite domain the class of all classifiers is not nonuniformly learnable, as we saw. So consistency is strictly weaker. (It is also unsettling: lesson 1’s cautionary tale meets the definition.)
 
-Why does Memorize succeed eventually? Take the noise-free case. It errs only on messages it has never seen, so its true risk is at most the probability mass of the unseen messages. By linearity of expectation and the independence of the \(m\) draws, the expected unseen mass is
+Why does Memorize succeed eventually? Take the noise-free case. It errs only on messages it has never seen, so its true risk is at most the probability mass of the unseen messages, whose average is
 
 \[ \mathbb E_{S}\Big[\sum_{x} \mathcal D(x)\, \mathbb 1[x \notin S]\Big] = \sum_x \mathcal D(x)\, \mathbb P[x \notin S] = \sum_x \mathcal D(x) \big(1 - \mathcal D(x)\big)^m. \]
 
-Read it from the inside out. \(\mathcal D(x)\) is the probability that message \(x\) arrives. \(\mathbb 1[x \notin S]\) is 1 when \(x\) is not among the training messages (\(\notin\) reads “is not in”) and 0 otherwise, so the sum \(\sum_x\) over every message adds up the probability of the unseen ones: the **missing mass**. \(\mathbb E_S\) averages that over random training sequences. Linearity moves the average inside the sum, the average of an indicator is the probability of its statement, and \(x\) is missed by all \(m\) independent draws with probability \((1 - \mathcal D(x))^m\), one factor per draw. In plain words: **on average, the unseen mail weighs the sum, over messages, of each message’s probability times its chance of being missed \(m\) times in a row.** If message 1 arrives half the time, at \(m = 10\) it contributes \(0.5 \times 0.5^{10} = 0.0005\); message 4, at \(1/16\), contributes \(0.0625 \times (15/16)^{10} = 0.033\); message 8, at \(1/256\), only 0.004 because it is so rare.
+Read it from the inside out. \(\mathcal D(x)\) is the probability that message \(x\) arrives. \(\mathbb 1[x \notin S]\) is 1 when \(x\) is not among the training messages (\(\notin\) reads “is not in”) and 0 otherwise, so the sum \(\sum_x\) over every message adds up the probability of the unseen ones: the **missing mass**. \(\mathbb E_S\) averages that over random training sequences. Linearity of expectation (the average of a sum is the sum of the averages) moves the average inside the sum, the average of an indicator is the probability of its statement, and \(x\) is missed by all \(m\) independent draws with probability \((1 - \mathcal D(x))^m\), one factor per draw. In plain words: **on average, the unseen mail weighs the sum, over messages, of each message’s probability times its chance of being missed \(m\) times in a row.** If message 1 arrives half the time, at \(m = 10\) it contributes \(0.5 \times 0.5^{10} = 0.0005\); message 4, at \(1/16\), contributes \(0.0625 \times (15/16)^{10} = 0.033\); message 8, at \(1/256\), only 0.004 because it is so rare.
 
 ```python
 def contribution(q, m):
@@ -850,7 +855,7 @@ for x in (1, 4, 8):
 
 It prints `1 0.00049`, `4 0.03278` and `8 0.00376`. The snippet below adds these terms up, as `missing_mass`.
 
-For any fixed \(\mathcal D\) on a countable domain this goes to 0 as \(m\) grows. But how fast depends entirely on \(\mathcal D\). Compare a stream where message \(x\) arrives with probability \(2^{-x}\) with one spread evenly over a million messages:
+For any fixed \(\mathcal D\) on a countable domain this goes to 0 as \(m\) grows. Each term shrinks to 0 and never exceeds \(\mathcal D(x)\). So pick a target, say 0.01, and set aside the finitely many messages that carry all but 0.01 of the probability: the rest add at most 0.01, whatever \(m\) is, and the finitely many terms left each vanish as \(m\) grows. But how fast depends entirely on \(\mathcal D\). Compare a stream where message \(x\) arrives with probability \(2^{-x}\) with one spread evenly over a million messages:
 
 ```python
 def missing_mass(p, m):

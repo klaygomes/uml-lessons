@@ -6,7 +6,7 @@ Lesson 11 ended with a learning curve that would not come down. Your colleague�
 
 So this morning the team tried to do it properly. The plan was honest brute force: the real filter uses 30 words plus the bias term, the users have labelled 300 messages, and lesson 6 tells you that halfspaces cannot produce every possible labelling of those 300 messages, only a limited number of them. Enumerate the labellings a halfspace can produce, count the mistakes of each, keep the best. The job started at nine. At lunch it was still running. Someone did the arithmetic and quietly cancelled it.
 
-Here is that arithmetic. Homogeneous halfspaces in \(\mathbb R^{31}\) (30 words plus the constant coordinate) have VC dimension 31, so by Sauer’s lemma they produce at most \(\sum_{i=0}^{31} \binom{300}{i}\) labellings of 300 messages. Say each labelling costs \(m \cdot d\) operations to score, and the machine does a billion operations a second.
+Here is that arithmetic. Each message is a list of 31 numbers (30 word counts plus a constant 1 for the bias term), a point of \(\mathbb R^{31}\), the space of all lists of 31 real numbers. Homogeneous halfspaces there (no separate offset, since the constant coordinate plays that role) have VC dimension 31: as lesson 6 showed, 31 is the largest number of messages they can label in every possible way. Sauer’s lemma, also from lesson 6, then caps how many labellings they can produce of \(m\) messages when the VC dimension is \(d\): at most \(\sum_{i=0}^{d} \binom{m}{i}\). Read it from the inside out. \(\binom{m}{i}\), “\(m\) choose \(i\)”, is how many ways there are to pick \(i\) messages out of \(m\); the big sigma \(\sum_{i=0}^{d}\) adds those counts for \(i = 0, 1, \dots, d\). So: **the number of labellings is at most the number of ways to pick at most \(d\) of the messages.** With \(m = 300\) and \(d = 31\), the first three terms are already \(1 + 300 + 44{,}850\), and the terms keep growing up to \(i = 31\). Say each labelling costs \(m \cdot d\) operations to score, and the machine does a billion operations a second. The snippet mirrors the sum with `comb(m, i)` inside `sum(...)`.
 
 ```python
 from math import comb
@@ -41,11 +41,25 @@ Let’s use the ten messages from the end of lesson 9, because you already know 
 | B′ | \((1, 2, 1)\) | \(-1\) |
 | E′ | \((1, 1, 2)\) | \(+1\) |
 
-For a weight vector \(\mathbf w\), call \(y \langle \mathbf w, \mathbf x \rangle\) the **signed score** of the example: positive when the halfspace agrees with the label, negative when it disagrees. The **0-1 loss** of a halfspace on an example is
+A reminder from lesson 9: for a weight vector \(\mathbf w\) (bold letters are vectors), the inner product \(\langle \mathbf w, \mathbf x \rangle = w_1 x_1 + w_2 x_2 + w_3 x_3\) multiplies matching entries and adds them up, and the halfspace says junk when it is positive. Take lesson 9’s weights \(\mathbf w^\circ = (-1, 2, -2)\) and message B′ at \((1, 2, 1)\): the inner product is \(-1 + 4 - 2 = 1\), so the halfspace says junk, but the label is \(-1\), keep. Multiply by the label and you get \(-1\), a negative number that flags the disagreement. In general, call \(y \langle \mathbf w, \mathbf x \rangle\) the **signed score** of the example: positive when the halfspace agrees with the label, negative when it disagrees. The **0-1 loss** of a halfspace on an example charges 1 for a mistake and 0 otherwise:
 
-\[ \ell^{0-1}(\mathbf w, (\mathbf x, y)) = \mathbb 1[\, y \langle \mathbf w, \mathbf x \rangle \le 0 \,], \]
+\[ \ell^{0-1}(\mathbf w, (\mathbf x, y)) = \mathbb 1[\, y \langle \mathbf w, \mathbf x \rangle \le 0 \,]. \]
 
-so a signed score of exactly zero counts as a mistake. Its empirical risk \(L^{0-1}_S(\mathbf w)\) is the fraction of mistakes. No weight vector can do better than 0.2 here: B and B′ are the same message with opposite labels, so every halfspace gets one of them wrong, and the same goes for E and E′. Lesson 9’s halfspace \(\mathbf w^\circ = (-1, 2, -2)\) reaches that floor, with exactly those two mistakes.
+- \(\ell\) is the usual letter for a loss; the superscript \(0\text{-}1\) names which loss, and its two arguments are the hypothesis \(\mathbf w\) and the example \((\mathbf x, y)\).
+- Inside, \(y \langle \mathbf w, \mathbf x \rangle\) is the signed score, and \(\le 0\) asks the yes/no question “is it zero or negative?”.
+- \(\mathbb 1[\cdot]\) is the indicator: it turns a yes into 1 and a no into 0.
+
+In plain words: **the loss is 1 when the signed score is not positive, and 0 otherwise**, so a score of exactly zero counts as a mistake. On B′ the score is \(-1\), so the loss is 1:
+
+```python
+w, x, y = (-1, 2, -2), (1, 2, 1), -1
+score = sum(a * b for a, b in zip(w, x))
+z = y * score
+loss = 1 if z <= 0 else 0
+print(score, z, loss)
+```
+
+It prints `1 -1 1`: the inner product, the signed score, the loss. The empirical risk \(L^{0-1}_S(\mathbf w)\) is, as in every lesson since lesson 2, the average of this loss over the training sequence \(S\), the fraction of mistakes; the function `risk01` in the next snippet is exactly that average. No weight vector can do better than 0.2 here: B and B′ are the same message with opposite labels, so every halfspace gets one of them wrong, and the same goes for E and E′. Lesson 9’s halfspace \(\mathbf w^\circ = (-1, 2, -2)\) reaches that floor, with exactly those two mistakes.
 
 Now picture the empirical risk as a landscape over the weights. Take \(\mathbf w^\circ\) and its mirror image \(-\mathbf w^\circ\), and walk in a straight line from one to the other. Before you read the numbers: \(L^{0-1}_S(-\mathbf w^\circ) = 0.8\), since flipping every weight flips every prediction. Halfway along the line you are at \(\mathbf w = \mathbf 0\). What is the risk there, and how does it compare with the average of 0.2 and 0.8?
 

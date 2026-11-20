@@ -34,7 +34,7 @@ Look at three things. First, the truly best filter is \(T = 9\), with true risk 
 
 Was this test set unlucky? We can check, because the simulation can draw as many test sets as we like. Keep the same training sequence and the same sixty filters, draw 2,000 fresh test sets of 200 messages, and let the team’s procedure pick a winner on each. On average the reported test error is 0.188 while the true risk of the winner is 0.210, and the true risk is above the reported number on 80% of the draws. The gap is not bad luck. It is built into the procedure.
 
-You may recognise the pattern from lesson 4, where the best-looking rule on a dashboard was the most flattered one: the winner’s curse. To see how strong it can be, strip the problem to its bones. Suppose sixty candidates all have true risk exactly 0.2, and their mistakes on the 200 test messages are independent. Each test error is then a binomial count divided by 200, and the chance that the smallest of sixty counts is at least \(k\) is the chance that one count is at least \(k\), raised to the sixtieth power. Python can add that up exactly:
+You may recognise the pattern from lesson 4, where the best-looking rule on a dashboard was the most flattered one: the winner’s curse. To see how strong it can be, strip the problem to its bones. Suppose sixty candidates all have true risk exactly 0.2, and their mistakes on the 200 test messages are independent. Each test error is then a binomial count divided by 200 (a binomial count is the number of hits in 200 independent tries, each a hit with the same chance, here 0.2), and the chance that the smallest of sixty counts is at least \(k\) is the chance that one count is at least \(k\), raised to the sixtieth power. Python can add that up exactly:
 
 ```python
 from math import comb
@@ -62,11 +62,11 @@ So the team’s number was optimistic because the test set did two jobs at once:
 
 ## Choosing by a bound: structural risk minimization
 
-Lesson 7 met a learner that faces a whole sequence of hypothesis classes, \(\mathcal H_1, \mathcal H_2, \mathcal H_3, \dots\), and does not want to commit to one of them in advance. For the boosted filter, take \(\mathcal H_T\) to be the class of weighted votes of \(T\) stumps, the class lesson 10 wrote \(L(B, T)\). For a polynomial fitted to points, \(\mathcal H_d\) would be the polynomials of degree at most \(d\). In both cases a larger index means a richer class: a smaller gap to the truth, and a larger gap between empirical and true risk.
+Lesson 7 met a learner that faces a whole sequence of hypothesis classes, \(\mathcal H_1, \mathcal H_2, \mathcal H_3, \dots\), and does not want to commit to one of them in advance. For the boosted filter, take \(\mathcal H_T\) to be the class of weighted votes of \(T\) stumps, the class lesson 10 wrote \(L(B, T)\), with \(B\) the class of stumps. For a polynomial fitted to points, \(\mathcal H_d\) would be the polynomials of degree at most \(d\). In both cases a larger index means a richer class: a smaller gap to the truth, and a larger gap between empirical and true risk.
 
 To compare classes we need to know how much each one can be trusted on \(m\) examples, where \(m\) is the length of the training sequence. Recall from lesson 4 the idea of **uniform convergence**: once the training sequence is long enough, every hypothesis in the class has an empirical risk close to its true risk, all of them at the same time, except on a rare unlucky draw. Two numbers say what “close” and “rare” mean. The accuracy \(\varepsilon\) (the Greek letter epsilon) is how far apart the two risks may be, say 0.1; the confidence parameter \(\delta\) (delta) is the chance of an unlucky draw we tolerate, say 0.05. The **sample complexity** \(m^{\mathrm{UC}}_{\mathcal H}(\varepsilon, \delta)\) is how many examples that takes for the class \(\mathcal H\); the superscript UC just stands for uniform convergence. Formally, for every distribution \(\mathcal D\), a training sequence of at least that many examples satisfies, with probability at least \(1 - \delta\), \(|L_S(h) - L_{\mathcal D}(h)| \le \varepsilon\) for every \(h \in \mathcal H\) at the same time. The bars \(|\cdot|\) around a difference are the absolute value, the distance between the two numbers whichever is larger, and \(h \in \mathcal H\) reads “\(h\) belongs to \(\mathcal H\)”.
 
-A richer class needs more examples, and we will describe how rich class \(d\) is by a single number \(g(d)\), where \(g: \mathbb N \to \mathbb R\) is some increasing function from the counting numbers \(\mathbb N = \{1, 2, 3, \dots\}\) to the real numbers \(\mathbb R\). For binary classification you can take \(g(d)\) to be the VC dimension of \(\mathcal H_d\) times the universal constant from lesson 6’s fundamental theorem; for the boosting classes, \(g\) simply grows with \(T\). Halving the accuracy should cost four times the examples, and asking for more confidence should cost only a little. So assume that for every \(d\),
+A richer class needs more examples, and we will describe how rich class \(d\) is by a single number \(g(d)\), where \(g: \mathbb N \to \mathbb R\) is some increasing function from the counting numbers \(\mathbb N = \{1, 2, 3, \dots\}\) to the real numbers \(\mathbb R\). For binary classification you can take \(g(d)\) to be the VC dimension of \(\mathcal H_d\) (lesson 6: the size of the largest set of messages the class can label in every possible way) times the universal constant from lesson 6’s fundamental theorem; for the boosting classes, \(g\) simply grows with \(T\). Halving the accuracy should cost four times the examples, and asking for more confidence should cost only a little. So assume that for every \(d\),
 
 \[ m^{\mathrm{UC}}_{\mathcal H_d}(\varepsilon, \delta) \le \frac{g(d) \log(1/\delta)}{\varepsilon^2}. \]
 
@@ -77,7 +77,7 @@ Read it from the inside out.
 - \(g(d)\) multiplies everything by the richness of class \(d\).
 - The subscript \(\mathcal H_d\) on \(m^{\mathrm{UC}}\) says whose sample complexity this is, and \(\le\) says the formula is a ceiling: the class may need fewer.
 
-In plain words: **class \(d\) is trustworthy to within \(\varepsilon\), except with probability \(\delta\), once it has \(g(d)\log(1/\delta)/\varepsilon^2\) examples.** With \(g(d) = 5\), \(\varepsilon = 0.1\) and \(\delta = 0.05\), that is \(5 \times 3.0 / 0.01 \approx 1{,}498\) examples. Turn it around and ask what accuracy 1,498 examples buy: solving for \(\varepsilon\) gives back 0.1, and the proof below uses exactly this turning around.
+In plain words: **class \(d\) is trustworthy to within \(\varepsilon\), except with probability \(\delta\), once it has \(g(d)\log(1/\delta)/\varepsilon^2\) examples.** With \(g(d) = 5\), \(\varepsilon = 0.1\) and \(\delta = 0.05\), that is \(5 \times 3.0 / 0.01 \approx 1{,}498\) examples. Turn it around and ask what accuracy 1,498 examples buy: solving for \(\varepsilon\) gives back 0.1.
 
 ```python
 from math import log, sqrt
@@ -121,7 +121,7 @@ Third, the union bound from lesson 2: the chance that at least one of several ev
 
 The big \(\bigcup_d\) is a union, “\(F_1\) or \(F_2\) or \(F_3\) or …”, the event that at least one class fails. The first \(\le\) is the union bound, the second uses \(\mathbb P[F_d] \le \delta_d = w(d)\,\delta\), and the last step is the weights adding to 1. In plain words: **the chance that any class breaks its promise is at most the sum of their shares, which is \(\delta\).** In the snippet, that is \(0.0304 + 0.0076 + 0.0034 + \dots = 0.05\).
 
-Outside that event, every class \(d\) and every \(h \in \mathcal H_d\) satisfy \(L_{\mathcal D}(h) \le L_S(h) + \varepsilon_d\). It remains to write \(\varepsilon_d\) out. Since \(1/\delta_d = \pi^2 d^2/(6\delta)\), its logarithm is \(\log(1/\delta) + 2\log d + \log(\pi^2/6)\), which is the expression under the square root. \(\blacksquare\)
+Outside that event, every class \(d\) and every \(h \in \mathcal H_d\) satisfy \(L_{\mathcal D}(h) \le L_S(h) + \varepsilon_d\). It remains to write \(\varepsilon_d\) out. Since \(1/\delta_d = \pi^2 d^2/(6\delta)\), and the logarithm of a product is the sum of the logarithms, with \(\log d^2 = 2\log d\), its logarithm is \(\log(1/\delta) + 2\log d + \log(\pi^2/6)\), which is the expression under the square root. \(\blacksquare\)
 
 The rule that follows is called **structural risk minimization** (SRM): pick the pair \(d\) and \(h \in \mathcal H_d\) that makes the right-hand side smallest. It is bound minimization. The empirical risk falls as \(d\) grows, the complexity term rises, and SRM looks for the bottom of their sum. That is exactly what model selection asks for: a filter with 60 rounds may have a smaller empirical risk than a filter with 9, but if its complexity term is much larger, SRM prefers the 9.
 
@@ -191,7 +191,7 @@ print(round(bound, 4), f"{exact:.1e}")
 
 It prints `0.0366 3.2e-04`.
 
-Applied to one fixed hypothesis, that says the validation risk is close to the true risk. With 200 validation messages and \(\delta = 0.05\) the margin comes out at 0.096: with probability 95%, the count lands within about ten points of the truth.
+Applied to one fixed hypothesis, that says the validation risk is close to the true risk. With 200 validation messages and \(\delta = 0.05\) the margin comes out at 0.096: with probability 95%, the measured error lands within about ten percentage points of the truth.
 
 **Theorem (the hold-out guarantee).** Let \(h\) be a hypothesis and let the loss take values in \([0, 1]\). Let \(V\) be a validation set of size \(m_v\), drawn independently of \(h\). Then for every \(\delta \in (0, 1)\), with probability at least \(1 - \delta\) over the choice of \(V\),
 
@@ -211,7 +211,7 @@ From the inside out: \(\log(2/\delta)\) is the confidence cost (the 2 comes from
 
 \[ \mathbb P\left[|L_V(h) - L_{\mathcal D}(h)| > \varepsilon \,\middle|\, S = s\right] \le 2 e^{-2 m_v \varepsilon^2}. \]
 
-This is Hoeffding with \((b - a)^2 = 1\); the only new mark is the vertical bar inside \(\mathbb P[\cdot \mid S = s]\), read “given that \(S = s\)”: the probability computed in the world where the training sequence is already known.
+This is Hoeffding with \((b - a)^2 = 1\); the only new mark is the vertical bar inside \(\mathbb P[\cdot \mid S = s]\), read “given that \(S = s\)”: the probability computed in the world where the training sequence is already known. At \(m_v = 200\) and \(\varepsilon = 0.1\) it is the 0.037 from the Hoeffding snippet, whatever \(s\) is.
 
 *Step 5: unfreeze.* The bound on the right does not depend on \(s\). By the law of total probability, the unconditional probability is the average of the conditional ones over the distribution of \(S\), and an average of numbers that are each at most \(2e^{-2m_v\varepsilon^2}\) is at most \(2e^{-2m_v\varepsilon^2}\).
 
@@ -232,7 +232,7 @@ print(round(eps, 4), round(fail, 4))
 
 It prints `0.0607 0.0007`. The theorem promises that \(L_V\) lands within 0.0607 of 0.2 except with probability at most 0.05; the real failure probability is 0.0007. Hoeffding is conservative, but it never lies.
 
-How does this compare with the bounds of earlier lessons? Suppose \(h\) came from ERM over a class of VC dimension \(d\). Lesson 6’s fundamental theorem gives \(L_{\mathcal D}(h) \le L_S(h) + C\sqrt{(d + \log(1/\delta))/m}\) for a universal constant \(C\), while the hold-out guarantee gives \(L_{\mathcal D}(h) \le L_V(h) + \sqrt{\log(2/\delta)/(2m_v)}\). With \(m = m_v = 1000\), \(d = 21\) (halfspaces over our 20 features, as lesson 9 counted) and, very generously, \(C = 1\):
+How does this compare with the bounds of earlier lessons? Suppose \(h\) came from ERM (empirical risk minimization, lesson 2: return a hypothesis of the class with the smallest empirical risk) over a class of VC dimension \(d\). Lesson 6’s fundamental theorem gives \(L_{\mathcal D}(h) \le L_S(h) + C\sqrt{(d + \log(1/\delta))/m}\) for a universal constant \(C\), while the hold-out guarantee gives \(L_{\mathcal D}(h) \le L_V(h) + \sqrt{\log(2/\delta)/(2m_v)}\). With \(m = m_v = 1000\), \(d = 21\) (halfspaces over our 20 features, as lesson 9 counted) and, very generously, \(C = 1\):
 
 ```python
 from math import log, sqrt

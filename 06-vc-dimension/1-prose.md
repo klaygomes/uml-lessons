@@ -370,9 +370,9 @@ Now it’s your turn to hunt for labellings no class can make.
 
 ## The fundamental theorem
 
-We have shown one direction: infinite VC dimension rules out PAC learning. The converse is also true, and together they form the central result of this part of the course. It ties together every idea from lessons 2 to 5: learnability, ERM, uniform convergence and now the VC dimension. Recall from lesson 4 that a class has the **uniform convergence property** when there is a function \(m^{\mathrm{UC}}_{\mathcal H}(\varepsilon, \delta)\) such that, for every distribution \(\mathcal D\), a training sequence of at least that many i.i.d. examples is \(\varepsilon\)-representative (every \(h \in \mathcal H\) has \(|L_S(h) - L_{\mathcal D}(h)| \le \varepsilon\)) with probability at least \(1 - \delta\).
+We have shown one direction: infinite VC dimension rules out PAC learning. The converse is also true, and together they form the central result of this part of the course. It ties together every idea from lessons 2 to 5: learnability, ERM, uniform convergence and now the VC dimension.
 
-The idea first, with lesson 1’s numbers. There, the rule “unknown sender means junk” got 25% of its labelled examples wrong but 50% of all mail: a gap of 0.25 between how good it looked and how good it was. A training sequence is representative when no rule in the class has a large gap. In the condition, \(L_S(h)\) is the empirical risk, the share of the training sequence \(h\) gets wrong; \(L_{\mathcal D}(h)\) is the true risk; the bars \(|\cdot|\) around a number mean its absolute value, the size of the gap whichever way it points; and “every \(h \in \mathcal H\)” asks it of all rules at once. The superscript in \(m^{\mathrm{UC}}_{\mathcal H}\) just marks this as the uniform-convergence sample size, as opposed to the learning one. In plain words: **a class has uniform convergence when enough labels make every rule’s training score close to its true score, for every rule at once and whatever the mail looks like.** Thresholds on 200 uniform scores with \(t^\star = 0.6\), checked over cut-offs \(0, 0.01, \dots, 1\), where the true risk of \(h_t\) is just the distance \(|t - 0.6|\):
+First, uniform convergence from lesson 4, idea before symbols. In lesson 1, the rule “unknown sender means junk” got 25% of its labelled examples wrong but 50% of all mail: a gap of 0.25 between how good it looked and how good it was. A training sequence is **\(\varepsilon\)-representative** when no rule in the class has a gap above \(\varepsilon\): every \(h \in \mathcal H\) has \(|L_S(h) - L_{\mathcal D}(h)| \le \varepsilon\). Here \(L_S(h)\) is the empirical risk, the share of the training sequence \(h\) gets wrong, \(L_{\mathcal D}(h)\) is the true risk, and the bars mean absolute value, the size of the gap whichever way it points. A class has the **uniform convergence property** when there is a sample size \(m^{\mathrm{UC}}_{\mathcal H}(\varepsilon, \delta)\) such that, for every distribution \(\mathcal D\), at least that many i.i.d. examples are \(\varepsilon\)-representative with probability at least \(1 - \delta\). The superscript UC only marks it as the uniform-convergence sample size, as opposed to the learning one. In plain words: **a class has uniform convergence when enough labels make every rule’s training score close to its true score, for every rule at once and whatever the mail looks like.** Thresholds on 200 uniform scores with \(t^\star = 0.6\), checked over cut-offs \(0, 0.01, \dots, 1\), where the true risk of \(h_t\) is just the distance \(|t - 0.6|\):
 
 ```python
 import random
@@ -445,7 +445,7 @@ One caution about scope. Both versions are about binary classification with the 
 
 Most of the proof is a chain of short steps. Let’s walk around the circle.
 
-**1 implies 2.** This is lesson 4. If \(S\) is \(\varepsilon/2\)-representative, then any ERM hypothesis has true risk within \(\varepsilon\) of the best in the class, and uniform convergence makes \(S\) \(\varepsilon/2\)-representative with probability at least \(1 - \delta\) once \(m \ge m^{\mathrm{UC}}_{\mathcal H}(\varepsilon/2, \delta)\).
+**1 implies 2.** This is lesson 4. If \(S\) is \(\varepsilon/2\)-representative, then for the ERM hypothesis \(h_S\) and any \(h \in \mathcal H\), \(L_{\mathcal D}(h_S) \le L_S(h_S) + \varepsilon/2 \le L_S(h) + \varepsilon/2 \le L_{\mathcal D}(h) + \varepsilon\): each outer step moves at most \(\varepsilon/2\) between training and true risk, and the middle step holds because ERM has the fewest training mistakes. So \(h_S\) is within \(\varepsilon\) of the best in the class, and uniform convergence makes \(S\) \(\varepsilon/2\)-representative with probability at least \(1 - \delta\) once \(m \ge m^{\mathrm{UC}}_{\mathcal H}(\varepsilon/2, \delta)\).
 
 **2 implies 3.** An ERM rule is a learner. If it succeeds, the class is agnostic PAC learnable.
 
@@ -469,7 +469,7 @@ From the inside out:
 - Under \(\max\), the condition \(C \subset \mathcal X : |C| = m\) reads “over every set \(C\) of domain points such that \(C\) has \(m\) points”, and \(\max\) keeps the largest count.
 - \(\tau\) is the Greek letter tau, and \(\tau_{\mathcal H}: \mathbb N \to \mathbb N\) says the growth function takes a whole number of points (\(\mathbb N\), the natural numbers) and returns a whole number of labellings.
 
-In plain words: **\(\tau_{\mathcal H}(m)\) is the largest number of distinct labellings that \(\mathcal H\) produces on any set of \(m\) points.** For thresholds, \(\tau(2) = 3\). In the snippet below, `tau` counts \(|\mathcal H_C|\) on one set; on the line that is already the maximum, as the next paragraph explains. Always \(\tau_{\mathcal H}(m) \le 2^m\), and if \(m \le \mathrm{VCdim}(\mathcal H)\), then some set of size \(m\) is shattered, so \(\tau_{\mathcal H}(m) = 2^m\). The interesting question is what happens past the VC dimension. Let’s just count, for thresholds and intervals. On the line, only the order of the points matters, so the points \(0, 1, \dots, m-1\) are as good as any \(m\) distinct scores.
+In plain words: **\(\tau_{\mathcal H}(m)\) is the largest number of distinct labellings that \(\mathcal H\) produces on any set of \(m\) points.** For thresholds, \(\tau(2) = 3\). In the snippet below, `tau` counts \(|\mathcal H_C|\) on one set, which on the line is already the maximum, for a reason given at the end of this paragraph. Always \(\tau_{\mathcal H}(m) \le 2^m\), and if \(m \le \mathrm{VCdim}(\mathcal H)\), then some set of size \(m\) is shattered, so \(\tau_{\mathcal H}(m) = 2^m\). The interesting question is what happens past the VC dimension. Let’s just count, for thresholds and intervals. On the line, only the order of the points matters, so the points \(0, 1, \dots, m-1\) are as good as any \(m\) distinct scores.
 
 The snippet also computes one more count, which will turn out to be the answer. The **binomial coefficient** \(\binom{m}{i}\), read “\(m\) choose \(i\)”, is the number of ways to pick \(i\) of \(m\) points: from four messages you can pick two in \(\binom{4}{2} = 6\) ways, one in \(\binom{4}{1} = 4\) ways, none in \(\binom{4}{0} = 1\) way. The sum \(\sum_{i=0}^{d} \binom{m}{i}\) adds those counts for \(i = 0, 1, \dots, d\): the number of ways to pick at most \(d\) of the \(m\) points. With \(m = 4\) and \(d = 1\) it is \(1 + 4 = 5\). In the code, `comb(m, i)` is \(\binom{m}{i}\) and `sauer(m, d)` is the sum:
 
@@ -515,7 +515,7 @@ Read the columns as: \(m\), \(\tau_{\mathrm{thr}}(m)\), \(\sum_{i \le 1} \binom{
 
 \[ \tau_{\mathcal H}(m) \le \sum_{i=0}^{d} \binom{m}{i}. \]
 
-The left side is the growth function, the most labellings the class makes on \(m\) points. The right side counts the ways to pick at most \(d\) of those \(m\) points, \(\binom{m}{i}\) ways for each size \(i\) from 0 to \(d\). In plain words: **a class that shatters no more than \(d\) points can label \(m\) points in no more ways than there are ways to choose at most \(d\) of them.** For intervals, \(d = 2\), and \(m = 8\): \(1 + 8 + 28 = 37\), the last row of the table, against \(2^8 = 256\). The `sauer` function in the table snippet is this right-hand side.
+The left side is the growth function; the right side is the count of ways to pick at most \(d\) of the \(m\) points, the `sauer` column of the table. In plain words: **a class that shatters no more than \(d\) points can label \(m\) points in no more ways than there are ways to choose at most \(d\) of them.** For intervals, \(d = 2\), and \(m = 8\): \(1 + 8 + 28 = 37\), the last row of the table, against \(2^8 = 256\).
 
 In particular, if \(1 \le d \le m\), then \(\tau_{\mathcal H}(m) \le (em/d)^d\). This simpler bound is a power with fixed exponent \(d\), a polynomial in \(m\), with \(e \approx 2.718\) again; for \(m = 8\) and \(d = 2\) it is \((4e)^2 \approx 118\), looser than 37 but far below 256. The last snippet of this section checks it.
 
@@ -597,7 +597,7 @@ print(H1, {lab[t][1:] for t in H1})
 
 It prints `[0.0, 0.5] {(1,)}`: two cut-offs have partners, and their tails make exactly \(Y_1\). The `any` is the \(\exists\).
 
-A tail is in \(Y_1\) exactly when it is the tail of a hypothesis with a partner, so \(Y_1 = \mathcal H'_{C'}\). By the induction hypothesis, now applied to the class \(\mathcal H'\) on \(C'\),
+A tail is in \(Y_1\) exactly when it is the tail of a hypothesis with a partner, so \(Y_1 = \mathcal H'_{C'}\). (If no hypothesis has a partner, \(Y_1\) is empty and there is nothing to bound.) Otherwise, by the induction hypothesis, now applied to the class \(\mathcal H'\) on \(C'\),
 
 \[ |Y_1| = |\mathcal H'_{C'}| \le |\{ B \subseteq C' : \mathcal H' \text{ shatters } B \}|. \]
 
@@ -646,9 +646,7 @@ The `Y0` and `Y1` lines are the same two lines as in the small example above, an
 
 \[ \left(\frac{d}{m}\right)^d \sum_{i=0}^{d} \binom{m}{i} \le \sum_{i=0}^{d} \binom{m}{i} \left(\frac{d}{m}\right)^i \le \sum_{i=0}^{m} \binom{m}{i} \left(\frac{d}{m}\right)^i = \left(1 + \frac{d}{m}\right)^m \le e^d. \]
 
-The second step adds non-negative terms, the third is the binomial theorem, and the last uses \(1 + u \le e^u\). Multiplying both sides by \((m/d)^d\) gives the bound.
-
-Read the chain left to right, writing \(q = d/m\) for the fraction. The first expression is the Sauer sum shrunk by \(q^d\). The second gives each term its own, larger, factor \(q^i\). The third lets \(i\) run past \(d\) all the way to \(m\), so it only adds terms. The **binomial theorem** says that sum is exactly \((1 + q)^m\): multiply out \(m\) copies of \(1 + q\), and choosing \(q\) from \(i\) of the brackets can be done in \(\binom{m}{i}\) ways. Finally \(1 + q \le e^q\), raised to the power \(m\), gives \(e^{qm} = e^d\). In plain words: **shrinking the Sauer sum by \((d/m)^d\) leaves something no bigger than \(e^d\), so the sum is at most \((em/d)^d\).** With the interval numbers \(m = 8\), \(d = 2\), so \(q = 1/4\):
+Read it left to right, writing \(q = d/m\). The first expression is the Sauer sum shrunk by \(q^d\). The second gives each term its own, larger, factor \(q^i\). The third lets \(i\) run on to \(m\), which only adds non-negative terms. The **binomial theorem** says that sum is exactly \((1 + q)^m\): multiply out \(m\) copies of \(1 + q\), and choosing \(q\) from \(i\) of the brackets can be done in \(\binom{m}{i}\) ways. Finally \(1 + q \le e^q\), raised to the power \(m\), gives \(e^{qm} = e^d\). Multiplying both ends by \((m/d)^d\) gives the bound. In plain words: **shrinking the Sauer sum by \((d/m)^d\) leaves something no bigger than \(e^d\), so the sum is at most \((em/d)^d\).** With the interval numbers \(m = 8\), \(d = 2\), so \(q = 1/4\):
 
 ```python
 from math import comb, e
@@ -707,7 +705,7 @@ The proof bounds the expected worst gap, \(\mathbb E_{S \sim \mathcal D^m}\left[
 
 *Step 1: from expectation to probability.* Let \(Z = \sup_{h} |L_{\mathcal D}(h) - L_S(h)|\), a non-negative random variable. **Markov’s inequality** says that for a non-negative \(Z\) and any \(a > 0\), \(\mathbb P[Z \ge a] \le \mathbb E[Z]/a\). (Proof: \(Z \ge a \cdot \mathbb 1[Z \ge a]\) pointwise; take expectations.) With \(a = \mathbb E[Z]/\delta\), the probability that \(Z \ge \mathbb E[Z]/\delta\) is at most \(\delta\). So a bound on \(\mathbb E[Z]\), divided by \(\delta\), holds with probability at least \(1 - \delta\). (If \(\mathbb E[Z] = 0\), then \(Z = 0\) with probability 1 and there is nothing to prove.) It remains to bound \(\mathbb E[Z]\).
 
-Markov’s inequality, read slowly: \(\mathbb P[Z \ge a]\) is the chance that \(Z\) reaches the level \(a\), and \(\mathbb E[Z]/a\) is its average measured in units of \(a\). In plain words: **a non-negative quantity can rarely be many times its own average.** If a gap averages 0.04, it can reach 0.4 at most a tenth of the time. Here is one rule’s gap, for the threshold \(h_{0.5}\) with \(t^\star = 0.6\), whose true risk is 0.1, over 20,000 training sequences of 30 uniform scores:
+In Markov’s inequality, \(\mathbb E[Z]/a\) is the average measured in units of the level \(a\). In plain words: **a non-negative quantity can rarely be many times its own average.** If a gap averages 0.04, it can reach 0.4 at most a tenth of the time. Here is one rule’s gap, for the threshold \(h_{0.5}\) with \(t^\star = 0.6\), whose true risk is 0.1, over 20,000 training sequences of 30 uniform scores:
 
 ```python
 import random
@@ -726,9 +724,7 @@ It prints `0.0427 0.4273 0.0`. The gap averages 0.043, Markov allows it to reach
 
 \[ |L_{\mathcal D}(h) - L_S(h)| = \left| \mathbb E_{S'}\left[ L_{S'}(h) - L_S(h) \right] \right| \le \mathbb E_{S'}\left| L_{S'}(h) - L_S(h) \right| \le \mathbb E_{S'}\left[ \sup_{h' \in \mathcal H} |L_{S'}(h') - L_S(h')| \right]. \]
 
-The first inequality is “the absolute value of an average is at most the average of absolute values”. The second holds because the quantity inside the expectation can only grow when we replace it by its supremum over the class. The right side no longer depends on \(h\), so it also bounds the supremum over \(h\) of the left side.
-
-Read the chain once more as a whole. The left is the gap we care about. The first expression rewrites the true risk as the average ghost score, \(\mathbb E_{S'}\) being the average over all the ghost samples you might draw. The prime in \(h'\) only gives the worst-case rule its own name. In plain words: **the gap between true and training risk is at most the average, over imaginary second samples, of the worst gap between two training scores.** For the threshold \(h_{0.5}\) (true risk 0.1) and one real sample of 30 scores:
+Left to right: the gap we care about; the true risk rewritten as the average ghost score, \(\mathbb E_{S'}\) being the average over all the ghost samples you might draw; then “the absolute value of an average is at most the average of absolute values”; then the inside can only grow when replaced by its worst case over the class, the prime in \(h'\) only giving that worst-case rule its own name. The right side no longer depends on \(h\), so it also bounds the supremum over \(h\) of the left side. In plain words: **the gap between true and training risk is at most the average, over imaginary second samples, of the worst gap between two training scores.** For the threshold \(h_{0.5}\) (true risk 0.1) and one real sample of 30 scores:
 
 ```python
 import random

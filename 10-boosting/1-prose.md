@@ -280,7 +280,7 @@ print(min(min(F(j, t), 1 - F(j, t))
 
 It prints `[-1, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.5, 4.0, 5]` and `0.125`. Equal neighbours give a midpoint equal to their value, which only repeats a prefix that another threshold already covers, and the set keeps each value once. The best stump under these weights has weighted risk 0.125, the one round 2 of AdaBoost will pick below.
 
-Trying every \(\theta \in \Theta_j\) for every \(j\), and summing over \(m\) examples each time, costs \(O(dm^2)\). (Recall the big-O notation from lesson 8: \(O(dm^2)\) means at most a fixed multiple of \(d \cdot m^2\) steps.) There is a neat way to save a factor of \(m\).
+Trying every \(\theta \in \Theta_j\) for every \(j\), and summing over \(m\) examples each time, costs \(O(dm^2)\). (Recall the big-O notation from lesson 2: \(O(dm^2)\) means at most a fixed multiple of \(d \cdot m^2\) steps.) There is a neat way to save a factor of \(m\).
 
 **Each step costs \(O(1)\).** Suppose we know \(F = F_j(\theta)\) for a threshold just below \(x_{i,j}\), and now move to a threshold \(\theta'\) just above it. Only example \(i\) changes sides: it was above the threshold, predicted junk, and now it is at or below it, predicted keep. If \(y_i = +1\), it was right and is now wrong, so \(F\) grows by \(D_i\). If \(y_i = -1\), it was wrong and is now right, so \(F\) shrinks by \(D_i\). Both cases in one line:
 \[ F_j(\theta') = F_j(\theta) + y_i D_i. \]
@@ -778,15 +778,24 @@ On a finite domain, every class is finite once you count functions rather than f
 - Choosing \(T\) of them, in order: at most \(102^T\) ways.
 - For each choice, a homogeneous halfspace labels the \(|\mathcal X|\) vectors \(\psi(x)\) in at most \((e|\mathcal X|/T)^T\) ways, by Sauer’s lemma.
 
-So \(|L(B, T)| \le 102^T (e|\mathcal X|/T)^T\) as a set of functions on \(\mathcal X\).
+So \(|L(B, T)| \le 102^T (e|\mathcal X|/T)^T\) as a set of functions on \(\mathcal X\). The bars count again: \(|L(B, T)|\) is how many distinct functions the class holds, and \(|\mathcal X|\) how many messages there are. In plain words: **at most 102 choices per round for the stumps, times Sauer’s count for the halfspace on top.** For \(T = 1\) the logarithm of the bound is \(\log 102 + 1 + \log 6^{10} \approx 4.6 + 1 + 17.9 = 23.5\); the `log_H` line of the snippet below computes exactly this.
 
-Now bring in lesson 4. For a finite class \(\mathcal H\) and \(m\) i.i.d. examples, with probability at least \(1 - \delta\), every \(h \in \mathcal H\) satisfies
+Now bring in lesson 4. For a finite class \(\mathcal H\) and \(m\) i.i.d. examples (drawn independently from the same \(\mathcal D\)), with probability at least \(1 - \delta\), every \(h \in \mathcal H\) satisfies
 \[ |L_{\mathcal D}(h) - L_S(h)| \le \sqrt{\frac{\log(2|\mathcal H|/\delta)}{2m}}. \]
-That was uniform convergence for finite classes, from Hoeffding’s inequality and the union bound. One more detail. We will try every \(T\) from 1 to 100 and keep the best, so we need the promise to hold for all hundred classes at once. Give each class confidence \(\delta/100\); by the union bound, all hundred promises hold together with probability at least \(1 - \delta\). That is the same trick lesson 7 used to spread confidence over a sequence of classes. So, with probability at least \(1 - \delta\), for every \(T \le 100\) and every vote \(h\) of \(T\) stumps,
-\[ L_{\mathcal D}(h) \le L_S(h) + \operatorname{gap}(T), \qquad \operatorname{gap}(T) = \sqrt{\frac{\log|L(B, T)| + \log(200/\delta)}{2m}}. \]
-We call \(L_S(h) + \operatorname{gap}(T)\) the **certified risk**: a number you compute from the training sequence alone, which the true risk exceeds only with probability at most \(\delta\).
+Careful with the bars: around \(L_{\mathcal D}(h) - L_S(h)\), a number, they mean absolute value, the size of the difference whichever way it points; around \(\mathcal H\), a set, they count its members. \(L_{\mathcal D}(h)\) is the true risk, shortened from \(L_{(\mathcal D, f)}(h)\). Inside the root, the log of the class size, adjusted for confidence, is divided by twice the sample size. In plain words: **on every hypothesis of the class at once, the empirical risk is within this distance of the true risk.** With the 102 stumps alone, \(m\) = 20,000 and \(\delta = 0.05\):
 
-With \(m\) = 20,000 and \(\delta = 0.05\):
+```python
+import math
+
+m, delta, size = 20_000, 0.05, 102
+print(round(math.sqrt(math.log(2 * size / delta) / (2 * m)), 4))
+```
+
+It prints `0.0144`: a single stump’s empirical risk is within about 1.4 points of its true risk. That was uniform convergence for finite classes, from Hoeffding’s inequality (lesson 4: an average of independent bounded draws rarely strays far from its mean) and the union bound. One more detail. We will try every \(T\) from 1 to 100 and keep the best, so we need the promise to hold for all hundred classes at once. Give each class confidence \(\delta/100\); by the union bound, all hundred promises hold together with probability at least \(1 - \delta\). That is the same trick lesson 7 used to spread confidence over a sequence of classes. So, with probability at least \(1 - \delta\), for every \(T \le 100\) and every vote \(h\) of \(T\) stumps,
+\[ L_{\mathcal D}(h) \le L_S(h) + \operatorname{gap}(T), \qquad \operatorname{gap}(T) = \sqrt{\frac{\log|L(B, T)| + \log(200/\delta)}{2m}}. \]
+It is the previous formula with \(|\mathcal H|\) replaced by \(|L(B, T)|\), its log split in two, and \(\delta\) replaced by \(\delta/100\), which turns \(2/\delta\) into \(200/\delta\); only the upward direction of the absolute value is kept. In plain words: **the true risk of any vote of \(T\) stumps is at most its empirical risk plus a gap that grows with \(T\).** The snippet below mirrors \(\operatorname{gap}(T)\) term by term, with `log_H` the log of the count and `log_terms` the top of the fraction. We call \(L_S(h) + \operatorname{gap}(T)\) the **certified risk**: a number you compute from the training sequence alone, which the true risk exceeds only with probability at most \(\delta\).
+
+With \(m\) = 20,000 and \(\delta = 0.05\) (here `k` is the 10 words and `K` the cap of 5):
 
 ```python
 import math
@@ -908,4 +917,4 @@ Once the concept check is done, try these. Hints come one at a time in the chat,
 
 - **Problem 1 (AdaBoost forgets its last hypothesis).** Show that the hypothesis \(h_t\) of round \(t\) has weighted risk exactly \(\tfrac12\) under the next round’s weights: for every \(t \in [T]\), \(\sum_{i=1}^m D_i^{(t+1)}\, \mathbb 1[y_i \neq h_t(x_i)] = \tfrac12\). This is the rigorous version of “the weights force the weak learner to look at the problematic examples”.
 - **Problem 2 (staircases from stumps).** Prove that the vote \(h(x) = \operatorname{sign}\big(\sum_{t=1}^T w_t \operatorname{sign}(x - \theta_{t-1})\big)\), with \(\theta_0 = -\infty\), \(w_1 = (-1)^T/2\) and \(w_t = (-1)^t\) for \(t \ge 2\), equals the piecewise constant hypothesis with labels \(\alpha_i = (-1)^i\) on the pieces \((\theta_{i-1}, \theta_i]\).
-- **Problem 3 (the integral image).** Let \(A\) be a \(24 \times 24\) matrix of grey levels. Its integral image \(I(A)\) is the matrix \(B\) with \(B_{i,j} = \sum_{i' \le i,\ j' \le j} A_{i',j'}\). Show that \(I(A)\) can be computed from \(A\) in time linear in the size of \(A\), and that, given \(I(A)\), every Viola and Jones feature can be computed in constant time, that is, in a time that does not depend on the size of its rectangle.
+- **Problem 3 (the integral image).** Let \(A\) be a \(24 \times 24\) matrix of grey levels. Its integral image \(I(A)\) is the matrix \(B\) with \(B_{i,j} = \sum_{i' \le i,\ j' \le j} A_{i',j'}\): entry \((i, j)\) adds up every grey level in rows 1 to \(i\) and columns 1 to \(j\), the rectangle above and to the left (for \(A\) with rows \(1, 2\) and \(3, 4\), \(B\) has rows \(1, 3\) and \(4, 10\)). Show that \(I(A)\) can be computed from \(A\) in time linear in the size of \(A\), and that, given \(I(A)\), every Viola and Jones feature can be computed in constant time, that is, in a time that does not depend on the size of its rectangle.

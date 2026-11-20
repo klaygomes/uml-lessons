@@ -400,8 +400,8 @@ Folder: `20-neural-networks/`
 
 Folder: `21-online-learning/`
 
-- [ ] 1 prose and sheet (drafting by agent, started 2026-11-20; brief in the session scratchpad, template docs/writer-brief.md)
-- [ ] 2 gates: book check (PDF agents), read-aloud, fresh reader, greps
+- [x] 1 prose and sheet (about 18,200 words with code, 25 snippets run by the lead; the failing fence is the build-it stub; no book references; written with the walkthrough and concept-before-symbol rules; 2026-11-20). Split candidate. Writer's notes to verify: a mismatch between the book's prose and its tree definition; the regret lower bound stated without proof; own recursion for the Littlestone dimension
+- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -430,8 +430,8 @@ Folder: `22-clustering/`
 
 Folder: `23-dimensionality-reduction/`
 
-- [ ] 1 prose and sheet (drafting by agent, started 2026-11-20; brief in the session scratchpad, template docs/writer-brief.md)
-- [ ] 2 gates: book check (PDF agents), read-aloud, fresh reader, greps
+- [x] 1 prose and sheet (about 17,400 words with code, 31 snippets run by the lead; the 3 failing fences are build-it stubs; no book references; written with both rules; 2026-11-20). Split candidate. Writer's claims to verify: the chi-squared upper tail is false for large ε (lesson proves ε ≤ 1/2); RIP theorem constant 216 instead of the book's 100; covering lemma by packing. Page builder must ship the act-2 table (0.243 at n = 500) or update the prose
+- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -533,9 +533,9 @@ Folder: `29-multiclass-learnability/`
 
 ### 30. Ch. 30 compression bounds
 
-Folder: not created yet
+Folder: `30-compression-bounds/`
 
-- [ ] 1 prose and sheet
+- [ ] 1 prose and sheet (drafting by agent, started 2026-11-20; brief in the session scratchpad, template docs/writer-brief.md)
 - [ ] 2 gates: book check (PDF agents), read-aloud, fresh reader, greps
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
