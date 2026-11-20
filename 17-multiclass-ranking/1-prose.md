@@ -684,17 +684,7 @@ Read it from the inside out.
 - \(\min_{\mathbf u: \|\mathbf u\| \le B}\) is the best hinge risk of any weight vector of length at most \(B\): the best you could hope for in the class.
 - \(\sqrt{8\rho^2B^2/m}\) is the price of learning from \(m\) examples.
 
-In plain words: **the expected cost of the learned filter is at most its expected hinge loss, which is at most the best hinge loss in the ball plus \(\sqrt{8\rho^2B^2/m}\).** With \(\rho = 2\), \(B = 5\), \(m = 10{,}000\) and a best hinge risk of 0.05, the guarantee is \(0.05 + 0.283 = 0.333\), the same total as the oracle inequality above, now in closed form.
-
-```python
-import math
-
-best_hinge, rho, B, m = 0.05, 2, 5, 10_000
-gap = math.sqrt(8 * rho**2 * B**2 / m)
-print(round(gap, 3), round(best_hinge + gap, 3))
-```
-
-It prints `0.283 0.333`.
+In plain words: **the expected cost of the learned filter is at most its expected hinge loss, which is at most the best hinge loss in the ball plus \(\sqrt{8\rho^2B^2/m}\).** With \(\rho = 2\), \(B = 5\), \(m = 10{,}000\) and a best hinge risk of 0.05, the guarantee is \(0.05 + 0.283 = 0.333\): the oracle snippet above printed this very total, and its two middle terms, \(0.141 + 0.141\), are the gap \(\sqrt{8 \times 4 \times 25/10{,}000} = 0.283\).
 
 *Proof.* First, the loss is \(\rho\)-Lipschitz. By the triangle inequality, \(\|\Psi(\mathbf x, y') - \Psi(\mathbf x, y)\| \le \|\Psi(\mathbf x, y')\| + \|\Psi(\mathbf x, y)\| \le \rho/2 + \rho/2 = \rho\) for every pair of labels, so the proposition above gives Lipschitz constant at most \(\rho\), and the loss is convex.
 
@@ -704,7 +694,7 @@ The right inequality. Apply the oracle inequality with any \(\mathbf u\) with \(
 
 \[ \lambda B^2 = \sqrt{\frac{2\rho^2 B^2}{m}}, \qquad \frac{2\rho^2}{\lambda m} = \frac{2\rho^2}{m} \sqrt{\frac{B^2 m}{2\rho^2}} = \sqrt{\frac{2\rho^2 B^2}{m}}. \]
 
-Read each half by substituting \(\lambda = \sqrt{2\rho^2/(B^2 m)}\). In the first, \(B^2\) moves under the square root as \(B^4\), and one \(B^2\) cancels. In the second, dividing by \(\lambda\) flips the fraction under the root, and \(\frac{2\rho^2}{m}\sqrt{\frac{B^2m}{2\rho^2}} = \sqrt{\frac{4\rho^4 B^2 m}{2\rho^2 m^2}} = \sqrt{\frac{2\rho^2B^2}{m}}\). In plain words: **this choice of \(\lambda\) makes the length penalty and the sample-size penalty equal.** With \(\rho = 2\), \(B = 5\), \(m = 10{,}000\), both are 0.141, exactly the two middle terms the oracle snippet above printed, and their sum 0.283 is the gap the theorem’s snippet printed. (These numbers fit messages scaled so \(\|\mathbf x\| \le 1\): the multivector map then has \(\|\Psi\| \le 1\), so \(\rho = 2\).)
+Read each half by substituting \(\lambda = \sqrt{2\rho^2/(B^2 m)}\). In the first, \(B^2\) moves under the square root as \(B^4\), and one \(B^2\) cancels. In the second, dividing by \(\lambda\) flips the fraction under the root, and \(\frac{2\rho^2}{m}\sqrt{\frac{B^2m}{2\rho^2}} = \sqrt{\frac{4\rho^4 B^2 m}{2\rho^2 m^2}} = \sqrt{\frac{2\rho^2B^2}{m}}\). In plain words: **this choice of \(\lambda\) makes the length penalty and the sample-size penalty equal.** With \(\rho = 2\), \(B = 5\), \(m = 10{,}000\), both are 0.141, exactly the two middle terms the oracle snippet above printed. (These numbers fit messages scaled so \(\|\mathbf x\| \le 1\): the multivector map then has \(\|\Psi\| \le 1\), so \(\rho = 2\).)
 
 Their sum is \(2\sqrt{2\rho^2 B^2/m} = \sqrt{8\rho^2 B^2/m}\). The bound holds for every such \(\mathbf u\), so it holds for the minimizing one. \(\blacksquare\)
 
@@ -1338,11 +1328,18 @@ Back to the inbox your users actually label. They do not give relevance scores; 
 
 Here is the trap the team fell into. It looks as if a binary filter solves it: label each message, put the yeses on top. But a binary learner minimizes the zero-one loss, and the zero-one loss is the wrong measure when the relevant messages are rare. Suppose 20 of 1,000 messages are important, and the filter says no to all of them. It is right on 980 of them, a zero-one loss of 2%, and it has found none of the important ones. To say precisely what it misses, we need a few counts.
 
-A ranker outputs scores \(\mathbf y' \in \mathbb R^r\), and a **threshold** \(\theta \in \mathbb R\) turns them into yes/no answers, \(\operatorname{sign}(y'_i - \theta)\). (Ties at the threshold are measure-zero for real-valued scores; read the sign of 0 as \(-1\) here.) Four counts describe the result: the flagged messages that are important, the flagged ones that are not, the important ones that are missed, and the unimportant ones correctly left alone. On the morning of ten messages tabulated further below, at \(\theta = 0\), they are 2, 2, 1 and 5. In symbols:
+A ranker outputs scores \(\mathbf y' \in \mathbb R^r\), and a **threshold** \(\theta \in \mathbb R\) turns them into yes/no answers, \(\operatorname{sign}(y'_i - \theta)\). (Ties at the threshold are measure-zero for real-valued scores; read the sign of 0 as \(-1\) here.) Here is one morning of ten messages, three of them important, scored by a ranker and sorted from the top:
+
+| message | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| score | 2.1 | 1.4 | 0.9 | 0.3 | −0.2 | −0.4 | −0.8 | −1.0 | −1.5 | −2.2 |
+| important | yes | no | yes | no | no | yes | no | no | no | no |
+
+Before reading on, count by hand at \(\theta = 0\): which messages are flagged, and how many of them are important? Four counts describe the result: the flagged messages that are important, the flagged ones that are not, the important ones that are missed, and the unimportant ones correctly left alone. On this morning they are 2, 2, 1 and 5. In symbols:
 
 \[ \begin{aligned} a &= |\{i : y_i = +1 \wedge \operatorname{sign}(y'_i - \theta) = +1\}| && \text{true positives} \\ b &= |\{i : y_i = -1 \wedge \operatorname{sign}(y'_i - \theta) = +1\}| && \text{false positives} \\ c &= |\{i : y_i = +1 \wedge \operatorname{sign}(y'_i - \theta) = -1\}| && \text{false negatives} \\ d &= |\{i : y_i = -1 \wedge \operatorname{sign}(y'_i - \theta) = -1\}| && \text{true negatives} \end{aligned} \]
 
-Read one line from the inside out: \(y_i = +1\) is “message \(i\) is important”; \(\operatorname{sign}(y'_i - \theta) = +1\) is “its score is above the threshold, so it is flagged”; \(\wedge\) reads “and”; the braces with a colon collect the messages \(i\) such that both hold; the bars \(|\cdot|\) count them. In plain words: **\(a\) counts important messages that are flagged, \(b\) unimportant ones that are flagged, \(c\) important ones that are missed and \(d\) unimportant ones that are left alone.** In the ten-message morning below, at \(\theta = 0\), messages 1 to 4 are flagged: two of them important (\(a = 2\)) and two not (\(b = 2\)); one important message is missed (\(c = 1\)); five unimportant ones are left alone (\(d = 5\)). Every message falls in exactly one of the four counts, so they add up to 10.
+Read one line from the inside out: \(y_i = +1\) is “message \(i\) is important”; \(\operatorname{sign}(y'_i - \theta) = +1\) is “its score is above the threshold, so it is flagged”; \(\wedge\) reads “and”; the braces with a colon collect the messages \(i\) such that both hold; the bars \(|\cdot|\) count them. In plain words: **\(a\) counts important messages that are flagged, \(b\) unimportant ones that are flagged, \(c\) important ones that are missed and \(d\) unimportant ones that are left alone.** On this morning, at \(\theta = 0\), messages 1 to 4 are flagged: two of them important (\(a = 2\)) and two not (\(b = 2\)); one important message is missed (\(c = 1\)); five unimportant ones are left alone (\(d = 5\)). Every message falls in exactly one of the four counts, so they add up to 10.
 
 ```python
 yp = [2.1, 1.4, 0.9, 0.3, -0.2, -0.4, -0.8, -1.0, -1.5, -2.2]
@@ -1367,7 +1364,7 @@ Lower the threshold and you flag more: recall rises, reaching 1 at \(\theta = -\
 - **Recall at \(k\):** the recall when at most \(k\) messages may be flagged: choose \(\theta\) so that \(a + b \le k\). Right when a person can only look at \(k\) messages.
 - **Precision at \(k\):** the precision when at least \(k\) messages are flagged: choose \(\theta\) so that \(a + b \ge k\). The natural choice puts \(\theta\) just below the \(k\)-th largest score, so exactly the top \(k\) are flagged; that is what your users mean by “are the top five any good?”.
 
-Read the F₁ formula from the inside out. \(1/\text{precision}\) and \(1/\text{recall}\) are large when either score is small; dividing 2 by their sum gives the **harmonic mean**, which is pulled towards the smaller of the two. Substituting \(a/(a+b)\) and \(a/(a+c)\) and clearing fractions gives \(2a/(2a + b + c)\). In F\(_\beta\), the weight \(\beta^2\) multiplies \(1/\text{recall}\), so missed important messages count \(\beta^2\) times as much. In plain words: **F₁ is high only when the flagged messages are mostly important and most important messages are flagged.** On the morning tabulated below, at \(\theta = 0\), precision 0.5 and recall 0.667 give F₁ \(= 2/(2 + 1.5) = 0.571\), the same as \(2 \cdot 2/(4 + 2 + 1)\); with \(\beta = 2\), F₂ is 0.625.
+Read the F₁ formula from the inside out. \(1/\text{precision}\) and \(1/\text{recall}\) are large when either score is small; dividing 2 by their sum gives the **harmonic mean**, which is pulled towards the smaller of the two. Substituting \(a/(a+b)\) and \(a/(a+c)\) and clearing fractions gives \(2a/(2a + b + c)\). In F\(_\beta\), the weight \(\beta^2\) multiplies \(1/\text{recall}\), so missed important messages count \(\beta^2\) times as much. In plain words: **F₁ is high only when the flagged messages are mostly important and most important messages are flagged.** On the ten-message morning, at \(\theta = 0\), precision 0.5 and recall 0.667 give F₁ \(= 2/(2 + 1.5) = 0.571\), the same as \(2 \cdot 2/(4 + 2 + 1)\); with \(\beta = 2\), F₂ is 0.625.
 
 ```python
 a, b, c = 2, 2, 1
@@ -1397,14 +1394,7 @@ print(zero_one, recall, F1, 1 - F1)
 
 It prints `0.02 0.0 0.0 1.0`: zero-one loss 2%, recall 0, so F₁ is 0 and its loss is 1.
 
-Now a real ranker on one morning of ten messages, three of them important, with scores sorted from the top:
-
-| message | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| score | 2.1 | 1.4 | 0.9 | 0.3 | −0.2 | −0.4 | −0.8 | −1.0 | −1.5 | −2.2 |
-| important | yes | no | yes | no | no | yes | no | no | no | no |
-
-Before running the code, count by hand at \(\theta = 0\). Which four are flagged, and how many of them are important?
+Here is the whole morning in code, at \(\theta = 0\) and for the top three:
 
 ```python
 yp = [2.1, 1.4, 0.9, 0.3, -0.2, -0.4, -0.8, -1.0, -1.5, -2.2]

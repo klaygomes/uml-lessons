@@ -121,28 +121,7 @@ This is the square of a sum of two arrows, \(\|\mathbf a + \mathbf c\|^2 = \|\ma
 
 [[diagram:distance]]
 
-When \(\|\mathbf w\| \ne 1\), divide by it first: the distance is \(|\langle \mathbf w, \mathbf x \rangle + b| / \|\mathbf w\|\), which is the formula the first snippet used. Here is the claim tested in three dimensions: a random unit \(\mathbf w\), a random \(b\) and \(\mathbf x\), the foot point \(\mathbf v\), and ten thousand other random points of the hyperplane, none of which may be closer.
-
-```python
-import math, random
-
-rng = random.Random(0)
-dot = lambda u, v: sum(a * b for a, b in zip(u, v))
-for _ in range(3):
-    w = [rng.gauss(0, 1) for _ in range(3)]
-    w = [c / math.sqrt(dot(w, w)) for c in w]
-    b, x = rng.uniform(-2, 2), [rng.uniform(-3, 3) for _ in "abc"]
-    s = dot(w, x) + b
-    v = [xi - s * wi for xi, wi in zip(x, w)]
-    Z = [[rng.gauss(0, 3) for _ in "abc"] for _ in range(10_000)]
-    U = [[vi + zi - dot(z, w) * wi
-          for vi, zi, wi in zip(v, z, w)] for z in Z]
-    nearest = min(math.dist(x, u) for u in U)
-    print(round(abs(s), 4), round(math.dist(x, v), 4),
-          abs(dot(w, v) + b) < 1e-12, nearest >= math.dist(x, v))
-```
-
-It prints `1.1182 1.1182 True True`, `3.0192 3.0192 True True` and `1.3828 1.3828 True True`: the formula matches the distance to \(\mathbf v\), \(\mathbf v\) is on the hyperplane, and no other sampled point of the hyperplane beats it. (Each `u` is `v` plus a random vector with its component along `w` removed, which keeps it on the hyperplane.)
+When \(\|\mathbf w\| \ne 1\), divide by it first: the distance is \(|\langle \mathbf w, \mathbf x \rangle + b| / \|\mathbf w\|\), the formula the first snippet used and the grid search above confirmed on G.
 
 ## The margin, and the widest separator
 
@@ -289,7 +268,7 @@ The number \(\rho\) is the **radius**: every message lies in the ball of radius 
 
 First the notation. \(S \sim \mathcal D^m\) reads “\(S\) is \(m\) examples drawn independently from \(\mathcal D\)”, and \(\delta\) (delta) is the small chance we allow the training sequence to be unlucky, as in every probably approximately correct guarantee since lesson 2. The **0-1 true risk** is the chance that the returned halfspace mislabels a fresh message from \(\mathcal D\). Inside the first square root sits the difficulty ratio \(\rho/\gamma\), squared, divided by the number of labels; inside the second, \(\log(2/\delta)\), which grows only slowly as you demand more confidence. In plain words: **with high confidence, hard-SVM’s error rate on new mail is at most a difficulty term plus a confidence term, and both shrink like one over the square root of the number of labels.** With \(\rho/\gamma = 10\), \(m = 1000\) and \(\delta = 0.05\): \(\sqrt{400/1000} \approx 0.632\), plus \(\sqrt{2 \log 40 / 1000} \approx 0.086\), about 0.718, the first line `hard_svm_bound` prints below.
 
-Read it slowly, because it is the heart of the lesson. The dimension \(d\) does not appear anywhere. A filter over fifty thousand words and a filter over two words get the same guarantee, as long as the mail is separable with the same ratio \(\rho/\gamma\). Setting the bound equal to \(\varepsilon\), the number of labels needed grows like \((\rho/\gamma)^2/\varepsilon^2\), with no \(d\). (Here \(\log\) is the natural logarithm, as everywhere in this course.)
+This is the heart of the lesson: the dimension \(d\) appears nowhere, so a filter over fifty thousand words gets the same guarantee as one over two words with the same ratio \(\rho/\gamma\). Setting the bound equal to \(\varepsilon\), the number of labels needed grows like \((\rho/\gamma)^2/\varepsilon^2\), with no \(d\). (Here \(\log\) is the natural logarithm, as everywhere in this course.)
 
 The proof needs a tool we have not built yet, the Rademacher complexity of a class, and lesson 26 proves this theorem in full. Here is the bound as the label count grows, still with \(\rho/\gamma = 10\) (the closest message a tenth of the radius from the best separator) and \(\delta = 0.05\):
 
@@ -402,9 +381,7 @@ Hard-SVM needed the data to be separable with a margin. Soft-SVM needs no such t
 
 \[ \mathop{\mathbb E}_{S \sim \mathcal D^m} \left[ L_{\mathcal D}(A(S)) \right] \le L_{\mathcal D}(\mathbf u) + \lambda \|\mathbf u\|^2 + \frac{2\rho^2}{\lambda m}. \]
 
-Inside out: \(A(S)\) is the weight vector the learner returns on the training sequence \(S\), and \(L_{\mathcal D}(A(S))\) is its true risk, its average loss on fresh examples from \(\mathcal D\). The \(\mathbb E\) with \(S \sim \mathcal D^m\) under it averages that true risk over all the training sequences you might have drawn. On the right, \(\mathbf u\) is any competitor at all: its own true risk, plus the penalty it would pay, plus \(2\rho^2/(\lambda m)\), the most the learner can overfit on average. In plain words: **on average, the regularized learner is almost as good as any fixed weight vector, paying that vector’s penalty plus a term that shrinks with more labels.** With \(\rho = 5\), \(\lambda = 0.0354\) and \(m = 10{,}000\), the last term is \(50/354 \approx 0.141\); the snippet `soft_svm_bound` later in this section computes the whole right side.
-
-Think of \(\mathbf u\) as a good hypothesis that only an oracle knows about: the bound says how close the learner gets to it on average. To use it for soft-SVM we need the hinge loss to be convex and Lipschitz.
+Inside out: \(A(S)\) is the weight vector the learner returns on the training sequence \(S\), and \(L_{\mathcal D}(A(S))\) is its true risk, its average loss on fresh examples from \(\mathcal D\). The \(\mathbb E\) with \(S \sim \mathcal D^m\) under it averages that true risk over all the training sequences you might have drawn. On the right, \(\mathbf u\) is any competitor at all: its own true risk, plus the penalty it would pay, plus \(2\rho^2/(\lambda m)\), the most the learner can overfit on average. In plain words: **on average, the regularized learner is almost as good as any fixed weight vector, paying that vector’s penalty plus a term that shrinks with more labels.** With \(\rho = 5\), \(\lambda = 0.0354\) and \(m = 10{,}000\), the last term is \(50/354 \approx 0.141\); `soft_svm_bound`, later in this section, computes the whole right side. To use the inequality for soft-SVM we need the hinge loss to be convex and Lipschitz.
 
 Convexity is quick. Recall from lesson 12 that \(f\) is **convex** when **the value at a blend is at most the blend of the values**: for every \(\mathbf w, \mathbf u\) and every mixing weight \(\theta \in [0, 1]\) (lesson 12 called it \(\alpha\); we save \(\alpha\) for later),
 
@@ -475,7 +452,7 @@ and the same bound holds for the expected 0-1 true risk \(\mathbb E_S [L_{\mathc
 
 \[ \mathop{\mathbb E}_{S \sim \mathcal D^m} \left[ L_{\mathcal D}^{0-1}(A(S)) \right] \le \mathop{\mathbb E}_{S \sim \mathcal D^m} \left[ L_{\mathcal D}^{\text{hinge}}(A(S)) \right] \le \min_{\mathbf w : \|\mathbf w\| \le B} L_{\mathcal D}^{\text{hinge}}(\mathbf w) + \sqrt{\frac{8 \rho^2 B^2}{m}}. \]
 
-The first display is the RLM oracle inequality you just read, with the hinge loss in it; \(\mathcal X\) is the set of messages such that their length is at most \(\rho\). In the second, the superscripts name the loss: \(L_{\mathcal D}^{0-1}\) is the chance of a wrong label on fresh mail, \(L_{\mathcal D}^{\text{hinge}}\) the average hinge loss on it. \(B\) is a budget on length, and \(\min_{\mathbf w : \|\mathbf w\| \le B}\) is the best hinge risk any weight vector of length at most \(B\) can reach. In plain words: **on average, soft-SVM’s error rate on new mail is at most the best hinge risk within the length budget, plus a term that grows with the radius and the budget and shrinks like one over the square root of the number of labels.** With \(\rho = 5\), \(B = 2\), \(m = 10{,}000\) and a best hinge risk of 0.04: \(\sqrt{8 \cdot 25 \cdot 4/10{,}000} \approx 0.283\), so about 0.323, the number the snippet after the proof prints.
+The first display is the oracle inequality with the hinge loss in it, and \(\mathcal X\) is the ball of messages of length at most \(\rho\). In the second, the superscripts name the loss: \(L_{\mathcal D}^{0-1}\) is the chance of a wrong label on fresh mail, \(L_{\mathcal D}^{\text{hinge}}\) the average hinge loss on it. \(B\) is a budget on length, and \(\min_{\mathbf w : \|\mathbf w\| \le B}\) is the best hinge risk any weight vector of length at most \(B\) can reach. In plain words: **on average, soft-SVM’s error rate on new mail is at most the best hinge risk within the length budget, plus a term that grows with the radius and the budget and shrinks like one over the square root of the number of labels.** With \(\rho = 5\), \(B = 2\), \(m = 10{,}000\) and a best hinge risk of 0.04: \(\sqrt{8 \cdot 25 \cdot 4/10{,}000} \approx 0.283\), so about 0.323, the number the snippet after the proof prints.
 
 *Proof.* *The first bound.* Soft-SVM is regularized loss minimization with the hinge loss, which we just showed is convex and \(\rho\)-Lipschitz for every example in \(\mathcal X \times \{\pm 1\}\). The guarantee of lesson 13 applies word for word with \(L_{\mathcal D} = L_{\mathcal D}^{\text{hinge}}\).
 
@@ -489,7 +466,7 @@ Both lines only move factors in and out of square roots (\(c = \sqrt{c^2}\) for 
 
 Two remarks on what this says. First, it is a bound on the *expected* true risk, averaged over the random training sequence, not a high-probability bound like the hard-SVM theorem; Markov’s inequality turns the one into the other, at some cost in the constants. Second, look at what controls it: the radius \(\rho\), the norm budget \(B\) (which plays the part of \(1/\gamma\), since a separator of norm \(B\) at score level 1 has margin \(1/B\)), and, when the mail is not separable, the best hinge risk available within that norm. No \(d\).
 
-Let’s put numbers in. Messages of radius \(\rho = 5\), and a comparison separator \(\mathbf u\) of norm \(B = 2\) with hinge risk 0.04:
+Here are the theorem’s numbers, \(\rho = 5\), \(B = 2\), hinge risk 0.04, at two label counts:
 
 ```python
 import math

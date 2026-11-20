@@ -557,7 +557,7 @@ Take the outer expectation over \(\mathbf v_{1:t-1}\) of both sides. The left si
 
 Chaining: the expected gap is at most the expected average of \(f(\mathbf w^{(t)}) - f(\mathbf w^\star)\) (Step 1), which is at most the expected average of the inner products (Step 3), which is at most \(B^2/(2\eta T) + \eta\rho^2/2\) (Step 2). The choice \(\eta = B/(\rho\sqrt T)\) balances the two terms, exactly as in the step lemma. \(\blacksquare\)
 
-So the randomness cost us nothing but the word “expected”. The guarantee is about the average over runs, not about every run, and that is exactly what our thousand-run simulation measured.
+So the randomness cost us nothing but the word “expected”: the guarantee is about the average over runs, which is what our thousand-run simulation measured.
 
 The first form of the theorem is worth staring at, because it is what you tune in practice. Call \(B^2/(2\eta T) + \eta\rho^2/2\) the **certified gap**. The first term punishes a timid step size: with small \(\eta\), you cannot travel the distance \(B\) to the minimizer in \(T\) steps. The second punishes a bold one: with large \(\eta\), each step’s noise of size up to \(\rho\) throws you around. For \(B = 5\), \(\rho = 1\) and \(T = 10{,}000\):
 
@@ -625,7 +625,7 @@ Take the expectation of both sides over \(z \sim \mathcal D\), conditioned on \(
 
 \[ L_{\mathcal D}(\mathbf u) - L_{\mathcal D}(\mathbf w^{(t)}) = \mathbb E\left[ \ell(\mathbf u, z) - \ell(\mathbf w^{(t)}, z) \mid \mathbf w^{(t)} \right] \ge \mathbb E\left[ \langle \mathbf u - \mathbf w^{(t)}, \mathbf v_t \rangle \mid \mathbf w^{(t)} \right] = \langle \mathbf u - \mathbf w^{(t)}, \mathbb E[\mathbf v_t \mid \mathbf w^{(t)}] \rangle. \]
 
-The last equality pulls the fixed vector \(\mathbf u - \mathbf w^{(t)}\) out of the expectation, as in the proof. In plain words: **the average of the one-message subgradients supports the true risk, just as each one supports its own loss**; at \(\mathbf w = \mathbf 0\) that average was the \((-0.1833, 0.1333)\) of the hinge snippet. Since this holds for every \(\mathbf u\), the conditional mean \(\mathbb E[\mathbf v_t \mid \mathbf w^{(t)}]\) is a subgradient of \(L_{\mathcal D}\) at \(\mathbf w^{(t)}\). Because the fresh \(z\) is independent of the whole past, conditioning on \(\mathbf w^{(t)}\) or on the whole past \(\mathbf v_{1:t-1}\) gives the same answer, so SGD’s requirement holds.
+The last equality pulls the fixed vector \(\mathbf u - \mathbf w^{(t)}\) out of the expectation, as in the proof. In plain words: **the average of the one-message subgradients supports the true risk, just as each one supports its own loss**, as the hinge snippet’s \((-0.1833, 0.1333)\) showed at \(\mathbf 0\). Since this holds for every \(\mathbf u\), the conditional mean \(\mathbb E[\mathbf v_t \mid \mathbf w^{(t)}]\) is a subgradient of \(L_{\mathcal D}\) at \(\mathbf w^{(t)}\). Because the fresh \(z\) is independent of the whole past, conditioning on \(\mathbf w^{(t)}\) or on the whole past \(\mathbf v_{1:t-1}\) gives the same answer, so SGD’s requirement holds.
 
 So SGD for the true risk is just this:
 
@@ -939,11 +939,11 @@ It prints `1.0 [0.2222, 0.3889, 0.5556] True`, then `0.5 [0.0851, 0.1684, 0.2517
 
 ## SGD for regularized loss minimization
 
-SGD matches regularized loss minimization’s worst-case sample complexity. But on some distributions the regularized solution is genuinely better, and sometimes you want exactly the lesson 13 objective, now written with a \(\frac\lambda2\) for convenience:
+SGD matches regularized loss minimization’s worst-case sample complexity. But on some distributions the regularized solution is genuinely better, and sometimes you want exactly the lesson 13 objective:
 
 \[ \min_{\mathbf w} \; f(\mathbf w) = \frac\lambda2 \|\mathbf w\|^2 + L_S(\mathbf w). \]
 
-Here \(\min_{\mathbf w}\) asks for the smallest value over all weight vectors, \(\frac\lambda2\|\mathbf w\|^2\) is the bowl, a charge on squared length scaled by the regularization weight \(\lambda\) (lambda), and \(L_S\) is the training fit. Lesson 13 charged \(\lambda\|\mathbf w\|^2\); halving the charge only rescales \(\lambda\). In plain words: **find the weight vector with the best trade between training fit and half of \(\lambda\) times its squared length.** With \(\lambda = 0.1\), our six messages as \(S\) and the hinge loss, \(\mathbf w = (1, -1)\) pays \(0.1\) for its length and \(0.6833\) for its fit:
+Here \(\min_{\mathbf w}\) asks for the smallest value over all weight vectors, \(\frac\lambda2\|\mathbf w\|^2\) is the bowl, a charge on squared length scaled by the regularization weight \(\lambda\) (lambda), and \(L_S\) is the training fit. Lesson 13 charged \(\lambda\|\mathbf w\|^2\); the half is for convenience and only rescales \(\lambda\). In plain words: **find the weight vector with the best trade between training fit and half of \(\lambda\) times its squared length.** With \(\lambda = 0.1\), our six messages as \(S\) and the hinge loss, \(\mathbf w = (1, -1)\) pays \(0.1\) for its length and \(0.6833\) for its fit:
 
 ```python
 S = [((0.8, 0.2), 1), ((0.6, 0.6), 1), ((0.9, 0.4), 1),

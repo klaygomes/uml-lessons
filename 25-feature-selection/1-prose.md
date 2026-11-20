@@ -8,7 +8,7 @@ You shipped it with the company’s whole dictionary, 20,000 words. That is \(2 
 
 The first is about speed. The filter touches every word of the dictionary for every message, even though a typical message uses a hundred of them. The operations team would like it to be a lot cheaper.
 
-The second is stranger. Every so often a perfectly ordinary message gets flagged as junk with near certainty. You trace one case and find the culprits: a few rare words, product codes that happened to appear once in your training sequence, each time in a junk message. Smoothing keeps their keep estimate off zero, but a word seen once among 800 junk messages and never among 1,200 keep messages gets the estimates \(2/802\) and \(1/1202\), so it triples the odds of junk on its own, and three such words multiply them by 27. How common is this? Here is a small simulation with a realistic shape: word frequencies fall off like \(1/r\) for the \(r\)-th most common word, each message draws about a hundred words, and the 2,000 training messages are 800 junk and 1,200 keep, all drawn from the same mix, so that no word carries any real signal and every message is junk with probability 0.4 whatever it says. The snippet trains the filter, then computes its log-odds of junk for 2,000 fresh messages, as lesson 24’s code did, by adding logs instead of multiplying: `off[j]` is word \(j\)’s term when it is absent, `on[j]` what changes when it is present. Then it counts how sure the filter is.
+The second is stranger. Every so often a perfectly ordinary message gets flagged as junk with near certainty. You trace one case to a few rare product codes that appeared once in your training sequence, each time in junk. Smoothing keeps their keep estimate off zero, but a word seen once among 800 junk messages and never among 1,200 keep messages gets the estimates \(2/802\) and \(1/1202\), so it triples the odds of junk, and three such words multiply them by 27. How common is this? Here is a small simulation with a realistic shape: word frequencies fall off like \(1/r\) for the \(r\)-th most common word, each message draws about a hundred words, and the 2,000 training messages are 800 junk and 1,200 keep, all drawn from the same mix, so that no word carries any real signal and every message is junk with probability 0.4 whatever it says. The snippet trains the filter, then computes its log-odds of junk for 2,000 fresh messages, as lesson 24’s code did, by adding logs instead of multiplying: `off[j]` is word \(j\)’s term when it is absent, `on[j]` what changes when it is present. Then it counts how sure the filter is.
 
 ```python
 import random
@@ -202,7 +202,7 @@ print(round((norm2_y - inner ** 2 / norm2_v) / len(y), 4))
 
 It prints `0.6233 0.6233` (the exact least-squares fit on raw and on centered data: step 1), then `0.0 9.0 26.875 8.0` (the centered fit’s intercept is 0, and the three pieces of the formula), then `0.6233`, line for line the formula.
 
-Now look at which part depends on the feature. The first term, \(\|\mathbf y - \bar y\|^2\), is the same for every feature. So a feature is better exactly when \(\langle \mathbf v - \bar v, \mathbf y - \bar y \rangle^2/\|\mathbf v - \bar v\|^2\) is larger. Divide that by the constant \(\|\mathbf y - \bar y\|^2\) and take a square root, and you get a number with a famous name.
+Only the second term depends on the feature, so a feature is better exactly when that term is larger. Divide it by the constant \(\|\mathbf y - \bar y\|^2\), take a square root, and you get a number with a famous name.
 
 **Proposition (the filter score is a correlation).** Ranking features by the training error of their best single-feature line, smallest first, is the same as ranking them by the absolute value of
 
@@ -218,7 +218,7 @@ In plain words: **a filter that keeps the features whose best line fits best is 
 
 *Proof.* By the two steps, the best loss is \(\frac1m \|\mathbf y - \bar y\|^2 (1 - \rho^2)\): factor \(\|\mathbf y - \bar y\|^2\) out of the bracket and recognize \(\rho^2\) in what remains. Since \(\frac1m\|\mathbf y - \bar y\|^2\) is positive and the same for every feature (we assume the labels are not all equal), smaller loss means larger \(\rho^2\), which means larger \(|\rho|\). The Cauchy–Schwarz inequality, \(|\langle \mathbf p, \mathbf q \rangle| \le \|\mathbf p\| \|\mathbf q\|\), gives \(|\rho| \le 1\), and the loss formula shows \(|\rho| = 1\) exactly when the best loss is zero. \(\blacksquare\)
 
-Here are all three features of the table, scored by Python’s `statistics.correlation`, which computes exactly \(\rho\), next to the best loss \(\frac1m\|\mathbf y - \bar y\|^2(1 - \rho^2) = 1 - \rho^2\) (here \(\frac1m\|\mathbf y - \bar y\|^2 = 8/8 = 1\)):
+Here are the three features of the table, scored by Python’s `statistics.correlation`, which computes \(\rho\), next to the best loss, here \(1 - \rho^2\) since \(\frac1m\|\mathbf y - \bar y\|^2 = 8/8 = 1\):
 
 ```python
 from statistics import correlation
@@ -295,7 +295,7 @@ print(E([p * p for p in x1]),
 print(E([yi * q for yi, q in zip(y, x2)]))
 ```
 
-It prints `0.0 0.0 0.0`, then `1.0 -1.0 0.0` (the two pieces and their sum), then `0.5` for \(\mathbb E[y x_2]\). With a large enough training sequence, link’s Pearson score will be close to zero and it will almost certainly not be selected. The mutual-information and ROC scores suffer from the same blindness: any score that looks at one feature at a time cannot see a feature whose value lies only in combination.
+It prints `0.0 0.0 0.0`, then `1.0 -1.0 0.0` (the two pieces and their sum), then `0.5` for \(\mathbb E[y x_2]\). On a large training sequence, link’s Pearson score will be close to zero and it will almost surely not be selected. The mutual-information and ROC scores share the blindness: no score that looks at one feature at a time can see a feature whose value lies only in combination.
 
 The lab below puts you in this world, with link, old, bangs and a few dozen noise words, and lets you run the filter method with any \(k\) and compare it with a set of features you pick by hand.
 
@@ -341,13 +341,11 @@ for j, Xj in X.items():
     print(j, round(w, 4), round(dot(r, r), 4))
 ```
 
-It prints `1 1.0 3.0`, `2 0.6 2.4`, `3 1.0 3.0`. Starting from a loss of \(\|\mathbf y\|^2 = 6\) for the empty predictor, feature 2 brings it down to 2.4, the most, so \(I_1 = \{2\}\).
+It prints `1 1.0 3.0`, `2 0.6 2.4`, `3 1.0 3.0`. From the empty predictor’s loss \(\|\mathbf y\|^2 = 6\), feature 2 brings it down the most, to 2.4, so \(I_1 = \{2\}\).
 
 The cost is the catch. Round \(t\) solves up to \(d\) least-squares problems with \(t\) columns each, about \(O(mt^2 + t^3)\) apiece, so \(k\) rounds cost about \(O(d k^3 m)\) in total when \(k \le m\). With twenty thousand candidates that is a lot of refitting. Can we decide which candidate wins *without* refitting all of them? Yes, for least squares, and the trick is geometry.
 
 ## Orthogonal matching pursuit
-
-The trick needs two ideas from linear algebra, which we build first.
 
 Two vectors are **orthogonal** when their inner product is 0, like the axes of a graph. A list of vectors is **orthonormal** when each has length 1 and every pair is orthogonal. If the columns of a matrix \(V\) are orthonormal, then \(V^\top V = I\), the identity matrix, because entry \((a, b)\) of \(V^\top V\) is the inner product of columns \(a\) and \(b\). An orthonormal list that spans the same space as the chosen columns of \(X\) is called an **orthonormal basis** of that space: every combination of chosen columns is also a combination of basis vectors, and vice versa.
 
@@ -459,20 +457,11 @@ print(round(R0, 4), round(beta, 4))
 
 It prints `1 -1.0 0.15 0.5`, `2 -2.0 0.6 0.6`, `3 -1.0 0.15 0.5`, then `1.0 3.3333`. Each row is the slope, the guaranteed decrease and the actual best decrease along that coordinate (in average loss, so divide the earlier totals by 6). The steepest coordinate is feature 2, the same choice forward greedy made, and for it the guarantee is tight. For features 1 and 3 the guarantee is loose, because \(\beta\) was set by feature 2’s larger curvature. The gradient rule costs one gradient evaluation, \(O(dm)\), per round.
 
-If this “pick the best coordinate, then step” loop feels familiar, it should. AdaBoost from lesson 10 is exactly this greedy rule, run over a list of weak hypotheses \(h_1, \dots, h_d\) treated as features, on the risk \(R(\mathbf w) = \log \sum_{i=1}^m \exp\left(-y_i \sum_j w_j h_j(x_i)\right)\). Inside, \(\sum_j w_j h_j(x_i)\) is the weighted vote on example \(i\); multiplied by the label \(y_i = \pm1\), it is positive when the vote is right, so each \(\exp(\cdot)\) is below 1 for an example voted right and above 1 for one voted wrong, and the log of the sum is a smooth count of the mistakes. With all weights 0, every term is \(e^0 = 1\) and \(R = \log m\). The second problem at the end of this lesson walks you through why.
+If this “pick the best coordinate, then step” loop feels familiar, it should. AdaBoost from lesson 10 is exactly this greedy rule, run over a list of weak hypotheses \(h_1, \dots, h_d\) treated as features, on the risk \(R(\mathbf w) = \log \sum_{i=1}^m \exp\left(-y_i \sum_j w_j h_j(x_i)\right)\). Inside, \(y_i \sum_j w_j h_j(x_i)\) is positive when the weighted vote is right on example \(i\), so its \(\exp\) term is below 1 when right and above 1 when wrong, and \(R\) is a smooth count of mistakes (at \(\mathbf w = \mathbf 0\) every term is 1, so \(R = \log m\)). The second problem at the end of this lesson walks you through why.
 
 ## Backward elimination
 
 Greedy selection can also run in reverse. **Backward elimination** starts with all \(d\) features and removes one per round: given the current set \(I\), try removing each \(i \in I\), fit the learner on \(I \setminus \{i\}\) (the set without \(i\)), and remove the feature whose absence hurts least, again judged on the training sequence or on a validation set. Stop at \(k\) features.
-
-```
-BackwardElimination(X, y, k):
-  I ← {1, ..., d}
-  while |I| > k:
-    i* ← argmin over i in I of LeastSquaresLoss(X, y, I \ {i})
-    I ← I \ {i*}
-  return I
-```
 
 In the cancelling world with a fourth, pure-noise feature added (as in the build-it starter below), backward elimination with \(k = 2\) drops bangs and the noise feature and ends at link and old: at every round, removing either of those two would destroy the perfect fit, while the others cost nothing. It sees interactions from the start, since every feature is in the fit. The price is steep: the first round fits \(d\) problems with \(d - 1\) columns, about \(O(d \cdot (md^2 + d^3))\), which is \(O(d^4)\) when \(m\) is comparable to \(d\), and there are up to \(d\) rounds, so the full run is roughly \(O(d^5)\). Fine for fifty features, out of the question for twenty thousand. Many variants exist, including methods that alternate forward and backward steps.
 
@@ -577,7 +566,7 @@ How do you compute it? The one-dimensional result suggests an algorithm, which i
 
 \[ w_j \leftarrow \frac{\operatorname{soft}\!\left(\langle X_j, \mathbf r_j \rangle/m, \ \lambda\right)}{\|X_j\|^2/m}, \]
 
-In plain words: **set each weight to its feature’s correlation with what is still unexplained, shrunk by the price, then rescaled; sweep over the features until nothing changes.** Each update lowers the convex objective, and for this problem the sweeps converge to a minimizer; we take that convergence on trust here (it is outside this lesson). On the six-message example:
+In plain words: **set each weight to its feature’s correlation with what is still unexplained, shrunk by the price, then rescaled; sweep over the features until nothing changes.** Each update lowers the convex objective, and the sweeps converge to a minimizer (we take that on trust). On the six-message example:
 
 ```python
 def dot(a, b): return sum(p * q for p, q in zip(a, b))
@@ -923,7 +912,7 @@ for k in (1, 2, 3, 4, 5, d):
     print(k, round(log_H(k), 1), round(gap(k), 4))
 ```
 
-It prints `1 15.0 0.0697`, `2 27.0 0.0895`, `3 38.3 0.1049`, `4 49.1 0.1179`, `5 59.7 0.1293` and `20002 41605.9 3.724`. With four features, the training error can mislead you by at most about 0.118. With all of them, the “gap” is 3.7, more than the largest possible risk: no certificate at all. That is the opening bug, measured. A filter that reads every word may look perfect on its training sequence and you can promise nothing about it.
+It prints `1 15.0 0.0697`, `2 27.0 0.0895`, `3 38.3 0.1049`, `4 49.1 0.1179`, `5 59.7 0.1293` and `20002 41605.9 3.724`. With four features, the training error can mislead you by at most about 0.118. With all of them, the “gap” is 3.7, more than the largest possible risk: no certificate at all. That is the opening bug, measured.
 
 Notice what the bound does *not* require: that you pick the features in any particular way. It holds for every filter in \(\mathcal H_k\) at once, so you may choose the \(k\) features by a filter-method score, by forward greedy selection, or by staring at the data, and the certificate still holds. What it does require is that the menu of transformations was fixed before the labels were seen.
 

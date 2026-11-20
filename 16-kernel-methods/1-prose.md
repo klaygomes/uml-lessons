@@ -2,11 +2,11 @@
 
 ## The junk that hides in pairs
 
-The filter from lesson 15 has been a quiet success. Every message becomes a vector of word counts, as in lesson 9, the labels are \(+1\) for junk and \(-1\) for keep, and soft-SVM finds a halfspace with a large margin. It weighs the evidence word by word, it does not care that the vocabulary has twenty thousand words, and the margin bound from lesson 15 told you, before shipping, roughly how many labels it needed.
+The filter still runs the way lesson 15 shipped it. Every message becomes a vector of yes/no word features over the 50,000-word vocabulary, the labels are \(+1\) for junk and \(-1\) for keep, and soft-SVM finds a halfspace with a large margin. It weighs the evidence word by word, it does not care how large the vocabulary is, and the margin bound told you, before shipping, roughly how many labels it needed.
 
-Then a new kind of junk arrives, and the filter waves almost all of it through.
+But the data team’s finding from the end of lesson 15 has stopped being a curiosity. A wave of phishing arrives, and the filter lets almost all of it through.
 
-The new messages are phishing. They say things like “You are a winner, claim your reward” or “Verify your password today”. Look at the words one at a time and none of them is suspicious. The facilities team announces the “winner” of the office bake-off every month. People “claim” expenses all the time. IT asks staff to “verify” their laptops, and the helpdesk resets “password”s daily. What marks the junk is not any single word but a **combination**: “winner” together with “claim”, or “verify” together with “password”.
+The new messages say things like “You are a winner, claim your reward” or “Verify your password today”. Look at the words one at a time and none of them is suspicious. The facilities team announces the “winner” of the office bake-off every month. People “claim” expenses all the time. IT asks staff to “verify” their laptops, and the helpdesk resets “password”s daily. What marks the junk is not any single word but a **combination**: “winner” together with “claim”, or “verify” together with “password”.
 
 So what? A halfspace adds up evidence; surely it can add up two words. Let’s try. Take a vocabulary of five words, winner, claim, verify, password and lunch, and four messages that all mention lunch.
 
@@ -39,18 +39,18 @@ It prints `[1, 1, 1, 1, 2]` twice. The two pairs have the same sum. Now suppose 
 
 Your colleague has the obvious fix. If junk is marked by pairs of words, give the filter pairs of words as features: one new coordinate for every pair, equal to 1 when both words appear. And since next month’s junk might be marked by three words, why not triples too? Then a halfspace over the new coordinates can say “winner and claim” directly.
 
-It is a good idea, and it is the idea of this whole lesson. But count the coordinates first. With a vocabulary of \(n = 20{,}000\) words, the number of products of at most \(k\) words, including the empty product (a constant), is \(\binom{n+k}{k}\). Read \(\binom{n+k}{k}\) as “\(n + k\) choose \(k\)”, the number of ways to pick \(k\) things out of \(n + k\); a product of at most \(k\) words is \(k\) slots, each filled by a word or left blank, order ignored. So: **the number of word products of size at most \(k\) is \(n + k\) choose \(k\).** With the five words of the table and \(k = 2\), that is \(\binom{7}{2} = 21\): the constant, 5 single words, 5 squares and 10 pairs. The snippet mirrors it with `comb(n + k, k)` and charges 8 bytes per weight:
+It is a good idea, and it is the idea of this whole lesson. But count the coordinates first. With a vocabulary of \(n = 50{,}000\) words, the number of products of at most \(k\) words, including the empty product (a constant), is \(\binom{n+k}{k}\). Read \(\binom{n+k}{k}\) as “\(n + k\) choose \(k\)”, the number of ways to pick \(k\) things out of \(n + k\); a product of at most \(k\) words is \(k\) slots, each filled by a word or left blank, order ignored. So: **the number of word products of size at most \(k\) is \(n + k\) choose \(k\).** With the five words of the table and \(k = 2\), that is \(\binom{7}{2} = 21\): the constant, 5 single words, 5 squares and 10 pairs. The snippet mirrors it with `comb(n + k, k)` and charges 8 bytes per weight:
 
 ```python
 from math import comb
 
-n = 20_000
+n = 50_000
 for k in (2, 3):
     dim = comb(n + k, k)
     print(k, f"{dim:.3e}", f"{8 * dim / 1e9:,.1f} GB")
 ```
 
-It prints `2 2.000e+08 1.6 GB` and `3 1.334e+12 10,669.9 GB`. With pairs, the weight vector alone has two hundred million coordinates. With triples it has 1.3 trillion, which at 8 bytes each is about 10.7 terabytes. The team cannot even store the weight vector, let alone run SGD over it for thousands of steps.
+It prints `2 1.250e+09 10.0 GB` and `3 2.084e+13 166,686.7 GB`. With pairs, the weight vector alone has the 1.25 billion coordinates the data team warned about. With triples it has 21 trillion, which at 8 bytes each is about 167 terabytes. The team cannot even store the weight vector, let alone run SGD over it for thousands of steps.
 
 So here is the bug. The features that would make the junk separable are too many to write down. The fix is one of the most elegant ideas in the subject: use those features, and never build them.
 
@@ -148,7 +148,7 @@ It prints `[1, -1, -1, -1]`. Give \(\psi(\mathbf x)\) one coordinate for each in
 
 So the plan is sound in principle. In practice it raises two problems, and they are the same two that lesson 15 opened with.
 
-The first is **statistical**. Halfspaces in \(\mathbb R^n\) have VC dimension \(n + 1\) (lesson 6’s largest number of points a class labels in every possible way, computed for halfspaces in lesson 9), so a feature space with a trillion coordinates seems to demand on the order of a trillion labels. Lesson 15 already answered this one: a large margin, or equivalently a small norm \(\|\mathbf w\| = \sqrt{\sum_j w_j^2}\), the length of the weight vector, gives a sample complexity that does not depend on the dimension at all. We will put numbers on it near the end of this lesson.
+The first is **statistical**. Halfspaces in \(\mathbb R^n\) have VC dimension \(n + 1\) (lesson 6’s largest number of points a class labels in every possible way, computed for halfspaces in lesson 9), so a feature space with trillions of coordinates seems to demand trillions of labels. Lesson 15 already answered this one: a large margin, or equivalently a small norm \(\|\mathbf w\| = \sqrt{\sum_j w_j^2}\), the length of the weight vector, gives a sample complexity that does not depend on the dimension at all. We will put numbers on it near the end of this lesson.
 
 The second is **computational**: computing in the feature space is too expensive, and even writing down \(\mathbf w\) can be impossible. That is the bug from the opening, and the rest of this lesson takes it apart.
 
@@ -193,11 +193,11 @@ print(len(msgs), min(y(x) * score(x) for x in msgs))
 print(sum(v * v for v in u.values()), (1 + s) ** k)
 ```
 
-Here `score` builds \(\langle \mathbf u, \psi(\mathbf x) \rangle\) coordinate by coordinate, and the last line prints \(\|\mathbf u\|^2\), the sum of the squared weights. It prints `56 1` and `5 16`. All 56 messages are on the right side with \(y \langle \mathbf u, \psi(\mathbf x) \rangle \ge 1\), and \(\|\mathbf u\|^2 = 5\). Remember the 5. (The 16 will matter later, too.) Notice also what the vector \(\mathbf u\) did not need: weights on the 81 coordinates of this small example, or on the 400 million of a 20,000-word vocabulary. Only five of its coordinates are nonzero. The learner, however, does not know which five, and that is where the cost comes from.
+Here `score` builds \(\langle \mathbf u, \psi(\mathbf x) \rangle\) coordinate by coordinate, and the last line prints \(\|\mathbf u\|^2\), the sum of the squared weights. It prints `56 1` and `5 16`. All 56 messages are on the right side with \(y \langle \mathbf u, \psi(\mathbf x) \rangle \ge 1\), and \(\|\mathbf u\|^2 = 5\). Remember the 5. (The 16 will matter later, too.) Notice also what the vector \(\mathbf u\) did not need: weights on the 81 coordinates of this small example, or on the 2.5 billion of a 50,000-word vocabulary. Only five of its coordinates are nonzero. The learner, however, does not know which five, and that is where the cost comes from.
 
 ## Where the weight vector lives
 
-Here is a question that sounds idle and turns out to be the key. When soft-SVM finishes, where is its weight vector? It lives in the feature space, which may have a trillion dimensions. But is it anywhere in particular?
+Here is a question that sounds idle and turns out to be the key. When soft-SVM finishes, where is its weight vector? It lives in the feature space, which may have trillions of dimensions. But is it anywhere in particular?
 
 Think about the training sequence. The learner only ever sees \(m\) vectors, \(\psi(x_1), \dots, \psi(x_m)\). A direction in feature space that is perpendicular to all of them is invisible to the training data: moving \(\mathbf w\) along it changes no score \(\langle \mathbf w, \psi(x_i) \rangle\). It only makes \(\mathbf w\) longer. And soft-SVM dislikes long vectors. So you would expect it never to bother with such directions, and to keep \(\mathbf w\) inside the span of the training vectors. That hunch is a theorem.
 
@@ -284,7 +284,7 @@ It prints `[8, 2]` twice, then `20 14 6`. The scores on the training vectors did
 
 ## The kernel trick
 
-The representer theorem lets us stop searching over \(\mathbf w\), a vector with a trillion coordinates, and search over \(\boldsymbol\alpha\), a vector with \(m\) coordinates. Let’s rewrite everything in terms of \(\boldsymbol\alpha\) and see what the computer actually needs.
+The representer theorem lets us stop searching over \(\mathbf w\), a vector with trillions of coordinates, and search over \(\boldsymbol\alpha\), a vector with \(m\) coordinates. Let’s rewrite everything in terms of \(\boldsymbol\alpha\) and see what the computer actually needs.
 
 Write \(\mathbf w = \sum_{j=1}^m \alpha_j \psi(x_j)\). Then, by linearity, each score is
 
@@ -375,7 +375,7 @@ for k in (2, 3):
           round(K(x, xp, k), 6))
 ```
 
-It prints `2 16 0.503674 0.503674` and `3 64 0.357457 0.357457`. For three input coordinates, the explicit embedding has 16 and then 64 coordinates, and the two computations agree to every printed digit. For the mail, with 20,000 words and \(k = 3\), the explicit route is the 10.7 terabytes from the opening, and the kernel is still one sparse inner product. For two subject lines given as sets of words, \(\langle \mathbf x, \mathbf x' \rangle\) is just the number of shared words, so the degree-2 kernel is \((1 + |\text{shared words}|)^2\).
+It prints `2 16 0.503674 0.503674` and `3 64 0.357457 0.357457`. For three input coordinates, the explicit embedding has 16 and then 64 coordinates, and the two computations agree to every printed digit. For the mail, with 50,000 words and \(k = 3\), the explicit route is the 167 terabytes from the opening, and the kernel is still one count of shared words.
 
 ## The Gaussian kernel
 
@@ -671,7 +671,7 @@ print(direct, lazy)
 
 It prints `109/36 109/36`.
 
-Compare with SGD on explicit features of dimension \(D\): \(O(D)\) per step and \(O(D)\) space. The kernel version wins whenever \(D\) is much larger than \(m\), which for triples of 20,000 words means always. It does have one cost the explicit version lacks: prediction grows with the number of training messages the hypothesis keeps.
+Compare with SGD on explicit features of dimension \(D\): \(O(D)\) per step and \(O(D)\) space. The kernel version wins whenever \(D\) is much larger than \(m\), which for triples of 50,000 words means always. It does have one cost the explicit version lacks: prediction grows with the number of training messages the hypothesis keeps.
 
 **Build it yourself.** Using only the Python standard library, with subject lines as sets of word indices (0 winner, 1 claim, 2 verify, 3 password, 4 lunch, 5 meeting, 6 invoice, 7 report):
 
@@ -723,7 +723,7 @@ if __name__ == "__main__":
 
 ## How many labels? Margins in feature space
 
-The kernel trick solved the computational half of the bug. Now the statistical half: is it reasonable to learn in a feature space with hundreds of millions of coordinates from a budget of labels you can afford? Lesson 15 gave the tool, and it transfers to kernels without a change.
+The kernel trick solved the computational half of the bug. Now the statistical half: is it reasonable to learn in a feature space with over a billion coordinates from a budget of labels you can afford? Lesson 15 gave the tool, and it transfers to kernels without a change.
 
 Recall it. Let every message satisfy \(\|\psi(x)\| \le \rho\), so \(\rho\) is lesson 15’s radius, and let \(A(S)\) be the solution of soft-SVM, \(\min_{\mathbf w} \lambda \|\mathbf w\|^2 + L^{\text{hinge}}_S(\mathbf w)\), on the image sequence. Then for every vector \(\mathbf u\) in the feature space,
 
@@ -777,7 +777,7 @@ for k in (2, 3, 4):
 
 It prints `2 2 2.236 8.944 16000`, `3 12 1.291 10.328 21334` and `4 50 1.077 17.233 59392`. Degree 2 certifies an expected true risk of at most 0.2 with 16,000 labels. Higher degrees have smaller certificates \(B\) but a larger radius \(\rho\), and the product grows. A richer kernel is not a free upgrade.
 
-Two things about these numbers. First, compare them with counting dimensions. Halfspaces over pairs of a 20,000-word vocabulary live in a space of about \(2 \times 10^8\) dimensions, so a guarantee that grows with the VC dimension, like those of lesson 6, needs labels in proportion to that. The margin certificate does not mention the vocabulary at all: 16,000 labels for 1,000 words, 20,000 words or a million. Second, the guarantee is an upper bound in expectation, and a loose one. The filter will usually do far better than 0.2; what the bound gives you is a promise you can make before you train, and lesson 11 taught you to value that.
+Two things about these numbers. First, compare them with counting dimensions. Halfspaces over pairs of a 50,000-word vocabulary live in a space of about \(1.25 \times 10^9\) dimensions, so a guarantee that grows with the VC dimension, like those of lesson 6, needs labels in proportion to that. The margin certificate does not mention the vocabulary at all: 16,000 labels for 1,000 words, 50,000 words or a million. Second, the guarantee is an upper bound in expectation, and a loose one. The filter will usually do far better than 0.2; what the bound gives you is a promise you can make before you train, the kind operations asked for in lesson 9.
 
 One honest caveat. The bound is about the exact soft-SVM solution, and KernelSGD-SoftSVM approximates it, with an optimization error that lesson 14 showed shrinks as the number of steps \(T\) grows. In the lab, \(T\) is large enough for that gap to be small, but it is not part of the certificate.
 

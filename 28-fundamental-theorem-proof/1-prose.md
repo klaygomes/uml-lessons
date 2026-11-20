@@ -2,7 +2,7 @@
 
 ## The auditor’s question
 
-The filter is about to get its first outside audit. Since lesson 6 it has scored every message with the spam score, a number between 0 and 1, and it labels a message junk when the score falls inside an interval it has learned. The class of intervals has VC dimension 2, and the certificate your team filed back then rests on one sentence from lesson 6: the fundamental theorem of statistical learning, quantitative version. It says the number of labels a class needs grows like \(d + \log(1/\delta)\) over \(\varepsilon^2\) when labels are noisy, and roughly like \(d \log(1/\varepsilon) + \log(1/\delta)\) over \(\varepsilon\) when some interval is perfect.
+The filter is about to get its first outside audit. Since lesson 6 it has scored every message with the spam score, a number between 0 and 1, and it labels a message junk when the score falls inside an interval it has learned. The class of intervals has VC dimension 2, and the certificate your team filed back then rests on one sentence from lesson 6: the fundamental theorem of statistical learning, quantitative version. Write \(d\) for the VC dimension, \(\varepsilon\) for the accuracy you ask for and \(\delta\) for the chance you allow the guarantee to fail. The theorem says the number of labels a class needs grows like \(d + \log(1/\delta)\) over \(\varepsilon^2\) when labels are noisy, and roughly like \(d \log(1/\varepsilon) + \log(1/\delta)\) over \(\varepsilon\) when some interval is perfect.
 
 The certificate has two lines. The clean line covers the mailboxes where one interval really does separate junk from keep. The noisy line covers the shared mailboxes, where users disagree and no interval is perfect. Both promise a filter within \(\varepsilon = 0.1\) of the best possible, with confidence \(1 - \delta = 0.95\), and both budgets were computed by plugging the numbers into the theorem’s shapes:
 
@@ -21,7 +21,7 @@ The auditor reads it twice and puts down her pen. “Lesson 6 says there *are* c
 
 She is right, and it is a little embarrassing. Lesson 6 stated the quantitative theorem and promised the proof for later. Your team has been quoting its rates ever since without anyone checking where they come from. This lesson pays that debt. We will prove three things, each with explicit constants:
 
-1. **The ceiling with noisy labels**: enough labels, of order \((d \log(1/\varepsilon) + \log(1/\delta))/\varepsilon^2\), make ERM succeed for every distribution.
+1. **The ceiling with noisy labels**: enough labels, of order \((d \log(1/\varepsilon) + \log(1/\delta))/\varepsilon^2\), make ERM (lesson 2’s learner that returns a hypothesis with the smallest empirical risk) succeed for every distribution.
 2. **The floor with noisy labels**: fewer than about \((d + \log(1/\delta))/\varepsilon^2\) labels make *every* learner fail on some distribution.
 3. **The ceiling with clean labels**: when some hypothesis is perfect, order \((d \log(1/\varepsilon) + \log(1/\delta))/\varepsilon\) labels are enough, the faster \(1/\varepsilon\) rate.
 
@@ -186,7 +186,7 @@ It prints
 547743 0.0405
 ```
 
-At a thousand labels the bound is useless (0.70, more than any risk can differ), at ten thousand it says 0.25, and only in the hundreds of thousands does it get below 0.05. The last two rows are no accident; the next step explains where they come from.
+At a thousand labels the bound is useless (0.70 allows almost any gap), at ten thousand it says 0.25, and only in the hundreds of thousands does it get below 0.05. The last two rows are no accident; the next step explains where they come from.
 
 ### Step 4: solving for \(m\)
 
@@ -750,7 +750,7 @@ H_c = {tuple(h_i ^ c_i for h_i, c_i in zip(h, c)) for h in H_C}
 print(len(H_C), len(H_c), (1, 0, 0, 0, 0, 0) in H_c)
 ```
 
-It prints `22 22 True`. The operator `^` is exclusive or, the symmetric difference on bits. Intervals make 22 patterns on six points, and so do their mistake regions against \(c\), even though a mistake region need not be an interval: `(1, 0, 0, 0, 0, 0)` is the region of the interval that covers only the first point, and the regions of wider intervals that swallow \(c\) come in two pieces.
+It prints `22 22 True`. The operator `^` is exclusive or, the symmetric difference on bits. Intervals make 22 patterns on six points, and so do their mistake regions against \(c\), even though a mistake region need not be an interval: `(1, 0, 0, 0, 0, 0)` is the region of the interval covering the first four points, which overshoots \(c\) by one message, and an interval that overshoots \(c\) on both sides leaves a region in two pieces.
 
 **The ceiling with clean labels.** Let \(\mathcal H\) have VC dimension \(d\), let \(\mathcal D\) be a distribution over \(\mathcal X\), and let the labels come from some \(c \in \mathcal H\). For \(\varepsilon, \delta \in (0,1)\) and \(m\) as in the \(\varepsilon\)-net theorem, with probability at least \(1 - \delta\) every ERM hypothesis has \(L_{\mathcal D}(h) < \varepsilon\). Hence
 
@@ -874,4 +874,4 @@ These problems were written for this lesson. Work them with pencil and Python; h
 
 1. **A floor for clean labels.** Suppose \(\mathcal H\) contains two hypotheses that agree on a message \(x_0\) and disagree on a message \(x_1\). Put mass \(1 - 2\varepsilon\) on \(x_0\) and \(2\varepsilon\) on \(x_1\), and let either hypothesis be the truth. Show that for \(\varepsilon \le 1/4\) and \(\delta < 1/2\), every learner needs \(m \ge \log(1/(2\delta))/(4\varepsilon)\) clean labels. Why does this floor scale like \(1/\varepsilon\) and not \(1/\varepsilon^2\)?
 2. **A cheaper noisy ceiling.** In Step 3 of the noisy ceiling we used \(\sqrt a + \sqrt b \le 2\sqrt{a + b}\). Prove the sharper \(\sqrt a + \sqrt b \le \sqrt{2(a + b)}\), redo Step 4 with it, and recompute the certificate’s noisy line. How many labels does the auditor save?
-3. **(Harder.) The floor is nearly tight for its own worlds.** In the \(d\)-coin worlds, bound the majority vote’s expected estimation error from above, using Hoeffding’s inequality on each message and the fact that each \(n_i\) is a sum of \(m\) independent coins with chance \(1/d\). Show that order \(d\log(1/\varepsilon)/\varepsilon^2\) labels make it at most \(\varepsilon\), so the \(d/\varepsilon^2\) floor cannot be improved by more than a log in these worlds.
+3. **(Harder.) The floor is nearly tight for its own worlds.** In the \(d\)-coin worlds, bound the majority vote’s expected estimation error from above, using Hoeffding’s inequality on each message and the fact that each \(n_i\) is a sum of \(m\) independent coins with chance \(1/d\). Show that, whatever the bias \(\rho\), order \(d/\varepsilon^2\) labels make it at most \(\varepsilon\), so in these worlds the \(d/\varepsilon^2\) floor is right up to its constant.
