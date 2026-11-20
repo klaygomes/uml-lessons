@@ -617,7 +617,24 @@ On our eight lifted messages, the support vectors are B, E and G, and the next s
 
 \[ \tfrac{5}{18}(1, 3, 0) - \tfrac{10}{9}(1, 0, 0) - \tfrac16 (1, 1, 2) = \left(\tfrac{5 - 20 - 3}{18}, \tfrac{15 - 3}{18}, -\tfrac{6}{18}\right) = \left(-1, \tfrac23, -\tfrac13\right). \]
 
-Five messages, the ones far from the line, contribute nothing.
+Each vector is a lifted message, \((1, x_1, x_2)\), and the minus signs are the labels of E and G. Here is the same sum in exact fractions, with \(I\) found from the scores rather than by eye:
+
+```python
+from fractions import Fraction as Fr
+
+S = [((5, 2), 1), ((3, 0), 1), ((4, 1), 1), ((4, 0), 1),
+     ((0, 0), -1), ((0, 1), -1), ((1, 2), -1), ((1, 3), -1)]
+X = [(1,) + x for x, _ in S]
+dot = lambda u, v: sum(a * b for a, b in zip(u, v))
+w0 = (Fr(-1), Fr(2, 3), Fr(-1, 3))
+I = [i for i, x in enumerate(X) if abs(dot(w0, x)) == 1]
+alpha = {1: Fr(5, 18), 4: Fr(10, 9), 6: Fr(1, 6)}
+w = [sum(alpha[i] * S[i][1] * X[i][k] for i in I)
+     for k in range(3)]
+print(["ABCDEFGH"[i] for i in I], [str(c) for c in w])
+```
+
+It prints `['B', 'E', 'G'] ['-1', '2/3', '-1/3']`. Five messages, the ones far from the line, contribute nothing.
 
 ## Duality
 
@@ -627,7 +644,24 @@ Many properties of SVMs were historically discovered by studying a different opt
 
 \[ g(\mathbf w) = \max_{\boldsymbol\alpha \in \mathbb R^m : \boldsymbol\alpha \ge \mathbf 0} \; \sum_{i=1}^m \alpha_i (1 - y_i \langle \mathbf w, \mathbf x_i \rangle). \]
 
-If \(\mathbf w\) satisfies every constraint, each \(1 - y_i \langle \mathbf w, \mathbf x_i \rangle\) is at most 0, so every term with \(\alpha_i \ge 0\) is at most 0, and the maximum is 0, reached at \(\boldsymbol\alpha = \mathbf 0\). If some constraint fails, its \(1 - y_i \langle \mathbf w, \mathbf x_i \rangle\) is positive, and sending that \(\alpha_i\) to infinity (with the others at 0) makes the sum as large as you like, so \(g(\mathbf w) = \infty\). So \(g\) is 0 on the feasible set and \(\infty\) off it, and hard-SVM is the unconstrained problem \(\min_{\mathbf w} \left( \|\mathbf w\|^2 + g(\mathbf w) \right)\).
+Read it from the inside out. \(1 - y_i \langle \mathbf w, \mathbf x_i \rangle\) is example \(i\)’s shortfall below signed score 1, negative when the constraint holds with room to spare. Each \(\alpha_i\) is a nonnegative weight on it, \(\boldsymbol\alpha \ge \mathbf 0\) means every coordinate of the list \(\boldsymbol\alpha = (\alpha_1, \dots, \alpha_m)\) is at least 0, and \(\max\) lets an adversary choose the weights to make the weighted sum as large as possible. In plain words: **\(g\) is the largest penalty an adversary can charge for broken constraints.** At \(\mathbf w_0\) the shortfalls of our eight lifted messages add up to \(-\tfrac73\), so any equal weight \(a\) on all of them gives \(-\tfrac73 a\), at best 0; at \(\mathbf w = \mathbf 0\) every shortfall is 1, and the sum is \(8a\), as large as you like:
+
+```python
+S = [((5, 2), 1), ((3, 0), 1), ((4, 1), 1), ((4, 0), 1),
+     ((0, 0), -1), ((0, 1), -1), ((1, 2), -1), ((1, 3), -1)]
+X, Y = [(1,) + x for x, _ in S], [y for _, y in S]
+dot = lambda u, v: sum(a * b for a, b in zip(u, v))
+
+def inner_sum(w, alpha):
+    return sum(a * (1 - y * dot(w, x))
+               for a, x, y in zip(alpha, X, Y))
+
+for w in [(-1, 2 / 3, -1 / 3), (0, 0, 0)]:
+    sums = [inner_sum(w, [a] * 8) for a in (0, 1, 10, 100)]
+    print([round(s, 2) for s in sums])
+```
+
+It prints `[0.0, -2.33, -23.33, -233.33]` and `[0, 8, 80, 800]`. The general argument: if \(\mathbf w\) satisfies every constraint, each \(1 - y_i \langle \mathbf w, \mathbf x_i \rangle\) is at most 0, so every term with \(\alpha_i \ge 0\) is at most 0, and the maximum is 0, reached at \(\boldsymbol\alpha = \mathbf 0\). If some constraint fails, its \(1 - y_i \langle \mathbf w, \mathbf x_i \rangle\) is positive, and sending that \(\alpha_i\) to infinity (with the others at 0) makes the sum as large as you like, so \(g(\mathbf w) = \infty\). So \(g\) is 0 on the feasible set and \(\infty\) off it, and hard-SVM is the unconstrained problem \(\min_{\mathbf w} \left( \|\mathbf w\|^2 + g(\mathbf w) \right)\).
 
 *Step 2: a min of a max.* Halving the objective does not change the minimizer, and \(\tfrac12 g = g\) because \(g\) only takes the values 0 and \(\infty\). So hard-SVM has the same solution as
 
@@ -637,17 +671,19 @@ If \(\mathbf w\) satisfies every constraint, each \(1 - y_i \langle \mathbf w, \
 
 \[ \min_{\mathbf w} \max_{\boldsymbol\alpha \ge \mathbf 0} \Big( \cdots \Big) \;\ge\; \max_{\boldsymbol\alpha \ge \mathbf 0} \min_{\mathbf w} \Big( \cdots \Big). \]
 
-This inequality, true for any function of two variables, is called **weak duality**, and proving it is one of this lesson’s problems. For hard-SVM something stronger holds, **strong duality**: the two sides are equal. We state strong duality without proof; it is a standard result of convex optimization. The right-hand side is the **dual problem**.
+The dots stand for the same expression on both sides. On the left the minimizer moves first and the maximizer answers; on the right the maximizer must commit first, and moving second can only help the minimizer. This inequality, true for any function of two variables, is called **weak duality**, and proving it is one of this lesson’s problems. For hard-SVM something stronger holds, **strong duality**: the two sides are equal. We state strong duality without proof; it is a standard result of convex optimization. The right-hand side is the **dual problem**.
 
 *Step 4: solve the inner minimization.* For fixed \(\boldsymbol\alpha\), the inner function of \(\mathbf w\) is \(\tfrac12 \|\mathbf w\|^2\) plus a linear function, unconstrained and differentiable, and convex (a convex quadratic plus a linear term). A convex differentiable function is minimized exactly where its gradient vanishes, and the gradient is \(\mathbf w - \sum_i \alpha_i y_i \mathbf x_i\). So
 
 \[ \mathbf w = \sum_{i=1}^m \alpha_i y_i \mathbf x_i. \]
 
-The optimal weight vector is a combination of the training messages, a fact the next lesson builds on.
+In plain words: **for fixed weights \(\alpha_i\), the best \(\mathbf w\) is the sum of the messages, each scaled by its weight and its label.** It is the sum the support-vector snippet computed. The optimal weight vector is a combination of the training messages, a fact the next lesson builds on.
 
 *Step 5: substitute.* Put \(\mathbf w = \sum_j \alpha_j y_j \mathbf x_j\) back in. The sum \(\sum_i \alpha_i y_i \langle \mathbf w, \mathbf x_i \rangle = \langle \mathbf w, \sum_i \alpha_i y_i \mathbf x_i \rangle = \|\mathbf w\|^2\), so the objective becomes \(\tfrac12 \|\mathbf w\|^2 + \sum_i \alpha_i - \|\mathbf w\|^2 = \sum_i \alpha_i - \tfrac12 \|\mathbf w\|^2\). Expanding \(\|\mathbf w\|^2 = \langle \sum_i \alpha_i y_i \mathbf x_i, \sum_j \alpha_j y_j \mathbf x_j \rangle\) by bilinearity gives the dual problem:
 
 \[ \max_{\boldsymbol\alpha \in \mathbb R^m : \boldsymbol\alpha \ge \mathbf 0} \left( \sum_{i=1}^m \alpha_i - \frac12 \sum_{i=1}^m \sum_{j=1}^m \alpha_i \alpha_j y_i y_j \langle \mathbf x_j, \mathbf x_i \rangle \right). \]
+
+The double sum runs over every pair of positions \(i\) and \(j\), so it is \(\|\mathbf w\|^2\) written out pair by pair. In plain words: **choose nonnegative weights to make their total minus half the squared length of the weight vector they build as large as possible.** At the coefficients \(\tfrac5{18}, \tfrac{10}9, \tfrac16\) on B, E and G the total is \(\tfrac{14}{9}\), the vector built is \(\mathbf w_0\) with \(\|\mathbf w_0\|^2 = 1 + \tfrac49 + \tfrac19 = \tfrac{14}9\), and the dual value is \(\tfrac{14}9 - \tfrac79 = \tfrac79\), the last number the solver below prints.
 
 Look at what it needs: only the inner products \(\langle \mathbf x_j, \mathbf x_i \rangle\) between messages, never the coordinates of a message on their own. Hold on to that; it is the whole point of the next lesson.
 

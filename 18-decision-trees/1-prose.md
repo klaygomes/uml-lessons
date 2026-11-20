@@ -549,7 +549,7 @@ BestThreshold(S, i, C)
   return best
 ```
 
-Each candidate threshold’s gain comes from running counts in \(O(1)\), so after the \(O(m \log m)\) sort, one sweep is \(O(m)\). Over \(d\) features that is \(O(dm \log m)\) per node, and \(O(m)\) extra space for the sorted order. (The thresholds below everything and above everything put all examples on one side and have gain 0, so the sweep can skip them.)
+Here \(x_{(t),i}\) is feature \(i\) of the \(t\)-th example after sorting and \(y_{(t)}\) its label; the gain line is the gain formula of “Why the smooth gains are better” with \(q\), \(p_1\), \(p_0\) read off the running counts. Each candidate threshold’s gain comes from running counts in \(O(1)\), so after the \(O(m \log m)\) sort, one sweep is \(O(m)\). Over \(d\) features that is \(O(dm \log m)\) per node, and \(O(m)\) extra space for the sorted order. (The thresholds below everything and above everything put all examples on one side and have gain 0, so the sweep can skip them.)
 
 ## Build it yourself
 
@@ -600,7 +600,7 @@ if __name__ == "__main__":
 1. Implement `gain` for the three measures, selected by the names `"err"`, `"info"` and `"gini"`, and `id3` exactly as in the pseudocode, breaking argmax ties toward the lowest feature index and majority ties toward 1. Represent a tree however you like.
 2. Implement `encode` with the block code of this lesson (feature \(i\) as the number \(i\), leaf 1 as \(d\), leaf 0 as \(d+1\), end as \(d+2\), each in \(\lceil\log_2(d+3)\rceil\) bits, in preorder with the “yes” subtree first), `tree_bound` with the description-length bound, and `prune` with the generic procedure, the bound as \(f\), and the unchanged tree preferred on ties.
 3. Implement `thresholds`, returning one threshold below all values, one per gap between distinct sorted values, and one above. All asserts should pass.
-4. Write a function that computes a tree’s true risk exactly in this world, using \(L_{\mathcal D}(h) = 0.1 + 0.8\, \mathbb P[h(x) \ne f(x)]\) (why does that formula hold?) and the fact that each leaf’s region has probability \(2^{-\text{depth}}\). Check that the unpruned tree of step 1 has true risk about 0.22 and the pruned one exactly 0.1.
+4. Write a function that computes a tree’s true risk exactly in this world, using \(L_{\mathcal D}(h) = 0.1 + 0.8\, \mathbb P[h(x) \ne f(x)]\) (why does that formula hold?) and the fact that each leaf’s region has probability \(2^{-\text{depth}}\), one factor of 1/2 for each question on its path. Here \(\mathbb P[h(x) \ne f(x)]\) is the chance that the tree disagrees with the noise-free truth \(f\) on a fresh message. Check that the unpruned tree of step 1 has true risk about 0.22 and the pruned one exactly 0.1.
 5. Rerun steps 1 and 2 with training error as the gain. How big is the unpruned tree, and what does pruning return?
 
 ## Fix the bug

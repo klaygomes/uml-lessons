@@ -4,7 +4,7 @@
 
 Last lesson ended on a good note. You learned to measure a class’s richness on the very messages you have, with the Rademacher complexity, and you used it to certify a filter that every count made before seeing data had given up on. The review board liked it so much that it now asks for a Rademacher certificate on every filter that ships.
 
-This week’s filter is new. It gives each message a **score** between \(-1\) and \(1\), built from two real-valued features that last month’s feature work produced (call them \(\phi_1\) and \(\phi_2\)): the score of message \(x\) is \(w_1 \phi_1(x) + w_2 \phi_2(x)\), for any pair of weights that keeps every score inside \([-1, 1]\). Junk gets a high score and keep a low one. Your users have labelled \(m\) messages, and the board wants a number: how well can this class fit random signs on those \(m\) messages?
+This week’s filter is new. It gives each message a **score** between \(-1\) and \(1\), built from two real-valued features that last month’s feature work produced (call them \(\psi_1\) and \(\psi_2\)): the score of message \(x\) is \(w_1 \psi_1(x) + w_2 \psi_2(x)\), for any pair of weights that keeps every score inside \([-1, 1]\). Junk gets a high score and keep a low one. Your users have labelled \(m\) messages, and the board wants a number: how well can this class fit random signs on those \(m\) messages?
 
 You sit down to compute it, and you hit a wall within the hour. The Rademacher complexity is an average over all \(2^m\) ways to put random signs on your messages, and inside that average sits a best-possible fit taken over infinitely many score functions, one for every allowed pair of weights. With \(m = 10{,}000\) labels the average alone has \(2^{10{,}000}\) terms. You can’t compute it exactly, and a random estimate is a guess, not a certificate.
 
@@ -88,11 +88,11 @@ Two quick facts you can see without a proof. Shrinking the radius can only make 
 
 The six-vector class was a warm-up. Your real class is infinite, so we need a cover we can build for an infinite set. Here is where the structure of the filter pays off.
 
-Every score function is \(w_1 \phi_1 + w_2 \phi_2\). On the \(m\) messages, its score vector is \(w_1\) times the vector of \(\phi_1\)-values plus \(w_2\) times the vector of \(\phi_2\)-values. So every score vector is a combination of the same two fixed vectors: the whole score set lies in a flat two-dimensional slice of \(\mathbb R^m\), however large \(m\) is. Mathematicians call such a slice a **subspace**, and its **dimension** \(d\) is the number of directions it spreads in, here \(d = 2\).
+Every score function is \(w_1 \psi_1 + w_2 \psi_2\). On the \(m\) messages, its score vector is \(w_1\) times the vector of \(\psi_1\)-values plus \(w_2\) times the vector of \(\psi_2\)-values. So every score vector is a combination of the same two fixed vectors: the whole score set lies in a flat two-dimensional slice of \(\mathbb R^m\), however large \(m\) is. Mathematicians call such a slice a **subspace**, and its **dimension** \(d\) is the number of directions it spreads in, here \(d = 2\).
 
 Also, every score is in \([-1, 1]\), so every score vector has length at most \(\sqrt{1 + 1 + \dots + 1} = \sqrt m\). Write \(c\) for a bound on the lengths, \(\|a\| \le c\) for every \(a \in A\).
 
-A flat \(d\)-dimensional slice can be described with \(d\) coordinates. Choose \(d\) directions \(v_1, \dots, v_d\) in the subspace that have length 1 and are at right angles to each other (an **orthonormal basis**). Every vector of the slice is \(a = \alpha_1 v_1 + \dots + \alpha_d v_d\) for some numbers \(\alpha_1, \dots, \alpha_d\), its coordinates, and because the directions are at right angles and of length 1, lengths and distances in the slice are just the ordinary distances between coordinate lists: \(\|a\| = \sqrt{\alpha_1^2 + \dots + \alpha_d^2}\). So the score set is, for every purpose of distance, a disc of radius \(c\) in \(d\) dimensions, and \(m\) has disappeared from the picture.
+A flat \(d\)-dimensional slice can be described with \(d\) coordinates. Choose \(d\) directions \(v_1, \dots, v_d\) in the subspace that have length 1 and are at right angles to each other (an **orthonormal basis**). Every vector of the slice is \(a = \alpha_1 v_1 + \dots + \alpha_d v_d\) for some numbers \(\alpha_1, \dots, \alpha_d\), its coordinates, and because the directions are at right angles and of length 1, lengths and distances in the slice are just the ordinary distances between coordinate lists: \(\|a\| = \sqrt{\alpha_1^2 + \dots + \alpha_d^2}\). So the score set is, for every purpose of distance, a set inside a disc of radius \(c\) in \(d\) dimensions, and \(m\) has disappeared from the picture.
 
 How would you cover a disc? Lay a grid over it. Here is the plan, with \(d = 2\), \(c = \sqrt 2\) (two messages, scores in \([-1, 1]\)) and \(r = 0.6\).
 
@@ -108,8 +108,8 @@ With our numbers, \(c \sqrt d / r = \sqrt 2 \cdot \sqrt 2 / 0.6 \approx 3.33\), 
 import math, random
 def grid_cover(c, d, r):
     n = math.ceil(c * math.sqrt(d) / r)
-    eps = 2 * c / n
-    axis = [-c + eps / 2 + j * eps for j in range(n)]
+    width = 2 * c / n
+    axis = [-c + width / 2 + j * width for j in range(n)]
     pts = [()]
     for _ in range(d):
         pts = [p + (t,) for p in pts for t in axis]
@@ -163,7 +163,7 @@ The set \(\{ s a + a_0 : a \in A \}\) is “every vector you get by taking a sco
 
 *Proof.* Let \(A'\) be a smallest \(r\)-cover of \(A\) and put \(B' = \{ s a' + a_0 : a' \in A' \}\), which has at most \(|A'|\) elements. Any member of the new set is \(s a + a_0\) for some \(a \in A\); pick \(a' \in A'\) with \(\|a - a'\| \le r\). Then \(\|(s a + a_0) - (s a' + a_0)\| = s\|a - a'\| \le s r\). So \(B'\) is an \(s r\)-cover of the new set. \(\blacksquare\)
 
-Two consequences we will use: with \(s = 1\), shifting never changes a covering number (apply the lemma with \(a_0\) and then with \(-a_0\)); and to compare scales cleanly, \(N(r, sA) \le N(r/s, A)\).
+Two consequences we will use: with \(s = 1\), shifting never changes a covering number (apply the lemma with \(a_0\) and then with \(-a_0\)); and, writing \(sA\) for the stretched set \(\{s a : a \in A\}\) and applying the lemma at radius \(r/s\), \(N(r, sA) \le N(r/s, A)\).
 
 ```python
 import math
@@ -181,9 +181,9 @@ print(round(before, 3), round(after, 3), len(B))
 
 It prints `0.224 0.112 3`: the worst distance halves along with the stretch, and the number of representatives stays three.
 
-**Passing through a loss.** The review board doesn’t care about scores; it cares about losses. Lesson 26 turned scores into losses one message at a time, with a function per message. For the filter, the **ramp loss** of a score \(t\) on a message with label \(y \in \{-1, +1\}\) is \(\min(1, \max(0, 1 - y t))\): zero when the score is on the right side by a margin of 1, one when it is on the wrong side, and a straight ramp in between. What matters here is that it is **\(\rho\)-Lipschitz** with \(\rho = 1\): changing the score by some amount changes the loss by at most \(\rho\) times that amount. In symbols, a function \(\varphi: \mathbb R \to \mathbb R\) is \(\rho\)-Lipschitz when \(|\varphi(t) - \varphi(t')| \le \rho\, |t - t'|\) for all \(t, t'\).
+**Passing through a loss.** The review board doesn’t care about scores; it cares about losses. Lesson 26 turned scores into losses one message at a time, with a function per message. For the filter, the **ramp loss** of a score \(t\) on a message with label \(y \in \{-1, +1\}\) is \(\min(1, \max(0, 1 - y t))\): zero when the score is on the right side by a margin of 1, one when it is on the wrong side, and a straight ramp in between. A junk message (\(y = +1\)) scored \(t = 0.4\) has \(1 - yt = 0.6\), inside \([0, 1]\), so its loss is \(0.6\); scored \(t = -0.3\), it gets \(1.3\), capped to a loss of \(1\). What matters here is that it is **\(\rho\)-Lipschitz** with \(\rho = 1\): changing the score by some amount changes the loss by at most \(\rho\) times that amount. In symbols, a function \(\varphi: \mathbb R \to \mathbb R\) is \(\rho\)-Lipschitz when \(|\varphi(t) - \varphi(t')| \le \rho\, |t - t'|\) for all \(t, t'\).
 
-Apply such a function to each entry of a score vector, possibly a different function \(\varphi_i\) for each message \(i\) (the loss depends on the message’s label). Write \(\varphi(a) = (\varphi_1(a_1), \dots, \varphi_m(a_m))\) and \(\varphi \circ A = \{\varphi(a) : a \in A\}\) for the set of all loss vectors. Each entry moves at most \(\rho\) times as far as before, so every distance shrinks or grows by at most a factor \(\rho\).
+Apply such a function to each entry of a score vector, possibly a different function \(\varphi_i\) for each message \(i\) (the loss depends on the message’s label). Write \(\varphi(a) = (\varphi_1(a_1), \dots, \varphi_m(a_m))\) and \(\varphi \circ A = \{\varphi(a) : a \in A\}\) for the set of all loss vectors. Each entry moves at most \(\rho\) times as far as before, so every distance between loss vectors is at most \(\rho\) times the distance between their score vectors.
 
 **Lemma (Lipschitz losses keep covers).** If every \(\varphi_i\) is \(\rho\)-Lipschitz, then
 
@@ -246,7 +246,7 @@ print(round(R, 3), round(massart, 3))
 
 It prints `0.513 1.205`.
 
-Lesson 26 stated Massart’s lemma with the longest distance from the average vector, which can be smaller; the form above is what its proof shows before that refinement, and it is the one we will apply. So that nothing rests on memory, here is the proof in four lines. For any \(\lambda > 0\), write \(L = \max_a \|a\|\). Then
+Lesson 26 stated Massart’s lemma with the longest distance from the average vector \(\bar a\). Its proof first shifted the set so that \(\bar a\) sat at the origin, and from then on used only the length of the longest vector; skip the shift and you get the form above, which is the one we will apply. So that nothing rests on memory, here is the proof in four lines. If \(N = 1\) or \(L = 0\), the set is a single vector, every sign vector’s best fit averages to \(0\), and \(R(A) = 0\). Otherwise, for any \(\lambda > 0\), write \(L = \max_a \|a\|\). Then
 
 \[ m R(A) = \frac{1}{\lambda} \mathbb E \Big[\log \max_{a} e^{\lambda \langle \sigma, a \rangle}\Big] \le \frac{1}{\lambda} \log \sum_{a \in A} \mathbb E\, e^{\lambda \langle \sigma, a \rangle} = \frac{1}{\lambda} \log \sum_{a \in A} \prod_{i=1}^m \frac{e^{\lambda a_i} + e^{-\lambda a_i}}{2}. \]
 
@@ -316,9 +316,10 @@ u = (sum(sigma[:5]) / 5 ** 0.5, sum(sigma[5:]) / 5 ** 0.5)
 a_star = tuple(c * t / math.hypot(*u) for t in u)
 def b(k):
     n = math.ceil(c * math.sqrt(2) / (c * 2 ** -k))
-    eps = 2 * c / n
-    j = lambda t: min(n - 1, int((t + c) // eps))
-    return tuple(-c + eps / 2 + eps * j(t) for t in a_star)
+    width = 2 * c / n
+    j = lambda t: min(n - 1, int((t + c) // width))
+    return tuple(-c + width / 2 + width * j(t)
+                 for t in a_star)
 chain = [(0.0, 0.0)] + [b(k) for k in range(1, 6)]
 steps = [math.dist(chain[k], chain[k - 1]) for k in range(1, 6)]
 print([round(s, 2) for s in steps])
@@ -502,8 +503,8 @@ Three small procedures carry this lesson: building a grid cover, checking that a
 ```
 GridCover(c, d, r):
   n ← ceil(c · sqrt(d) / r)
-  ε ← 2c / n
-  axis ← [−c + ε/2 + j·ε for j = 0..n−1]
+  w ← 2c / n
+  axis ← [−c + w/2 + j·w for j = 0..n−1]
   return every d-tuple of values from axis
 
 CoveringRadius(A, B):

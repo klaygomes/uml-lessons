@@ -863,7 +863,7 @@ SGD-StronglyConvex(f, λ, T, H):
 
 \[ \mathbb E[f(\bar{\mathbf w})] - f(\mathbf w^\star) \le \frac{\rho^2}{2\lambda T}\left(1 + \log T\right). \]
 
-Compare the rates: \(1/\sqrt T\) before, \(\log(T)/T\) now. To halve the gap you used to need four times the steps; now about twice.
+The assumption now bounds the average squared step length \(\mathbb E[\|\mathbf v_t\|^2]\) rather than every step, and \(\log\) is the natural logarithm again. In plain words: **with step sizes \(1/(\lambda t)\), the expected gap shrinks like \(\log T\) over \(T\).** With \(\rho = 1\), \(\lambda = 0.1\) and \(T = 1{,}000\): \((1 + 6.908)/200 \approx 0.040\). The last snippet of this lesson computes this bound (with \(4\rho^2\) in place of \(\rho^2\)). Compare the rates: \(1/\sqrt T\) before, \(\log(T)/T\) now. To halve the gap you used to need four times the steps; now about twice.
 
 *Proof.* Write \(a_t = \|\mathbf w^{(t)} - \mathbf w^\star\|^2\) for the squared distance to the optimum, and \(\nabla^{(t)} = \mathbb E[\mathbf v_t \mid \mathbf v_{1:t-1}]\), a subgradient of \(f\) at \(\mathbf w^{(t)}\) by the algorithm’s requirement. All expectations below are over the whole run.
 
@@ -893,11 +893,13 @@ The last step bounds the harmonic sum: \(\sum_{t=1}^T 1/t \le 1 + \int_1^T ds/s 
 
 ## Smooth losses
 
-Lesson 12 had a second family besides convex-Lipschitz: losses that are **\(\beta\)-smooth**, meaning the gradient is \(\beta\)-Lipschitz, \(\|\nabla f(\mathbf v) - \nabla f(\mathbf w)\| \le \beta\|\mathbf v - \mathbf w\|\). The square loss and the logistic loss on bounded messages are examples. Lesson 12 also showed the key property we need: a nonnegative \(\beta\)-smooth function is **self-bounded**, \(\|\nabla f(\mathbf w)\|^2 \le 2\beta f(\mathbf w)\). Its gradient is small wherever its value is small. Here is why that helps: in the step lemma, the price of noise was \(\frac\eta2\sum_t\|\mathbf v_t\|^2\), and self-boundedness turns that price into a multiple of the loss itself.
+Lesson 12 had a second family besides convex-Lipschitz: losses that are **\(\beta\)-smooth**, meaning the gradient is \(\beta\)-Lipschitz, \(\|\nabla f(\mathbf v) - \nabla f(\mathbf w)\| \le \beta\|\mathbf v - \mathbf w\|\): the slope itself changes by at most \(\beta\) (beta) times the distance moved. The square loss and the logistic loss on bounded messages are examples. Lesson 12 also showed the key property we need: a nonnegative \(\beta\)-smooth function is **self-bounded**, \(\|\nabla f(\mathbf w)\|^2 \le 2\beta f(\mathbf w)\), the squared slope at most \(2\beta\) times the height. Its gradient is small wherever its value is small. (For \(f(w) = \frac12 w^2\), which is 1-smooth, both sides equal \(w^2\).) Here is why that helps: in the step lemma, the price of noise was \(\frac\eta2\sum_t\|\mathbf v_t\|^2\), and self-boundedness turns that price into a multiple of the loss itself.
 
 **Theorem (SGD on smooth losses).** Assume that for every \(z\), the loss \(\ell(\cdot, z)\) is convex, \(\beta\)-smooth and nonnegative, and let \(\eta < 1/\beta\). Then SGD-Risk satisfies, for every \(\mathbf w^\star\),
 
 \[ \mathbb E[L_{\mathcal D}(\bar{\mathbf w})] \le \frac{1}{1 - \eta\beta}\left( L_{\mathcal D}(\mathbf w^\star) + \frac{\|\mathbf w^\star\|^2}{2\eta T} \right). \]
+
+Inside the bracket are the comparator’s own risk and the familiar distance term; the factor \(1/(1 - \eta\beta)\), a little above 1 when \(\eta\) is small, inflates both. In plain words: **SGD’s expected risk is at most the comparator’s risk plus \(\|\mathbf w^\star\|^2/(2\eta T)\), inflated by \(1/(1 - \eta\beta)\).** With \(\beta = 1\), \(\eta = 0.25\), \(T = 100\), \(\|\mathbf w^\star\| = 1\) and \(L_{\mathcal D}(\mathbf w^\star) = 0.5\): \((0.5 + 0.02)/0.75 \approx 0.693\). The `excess` line of the snippet after the corollary below is this formula, minus the comparator’s risk.
 
 *Proof.* Let \(z_1, \dots, z_T\) be the fresh examples SGD draws, and \(f_t(\cdot) = \ell(\cdot, z_t)\). Then \(\mathbf v_t = \nabla f_t(\mathbf w^{(t)})\). Each \(f_t\) is convex, so its tangent plane at \(\mathbf w^{(t)}\) gives \(f_t(\mathbf w^{(t)}) - f_t(\mathbf w^\star) \le \langle \mathbf v_t, \mathbf w^{(t)} - \mathbf w^\star \rangle\). Sum over \(t\) and apply the step lemma:
 
@@ -914,6 +916,8 @@ Notice the shape: if the best hypothesis has small risk, the noise term almost v
 **Corollary (SGD learns convex-smooth-bounded problems).** Consider a convex-smooth-bounded learning problem with parameters \(\beta, B\) (lesson 12: \(\mathcal H\) convex with \(\|\mathbf w\| \le B\), each \(\ell(\cdot, z)\) convex, nonnegative and \(\beta\)-smooth), with \(\mathbf 0 \in \mathcal H\) and \(\ell(\mathbf 0, z) \le 1\) for every \(z\). For every \(\varepsilon \in (0, 1]\), set \(\eta = 1/(\beta(1 + 3/\varepsilon))\). Then SGD-Risk with \(T \ge 12B^2\beta/\varepsilon^2\) gives
 
 \[ \mathbb E[L_{\mathcal D}(\bar{\mathbf w})] \le \min_{\mathbf w \in \mathcal H} L_{\mathcal D}(\mathbf w) + \varepsilon. \]
+
+This is the same promise as for convex-Lipschitz-bounded problems, now bought with \(12B^2\beta/\varepsilon^2\) messages: with \(B = \beta = 1\) and \(\varepsilon = 0.1\), that is 1,200.
 
 *Proof.* Let \(\mathbf w^\star\) minimize \(L_{\mathcal D}\) over \(\mathcal H\), and \(L^\star = L_{\mathcal D}(\mathbf w^\star)\). Since \(\mathbf 0 \in \mathcal H\), \(L^\star \le L_{\mathcal D}(\mathbf 0) \le 1\), and \(\|\mathbf w^\star\| \le B\). With this \(\eta\), \(\eta\beta = \varepsilon/(\varepsilon + 3)\), so \(1/(1 - \eta\beta) = 1 + \varepsilon/3\). And \(\|\mathbf w^\star\|^2/(2\eta T) \le B^2\beta(1 + 3/\varepsilon)/(2T) \le \varepsilon^2(1 + 3/\varepsilon)/24 = \varepsilon(\varepsilon + 3)/24\), using \(T \ge 12B^2\beta/\varepsilon^2\). The theorem gives
 
@@ -941,6 +945,20 @@ SGD matches regularized loss minimization’s worst-case sample complexity. But 
 
 \[ \min_{\mathbf w} \; f(\mathbf w) = \frac\lambda2 \|\mathbf w\|^2 + L_S(\mathbf w). \]
 
+Here \(\min_{\mathbf w}\) asks for the smallest value over all weight vectors, \(\frac\lambda2\|\mathbf w\|^2\) is the bowl, a charge on squared length scaled by the regularization weight \(\lambda\) (lambda), and \(L_S\) is the training fit. Lesson 13 charged \(\lambda\|\mathbf w\|^2\); halving the charge only rescales \(\lambda\). In plain words: **find the weight vector with the best trade between training fit and half of \(\lambda\) times its squared length.** With \(\lambda = 0.1\), our six messages as \(S\) and the hinge loss, \(\mathbf w = (1, -1)\) pays \(0.1\) for its length and \(0.6833\) for its fit:
+
+```python
+S = [((0.8, 0.2), 1), ((0.6, 0.6), 1), ((0.9, 0.4), 1),
+     ((0.1, 0.9), -1), ((0.4, 0.8), -1), ((0.7, 0.3), -1)]
+dot = lambda u, v: u[0] * v[0] + u[1] * v[1]
+L_S = lambda w: sum(max(0, 1 - y * dot(w, x)) for x, y in S) / 6
+lam, w = 0.1, (1.0, -1.0)
+bowl = lam / 2 * dot(w, w)
+print(round(bowl, 4), round(L_S(w), 4), round(bowl + L_S(w), 4))
+```
+
+It prints `0.1 0.6833 0.7833`.
+
 Can SGD solve it fast? This \(f\) is \(\lambda\)-strongly convex: lesson 13 showed \(\lambda\|\mathbf w\|^2\) is \(2\lambda\)-strongly convex, so \(\frac\lambda2\|\mathbf w\|^2\) is \(\lambda\)-strongly convex, and adding the convex \(L_S\) keeps that. A strongly convex continuous function has a unique minimizer. So we can use the strongly convex variant with \(\mathcal H = \mathbb R^d\), where the projection does nothing. We need an unbiased subgradient estimate:
 
 Pick \(z\) uniformly at random from \(S\), take \(\mathbf v_t \in \partial \ell(\mathbf w^{(t)}, z)\) by a fixed rule, and step along \(\lambda\mathbf w^{(t)} + \mathbf v_t\).
@@ -951,7 +969,7 @@ Now look at what the update does with \(\eta_t = 1/(\lambda t)\):
 
 \[ \begin{aligned} \mathbf w^{(t+1)} &= \mathbf w^{(t)} - \frac{1}{\lambda t}\left( \lambda \mathbf w^{(t)} + \mathbf v_t \right) = \left(1 - \frac1t\right)\mathbf w^{(t)} - \frac{1}{\lambda t}\mathbf v_t = \frac{t-1}{t}\mathbf w^{(t)} - \frac{1}{\lambda t}\mathbf v_t \\ &= \frac{t-1}{t}\left( \frac{t-2}{t-1}\mathbf w^{(t-1)} - \frac{1}{\lambda(t-1)}\mathbf v_{t-1} \right) - \frac{1}{\lambda t}\mathbf v_t = \dots = -\frac{1}{\lambda t}\sum_{i=1}^t \mathbf v_i. \end{aligned} \]
 
-Each unrolling multiplies the earlier coefficient by \(\frac{t-1}{t}\), which turns \(\frac{1}{\lambda(t-1)}\) into \(\frac{1}{\lambda t}\), so every past subgradient ends up with the same weight \(\frac{1}{\lambda t}\); the unrolling stops at \(\frac{0}{1}\mathbf w^{(1)} = \mathbf 0\). The iterate is just minus the running average of the subgradients, divided by \(\lambda\). If the loss is \(\rho\)-Lipschitz, every \(\|\mathbf v_i\| \le \rho\), so \(\|\lambda\mathbf w^{(t)}\| \le \frac1{t-1}\sum_{i<t} \|\mathbf v_i\| \le \rho\), and therefore
+Each unrolling multiplies the earlier coefficient by \(\frac{t-1}{t}\), which turns \(\frac{1}{\lambda(t-1)}\) into \(\frac{1}{\lambda t}\), so every past subgradient ends up with the same weight \(\frac{1}{\lambda t}\); the unrolling stops at \(\frac{0}{1}\mathbf w^{(1)} = \mathbf 0\). In plain words: **the iterate is just minus the running average of the subgradients, divided by \(\lambda\).** With \(\lambda = 0.1\), if the first draw is message B, then \(\mathbf w^{(2)} = -\frac{1}{0.1}(-0.6, -0.6) = (6, 6)\). If the loss is \(\rho\)-Lipschitz, every \(\|\mathbf v_i\| \le \rho\), so \(\|\lambda\mathbf w^{(t)}\| \le \frac1{t-1}\sum_{i<t} \|\mathbf v_i\| \le \rho\), and therefore
 
 \[ \|\lambda\mathbf w^{(t)} + \mathbf v_t\| \le 2\rho. \]
 
@@ -982,6 +1000,8 @@ It prints `[1.517, -1.25] [1.517, -1.25]`, then `0.906 <= 1.0`.
 So the step vectors satisfy \(\mathbb E\|\lambda\mathbf w^{(t)} + \mathbf v_t\|^2 \le (2\rho)^2\), and the strongly convex theorem, with \(4\rho^2\) in place of \(\rho^2\), gives after \(T\) steps
 
 \[ \mathbb E[f(\bar{\mathbf w})] - f(\mathbf w^\star) \le \frac{4\rho^2}{2\lambda T}(1 + \log T) = \frac{2\rho^2}{\lambda T}(1 + \log T). \]
+
+In plain words: **after \(T\) one-example steps, the regularized objective is, on average, within \(2\rho^2(1 + \log T)/(\lambda T)\) of its minimum.** The snippet mirrors it term by term, with the harmonic sum beside it:
 
 ```python
 import math

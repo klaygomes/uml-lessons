@@ -205,29 +205,55 @@ First, the setting. Lesson 15’s learners all minimize something of the form
 
 \[ \min_{\mathbf w} \; f\big(\langle \mathbf w, \psi(x_1) \rangle, \dots, \langle \mathbf w, \psi(x_m) \rangle\big) + R(\|\mathbf w\|), \]
 
-where \(f: \mathbb R^m \to \mathbb R\) is any function at all and \(R: \mathbb R_+ \to \mathbb R\) is **nondecreasing**: \(a \le a'\) implies \(R(a) \le R(a')\). Soft-SVM for homogeneous halfspaces is the case \(R(a) = \lambda a^2\) and \(f(a_1, \dots, a_m) = \frac{1}{m} \sum_i \max\{0, 1 - y_i a_i\}\), the average hinge loss. Hard-SVM is the case \(R(a) = a^2\) and \(f(a_1, \dots, a_m) = 0\) if there is a \(b\) with \(y_i(a_i + b) \ge 1\) for every \(i\), and \(f = \infty\) otherwise.
+where \(f: \mathbb R^m \to \mathbb R\) is any function at all and \(R: \mathbb R_+ \to \mathbb R\) is **nondecreasing**: \(a \le a'\) implies \(R(a) \le R(a')\). Read it from the inside out.
 
-We also need the space to have a geometry. A **Hilbert space** is a vector space with an inner product \(\langle \cdot, \cdot \rangle\) (symmetric, linear in each argument, and \(\langle \mathbf v, \mathbf v \rangle > 0\) for \(\mathbf v \ne 0\)) that is also **complete**: every Cauchy sequence converges. The norm is \(\|\mathbf v\| = \sqrt{\langle \mathbf v, \mathbf v \rangle}\). Every \(\mathbb R^n\) with the usual dot product is a Hilbert space, and so are some spaces of infinite dimension that we will meet shortly. The one fact we need from the geometry is the orthogonal decomposition onto a finite-dimensional subspace, and we will prove it inline.
+- \(\langle \mathbf w, \psi(x_i) \rangle\) is the score of training message \(i\) in feature space, one for each of the \(m\) examples.
+- \(f\) takes those \(m\) scores (it may also look at the labels, which are fixed) and returns one number, the data term; that is what \(f: \mathbb R^m \to \mathbb R\) says.
+- \(R\) turns the length \(\|\mathbf w\|\) into a penalty, the regularizer of lesson 13; \(\mathbb R_+\), the nonnegative numbers, is where lengths live.
+- \(\min_{\mathbf w}\) asks for the smallest total over all weight vectors, and an optimal solution is a \(\mathbf w\) that attains it.
 
-**Representer theorem.** Let \(\psi\) map \(\mathcal X\) into a Hilbert space, and suppose the problem above has an optimal solution. Then it has an optimal solution of the form \(\mathbf w = \sum_{i=1}^m \alpha_i \psi(x_i)\) for some \(\boldsymbol\alpha \in \mathbb R^m\).
+In plain words: **score the training messages, add a penalty that grows with the length of \(\mathbf w\), and make the total as small as possible.** Soft-SVM for homogeneous halfspaces is the case \(R(a) = \lambda a^2\) and \(f(a_1, \dots, a_m) = \frac{1}{m} \sum_i \max\{0, 1 - y_i a_i\}\), the average hinge loss of lessons 12 and 15, which charges nothing when the label times the score is at least 1 and charges the shortfall otherwise. On the line, with \(\psi(x) = (1, x, x^2)\), the eleven points \(-5, \dots, 5\) and \(\lambda = 0.1\), the weight vector \((-5, 0, 1)\) scores \(x^2 - 5\) and clears every point by at least 1, so \(f = 0\), but \(R = 0.1 \times 26 = 2.6\). Halve it to \((-2.5, 0, 0.5)\): the points \(\pm 2\) now score \(-0.5\) and pay 0.5 each, so \(f = 1/11\), while \(R\) drops to 0.65. The shorter vector wins:
 
-*Proof.* Let \(\mathbf w^\star\) be an optimal solution, and let \(M\) be the span of \(\psi(x_1), \dots, \psi(x_m)\), a subspace of dimension \(r \le m\).
+```python
+S = [(x, 1 if abs(x) > 2 else -1) for x in range(-5, 6)]
+psi = lambda x: (1, x, x * x)
+dot = lambda a, b: sum(i * j for i, j in zip(a, b))
+lam = 0.1
 
-Step one splits \(\mathbf w^\star\) into a part inside \(M\) and a part perpendicular to it. Run Gram–Schmidt on \(\psi(x_1), \dots, \psi(x_m)\), dropping any vector that depends on the earlier ones; this gives an orthonormal basis \(\mathbf e_1, \dots, \mathbf e_r\) of \(M\). Set \(\mathbf p = \sum_{k=1}^r \langle \mathbf w^\star, \mathbf e_k \rangle \mathbf e_k\) and \(\mathbf u = \mathbf w^\star - \mathbf p\). Then for each \(k\), \(\langle \mathbf u, \mathbf e_k \rangle = \langle \mathbf w^\star, \mathbf e_k \rangle - \langle \mathbf w^\star, \mathbf e_k \rangle = 0\), so \(\mathbf u\) is perpendicular to every basis vector, hence to every vector in \(M\), and in particular \(\langle \mathbf u, \psi(x_i) \rangle = 0\) for all \(i\). And \(\mathbf p \in M\), so \(\mathbf p = \sum_{i} \alpha_i \psi(x_i)\) for some coefficients \(\alpha_i\). We have written
+def objective(w):
+    a = [dot(w, psi(x)) for x, _ in S]
+    hinge = [max(0, 1 - y * ai) for (_, y), ai in zip(S, a)]
+    f, R = sum(hinge) / len(S), lam * dot(w, w)
+    return round(f, 4), round(R, 4), round(f + R, 4)
+
+print(objective((-5, 0, 1)), objective((-2.5, 0, 0.5)))
+```
+
+It prints `(0.0, 2.6, 2.6) (0.0909, 0.65, 0.7409)`: data term, penalty and total for each. Hard-SVM is the case \(R(a) = a^2\) and \(f(a_1, \dots, a_m) = 0\) if there is a \(b\) with \(y_i(a_i + b) \ge 1\) for every \(i\), and \(f = \infty\) otherwise.
+
+We also need the space to have a geometry. A **Hilbert space** is a vector space with an inner product \(\langle \cdot, \cdot \rangle\) (symmetric, linear in each argument, and \(\langle \mathbf v, \mathbf v \rangle > 0\) for \(\mathbf v \ne 0\)) that is also **complete**: every Cauchy sequence (one whose terms eventually stay as close to each other as you like) converges to a point of the space. The norm is \(\|\mathbf v\| = \sqrt{\langle \mathbf v, \mathbf v \rangle}\), the length; in \(\mathbb R^3\), \(\|(1, 0, 2)\| = \sqrt{1 + 0 + 4} = \sqrt 5\). Every \(\mathbb R^n\) with the usual dot product is a Hilbert space, and so are some spaces of infinite dimension that we will meet shortly. The one fact we need from the geometry is the orthogonal decomposition onto a finite-dimensional subspace, and we will prove it inline.
+
+**Representer theorem.** Let \(\psi\) map \(\mathcal X\) into a Hilbert space, and suppose the problem above has an optimal solution. Then it has an optimal solution of the form \(\mathbf w = \sum_{i=1}^m \alpha_i \psi(x_i)\) for some \(\boldsymbol\alpha \in \mathbb R^m\), a list of \(m\) coefficients, one per training message. In plain words: **some best weight vector is a weighted sum of the embedded training messages.** In the \(\mathbb R^3\) example after the proof, it is \(2\psi_1 - \psi_2\), so \(\boldsymbol\alpha = (2, -1)\).
+
+*Proof.* Let \(\mathbf w^\star\) be an optimal solution, and let \(M\) be the span of \(\psi(x_1), \dots, \psi(x_m)\), the set of all their weighted sums, a subspace of dimension \(r \le m\).
+
+Step one splits \(\mathbf w^\star\) into a part inside \(M\) and a part perpendicular to it. Run Gram–Schmidt on \(\psi(x_1), \dots, \psi(x_m)\), dropping any vector that depends on the earlier ones; this standard procedure gives an **orthonormal basis** \(\mathbf e_1, \dots, \mathbf e_r\) of \(M\), vectors of length 1, each perpendicular to the others, whose weighted sums are exactly \(M\). Set \(\mathbf p = \sum_{k=1}^r \langle \mathbf w^\star, \mathbf e_k \rangle \mathbf e_k\), the shadow of \(\mathbf w^\star\) on \(M\) (along each basis direction, step as far as \(\mathbf w^\star\) reaches along it), and \(\mathbf u = \mathbf w^\star - \mathbf p\). Then for each \(k\), \(\langle \mathbf u, \mathbf e_k \rangle = \langle \mathbf w^\star, \mathbf e_k \rangle - \langle \mathbf w^\star, \mathbf e_k \rangle = 0\), so \(\mathbf u\) is perpendicular to every basis vector, hence to every vector in \(M\), and in particular \(\langle \mathbf u, \psi(x_i) \rangle = 0\) for all \(i\). And \(\mathbf p \in M\), so \(\mathbf p = \sum_{i} \alpha_i \psi(x_i)\) for some coefficients \(\alpha_i\). We have written
 
 \[ \mathbf w^\star = \sum_{i=1}^m \alpha_i \psi(x_i) + \mathbf u, \qquad \langle \mathbf u, \psi(x_i) \rangle = 0 \text{ for all } i. \]
+
+In plain words: **the best weight vector is a part built from the training messages plus a part \(\mathbf u\) that no training message can see.** In the \(\mathbb R^3\) example below, the first part is \(2\psi_1 - \psi_2\) and \(\mathbf u\) is a cross product.
 
 Step two compares \(\mathbf w = \mathbf w^\star - \mathbf u = \mathbf p\) with \(\mathbf w^\star\). The regularizer first. Since \(\langle \mathbf p, \mathbf u \rangle = 0\),
 
 \[ \|\mathbf w^\star\|^2 = \langle \mathbf p + \mathbf u, \mathbf p + \mathbf u \rangle = \|\mathbf p\|^2 + 2 \langle \mathbf p, \mathbf u \rangle + \|\mathbf u\|^2 = \|\mathbf w\|^2 + \|\mathbf u\|^2, \]
 
-so \(\|\mathbf w\| \le \|\mathbf w^\star\|\), and because \(R\) is nondecreasing, \(R(\|\mathbf w\|) \le R(\|\mathbf w^\star\|)\).
+expanding the inner product of a sum term by term and dropping the cross term, which is 0. In plain words: **removing a perpendicular part lowers the squared length by exactly that part’s squared length** (the \(20 = 14 + 6\) printed below). So \(\|\mathbf w\| \le \|\mathbf w^\star\|\), and because \(R\) is nondecreasing, \(R(\|\mathbf w\|) \le R(\|\mathbf w^\star\|)\).
 
 Step three handles the data term. For every \(i\), by linearity of the inner product,
 
 \[ \langle \mathbf w, \psi(x_i) \rangle = \langle \mathbf w^\star - \mathbf u, \psi(x_i) \rangle = \langle \mathbf w^\star, \psi(x_i) \rangle - 0, \]
 
-so the \(m\) arguments of \(f\) are exactly the same at \(\mathbf w\) and at \(\mathbf w^\star\), and so is the value of \(f\).
+so **removing \(\mathbf u\) changes no training score** (the `[8, 2]` printed twice below): the \(m\) arguments of \(f\) are exactly the same at \(\mathbf w\) and at \(\mathbf w^\star\), and so is the value of \(f\).
 
 Adding the two parts, the objective at \(\mathbf w\) is at most the objective at \(\mathbf w^\star\). Since \(\mathbf w^\star\) is optimal, the objective at \(\mathbf w\) cannot be smaller either, so \(\mathbf w\) is also optimal, and it has the promised form. \(\blacksquare\)
 
