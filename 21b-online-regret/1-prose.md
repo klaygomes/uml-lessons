@@ -1,3 +1,45 @@
+# Online Regret
+
+## The newsletter that emptied the vote
+
+Lesson 21a ended with a filter that shipped with a proved mistake bound, and with a newsletter. One user reported it as junk; an hour later her colleague kept the very same message. Let’s replay that Wednesday on the smallest class we have, the four one-feature hypotheses \(\mathcal H_1 = \{h_F, h_L, h_U, h_N\}\). A message is four bits FLUN (says “FREE”, has a link, unknown sender, sent at night), and \(h_F\) says junk exactly when the F bit is 1, and so on. The learner is Halving, which lets the hypotheses that still agree with every label vote, with ties going to junk. The newsletter is 0000: no “FREE”, no link, a known sender, sent in the day.
+
+```python
+H = "FLUN"
+h = lambda name, x: int(x[H.index(name)])
+halving = lambda V, x: int(2 * sum(h(n, x) for n in V)
+                           >= len(V))
+week = [("1100", 0), ("0010", 0), ("1111", 1), ("0001", 1),
+        ("0000", 1), ("0000", 0), ("0100", 0), ("1000", 0),
+        ("0010", 0), ("1001", 1)]
+V, M = set(H), 0
+for x, y in week:
+    p = halving(V, x)
+    M += p != y
+    V = {n for n in V if h(n, x) == y}
+    print(x, p, y, "".join(sorted(V, key=H.index)) or "-")
+print(M, "mistakes")
+```
+
+It prints ten rows and then `7 mistakes`. Read the rows one at a time. Each shows the message, Halving’s prediction, the label, and the hypotheses still standing. The first four rounds are lesson 21a’s Halving table: two mistakes, and the survivors shrink to \(h_N\) alone (`1100 1 0 UN`, `0010 1 0 N`, then two rows ending in `N`). On round 5 the newsletter arrives, \(h_N\) says keep, so Halving says keep, and the user reports junk: a mistake, and \(h_N\) leaves too. The row reads `0000 0 1 -`, and the dash is an empty set. From then on the vote is zero against zero, a tie, and ties go to junk. Round 6 is the same newsletter, kept this time, and Halving calls it junk (`0000 1 0 -`). So is every keep message after it: rounds 7, 8 and 9 are all `1 0 -`. Seven mistakes in ten rounds, against a proved bound of two, and the count grows by one with every keep message for the rest of the week.
+
+The other learners fare no better. SOA sees two empty sides, both of dimension \(-1\), a tie, and says junk; Consistent has no survivor to follow at all, so it crashes.
+
+The proof did not lie. It promised at most two mistakes on any sequence that some hypothesis in \(\mathcal H_1\) labels perfectly, and this week no hypothesis does: no hypothesis in any class can call the same message junk on one round and keep on the next. Real mail is like this all the time. So here is the bug. Every guarantee you have rests on a perfect hypothesis, and the mail room will never have one. What can a filter promise when the best hypothesis makes mistakes too, and the adversary still reads every decision? This lesson answers that, and it ends with filters cheap enough to run on every message of the day.
+
+## What you need from lesson 21a
+
+Here is the toolkit, one line each, so you can check that nothing has slipped.
+
+- **The round.** On round \(t\), a message \(x_t\) arrives, the learner announces a **prediction** \(p_t\) (1 for junk, 0 for keep), the true label \(y_t\) is revealed, and the learner may update. \(T\) is the number of rounds, and \([T] = \{1, \dots, T\}\) is the set of round numbers. A **mistake** is a round with \(p_t \neq y_t\).
+- **The adversary.** Whoever chooses the messages, and from now on the labels too, possibly after seeing every past prediction. Its **opening trick**: send a message, wait for the prediction, and declare the opposite label, which wins every round when nothing restricts it.
+- **Realizability and the mistake bound.** A sequence is realizable by a class \(\mathcal H\) when some \(h^\star \in \mathcal H\) has \(y_t = h^\star(x_t)\) on every round. The mistake bound \(M_A(\mathcal H)\) is the most mistakes any adversary can force on learner \(A\) with realizable sequences; it is a \(\sup\), “the largest value, allowed to be infinite”.
+- **The version space** \(V_t\): the hypotheses that agree with every label of rounds \(1, \dots, t - 1\). For a message \(x\) and a label \(r\), \(V^{(r)} = \{h \in V : h(x) = r\}\) is the part of \(V\) that says \(r\) on \(x\); the superscript names a label, not a power.
+- **The Littlestone dimension** \(\mathrm{Ldim}(\mathcal H)\): the depth of the deepest **shattered tree**, a complete binary tree of messages (go left after label 0, right after label 1) in which every path of labels is followed by some hypothesis. The empty class gets \(-1\).
+- **The tree lower bound.** Every online learner can be forced into \(\mathrm{Ldim}(\mathcal H)\) mistakes: the adversary walks a shattered tree and always declares the opposite label.
+- **SOA**, the Standard Optimal Algorithm: split the version space by what it says on \(x_t\), predict with the side of higher Littlestone dimension (ties go to 1), and keep the side the label confirms. It makes at most \(\mathrm{Ldim}(\mathcal H)\) mistakes, so \(\mathcal H\) is online learnable exactly when \(\mathrm{Ldim}(\mathcal H) < \infty\).
+- **Three classes.** \(\mathcal H_1\) has dimension 2. The **rogue sender** class (a message is just its sender, and \(h_j\) says junk exactly when the sender is \(j\)) has dimension 1 however many senders there are. **Thresholds** \(h_\theta(x) = \mathbb 1[x > \theta]\) on a score in \([0, 1]\) (the indicator \(\mathbb 1[\cdot]\) is 1 when the statement inside is true) have VC dimension 1 but Littlestone dimension \(\infty\): the adversary plays binary search.
+
 ## When no hypothesis is perfect
 
 Realizability was a comfortable assumption, and the spammers are not comfortable people. Real mail is noisy: some users report newsletters they subscribed to, a few junk messages look exactly like real ones, and no hypothesis in any class you can afford agrees with every label. Lesson 3 met the same problem in the batch world and answered it with **agnostic** learning: stop asking for a perfect hypothesis and ask instead to do almost as well as the best one in the class.
@@ -20,7 +62,7 @@ In plain words: **the regret is how many more mistakes the learner makes than th
 
 ## The flipping adversary wins again
 
-Is sublinear regret possible? Not for any learner that decides deterministically, even for a class of two hypotheses. Take the smallest interesting class: \(h_0\) says keep on every message and \(h_1\) says junk on every message. The adversary plays the opening trick again: it waits for the prediction and announces the opposite label. The learner makes \(T\) mistakes in \(T\) rounds.
+Is sublinear regret possible? Not for any learner that decides deterministically, even for a class of two hypotheses. Take the smallest interesting class: \(h_0\) says keep on every message and \(h_1\) says junk on every message. The adversary plays lesson 21a’s opening trick again: it waits for the prediction and announces the opposite label. The learner makes \(T\) mistakes in \(T\) rounds.
 
 And the best hypothesis in hindsight? Out of the \(T\) labels, either at least half are 0 or at least half are 1. Whichever label is in the majority, the constant hypothesis that always says it is wrong on at most \(T/2\) rounds. So the regret is at least \(T - T/2 = T/2\), which is linear in \(T\). This is **Cover’s impossibility result**.
 
@@ -85,7 +127,7 @@ It prints `1 0.699 0.7` and `0 0.301 0.3`: the measured error rates over 100,000
 
 ## Weighted-Majority
 
-The learner that takes advantage of the coin is called **Weighted-Majority**, and it is easiest to describe in a slightly more general setting called **prediction with expert advice**. There are \(d\) **experts**: advisers whose advice the learner may follow. On each round, the learner chooses a probability distribution over the experts, a vector of weights \(\mathbf w^{(t)} = (w_1^{(t)}, \dots, w_d^{(t)})\) with every \(w_i^{(t)} \ge 0\) and \(\sum_i w_i^{(t)} = 1\), and follows expert \(i\) with probability \(w_i^{(t)}\). Then the adversary reveals a **cost** for every expert, a vector \(\mathbf v_t \in [0, 1]^d\), where \(v_{t,i}\) is what following expert \(i\) would have cost this round. The learner’s expected cost is the weighted average of the experts’ costs, \(\sum_i w_i^{(t)} v_{t,i} = \langle \mathbf w^{(t)}, \mathbf v_t \rangle\), using the inner product of lesson 9.
+The learner that takes advantage of the coin is called **Weighted-Majority**, and it is easiest to describe in a slightly more general setting called **prediction with expert advice**. There are \(d\) **experts**: advisers whose advice the learner may follow. On each round, the learner chooses a probability distribution over the experts, a vector of weights \(\mathbf w^{(t)} = (w_1^{(t)}, \dots, w_d^{(t)})\) with every \(w_i^{(t)} \ge 0\) and \(\sum_i w_i^{(t)} = 1\), and follows expert \(i\) with probability \(w_i^{(t)}\). Then the adversary reveals a **cost** for every expert, a vector \(\mathbf v_t \in [0, 1]^d\), where \(v_{t,i}\) is what following expert \(i\) would have cost this round. The learner’s expected cost is the weighted average of the experts’ costs, \(\sum_i w_i^{(t)} v_{t,i} = \langle \mathbf w^{(t)}, \mathbf v_t \rangle\), using the inner product of lesson 9a.
 
 For the filter, the experts will be hypotheses and the cost of an expert will be 1 if it got the message wrong and 0 if it got it right. But the general version is cleaner to analyse, so let’s stay with it.
 
@@ -139,6 +181,37 @@ It prints `1012.0 1000.0 12.0 96.0`. The learner’s expected cost is 1,012, the
 
 [[diagram:weights]]
 
+Before the proof, play with it. In the lab below you choose the adversary and the learner. The punisher is the adversary you just watched: every round it charges the five experts the learner trusts most. The steady adversary is the opposite of clever: expert 1 never costs anything, and the other nine always cost 1. The learners are follow-the-leader, the plain coin that keeps every weight at one tenth (Weighted-Majority with \(\eta = 0\)), and Weighted-Majority with a slider for \(\eta\). Watch the regret against each adversary as you move the slider, and look for the \(\eta\) that is safe against both.
+
+[[lab]]
+
+What the slider shows is two failures pulling in opposite directions. Here are both fights in code, for three step sizes:
+
+```python
+from math import exp
+
+def regret(eta, adversary, d=10, T=2000):
+    w, paid, totals = [1 / d] * d, 0.0, [0.0] * d
+    for t in range(T):
+        v = adversary(w)
+        paid += sum(wi * vi for wi, vi in zip(w, v))
+        totals = [s + vi for s, vi in zip(totals, v)]
+        w = [wi * exp(-eta * vi) for wi, vi in zip(w, v)]
+        Z = sum(w)
+        w = [wi / Z for wi in w]
+    return round(paid - min(totals), 1)
+
+def punisher(w):
+    top = sorted(range(10), key=lambda i: -w[i])[:5]
+    return [float(i in top) for i in range(10)]
+
+steady = lambda w: [0.0] + [1.0] * 9
+for eta in (0.01, 0.048, 0.5):
+    print(eta, regret(eta, punisher), regret(eta, steady))
+```
+
+It prints `0.01 2.5 230.7`, `0.048 12.0 48.4` and `0.5 122.5 5.1`. A timid \(\eta = 0.01\) shrugs off the punisher (regret 2.5) but takes hundreds of rounds to notice that expert 1 never errs, and the steady adversary bills it 230.7. A bold \(\eta = 0.5\) finds expert 1 almost at once (5.1) but lurches after every punishment, and the punisher bills it 122.5. The middle value, the one in the pseudocode, is never the best against either adversary and never bad against either. The theorem explains why, and it holds against every adversary at once, not just these two.
+
 **Theorem (Weighted-Majority’s regret).** If \(T > 2 \log d\), Weighted-Majority with \(\eta = \sqrt{2 \log(d)/T}\) satisfies, for every sequence of cost vectors,
 
 \[ \sum_{t=1}^T \langle \mathbf w^{(t)}, \mathbf v_t \rangle - \min_{i \in [d]} \sum_{t=1}^T v_{t,i} \le \sqrt{2 \log(d) \, T}. \]
@@ -156,7 +229,7 @@ In plain words: **over any \(T\) rounds, Weighted-Majority pays at most \(\sqrt{
 
 The first equality writes \(Z_{t+1} = \sum_i \tilde w_i^{(t)} e^{-\eta v_{t,i}}\), which is the update, and divides each term by \(Z_t\). The second recognizes \(\tilde w_i^{(t)}/Z_t\) as the weight \(w_i^{(t)}\). In words: **the log of how much the total trust shrank this round is the log of the weighted average of the shrink factors.** In the snippet above, on round 1 every weight is 0.1 and five experts shrink by \(e^{-0.048} \approx 0.953\), so the average shrink factor is \(0.5 + 0.5 \cdot 0.953 = 0.977\).
 
-*Step 2: a quadratic bound on the exponential.* For \(0 \le a \le 1\), \(e^{-a} \le 1 - a + a^2/2\). Why: the difference \(g(a) = 1 - a + a^2/2 - e^{-a}\) has \(g(0) = 0\) and slope \(g'(a) = -1 + a + e^{-a}\), which is at least 0 because \(e^{-a} \ge 1 - a\) (the exponential lies above its tangent line at 0, the convexity of lesson 12). So \(g\) never decreases from 0. Apply it with \(a = \eta v_{t,i}\), which is in \([0, 1]\) because \(v_{t,i} \in [0, 1]\) and \(\eta < 1\) (that is what \(T > 2 \log d\) buys: \(\eta^2 = 2 \log(d)/T < 1\)). Since the weights add up to 1,
+*Step 2: a quadratic bound on the exponential.* For \(0 \le a \le 1\), \(e^{-a} \le 1 - a + a^2/2\). Why: the difference \(g(a) = 1 - a + a^2/2 - e^{-a}\) has \(g(0) = 0\) and slope \(g'(a) = -1 + a + e^{-a}\), which is at least 0 because \(e^{-a} \ge 1 - a\) (the exponential lies above its tangent line at 0, the convexity of lesson 12a). So \(g\) never decreases from 0. Apply it with \(a = \eta v_{t,i}\), which is in \([0, 1]\) because \(v_{t,i} \in [0, 1]\) and \(\eta < 1\) (that is what \(T > 2 \log d\) buys: \(\eta^2 = 2 \log(d)/T < 1\)). Since the weights add up to 1,
 
 \[ \log \frac{Z_{t+1}}{Z_t} \le \log \sum_i w_i^{(t)} \left( 1 - \eta v_{t,i} + \frac{\eta^2 v_{t,i}^2}{2} \right) = \log(1 - b), \qquad b = \sum_i w_i^{(t)} \left( \eta v_{t,i} - \frac{\eta^2 v_{t,i}^2}{2} \right). \]
 
@@ -279,7 +352,7 @@ It prints `identity holds in 10,000 random checks`. And \(\sum_t v_{t,i}\) is ju
 
 In plain words: **with a finite class, the randomized filter’s expected mistakes exceed those of the best hypothesis in hindsight by at most \(\sqrt{2 \log(|\mathcal H|)\, T}\).** For lesson 1’s ten one-feature hypotheses over 2,000 messages, that is the 96 we computed: under 5% extra mistakes per round, against the worst spammers.
 
-What about an infinite class? The rogue-sender class from earlier has one hypothesis per possible sender address, and there are infinitely many addresses, so \(\log |\mathcal H| = \infty\). But its Littlestone dimension is 1. Can we build a *finite* set of experts that, on whatever messages arrive, includes one that behaves exactly like the best hypothesis?
+What about an infinite class? The rogue-sender class from lesson 21a has one hypothesis per possible sender address, and there are infinitely many addresses, so \(\log |\mathcal H| = \infty\). But its Littlestone dimension is 1. Can we build a *finite* set of experts that, on whatever messages arrive, includes one that behaves exactly like the best hypothesis?
 
 Here is the idea in words. SOA, run on messages labelled by some \(h\), makes at most \(L = \mathrm{Ldim}(\mathcal H)\) mistakes. If you knew *on which rounds* it would make them, you could reproduce \(h\) exactly: follow SOA’s guess, except flip it on those rounds. You don’t know the rounds, so create one expert for every possible set of at most \(L\) rounds. One of them has the right set.
 
@@ -344,7 +417,7 @@ How many experts is that? One for each set of at most \(L = \mathrm{Ldim}(\mathc
 
 - \(\binom{T}{k}\) (“\(T\) choose \(k\)”) is the number of ways to pick \(k\) rounds out of \(T\).
 - The sum counts all the sets of size \(0, 1, \dots, L\).
-- The inequality is the polynomial bound from Sauer’s lemma in lesson 6, with \(T\) in place of \(m\) and \(L\) in place of \(d\).
+- The inequality is the polynomial bound from Sauer’s lemma in lesson 6b, with \(T\) in place of \(m\) and \(L\) in place of \(d\).
 
 In plain words: **the number of experts grows only polynomially in \(T\), like \(T^L\), not exponentially.** For the rogue sender, \(L = 1\), and over \(T = 10{,}000\) rounds there are \(1 + 10{,}000 = 10{,}001\) experts, below \(e \cdot 10{,}000 \approx 27{,}183\). So \(\log d \le L \log(eT/L) \le L \log(eT)\). Now run Weighted-Majority over these experts. For any \(h \in \mathcal H\), the lemma gives an expert that copies \(h\) on the messages that arrived, so the best expert made at most as many mistakes as \(h\), and a regret bound against the best expert is a regret bound against \(h\): \(\sqrt{2 L \log(eT)\, T}\).
 
@@ -367,13 +440,13 @@ It prints `10001 27183`, then `429.2 0.0429` (the regret bound with the exact ex
 
 Moreover, no learner can guarantee an expected regret smaller than a constant times \(\sqrt{\mathrm{Ldim}(\mathcal H)\, T}\).
 
-In plain words: **with a coin, every class of finite Littlestone dimension can be learned online against any sequence, with regret growing like \(\sqrt T\); and that is the best possible rate.** For the rogue sender, \(\log |\mathcal H| = \infty\), so the minimum picks \(1 \cdot \log(e \cdot 10{,}000) \approx 10.2\), and over 10,000 rounds the bound is the 451.9 printed above. The upper bound is the two constructions above: the finite one, and the Littlestone experts (when \(\mathrm{Ldim} = 0\), the class has a single behaviour and the bound is 0). We prove the upper bound only; the matching lower bound is a research result we state without proof. So the Littlestone dimension decides learnability online in both settings, realizable and not, just as the VC dimension did for the batch world in lesson 6.
+In plain words: **with a coin, every class of finite Littlestone dimension can be learned online against any sequence, with regret growing like \(\sqrt T\); and that is the best possible rate.** For the rogue sender, \(\log |\mathcal H| = \infty\), so the minimum picks \(1 \cdot \log(e \cdot 10{,}000) \approx 10.2\), and over 10,000 rounds the bound is the 451.9 printed above. The upper bound is the two constructions above: the finite one, and the Littlestone experts (when \(\mathrm{Ldim} = 0\), the class has a single behaviour and the bound is 0). We prove the upper bound only; the matching lower bound is a research result we state without proof. So the Littlestone dimension decides learnability online in both settings, realizable and not, just as the VC dimension did for the batch world in lesson 6a.
 
 ## Online convex optimization
 
-Weighted-Majority needs a list of experts, which for big classes is a big list. In lessons 12 and 14 you met a different way to make learning tractable: convex losses, minimized by stepping against a subgradient. Does that survive an adversary? Yes, almost word for word.
+Weighted-Majority needs a list of experts, which for big classes is a big list. In lessons 12a and 14 you met a different way to make learning tractable: convex losses, minimized by stepping against a subgradient. Does that survive an adversary? Yes, almost word for word.
 
-The setting in words: each round, the learner commits to a weight vector, the adversary (adapting to everything so far) reveals an example, and the learner pays a loss that is convex in the vector, as in lesson 12, over a convex set of allowed vectors.
+The setting in words: each round, the learner commits to a weight vector, the adversary (adapting to everything so far) reveals an example, and the learner pays a loss that is convex in the vector, as in lesson 12a, over a convex set of allowed vectors.
 
 **Online convex optimization.** A hypothesis class \(\mathcal H \subseteq \mathbb R^n\) that is a convex set (we write \(n\) for the number of coordinates, since \(d\) already counts experts), a domain \(Z\) of examples, and a loss \(\ell : \mathcal H \times Z \to \mathbb R\) with \(\ell(\cdot, z)\) convex for every \(z\). For \(t = 1, \dots, T\): the learner announces \(\mathbf w^{(t)} \in \mathcal H\), the environment answers with \(z_t \in Z\), and the learner pays \(\ell(\mathbf w^{(t)}, z_t)\).
 
@@ -478,17 +551,17 @@ It prints `True 50.0 62.5`: the per-round inequality held on all 10,000 rounds, 
 
 ## The online Perceptron
 
-The filter of lessons 9 and 15 was a halfspace: a weight vector \(\mathbf w\) over word counts, predicting junk when the score \(\langle \mathbf w, \mathbf x \rangle\) is positive. For halfspaces we switch labels to \(y \in \{-1, +1\}\), as lesson 9 did, with \(+1\) for junk. Can an online filter learn halfspaces against an adversary?
+The filter of lessons 9a and 15 was a halfspace: a weight vector \(\mathbf w\) over word counts, predicting junk when the score \(\langle \mathbf w, \mathbf x \rangle\) is positive. For halfspaces we switch labels to \(y \in \{-1, +1\}\), as lesson 9a did, with \(+1\) for junk. Can an online filter learn halfspaces against an adversary?
 
-Not with a mistake bound in general. In two or more dimensions, halfspaces contain the thresholds in disguise: take messages \((s, 1, 0, \dots, 0)\) whose first coordinate is a score \(s\), and weight vectors \((-1, a, 0, \dots, 0)\); then \(\langle \mathbf w, \mathbf x \rangle = a - s\), which is positive when \(s < a\), a threshold on \(s\). Binary search on \(s\) shatters trees of every depth, so the Littlestone dimension of halfspaces is infinite, and by the tree lower bound every online learner can be forced into a mistake on every round.
+Not with a mistake bound in general. In two or more dimensions, halfspaces contain the thresholds in disguise: take messages \((s, 1, 0, \dots, 0)\) whose first coordinate is a score \(s\), and weight vectors \((-1, a, 0, \dots, 0)\); then \(\langle \mathbf w, \mathbf x \rangle = a - s\), which is positive when \(s < a\), a threshold on \(s\). Binary search on \(s\) shatters trees of every depth, so the Littlestone dimension of halfspaces is infinite, and by lesson 21a’s tree lower bound every online learner can be forced into a mistake on every round.
 
-So we need to assume more about the sequence, and lessons 9 and 15 tell us what: a **margin**. If some \(\mathbf w^\star\) scores every message with \(y_t \langle \mathbf w^\star, \mathbf x_t \rangle \ge 1\), the messages sit at distance at least \(1/\|\mathbf w^\star\|\) from its boundary, and an adversary cannot binary-search ever closer to it.
+So we need to assume more about the sequence, and lessons 9a and 15 tell us what: a **margin**. If some \(\mathbf w^\star\) scores every message with \(y_t \langle \mathbf w^\star, \mathbf x_t \rangle \ge 1\), the messages sit at distance at least \(1/\|\mathbf w^\star\|\) from its boundary, and an adversary cannot binary-search ever closer to it.
 
-The tool is the one lesson 12 introduced for exactly this purpose, a **convex surrogate loss**. The 0-1 loss, \(\mathbb 1[y\langle \mathbf w, \mathbf x \rangle \le 0]\) (1 on a mistake, 0 otherwise), is not convex. The **hinge loss** \(\max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\}\) is convex and is never below the 0-1 loss. Online, we may even pick a different surrogate on each round, after seeing the learner’s current vector, because Online Gradient Descent’s bound holds for every sequence of convex losses, however they were chosen. So we use
+The tool is the one lesson 12b introduced for exactly this purpose, a **convex surrogate loss**. The 0-1 loss, \(\mathbb 1[y\langle \mathbf w, \mathbf x \rangle \le 0]\) (1 on a mistake, 0 otherwise), is not convex. The **hinge loss** \(\max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\}\) is convex and is never below the 0-1 loss. Online, we may even pick a different surrogate on each round, after seeing the learner’s current vector, because Online Gradient Descent’s bound holds for every sequence of convex losses, however they were chosen. So we use
 
 \[ f_t(\mathbf w) = \begin{cases} \max\{0, 1 - y_t \langle \mathbf w, \mathbf x_t \rangle\} & \text{if } y_t \langle \mathbf w^{(t)}, \mathbf x_t \rangle \le 0, \\ 0 & \text{otherwise.} \end{cases} \]
 
-- \(y_t \langle \mathbf w, \mathbf x_t \rangle\) is the **signed score** of lesson 9: positive when \(\mathbf w\) labels the message correctly.
+- \(y_t \langle \mathbf w, \mathbf x_t \rangle\) is the **signed score** of lesson 9a: positive when \(\mathbf w\) labels the message correctly.
 - The case split looks at the learner’s *current* vector \(\mathbf w^{(t)}\): on a round where it errs (signed score at most 0), the surrogate is the hinge loss; on a round where it is right, the surrogate is the zero function.
 
 In plain words: **charge the hinge loss on the rounds where the filter got the message wrong, and nothing on the rounds where it got it right.** Both cases are convex. And on a mistake round, \(f_t(\mathbf w^{(t)}) \ge 1 - y_t\langle \mathbf w^{(t)}, \mathbf x_t \rangle \ge 1\), while on other rounds \(f_t(\mathbf w^{(t)}) = 0\), so \(f_t(\mathbf w^{(t)})\) is always at least the 0-1 loss of the learner. For example, if \(\mathbf w^{(t)}\) gives a junk message the score \(-0.4\), the round is a mistake and \(f_t(\mathbf w^{(t)}) = 1.4 \ge 1\).
@@ -497,7 +570,7 @@ Now run Online Gradient Descent on \(f_1, f_2, \dots\) with \(\mathcal H = \math
 
 \[ \mathbf w^{(t+1)} = \begin{cases} \mathbf w^{(t)} + \eta\, y_t \mathbf x_t & \text{if } y_t \langle \mathbf w^{(t)}, \mathbf x_t \rangle \le 0, \\ \mathbf w^{(t)} & \text{otherwise,} \end{cases} \]
 
-which reads: **on a mistake, add \(\eta\) times the message, signed by its label; otherwise leave the weights alone.** That is lesson 9’s Perceptron update, with a step size. Does the step size matter? Write \(\mathcal M\) for the set of rounds with an update. Starting from \(\mathbf 0\), the weights are a sum of past updates, so the prediction on round \(t\) is
+which reads: **on a mistake, add \(\eta\) times the message, signed by its label; otherwise leave the weights alone.** That is lesson 9a’s Perceptron update, with a step size. Does the step size matter? Write \(\mathcal M\) for the set of rounds with an update. Starting from \(\mathbf 0\), the weights are a sum of past updates, so the prediction on round \(t\) is
 
 \[ \operatorname{sign}\langle \mathbf w^{(t)}, \mathbf x_t \rangle = \operatorname{sign}\Big( \eta \sum_{i \in \mathcal M,\, i < t} y_i \langle \mathbf x_i, \mathbf x_t \rangle \Big). \]
 
@@ -538,7 +611,7 @@ In particular, if \(y_t \langle \mathbf w^\star, \mathbf x_t \rangle \ge 1\) for
 
 - \([a]_+ = \max\{0, a\}\), so \([1 - y_t\langle \mathbf w^\star, \mathbf x_t \rangle]_+\) is the hinge loss of the comparison vector on round \(t\): 0 when \(\mathbf w^\star\) scores the message with margin, positive when it falls short.
 - The sum over \(t \in \mathcal M\) adds that shortfall over the Perceptron’s mistake rounds; call it \(C\).
-- \(R\|\mathbf w^\star\|\) is lesson 9’s \(RB\): message size times comparison size.
+- \(R\|\mathbf w^\star\|\) is lesson 9a’s \(RB\): message size times comparison size.
 
 In plain words: **the Perceptron’s mistakes are at most the comparison vector’s total hinge shortfall, plus a correction, plus \((R\|\mathbf w^\star\|)^2\); and if the comparison vector separates every message with margin, the mistakes never exceed \((R\|\mathbf w^\star\|)^2\), however the adversary orders them.** With \(R = 1\), \(\|\mathbf w^\star\| = 4\) and a shortfall of \(C = 20\): at most \(20 + 4\sqrt{20} + 16 \approx 53.9\) mistakes.
 
@@ -632,3 +705,91 @@ It prints `28 28 100`. With \(\mathbf w^\star = \mathbf u/\gamma\), every messag
 
 Margin is the assumption that replaces realizability: a halfspace that labels every message correctly but with a tiny margin still leaves the Perceptron open to many mistakes, because the Littlestone dimension is infinite.
 
+## The learners as code
+
+Here are the three learners of this lesson side by side, with what each costs per round. Write \(n\) for the number of features of a message and \(d\) for the number of experts.
+
+```
+WeightedMajority(d, T):
+  η ← sqrt(2 log(d) / T); w̃ ← (1, ..., 1)
+  each round: w ← w̃ / sum(w̃); follow expert i with prob. w_i
+              receive costs v; w̃_i ← w̃_i · exp(−η v_i) for all i
+
+OnlineGradientDescent(η):
+  w ← 0
+  each round: predict w; receive z
+              v ← a subgradient of ℓ(·, z) at w
+              w ← projection onto H of (w − η v)
+
+Perceptron:
+  w ← 0
+  each round: receive x; predict sign⟨w, x⟩; receive y
+              if y⟨w, x⟩ ≤ 0: w ← w + y x
+```
+
+**Weighted-Majority** stores \(d\) weights and spends \(O(d)\) time per round (plus \(d\) hypothesis evaluations when the experts are hypotheses). With the Littlestone experts, \(d\) is about \(T^L\) and each expert runs SOA, so that construction proves learnability but is not a practical filter. **Online Gradient Descent** and the **Perceptron** keep one vector: \(O(n)\) space and \(O(n)\) time per round (\(O(s)\) for a message with \(s\) nonzero word counts), plus the projection, which for a ball of radius \(B\) is a rescaling in \(O(n)\). These last two are the ones a real mail system can afford at millions of messages a day. Compare lesson 21a’s learners, which all keep the version space: \(O(|\mathcal H|)\) per round for Consistent and Halving, and an exponential game-tree search for SOA.
+
+**Build it yourself.** Using only the Python standard library:
+
+```python
+from math import exp, log, sqrt
+
+costs = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]] * 50
+points = [((1, 0), 1), ((0, 1), -1), ((1, 1), 1),
+          ((-1, 0.5), -1), ((0.5, -1), 1), ((0.2, 0.9), -1)]
+
+def weighted_majority(costs, eta): ...
+def perceptron(points, eta=1.0): ...
+
+if __name__ == "__main__":
+    paid, best = weighted_majority(costs, sqrt(2 * log(3) / 200))
+    assert paid - best <= sqrt(2 * log(3) * 200)
+    assert round(paid, 2) == 61.48 and best == 50
+    assert perceptron(points) == perceptron(points, 0.01) == 4
+    print("all asserts pass")
+```
+
+1. `weighted_majority(costs, eta)` runs the algorithm on the list of cost vectors, three experts over 200 rounds, and returns the learner’s total expected cost and the best expert’s total cost. Before you run it, work out the best expert’s total by hand: in every block of four rounds, how much does each expert pay?
+2. `perceptron(points, eta)` presents the points in order, over and over, until a full pass makes no update, and returns the number of updates. Check that the answer does not depend on `eta`.
+3. Then write the punisher and the steady adversary of the lab as functions of the current weights, and confirm that your `weighted_majority`, fed by them round by round, reproduces the regrets 12.0 and 48.4 at \(\eta = 0.048\) with ten experts and 2,000 rounds.
+
+## Fix the bug
+
+Back to the newsletter week. You now have learners whose promises survive mail that no hypothesis labels perfectly, and the lab below puts them against an adversary that plays as well as it can: in every round it computes the costs or the message that hurt your learner most, while obeying whatever rules the week sets.
+
+Each week has a rule and a budget. In the first three weeks no hypothesis is perfect, and your regret against the best expert over the week must stay under a budget; the weeks grow from ten experts over 2,000 rounds to a thousand experts over 10,000. In the last, the filter is a halfspace over word counts, the spammers can only promise a margin, and you must certify the number of mistakes. For each week you choose the learner and its parameters, and the lab first checks that the bound you just proved, with your parameters, is within the budget. Only then does it run the week. A filter that happens to do well against a lazy adversary earns nothing; the adversary here is not lazy, and the certificate is what ships.
+
+Before you start, work out what each budget allows. If the adversary sees your prediction before choosing the label, what is the least regret it can force on any deterministic learner over 2,000 rounds? Which \(\eta\) makes \(\log(d)/\eta + \eta T/2\) smallest, and what is the smallest value? For the halfspace week, which of the three terms of the Perceptron’s bound grows when you pick a comparison vector with a bigger norm, and which when you pick one with a bigger shortfall?
+
+[[lab-act2]]
+
+## What people get wrong
+
+**“Randomizing just adds noise to the filter.”** Without it, no learner has sublinear regret even against two constant hypotheses: the adversary reads the prediction and flips it. The coin works because the adversary must commit to the label before the coin is flipped, and the guarantee is about the expected number of mistakes.
+
+**“The Weighted-Majority bound needs the adversary to be random.”** The bound holds for every sequence of costs, including ones chosen after looking at the weights. The only expectation in it is over the learner’s own coin.
+
+**“The Perceptron learns any separable stream with few mistakes.”** Only with a margin. Without one, the Littlestone dimension of halfspaces is infinite, and an adversary can binary-search the boundary forever. The bound \(R^2\|\mathbf w^\star\|^2\) is large exactly when the margin \(1/\|\mathbf w^\star\|\) is small.
+
+## Recap and the next bug
+
+1. A single contradictory label empties the version space, and every learner of lesson 21a is left with nothing to vote on. Without realizability, we measure regret against the best hypothesis in hindsight instead of counting mistakes.
+2. Deterministic learners can be forced to regret \(T/2\) (Cover’s impossibility). With a coin the adversary cannot see, Weighted-Majority has regret at most \(\sqrt{2 \log(d)\, T}\), proved by squeezing the total trust \(Z_t\) between the learner’s cost and the best expert’s. For a general \(\eta\) the bound is \(\log d/\eta + \eta T/2\): learning slowly against overreacting.
+3. With experts built from SOA, every class of finite Littlestone dimension has regret \(O(\sqrt{\mathrm{Ldim}(\mathcal H)\, T \log T})\), so the Littlestone dimension decides online learnability with and without a perfect hypothesis.
+4. For convex losses, Online Gradient Descent has regret at most \(B\rho\sqrt T\) against any sequence: lesson 14’s step lemma, with no expectations.
+5. The Perceptron is Online Gradient Descent on hinge surrogates charged only on mistake rounds. Its mistakes are at most \(C + R\|\mathbf w^\star\|\sqrt C + R^2\|\mathbf w^\star\|^2\), and at most \(R^2\|\mathbf w^\star\|^2\) when \(\mathbf w^\star\) separates with margin.
+
+The filter holds its ground against the spammers now, with a promise written down before each week starts. Then a different problem lands on your desk. The team of people who label messages has quit, all of them, on the same day. Thousands of messages keep arriving and not one of them has a label: no junk, no keep, nothing to count mistakes against. And the company still wants the mail sorted into kinds, newsletters with newsletters, invoices with invoices, whatever the kinds turn out to be. Every learner in this course so far has needed labels. What can a learner possibly do with none? That is the next lesson.
+
+## Concept check
+
+Write your answers down before moving on to the next lesson, with your reasoning, not just the answer.
+
+1. Weighted-Majority’s theorem assumes \(T > 2 \log d\). Point to the step of the proof that uses it, and say what goes wrong there without it. Then explain why the final inequality \(\sum_t \langle \mathbf w^{(t)}, \mathbf v_t \rangle - \min_i \sum_t v_{t,i} \le \sqrt{2 \log(d)\, T}\) is still true when \(T \le 2 \log d\).
+2. A week of mail has \(d = 100\) experts and \(T = 5{,}000\) rounds. Which \(\eta\) does Weighted-Majority use, what regret does it guarantee, and what is that per round? In a later week the filter is a halfspace with messages of norm at most \(R = 1\), and a comparison vector with \(\|\mathbf w^\star\| = 4\) has total hinge shortfall 9 over the stream. At most how many mistakes can the Perceptron make?
+
+## Problems
+
+Once the concept check is done, try this. Hints come one at a time in the chat, and no full solutions.
+
+- **Problem 1 (not knowing the horizon).** Weighted-Majority and Online Gradient Descent both choose their step size from the number of rounds \(T\), which a mail filter running forever does not know. Suppose an algorithm has regret at most \(\alpha\sqrt T\) whenever it is told \(T\). Run it afresh on rounds \(1\), then \(2, 3\), then \(4, \dots, 7\), and in general on the \(2^m\) rounds \(t = 2^m, \dots, 2^{m+1} - 1\), each time telling it the length of the period. Show that the total regret after any \(T\) rounds is at most \(\frac{\sqrt 2}{\sqrt 2 - 1}\,\alpha\sqrt T\).

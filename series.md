@@ -29,7 +29,8 @@ Every lesson of the course, delivered or not. `_kit/index.py` reads this table f
 | 5 | No free lunch | Why can no learner win on every problem, and how much error comes from the class versus the sample? |
 | 6a | The VC dimension | Which infinite classes are learnable, and what measures how rich a class is? |
 | 6b | The growth function | Why does a finite VC dimension make every rule's training error track its true error, and how many noisy labels does that take? |
-| 7 | Nonuniform learnability | Can you learn from a class too rich for one sample size, by paying more for complex rules? |
+| 7a | Nonuniform learnability | Can you learn from a class too rich for one sample size, by paying more for longer lists? |
+| 7b | Description length and Occam's razor | Can a list pay for what it says, not for the size class it lives in? |
 | 8 | The runtime of learning | When is learning possible in principle but too slow to compute? |
 | 9a | Halfspaces and the Perceptron | How can a filter that weighs every word be learned when its class is infinite, and how many updates can the Perceptron take? |
 | 9b | Linear and logistic regression | How do you find, and prove you found, the best line for a junk score, and how does the same line give a probability of junk? |

@@ -201,12 +201,27 @@ Folder: `06b-growth-function/`
 - [ ] 9 concept check: mastery confirmed
 - [ ] 10 end-of-chapter problems done
 
-### 7. Ch. 7 nonuniform learnability (SRM, MDL, Kraft, Occam, consistency)
+### 7a. Nonuniform learnability
 
-Folder: `07-nonuniform-learnability/`
+Folder: `07a-nonuniform-learnability/`
 
-- [x] 1 prose and sheet (about 9,580 words, snippets run by the lead, no book references, 2026-11-20)
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (CPU rule); verify the writer's own constructions (decision-list size, Elias gamma code, SRM stopping rule, the (1/10, 1/10) variant of the characterization proof)
+- [x] 1 prose and sheet (split from lesson 7 on 2026-11-20; original in `_archive/07-nonuniform-learnability`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
+- [ ] 3 review stop: user approved the prose
+- [ ] 4 figures
+- [ ] 5 page
+- [ ] 6 learner judge: ready
+- [ ] 7 verification
+- [ ] 8 delivery: series.md, index.html
+- [ ] 9 concept check: mastery confirmed
+- [ ] 10 end-of-chapter problems done
+
+### 7b. Description length and Occam's razor
+
+Folder: `07b-description-length/`
+
+- [x] 1 prose and sheet (split from lesson 7 on 2026-11-20; original in `_archive/07-nonuniform-learnability`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -677,7 +692,7 @@ Skipped on purpose to keep writing and save CPU (user, 2026-11-20: "keep writing
 
 ## Open items
 
-- Go-ahead 2026-11-20 (user: "great, you can go"), three phases. Phase 1: split lessons 6, 7, 9, 10, 12, 13, 14, 15, 17, 21, 23, 24 into a/b folders (`docs/split-brief.md`); originals move to `_archive/` once both halves check clean, and TASKS/series rows become 6a/6b etc. Done and folded in: 6, 9, 10, 12, 13. Running (resume by message or rerun the brief `scratchpad/brief-split-N.md`, regenerable from docs/split-brief.md): 7, 14, 15, 17, 21. Not started: 23, 24. Phase 2: book check plus sheet resync for every lesson (`docs/bookcheck-brief.md`): done 2 to 5 and 8; then 11, 16, 18, 19, 20, 22, 25 to 31, then each split half. Phase 3: figures (diagram-design) and labs (iwrzwr studies), lesson by lesson from lesson 2.
+- Go-ahead 2026-11-20 (user: "great, you can go"), three phases. Phase 1: split lessons 6, 7, 9, 10, 12, 13, 14, 15, 17, 21, 23, 24 into a/b folders (`docs/split-brief.md`); originals move to `_archive/` once both halves check clean, and TASKS/series rows become 6a/6b etc. Done and folded in: 6, 7, 9, 10, 12, 13. Running (resume by message or rerun the brief `scratchpad/brief-split-N.md`, regenerable from docs/split-brief.md): 14, 15, 17, 21. Not started: 23, 24. Phase 2: book check plus sheet resync for every lesson (`docs/bookcheck-brief.md`): done 2 to 5 and 8; then 11, 16, 18, 19, 20, 22, 25 to 31, then each split half. Phase 3: figures (diagram-design) and labs (iwrzwr studies), lesson by lesson from lesson 2.
 - Math now renders with KaTeX 0.19.1 (user asked for nicer formulas, 2026-11-20): `math.mjs` defaults to KaTeX, CSS and woff2 fonts vendored in `katex/` (MIT, see katex/NOTICE). Pages pass `--css` to link it. Bold or italic that spans math now renders (prose.py protects math first).
 - Every lesson's text and teacher's sheet render to `NN-slug/1-prose.html` and `1-sheet.html` via `python3 -I _kit/read.py` (user asked for sheet links, 2026-11-20); the index links both. Rerun after any prose or sheet edit, then `_kit/index.py`.
 
