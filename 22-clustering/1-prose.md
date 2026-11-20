@@ -134,11 +134,11 @@ The other two linkages happen to merge in the same order here, but at different 
 
 - **Fixed number of clusters:** fix \(k\) and stop as soon as there are \(k\) clusters. With \(k = 2\), the five messages become \(\{a\}\) and \(\{b, c, d, e\}\).
 - **Distance upper bound:** fix \(r > 0\) and stop as soon as every between-cluster distance is larger than \(r\). With single linkage and \(r = 2.5\), merging stops after round two: \(\{a\}, \{b, c\}, \{d, e\}\).
-- **Scaled distance upper bound:** the same, with \(r = \alpha \max\{ d(x, y) : x, y \in \mathcal X \}\) for a fixed \(\alpha < 1\), a fraction of the largest distance in the data.
+- **Scaled distance upper bound:** the same, with \(r = \alpha \max\{ d(x, y) : x, y \in \mathcal X \}\) for a fixed \(\alpha < 1\), a fraction of the largest distance in the data. With \(\alpha = 0.4\), the largest distance is 13 (from \(a\) to \(e\)), so \(r = 5.2\), and merging stops before \(a\) joins at 6: \(\{a\}, \{b, c, d, e\}\).
 
 Back to the opening. The first engineer was running single linkage with \(k = 2\). In the twelve messages every row neighbour is at 1 and the rows are at 2, so single linkage merges each row completely before it ever crosses the gap, and stops at the two rows. The third engineer ran max linkage, which on this input ends with eight messages against four.
 
-**Single linkage is a famous algorithm in disguise.** Picture the complete graph whose vertices are the messages, with each edge \(\{x, y\}\) weighted by \(d(x, y)\). A **spanning tree** is a set of \(m - 1\) edges that connects all \(m\) vertices without a cycle, and a **minimum spanning tree** is one whose total weight is as small as possible. **Kruskal’s algorithm** builds one: go through the edges from lightest to heaviest, and keep an edge whenever its two ends are not yet connected by the edges kept so far.
+**Single linkage is a famous algorithm in disguise.** Picture the complete graph whose \(m\) vertices are the \(m\) messages, with an edge between every pair, each edge \(\{x, y\}\) weighted by \(d(x, y)\). A **spanning tree** is a set of \(m - 1\) edges that connects all \(m\) vertices without a cycle, and a **minimum spanning tree** is one whose total weight is as small as possible. **Kruskal’s algorithm** builds one: go through the edges from lightest to heaviest, and keep an edge whenever its two ends are not yet connected by the edges kept so far.
 
 **Proposition (single linkage is Kruskal’s algorithm).** Run single linkage to the end, and for each merge of \(A\) and \(B\) record a closest pair \(\{x, y\}\), \(x \in A\), \(y \in B\). The recorded edges are exactly the edges Kruskal’s algorithm keeps (with ties broken the same way), so they form a minimum spanning tree.
 
@@ -215,8 +215,6 @@ Read it from the inside out.
 In plain words: **the k-means cost of a grouping is the total squared distance from each message to the centre of its group, with each centre placed as well as possible.** For the bottom row of the opening, messages at \((0,0)\) to \((5,0)\), the best centre turns out to be \((2.5, 0)\), and the squared distances are \(6.25, 2.25, 0.25, 0.25, 2.25, 6.25\), which add to 17.5. The top row is the same, so the first engineer’s grouping costs 35. The second engineer’s halves cost 10 each, 20 in total. By this cost, she wins. Here is the same computation in code, placing each centre at the cluster’s mean (the next section proves that the mean is the best place):
 
 ```python
-from itertools import permutations
-
 P = [(x, 0) for x in range(6)] + [(x, 2) for x in range(6)]
 
 def kmeans_cost(clusters):
@@ -229,11 +227,10 @@ def kmeans_cost(clusters):
 
 rows = [P[:6], P[6:]]
 halves = [[p for p in P if p[0] < 3], [p for p in P if p[0] >= 3]]
-sod = sum(abs(x - y) for x, y in permutations([0, 6, 8], 2))
-print(kmeans_cost(rows), kmeans_cost(halves), sod)
+print(kmeans_cost(rows), kmeans_cost(halves))
 ```
 
-It prints `35.0 20.0 32`: the rows cost 35, the halves 20, and the last number is the sum of in-cluster distances for one small cluster, which you will meet in a moment.
+It prints `35.0 20.0`: the rows cost 35, the halves 20.
 
 The k-means cost has a natural reading in communication. If every message must be sent as one of \(k\) prototypes, the index of the nearest centre, then the k-means cost measures the total distortion of that compression.
 

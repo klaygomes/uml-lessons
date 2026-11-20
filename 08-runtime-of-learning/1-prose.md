@@ -249,19 +249,7 @@ Read it from the inside out.
 - The subscript \((a_1, \dots, a_n, b_1, \dots, b_n)\), shortened to \((a, b)\), lists the \(2n\) numbers that pick one rectangle: \(a\) for the lower ends, \(b\) for the upper ends.
 - The braces with a colon collect hypotheses: the set of all \(h_{(a, b)}\) such that \(a_i \le b_i\) for every \(i\), so no interval is upside down.
 
-In plain words: **a rectangle hypothesis says junk exactly when every score of the message lies inside its own interval.**
-
-```python
-a, b = (0.3, 0.2), (0.8, 0.6)
-def h(x):
-    if all(a[i] <= x[i] <= b[i] for i in range(len(x))):
-        return 1
-    return 0
-print(all(a[i] <= b[i] for i in range(2)))
-print(h((0.5, 0.3)), h((0.9, 0.5)))
-```
-
-It prints `True`, then `1 0`: the intervals are the right way up, the first message is junk and the second is keep. The `all(...)` inside `h` is the \(\forall i\) of the case split, and the first print checks the condition in the braces.
+In plain words: **a rectangle hypothesis says junk exactly when every score of the message lies inside its own interval.** With \(a = (0.3, 0.2)\) and \(b = (0.8, 0.6)\) from above, a message with capitals 0.5 and links 0.3 is junk, and one with capitals 0.9 is keep. The function `h` in the tightest-box snippet below is this formula in code, its `all(...)` the \(\forall i\).
 
 Assume realizability: some rectangle labels every example correctly. Can you find one with zero empirical risk, quickly? Before you read on, here are eight examples. Where would you put the box?
 

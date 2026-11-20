@@ -103,13 +103,13 @@ Now look at what ERM returns. Let \(b_0\) be the largest score among the keep ex
 
 Where can \(h_t\) be wrong? It disagrees with the truth exactly on the scores between \(t\) and \(t^\star\): on \((t, t^\star]\) if \(t < t^\star\), and on \((t^\star, t]\) if \(t \ge t^\star\). Suppose \(S\) has an example in each strip. An example in \((a_0, t^\star]\) is a keep example, so \(b_0 > a_0\), so \(t > a_0\), and when \(t < t^\star\) the mistakes lie in \((a_0, t^\star]\), probability at most \(\varepsilon\). An example in \((t^\star, a_1]\) is a junk example, so \(b_1 \le a_1\), so \(t < a_1\), and when \(t \ge t^\star\) the mistakes lie in \((t^\star, a_1]\), probability at most \(\varepsilon\). (If a strip was set to infinity, the same conclusion holds for free, since all the scores on that side carry at most \(\varepsilon\).) So \(L_{\mathcal D}(h_S) > \varepsilon\) can only happen if some strip is empty.
 
-What is the chance that the left strip receives no example? Each of the \(m\) scores misses it with probability \(1 - \varepsilon\), and they are drawn independently, so all of them miss it with probability \((1 - \varepsilon)^m \le e^{-\varepsilon m}\), using \(1 - \varepsilon \le e^{-\varepsilon}\) from lesson 2. Here \(e \approx 2.718\) is Euler’s number, and the power \((1 - \varepsilon)^m\) multiplies \(m\) copies of the miss chance together, one per independent example; with \(\varepsilon = 0.1\) and \(m = 30\) it is \(0.9^{30} \approx 0.042\), under \(e^{-3} \approx 0.050\). The same holds for the right strip. The **union bound** from lesson 2 says that the chance that at least one of several bad events happens is at most the sum of their chances. Here the bad events are “left strip empty” and “right strip empty”, so
+What is the chance that the left strip receives no example? Each of the \(m\) scores misses it with probability \(1 - \varepsilon\), and they are drawn independently, so all of them miss it with probability \((1 - \varepsilon)^m \le e^{-\varepsilon m}\), using \(1 - \varepsilon \le e^{-\varepsilon}\) from lesson 2, with \(e \approx 2.718\) Euler’s number. The power multiplies \(m\) copies of the miss chance, one per independent example; with \(\varepsilon = 0.1\) and \(m = 30\) it is \(0.9^{30} \approx 0.042\), under \(e^{-3} \approx 0.050\). The same holds for the right strip. The **union bound** from lesson 2 says that the chance that at least one of several bad events happens is at most the sum of their chances. Here the bad events are “left strip empty” and “right strip empty”, so
 
 \[ \mathbb P_{S \sim \mathcal D^m}\left[ L_{\mathcal D}(h_S) > \varepsilon \right] \le 2 e^{-\varepsilon m}, \]
 
-and \(2e^{-\varepsilon m} \le \delta\) exactly when \(m \ge \log(2/\delta)/\varepsilon\). \(\blacksquare\)
+and \(2e^{-\varepsilon m} \le \delta\) exactly when \(m \ge \log(2/\delta)/\varepsilon\), by taking logs of both sides. \(\blacksquare\)
 
-Read the last display from the inside out. \(L_{\mathcal D}(h_S) > \varepsilon\) is the bad event: the rule ERM returned is worse than tolerated. The subscript \(S \sim \mathcal D^m\) on \(\mathbb P\) says where the randomness lives: the whole training sequence, \(m\) examples drawn i.i.d. from \(\mathcal D\), which is what \(\mathcal D^m\) means. On the right, the 2 counts the strips and \(e^{-\varepsilon m}\) is the bound for one strip. In plain words: **the chance of training on an unlucky sequence is at most twice the chance that one given strip stays empty.** Taking logs, \(2e^{-\varepsilon m} \le \delta\) is the same as \(\varepsilon m \ge \log(2/\delta)\), which is the claim. With \(\varepsilon = 0.1\) and \(m = 30\):
+Read the last display from the inside out. \(L_{\mathcal D}(h_S) > \varepsilon\) is the bad event: the rule ERM returned is worse than tolerated. The subscript \(S \sim \mathcal D^m\) on \(\mathbb P\) says where the randomness lives: the whole training sequence, \(m\) examples drawn i.i.d. from \(\mathcal D\), which is what \(\mathcal D^m\) means. On the right, the 2 counts the strips and \(e^{-\varepsilon m}\) is the bound for one strip. In plain words: **the chance of training on an unlucky sequence is at most twice the chance that one given strip stays empty.** With \(\varepsilon = 0.1\) and \(m = 30\):
 
 ```python
 from math import exp
@@ -218,7 +218,7 @@ So the question to ask of a class is not “how many hypotheses?” but “how l
 
 **Definition (VC dimension).** The **VC dimension** of a class \(\mathcal H\), written \(\mathrm{VCdim}(\mathcal H)\), is the largest size of a set \(C \subset \mathcal X\) that \(\mathcal H\) shatters. If \(\mathcal H\) shatters sets of every finite size, its VC dimension is infinite, written \(\infty\).
 
-In plain words: **the VC dimension is the most points the class can label in every possible way.** Thresholds shattered \(\{0.3\}\) but not \(\{0.3, 0.7\}\); and we saw that no pair works, because \((1, 0)\) is always missing, so their VC dimension is 1.
+In plain words: **the VC dimension is the most points the class can label in every possible way.** Thresholds shatter one point and no pair, so their VC dimension is 1.
 
 The name honours Vladimir Vapnik and Alexey Chervonenkis, who discovered this characterization in 1970. An immediate consequence of the corollary:
 
@@ -231,7 +231,7 @@ The rest of the lesson proves the converse: a finite VC dimension guarantees lea
 1. **Some** set of size \(d\) is shattered by \(\mathcal H\). One example is enough.
 2. **Every** set of size \(d + 1\) fails to be shattered. One example is not enough; you need an argument that works for any set.
 
-For thresholds, step 1 is any single point, and step 2 is the missing labelling \((1, 0)\), which we showed is missing for every pair \(c_1 < c_2\). So \(\mathrm{VCdim}(\mathcal H_{\mathrm{thr}}) = 1\). An infinite class with VC dimension 1. Keep that in mind; it is what you will tell the reviewer.
+For thresholds, step 1 is any single point, and step 2 is the labelling \((1, 0)\), missing for every pair \(c_1 < c_2\). An infinite class with VC dimension 1: that is what you will tell the reviewer.
 
 ## Four classes, measured
 
@@ -266,7 +266,7 @@ It prints `[1, 2] 4 of 4`, then `[1, 2, 3] 7 of 8`, then `missing: {(1, 0, 1)}`.
 
 for \(a_1 \le a_2\) and \(b_1 \le b_2\). Call this class \(\mathcal H_{\mathrm{rec}}\).
 
-Read it from the inside out. \(a_1 \le x_1 \le a_2\) asks whether the spam score lies in the band from \(a_1\) to \(a_2\); \(b_1 \le x_2 \le b_2\) asks the same of the reputation score with its own band; “and” demands both; the indicator turns the answer into 1 or 0. The four numbers in the subscript name the rule, two ends per score. Drawn with \(x_1\) across and \(x_2\) up, the junk region is a rectangle with sides parallel to the axes, hence the name. In plain words: **junk exactly when the spam score is in one range and the reputation score is in another.** The rule from the opening sentence is \(a_1 = 0.5\), \(a_2 = 1\), \(b_1 = 0\), \(b_2 = 0.3\):
+It is the interval rule twice, one band per score, joined by “and”; the four numbers in the subscript are the two bands’ ends. Drawn with \(x_1\) across and \(x_2\) up, the junk region is a rectangle with sides parallel to the axes, hence the name. In plain words: **junk exactly when the spam score is in one range and the reputation score is in another.** The rule from the opening sentence is \(a_1 = 0.5\), \(a_2 = 1\), \(b_1 = 0\), \(b_2 = 0.3\):
 
 ```python
 def rect(a1, a2, b1, b2):

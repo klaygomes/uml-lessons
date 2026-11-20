@@ -628,7 +628,7 @@ It prints `0.273 0.437`: the exact product, and the looser bound from the edges,
 
 ## When the weak learner fails
 
-The theorem assumed that the weak learner succeeded in every round. A \(\gamma\)-weak learner only promises success with probability at least \(1 - \delta\), and AdaBoost calls it \(T\) times. By the union bound, the probability that it fails in at least one of the \(T\) rounds is at most \(\delta T\), so the theorem’s conclusion holds with probability at least \(1 - \delta T\). With \(\delta = 0.001\) per call and \(T = 100\) rounds, that is \(1 - 0.1 = 0.9\). That is not a real obstacle. The sample complexity of a learner can always be made to depend on \(\delta\) only through \(\log(1/\delta)\) (run the learner on several independent chunks of examples and keep the one that does best on a final chunk), so asking each call for a tiny \(\delta\) is cheap. Better still, the weak learner here only ever sees distributions over the training sequence, and it can often be built to never fail at all. ERM over stumps is such a learner: it minimizes the weighted risk exactly, so it has \(\delta = 0\).
+The theorem assumed that the weak learner succeeded in every round. A \(\gamma\)-weak learner only promises success with probability at least \(1 - \delta\), and AdaBoost calls it \(T\) times. By the union bound (the chance that at least one of several events happens is at most the sum of their chances), the probability that it fails in at least one of the \(T\) rounds is at most \(\delta T\), so the theorem’s conclusion holds with probability at least \(1 - \delta T\). With \(\delta = 0.001\) per call and \(T = 100\) rounds, that is \(1 - 0.1 = 0.9\). That is not a real obstacle. The sample complexity of a learner can always be made to depend on \(\delta\) only through \(\log(1/\delta)\) (run the learner on several independent chunks of examples and keep the one that does best on a final chunk), so asking each call for a tiny \(\delta\) is cheap. Better still, the weak learner here only ever sees distributions over the training sequence, and it can often be built to never fail at all. ERM over stumps is such a learner: it minimizes the weighted risk exactly, so it has \(\delta = 0\).
 
 What it cannot do is promise an edge that isn’t there. The theorem needs an edge of at least \(\gamma\) on *every* reweighting AdaBoost produces. In the lab, on the twenty thousand messages, the weighted risks \(\varepsilon_t\) creep up toward \(\tfrac12\) as the rounds go on: around 0.37 in the first rounds, around 0.45 by round 100. The edge shrinks, so the constant-\(\gamma\) bound is pessimistic, and the product above is the honest one.
 
@@ -661,13 +661,30 @@ if __name__ == "__main__":
 
 AdaBoost does not return a stump. It returns a vote of \(T\) stumps, and that vote lives in a bigger class. For a base class \(B\), define
 \[ L(B, T) = \left\{ x \mapsto \operatorname{sign}\!\left( \sum_{t=1}^T w_t h_t(x) \right) : w \in \mathbb R^T,\ h_1, \dots, h_T \in B \right\}. \]
-Read it in two stages. First, the \(T\) base hypotheses turn a message \(x\) into a vector of \(T\) labels, \(\psi(x) = (h_1(x), \dots, h_T(x)) \in \{\pm 1\}^T\). Then a homogeneous halfspace from lesson 9, with weight vector \(w\), labels that vector. A vote of stumps is a halfspace on top of stumps.
+The braces collect every function of that shape such that the votes \(w = (w_1, \dots, w_T)\) are any \(T\) real numbers (\(w \in \mathbb R^T\)) and the \(h_t\) are any \(T\) members of \(B\). In plain words: **every vote of \(T\) base hypotheses, with any votes you like.** The three-round vote on the ten messages is one member of \(L(B, 3)\).
+
+Read it in two stages. First, the \(T\) base hypotheses turn a message \(x\) into a vector of \(T\) labels, \(\psi(x) = (h_1(x), \dots, h_T(x)) \in \{\pm 1\}^T\) (psi; \(\{\pm 1\}^T\) is the set of lists of \(T\) entries, each \(\pm 1\)). Message 6 became \(\psi = (1, -1, 1)\) in the snippet above. Then a homogeneous halfspace from lesson 9, the hypothesis \(\operatorname{sign}(\langle w, \psi \rangle)\) that multiplies entries pairwise, adds, and takes the sign, labels that vector; \(0.693 - 0.973 + 1.282 = 1.003\) was exactly that. A vote of stumps is a halfspace on top of stumps.
 
 How much richer is the vote than one stump? On the line, take the stumps \(B = \{x \mapsto b \cdot \operatorname{sign}(x - \theta)\}\), and compare \(L(B, T)\) with **piecewise constant** hypotheses: cut the line at \(\theta_1 < \theta_2 < \dots < \theta_{r-1}\), set \(\theta_0 = -\infty\) and \(\theta_r = +\infty\), and give each piece \((\theta_{i-1}, \theta_i]\) its own label \(\alpha_i \in \{\pm 1\}\):
 \[ g_r(x) = \sum_{i=1}^r \alpha_i\, \mathbb 1[x \in (\theta_{i-1}, \theta_i]]. \]
-Call \(G_r\) the class of such hypotheses with at most \(r\) pieces. The main case is the alternating one, \(\alpha_i = (-1)^i\), where every cut flips the label. Here is how to write it as a vote of \(T\) stumps:
+Here \(\alpha_i\) (alpha) is the label of piece \(i\), and \(\mathbb 1[x \in (\theta_{i-1}, \theta_i]]\) is 1 exactly when \(x\) lies in piece \(i\), just above one cut and up to and including the next. Since \(x\) lies in exactly one piece, all terms but one are 0. In plain words: **find the piece that \(x\) falls in and return its label.** With cuts at 2 and 4 and labels \(-1, +1, -1\), the point 3 lies in \((2, 4]\) and gets \(+1\):
+
+```python
+import math
+
+def g(x, thetas, alphas):
+    th = [-math.inf] + thetas + [math.inf]
+    return sum(a for i, a in enumerate(alphas, 1)
+               if th[i - 1] < x <= th[i])
+
+print([g(x, [2, 4], [-1, 1, -1]) for x in (1, 2, 3, 4, 5)])
+```
+
+It prints `[-1, -1, 1, 1, -1]`: each cut belongs to the piece on its left.
+
+Call \(G_r\) the class of such hypotheses with at most \(r\) pieces. The main case is the alternating one, \(\alpha_i = (-1)^i\), where every cut flips the label: \((-1)^i\) is \(-1\) for odd \(i\) and \(+1\) for even \(i\), exactly the labels above. Here is how to write it as a vote of \(T\) stumps:
 \[ h(x) = \operatorname{sign}\!\left( \sum_{t=1}^T w_t \operatorname{sign}(x - \theta_{t-1}) \right), \qquad w_1 = \tfrac{(-1)^T}{2}, \quad w_t = (-1)^t \text{ for } t \ge 2. \]
-The first term uses \(\theta_0 = -\infty\), so it is a constant \(+1\) that acts like an offset. On the whole line no stump is constant, but on any finite set of points (and for word counts, which are never negative) a stump with its threshold below every point is constant, which is all we will need. Problem 2 asks you to prove that \(h = g_T\); before you do, here is a check for \(T = 1\) to 7, with cuts at 2, 4, 6, and so on:
+Stump \(t\) switches from \(-1\) to \(+1\) at cut \(\theta_{t-1}\), and the votes alternate in sign, so each cut a point passes swings the score by \(\pm 2\). In plain words: **a vote of stumps, one per cut, with alternating votes, plus a half-vote offset that makes the score’s sign alternate.** For \(T = 4\) the votes are \(\tfrac12, 1, -1, 1\), and the scores on the four pieces are \(-0.5, 1.5, -0.5, 1.5\), signs \(-, +, -, +\). The first term uses \(\theta_0 = -\infty\), so it is a constant \(+1\) that acts like an offset. On the whole line no stump is constant, but on any finite set of points (and for word counts, which are never negative) a stump with its threshold below every point is constant, which is all we will need. Problem 2 asks you to prove that \(h = g_T\); before you do, here is a check for \(T = 1\) to 7, with cuts at 2, 4, 6, and so on. The list `w` is the votes, `th` puts a threshold below every point in front of the cuts, and `piece` finds the piece index \(i\) of \(g_T\):
 
 ```python
 def sign(u):
@@ -691,9 +708,9 @@ It prints `h equals g for T = 1, ..., 7`. (The sign of \(w_1\) matters. With \(w
 
 [[diagram:staircase]]
 
-So \(T\) stumps can draw a staircase with \(T\) steps. That has a consequence for the VC dimension (lesson 6: the size of the largest set the class can shatter, that is, label in every possible way). Take any \(T\) distinct points on the line. Every one of the \(2^T\) labellings of them is a piecewise constant hypothesis with at most \(T\) pieces, one piece per point, so on those points it is a vote of \(T\) stumps. Hence
+So \(T\) stumps can draw a staircase with \(T\) steps. That has a consequence for the VC dimension. Take any \(T\) distinct points on the line. Every one of the \(2^T\) labellings of them is a piecewise constant hypothesis with at most \(T\) pieces, one piece per point, so on those points it is a vote of \(T\) stumps. Hence
 \[ \operatorname{VCdim}(L(B, T)) \ge T. \]
-The exact value turns out to depend on the parity of \(T\): it is \(T + 1\) when \(T\) is odd and \(T\) when \(T\) is even. You will see why in a moment, and it is a nice puzzle on its own. What matters is the trend: every extra round buys the vote more expressive power.
+\(\operatorname{VCdim}(\cdot)\) is the VC dimension of the class in the brackets. In plain words: **votes of \(T\) stumps on the line can label some \(T\) points in every possible way.** Three stumps can label any three points on the line in all \(2^3 = 8\) ways. The exact value turns out to depend on the parity of \(T\): it is \(T + 1\) when \(T\) is odd and \(T\) when \(T\) is even. You will see why in a moment, and it is a nice puzzle on its own. What matters is the trend: every extra round buys the vote more expressive power.
 
 That power is a double-edged sword, and lesson 5 named both edges. A richer class lowers the **approximation error**, the true risk of the best hypothesis in the class. A richer class also raises the **estimation error**, the gap between that best and what the learner finds from finitely many examples. AdaBoost gives you a single dial for this tradeoff: the number of rounds \(T\). The empirical risk falls as \(T\) grows. How fast does the class grow?
 
@@ -701,9 +718,9 @@ That power is a double-edged sword, and lesson 5 named both edges. A richer clas
 
 **Lemma (the VC dimension of a vote).** Let \(B\) be a base class with \(d = \operatorname{VCdim}(B)\), and assume \(T \ge 3\) and \(d \ge 3\). Then
 \[ \operatorname{VCdim}(L(B, T)) \le T(d + 1)\big(3 \log(T(d + 1)) + 2\big). \]
-Up to the logarithm, the VC dimension of the vote is at most \(T\) times that of the base class.
+Inside the big brackets, \(T(d + 1)\) is the number of rounds times one more than the base class’s VC dimension; the logarithm of that number, times 3, plus 2, multiplies it. In plain words: **up to the logarithm, the VC dimension of the vote is at most \(T\) times that of the base class.** With \(d = 3\) and \(T = 10\), \(T(d+1) = 40\) and the bound is \(40 \cdot (3 \log 40 + 2) \approx 523\); the snippet after the proof prints it.
 
-We need two tools from earlier lessons. **Sauer’s lemma** (lesson 6): if a class has VC dimension \(d\), then on any set of \(m > d + 1\) points it induces at most \((em/d)^d\) different labellings. And **homogeneous halfspaces** in \(\mathbb R^T\) have VC dimension \(T\) (lesson 9), so on \(m > T + 1\) points of \(\mathbb R^T\) they induce at most \((em/T)^T\) labellings.
+We need two tools from earlier lessons. **Sauer’s lemma** (lesson 6): if a class has VC dimension \(d\), then on any set of \(m > d + 1\) points it induces at most \((em/d)^d\) different labellings. That is \(e\) times \(m/d\), raised to the power \(d\): for \(d = 3\) and \(m = 20\) points it allows at most about \(18.1^3 \approx 5{,}950\) labellings, far fewer than the \(2^{20} \approx 1{,}000{,}000\) possible ones. And **homogeneous halfspaces** in \(\mathbb R^T\) have VC dimension \(T\) (lesson 9), so on \(m > T + 1\) points of \(\mathbb R^T\) they induce at most \((em/T)^T\) labellings.
 
 *Proof.* Let \(C = \{x_1, \dots, x_m\}\) be a set that \(L(B, T)\) shatters. We count the labellings of \(C\) that \(L(B, T)\) can produce, and compare with \(2^m\).
 
@@ -711,21 +728,24 @@ We need two tools from earlier lessons. **Sauer’s lemma** (lesson 6): if a cla
 
 **Count the labellings.** A hypothesis in \(L(B, T)\) labels \(C\) in two stages. First it picks \(h_1, \dots, h_T \in B\). What matters for \(C\) is only how each \(h_t\) labels \(C\), and by Sauer’s lemma \(B\) has at most \((em/d)^d\) labellings of \(C\). Choosing \(T\) of them, in order, can be done in at most \((em/d)^{dT}\) ways. Second, once the \(T\) labellings are fixed, the vectors \(\psi(x_1), \dots, \psi(x_m) \in \mathbb R^T\) are fixed, and the halfspace with weights \(w\) labels those \(m\) vectors in at most \((em/T)^T\) ways. Every labelling of \(C\) by \(L(B, T)\) arises from some choice in stage one followed by some choice in stage two, so the number of labellings is at most
 \[ (em/d)^{dT}(em/T)^T. \]
+In plain words: **the choices of base labellings, times the choices of halfspace labelling.** The exponent \(dT\) is \(d\) taken \(T\) times, one Sauer count per round.
 
 **Simplify.** Since \(d \ge 3 > e\) we have \(e/d < 1\), so \((em/d)^{dT} < m^{dT}\). Likewise \(T \ge 3\) gives \((em/T)^T < m^T\). So the count is less than \(m^{(d+1)T}\).
 
 **Use the shattering.** \(C\) is shattered, so all \(2^m\) labellings occur, and
 \[ 2^m < m^{(d+1)T}. \]
-Taking logarithms, \(m \log 2 < (d + 1)T \log m\), that is,
+In plain words: **every possible labelling must be one the class can produce.** The left side doubles with each extra point; the right side grows only like a fixed power of \(m\), so for large \(m\) this must fail. Taking logarithms, \(m \log 2 < (d + 1)T \log m\), that is,
 \[ m < a \log m, \qquad a = \frac{(d + 1)T}{\log 2}. \]
+With \(d = 3\) and \(T = 10\), \(a = 40/0.693 \approx 57.7\), and \(m = 307\) passes, since \(57.7 \cdot \log 307 \approx 330.5\).
 
 **Turn \(m < a \log m\) into a bound on \(m\).** We use a small fact about logarithms: for \(a > 0\), if \(x \ge 2a \log a\) then \(x \ge a \log x\). Here is why. If \(a \le \sqrt e\), the function \(x - a \log x\) has its minimum at \(x = a\) (its derivative \(1 - a/x\) changes sign there), where it equals \(a(1 - \log a) \ge 0\); so \(x \ge a \log x\) for every \(x > 0\). If \(a > \sqrt e\), then \(2 \log a > 1\), so \(2a \log a > a\), and \(x - a\log x\) is increasing for \(x > a\). At \(x = 2a\log a\) it equals \(a \log a - a \log(2 \log a) = a \log\!\big(a / (2 \log a)\big)\), which is nonnegative because \(a \ge 2 \log a\) for every \(a > 0\). So for \(x \ge 2a\log a\) the function is at least its value there, which is at least 0.
 
 Read it backwards. Since \(m < a \log m\), the conclusion fails for \(x = m\), so the hypothesis must fail too: \(m < 2a \log a\). Now unpack \(a\):
 \[ 2a \log a = \frac{2}{\log 2}(d+1)T \left( \log((d+1)T) + \log\frac{1}{\log 2} \right). \]
+(The log of the fraction \(a\) splits into the log of its top plus the log of \(1/\log 2\).) For \(d = 3\), \(T = 10\) this is about 468.
 With \(2/\log 2 \approx 2.885 \le 3\) and \(\log(1/\log 2) \approx 0.367\), this is at most \((d + 1)T\big(2.885 \log((d+1)T) + 1.06\big) \le (d + 1)T\big(3 \log((d+1)T) + 2\big)\). So every shattered set has fewer elements than the bound. \(\blacksquare\)
 
-Here are the numbers for \(d = 3\) and \(T = 10\): the largest \(m\) for which the count still allows \(2^m\) labellings, the intermediate bound \(2a\log a\), and the lemma’s bound. Then the lemma’s bound at \(T = 40\) and 100.
+Here are the numbers for \(d = 3\) and \(T = 10\): the largest \(m\) for which the count still allows \(2^m\) labellings, the intermediate bound \(2a\log a\), and the lemma’s bound. Then the lemma’s bound at \(T = 40\) and 100. The function `log_count` is the logarithm of \((em/d)^{dT}(em/T)^T\), so comparing it with `m * math.log(2)` is the test \(2^m \le\) count.
 
 ```python
 import math
