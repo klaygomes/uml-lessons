@@ -84,7 +84,7 @@ It prints `[1, 2, 3, 4]`, then `1 0`, then `6.14 464.1`. The function `one` is t
 - \(\|x\|_\infty = \max_j |x_j|\): keep only the biggest;
 - \(\|x\|_0\): count the entries that are not zero.
 
-The double bars mean “the size of this vector”, the subscript says which kind, \(\sum_j\) adds up over every feature \(j\), and \(\max_j\) picks the largest value over all \(j\). In plain words: **each norm is a different way to say how big a vector is: straight-line length, total size, largest entry, or number of entries in use.** For a yes/no message, \(\|x\|_1\) and \(\|x\|_0\) both count the features that are on, and \(\|x\|\) is the square root of that count. Norms start to matter when instances become real-valued vectors, as they do for the linear predictors of lesson 9. For 1101:
+The double bars mean “the size of this vector”, the subscript says which kind, \(\sum_j\) adds up over every feature \(j\), and \(\max_j\) picks the largest value over all \(j\). In plain words: **each norm is a different way to say how big a vector is: straight-line length, total size, largest entry, or number of entries in use.** For a yes/no message, \(\|x\|_1\) and \(\|x\|_0\) both count the features that are on, and \(\|x\|\) is the square root of that count. Norms start to matter when instances become real-valued vectors, as they do for the linear predictors of lesson 9a. For 1101:
 
 ```python
 x = [1, 1, 0, 1]

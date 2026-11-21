@@ -66,13 +66,13 @@ The identity is exact, but it only tells you *what* to bound. To bound the repla
 
 Why is RLM stable? Because the penalty does more than make the objective convex. It makes it *strongly* convex, with a quadratic floor under every minimizer. Here is the definition.
 
-Start with a picture you already have. Lesson 12 called a function convex when its graph lies below every chord, the straight segment between two points of the graph. A parabola like \(0.05\,w^2\) does better than that. Between \(w = 0\) and \(w = 1\), the chord at the midpoint has height 0.025, while the parabola there is only 0.0125: it sags below its chord by 0.0125. Stretch the chord to twice the width, from \(-1\) to 1, and the sag at the midpoint becomes 0.05, four times as much. A sag that grows with the square of the chord’s width is what “strongly” will mean.
+Start with a picture you already have. Lesson 12a called a function convex when its graph lies below every chord, the straight segment between two points of the graph. A parabola like \(0.05\,w^2\) does better than that. Between \(w = 0\) and \(w = 1\), the chord at the midpoint has height 0.025, while the parabola there is only 0.0125: it sags below its chord by 0.0125. Stretch the chord to twice the width, from \(-1\) to 1, and the sag at the midpoint becomes 0.05, four times as much. A sag that grows with the square of the chord’s width is what “strongly” will mean.
 
 **Definition (strongly convex function).** A function \(f\) is **\(\sigma\)-strongly convex**, for \(\sigma \ge 0\), if for all \(\mathbf w, \mathbf u\) and all \(\alpha \in (0, 1)\),
 
 \[ f(\alpha \mathbf w + (1 - \alpha)\mathbf u) \le \alpha f(\mathbf w) + (1 - \alpha) f(\mathbf u) - \frac{\sigma}{2}\,\alpha(1 - \alpha)\,\|\mathbf w - \mathbf u\|^2. \]
 
-Compare it with convexity from lesson 12, which asks the graph to lie below every chord. Strong convexity asks for more: below the chord *by a margin* that grows with the square of the distance between the endpoints. Every convex function is \(0\)-strongly convex, so this is a strengthening. (We write \(\sigma\) for the strength to keep \(\lambda\) for the regularization weight.)
+Compare it with convexity from lesson 12a, which asks the graph to lie below every chord. Strong convexity asks for more: below the chord *by a margin* that grows with the square of the distance between the endpoints. Every convex function is \(0\)-strongly convex, so this is a strengthening. (We write \(\sigma\) for the strength to keep \(\lambda\) for the regularization weight.)
 
 Read it from the inside out.
 
@@ -147,7 +147,7 @@ print(u, round(min(ratios), 4))
 
 It prints `1.0 0.2955`. The minimizer sits exactly on the kink, and across the grid the rise is never less than 0.2955 times the squared distance, above the promised 0.25.
 
-What does this give us for RLM? If every loss \(\ell(\cdot, z)\) is convex, then \(L_S\) is convex (an average of convex functions, lesson 12), and by parts 1 and 2 the regularized objective \(f_S = L_S + \lambda\|\cdot\|^2\) is \(2\lambda\)-strongly convex. Two consequences follow straight away.
+What does this give us for RLM? If every loss \(\ell(\cdot, z)\) is convex, then \(L_S\) is convex (an average of convex functions, lesson 12a), and by parts 1 and 2 the regularized objective \(f_S = L_S + \lambda\|\cdot\|^2\) is \(2\lambda\)-strongly convex. Two consequences follow straight away.
 
 - *At most one minimizer.* If \(\mathbf u\) and \(\mathbf u'\) both minimize \(f_S\), part 3 gives \(0 = f_S(\mathbf u') - f_S(\mathbf u) \ge \lambda\|\mathbf u' - \mathbf u\|^2\), so \(\mathbf u' = \mathbf u\). So \(A(S)\) is well defined, as soon as a minimizer exists.
 - *A minimizer exists.* Losses are nonnegative, so \(f_S(\mathbf w) \ge \lambda\|\mathbf w\|^2\), while \(f_S(\mathbf 0) = L_S(\mathbf 0)\). Every \(\mathbf w\) with \(\lambda\|\mathbf w\|^2 > L_S(\mathbf 0)\) is worse than \(\mathbf 0\), so we may search the closed ball \(\|\mathbf w\|^2 \le L_S(\mathbf 0)/\lambda\). A convex function on \(\mathbb R^d\) is continuous, and a continuous function on a closed bounded set attains its minimum.
@@ -229,11 +229,11 @@ Now watch the floor at work in the campaign world, before we squeeze a rate out 
 
 [[lab]]
 
-The stability inequality bounds a movement by losses at the moved points. To turn it into a stability *rate*, we need to know how much a loss can change when its argument moves. Lesson 12 gave us two ways to say that: Lipschitzness and smoothness. Each gives its own proof.
+The stability inequality bounds a movement by losses at the moved points. To turn it into a stability *rate*, we need to know how much a loss can change when its argument moves. Lesson 12a gave us two ways to say that: Lipschitzness and smoothness. Each gives its own proof.
 
 ## Lipschitz losses
 
-Recall from lesson 12: \(\ell(\cdot, z)\) is **\(\rho\)-Lipschitz** if \(|\ell(\mathbf v, z) - \ell(\mathbf w, z)| \le \rho\|\mathbf v - \mathbf w\|\) for all \(\mathbf v, \mathbf w\). The hinge loss and the absolute loss on messages with \(\|\mathbf x\| \le \rho\) are examples.
+Recall from lesson 12a: \(\ell(\cdot, z)\) is **\(\rho\)-Lipschitz** if \(|\ell(\mathbf v, z) - \ell(\mathbf w, z)| \le \rho\|\mathbf v - \mathbf w\|\) for all \(\mathbf v, \mathbf w\). The hinge loss and the absolute loss on messages with \(\|\mathbf x\| \le \rho\) are examples.
 
 Write \(\Delta = \|A(S^{(i)}) - A(S)\|\). By Lipschitzness, each of the two differences on the right of the stability inequality is at most \(\rho\Delta\):
 
@@ -285,7 +285,7 @@ It prints `0.0305 0.16 0.32`. The average replace-one change is 0.0305, and even
 
 ## Smooth losses
 
-The half square loss of our campaign filter is not Lipschitz on all of \(\mathbb R^d\): its slope grows without limit as the score moves away from the label. It is **\(\beta\)-smooth**, though, meaning its gradient is \(\beta\)-Lipschitz, and nonnegative. Lesson 12 proved two facts about such functions that we now need.
+The half square loss of our campaign filter is not Lipschitz on all of \(\mathbb R^d\): its slope grows without limit as the score moves away from the label. It is **\(\beta\)-smooth**, though, meaning its gradient is \(\beta\)-Lipschitz, and nonnegative. Lesson 12a proved two facts about such functions that we now need.
 
 - *The quadratic ceiling.* If \(f\) is \(\beta\)-smooth, then \(f(\mathbf v) \le f(\mathbf w) + \langle \nabla f(\mathbf w), \mathbf v - \mathbf w \rangle + \frac\beta2\|\mathbf v - \mathbf w\|^2\).
 - *Self-boundedness.* If \(f\) is \(\beta\)-smooth and nonnegative, then \(\|\nabla f(\mathbf w)\|^2 \le 2\beta f(\mathbf w)\). (Set \(\mathbf v = \mathbf w - \nabla f(\mathbf w)/\beta\) in the ceiling and use \(f(\mathbf v) \ge 0\).) Where the loss is small, its gradient is small.
@@ -389,7 +389,7 @@ The first term is the **fit term**: how well \(A(S)\) fits the training sequence
 
 *Proof.* Each output beats the other on its own objective: \(L_S(\mathbf w_1) + \lambda_1\|\mathbf w_1\|^2 \le L_S(\mathbf w_2) + \lambda_1\|\mathbf w_2\|^2\) and \(L_S(\mathbf w_2) + \lambda_2\|\mathbf w_2\|^2 \le L_S(\mathbf w_1) + \lambda_2\|\mathbf w_1\|^2\). Add the two: the \(L_S\) terms cancel, leaving \((\lambda_2 - \lambda_1)(\|\mathbf w_2\|^2 - \|\mathbf w_1\|^2) \le 0\), so \(\|\mathbf w_2\| \le \|\mathbf w_1\|\). Put this into the first inequality: \(L_S(\mathbf w_1) - L_S(\mathbf w_2) \le \lambda_1(\|\mathbf w_2\|^2 - \|\mathbf w_1\|^2) \le 0\). \(\blacksquare\)
 
-So \(\lambda\) is a dial with a cost at each end. That is the **fitting-stability tradeoff**, and you have met its cousin before: lesson 5’s bias-complexity tradeoff, and lesson 12’s choice of the ball radius \(B\).
+So \(\lambda\) is a dial with a cost at each end. That is the **fitting-stability tradeoff**, and you have met its cousin before: lesson 5’s bias-complexity tradeoff, and lesson 12b’s choice of the ball radius \(B\).
 
 To get a guarantee we still need an upper bound on the fit term that does not depend on the sample. Here it is. Fix *any* vector \(\mathbf w^*\), for example the best weight vector in some class. Since \(A(S)\) minimizes the regularized objective and the penalty is nonnegative,
 
@@ -426,7 +426,7 @@ This kind of bound is called an **oracle inequality**: think of \(\mathbf w^*\) 
 
 In particular, for every \(\varepsilon > 0\), if \(m \ge 8\rho^2B^2/\varepsilon^2\), then for every distribution, \(\mathbb E_S[L_{\mathcal D}(A(S))] \le \min_{\mathbf w \in \mathcal H} L_{\mathcal D}(\mathbf w) + \varepsilon\).
 
-Read it from the inside out: \(\min_{\mathbf w \in \mathcal H} L_{\mathcal D}(\mathbf w)\) is the true risk of the best vector in the bounded class \(\mathcal H\) (lesson 12’s ball of radius \(B\)), and \(\rho B\sqrt{8/m}\) is the excess, which shrinks like one over the square root of \(m\). In plain words: **with \(\lambda\) set from \(\rho\), \(B\) and \(m\), RLM gets within \(\rho B\sqrt{8/m}\) of the best vector in the ball, on average.** With \(\rho = 1\), \(B = 0.7\) and \(m = 1{,}568\), the best \(\lambda\) is \(\sqrt{2/(0.49 \cdot 1568)} \approx 0.051\) and the excess is \(0.7\sqrt{8/1568} \approx 0.05\). The snippet minimizes \(\lambda B^2 + 2\rho^2/(\lambda m)\) over a grid and compares with the formulas:
+Read it from the inside out: \(\min_{\mathbf w \in \mathcal H} L_{\mathcal D}(\mathbf w)\) is the true risk of the best vector in the bounded class \(\mathcal H\) (lesson 12b’s ball of radius \(B\)), and \(\rho B\sqrt{8/m}\) is the excess, which shrinks like one over the square root of \(m\). In plain words: **with \(\lambda\) set from \(\rho\), \(B\) and \(m\), RLM gets within \(\rho B\sqrt{8/m}\) of the best vector in the ball, on average.** With \(\rho = 1\), \(B = 0.7\) and \(m = 1{,}568\), the best \(\lambda\) is \(\sqrt{2/(0.49 \cdot 1568)} \approx 0.051\) and the excess is \(0.7\sqrt{8/1568} \approx 0.05\). The snippet minimizes \(\lambda B^2 + 2\rho^2/(\lambda m)\) over a grid and compares with the formulas:
 
 ```python
 rho, B, m = 1, .7, 1568
@@ -441,7 +441,7 @@ It prints `0.051 0.051`, then `0.05 0.05`: the grid’s best \(\lambda\) and bes
 
 *Proof.* Take \(\mathbf w^*\) a minimizer of \(L_{\mathcal D}\) over \(\mathcal H\) (if the minimum is not attained, take a near-minimizer and let the slack go to 0). It has \(\|\mathbf w^*\| \le B\), so the oracle inequality gives an excess of at most \(\lambda B^2 + 2\rho^2/(\lambda m)\). With \(c = 2\rho^2/m\), the function \(\lambda \mapsto \lambda B^2 + c/\lambda\) is smallest at \(\lambda = \sqrt{c/B^2}\), where both terms equal \(\sqrt{cB^2}\), so the sum is \(2B\sqrt c = 2B\sqrt{2\rho^2/m} = \rho B\sqrt{8/m}\). Finally, \(\rho B\sqrt{8/m} \le \varepsilon\) exactly when \(m \ge 8\rho^2B^2/\varepsilon^2\). \(\blacksquare\)
 
-That keeps half of lesson 12’s promise: every convex-Lipschitz-bounded problem, including halfspaces with the hinge loss, is learnable, by RLM, with a proof that never used uniform convergence. (Some convex-Lipschitz-bounded problems lack the uniform convergence property, so this route is genuinely new, not a detour.)
+That keeps half of lesson 12b’s promise: every convex-Lipschitz-bounded problem, including halfspaces with the hinge loss, is learnable, by RLM, with a proof that never used uniform convergence. (Some convex-Lipschitz-bounded problems lack the uniform convergence property, so this route is genuinely new, not a detour.)
 
 The smooth case gives a multiplicative version: put the smooth stability bound into the decomposition, then use the fit bound.
 
@@ -585,7 +585,7 @@ The starter data has three words: “free” and “gift”, which are exact twi
 
 1. Implement `loss` (the half square loss), `gradient` (the gradient of the ridge objective \(f_S\)) and `ridge`, which builds \(2\lambda m I + A\) and \(\mathbf b\) and solves by Gaussian elimination with partial pivoting. Raise `ZeroDivisionError` when the largest available pivot has absolute value below \(10^{-12}\). The asserts check that ERM fails on the twins, that ridge succeeds and splits the weight evenly between them, that the gradient vanishes at your solution, and the stability inequality for every \(i\).
 2. Rerun lesson 13a’s campaign week with your `ridge` in place of its `fit` and reproduce both of its tables.
-3. Shrink \(\lambda\) toward 0 (0.01, 0.001, \(10^{-6}\)) on the starter data. What happens to the twin weights? Compare with lesson 9’s pseudoinverse solution, which split the weight of two always-together words evenly.
+3. Shrink \(\lambda\) toward 0 (0.01, 0.001, \(10^{-6}\)) on the starter data. What happens to the twin weights? Compare with lesson 9b’s pseudoinverse solution, which split the weight of two always-together words evenly.
 4. Measure the average replace-one change in the campaign world for \(\lambda \in \{0, 0.01, 0.1, 0.5\}\) with \(m = 20\), and check it against the true overfitting gap. Predict first which \(\lambda\) has the smallest gap, and whether that \(\lambda\) has the smallest production error.
 
 ## Fix the bug
@@ -602,7 +602,7 @@ Before you start, write down a prediction: when the budget doubles, should the b
 
 [[lab-act2]]
 
-The fix holds for the hinge filter of lesson 12 as well. Its loss is not smooth, but it is Lipschitz, so the same penalty makes it stable with rate \(2\rho^2/(\lambda m)\), and the Lipschitz corollary tells you how to set \(\lambda\) from \(\rho\), \(B\) and \(m\). The weights stop jumping when a user corrects one label, and now you can say why.
+The fix holds for the hinge filter of lesson 12a as well. Its loss is not smooth, but it is Lipschitz, so the same penalty makes it stable with rate \(2\rho^2/(\lambda m)\), and the Lipschitz corollary tells you how to set \(\lambda\) from \(\rho\), \(B\) and \(m\). The weights stop jumping when a user corrects one label, and now you can say why.
 
 ## What people get wrong
 

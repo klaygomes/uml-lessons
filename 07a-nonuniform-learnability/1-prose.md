@@ -13,7 +13,7 @@ otherwise:                     keep
 
 Her point is that nobody knows how long the right list is. Three tests? Five? Twelve? So her learner may use lists of any length, over any feature in the catalogue, and the catalogue keeps growing: the team adds a new feature most weeks. Whatever the junk looks like, some list will describe it.
 
-The reviewer blocks the change, and for a reason you already know. Lists of any length can fit any labels at all on as many messages as you like. Recall from lesson 6 that a class **shatters** a set of messages when, for every way of labelling them, some hypothesis in the class produces exactly those labels, and that its **VC dimension** is the largest number of messages it can shatter. A class that can fit any labels on as many messages as you like has infinite VC dimension. Recall too that a class is **PAC learnable** (lesson 3) when one number of labels, fixed before you see any data, is enough to make the learner nearly as good as the best hypothesis in the class with high probability, whatever the mail stream looks like. The fundamental theorem of lesson 6 says flatly that a class with infinite VC dimension is not PAC learnable. No number of labels gives a guarantee that holds for every hypothesis in the class and every distribution. Rejected.
+The reviewer blocks the change, and for a reason you already know. Lists of any length can fit any labels at all on as many messages as you like. Recall from lesson 6a that a class **shatters** a set of messages when, for every way of labelling them, some hypothesis in the class produces exactly those labels, and that its **VC dimension** is the largest number of messages it can shatter. A class that can fit any labels on as many messages as you like has infinite VC dimension. Recall too that a class is **PAC learnable** (lesson 3) when one number of labels, fixed before you see any data, is enough to make the learner nearly as good as the best hypothesis in the class with high probability, whatever the mail stream looks like. The fundamental theorem of lesson 6a says flatly that a class with infinite VC dimension is not PAC learnable. No number of labels gives a guarantee that holds for every hypothesis in the class and every distribution. Rejected.
 
 Your teammate is not wrong either, though, and that is the bug. Common sense says something the theorem does not seem to allow. A three-test list that fits a thousand labelled messages well deserves your trust. A forty-test list that fits thirty labelled messages perfectly deserves none. Short lists should be easy to trust, long ones should need more evidence, and nothing should be ruled out forever. The fundamental theorem gives one sample size for the whole class. What we want is a guarantee whose price depends on the hypothesis.
 
@@ -113,7 +113,7 @@ for y in itertools.product((0, 1), repeat=k):
 print(hits, 2**k)
 ```
 
-It prints `32 32`. So the reviewer is right, and lesson 6 settles it: \(\mathcal H\) is not PAC learnable. Recall the two dials of a PAC guarantee: the **accuracy** \(\varepsilon\), how close to the best hypothesis you want to get (say within 0.1), and the **confidence** \(\delta\), the chance you allow for the guarantee to fail (say 0.05). A PAC learnable class comes with a **sample size** \(m_{\mathcal H}(\varepsilon, \delta)\), a number of labels that depends only on those two dials. For decision lists no such number works for every list and every distribution. Hold that thought, and let’s look at what actually happens on data.
+It prints `32 32`. So the reviewer is right, and lesson 6a settles it: \(\mathcal H\) is not PAC learnable. Recall the two dials of a PAC guarantee: the **accuracy** \(\varepsilon\), how close to the best hypothesis you want to get (say within 0.1), and the **confidence** \(\delta\), the chance you allow for the guarantee to fail (say 0.05). A PAC learnable class comes with a **sample size** \(m_{\mathcal H}(\varepsilon, \delta)\), a number of labels that depends only on those two dials. For decision lists no such number works for every list and every distribution. Hold that thought, and let’s look at what actually happens on data.
 
 ## Thirty labels, six sizes
 
@@ -277,7 +277,7 @@ inside = math.log(2 * size / delta)
 print(round(inside, 3), math.ceil(inside / (2 * eps**2)))
 ```
 
-It prints `8.751 1751`. And the *fundamental theorem* (lesson 6) says that for binary classification with the 0-1 loss, uniform convergence, agnostic PAC learnability, PAC learnability and finite VC dimension are all equivalent.
+It prints `8.751 1751`. And the *fundamental theorem* (lesson 6a) says that for binary classification with the 0-1 loss, uniform convergence, agnostic PAC learnability, PAC learnability and finite VC dimension are all equivalent.
 
 **Competing with one hypothesis.** Say that a hypothesis \(h\) is \((\varepsilon, \delta)\)-**competitive** with another hypothesis \(h'\) if, with probability at least \(1 - \delta\), \(L_{\mathcal D}(h) \le L_{\mathcal D}(h') + \varepsilon\). With \(\varepsilon = 0.1\), a list is competitive with \(f\) when, except with probability \(\delta\), its true risk is at most \(0.1 + 0.1 = 0.2\). Agnostic PAC learning asks the returned hypothesis to be competitive with every \(h' \in \mathcal H\) at once, at one sample size. The relaxation is to let the sample size depend on which \(h'\) you compete with: to be competitive with “everything is junk” you might need 500 labels, and to be competitive with \(f\) you might need 3,400.
 
@@ -496,7 +496,7 @@ for n in (3, 5, 20):
     print(n, math.ceil(alone), math.ceil(inside))
 ```
 
-It prints `3 1751 2290`, `5 2628 3371` and `20 12217 13514`. Knowing the size in advance would save \(2{,}290 - 1{,}751 = 539\) labels at size 3. That is the value of prior knowledge about the order of the classes, made into a number. For classes of VC dimension \(n\) the same calculation, with lesson 6’s quantitative bound, gives a difference of order \(\log(2n)/\varepsilon^2\).
+It prints `3 1751 2290`, `5 2628 3371` and `20 12217 13514`. Knowing the size in advance would save \(2{,}290 - 1{,}751 = 539\) labels at size 3. That is the value of prior knowledge about the order of the classes, made into a number. For classes of VC dimension \(n\) the same calculation, with lesson 6a’s quantitative bound, gives a difference of order \(\log(2n)/\varepsilon^2\).
 
 **A limit that remains.** You might now hope that every class is nonuniformly learnable. It is not. Over any infinite domain, the class of all functions to \(\{0, 1\}\) is not a countable union of classes of finite VC dimension, so by the characterization it is not nonuniformly learnable. That is No-Free-Lunch again, for the relaxed notion. (For each single function there is a trivial learner, ERM over the class containing only that function; there is no learner for all of them.) The proof is a diagonal construction we won’t do here.
 

@@ -652,7 +652,7 @@ Theo’s filter does eventually win, at 1,000 labels, which is nearly four label
 
 Is there a perfect class? Yes, in principle: the class containing only the Bayes optimal predictor from lesson 3, the rule that gives each message its more likely label. Its approximation error is the Bayes risk, the best possible, and its estimation error is zero, since there is nothing to choose. But building it requires knowing \(\mathcal D\), and if we knew \(\mathcal D\) we wouldn’t need to learn. Learning theory asks how rich a class can be while the estimation error stays reasonable. Practice spends much of its effort designing classes whose approximation error is small for the domain at hand. The point of prior knowledge is to land somewhere that both errors are tolerable: you don’t know the junk rule, but you know enough about junk to guess which features carry it.
 
-One honest caveat about the lab you are about to use. It shows you the approximation error because it knows the truth. In the real mail room you don’t, and picking the rung from data alone is a problem of its own: lesson 7 handles it by spreading confidence across the ladder, and lesson 11 by holding out examples to validate.
+One honest caveat about the lab you are about to use. It shows you the approximation error because it knows the truth. In the real mail room you don’t, and picking the rung from data alone is a problem of its own: lesson 7a handles it by spreading confidence across the ladder, and lesson 11 by holding out examples to validate.
 
 ## The algorithms
 

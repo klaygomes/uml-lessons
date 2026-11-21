@@ -2,13 +2,13 @@
 
 ## The filter that would not sit still
 
-Lesson 12 ended with an uneasy feeling. A user corrected one label, someone retrained the hinge filter out of habit, and the new weights looked nothing like the old ones. The bound was fine, because it never promised that the output would sit still. But the feeling turned into a bug report within the week.
+Lesson 12b ended with an uneasy feeling. A user corrected one label, someone retrained the hinge filter out of habit, and the new weights looked nothing like the old ones. The bound was fine, because it never promised that the output would sit still. But the feeling turned into a bug report within the week.
 
-The team now retrains every convex filter every night. The newest one scores messages from a marketing campaign, and it is the junk score of lesson 9: a weight vector \(\mathbf w\), a score \(\langle \mathbf w, \mathbf x \rangle\), and the square loss, which lesson 12 showed is convex and smooth. Each night it is trained on the twenty most recent labelled campaign messages, so from one night to the next only a handful of labels change: three old ones drop out, three new ones come in.
+The team now retrains every convex filter every night. The newest one scores messages from a marketing campaign, and it is the junk score of lesson 9b: a weight vector \(\mathbf w\), a score \(\langle \mathbf w, \mathbf x \rangle\), and the square loss, which lesson 12a showed is convex and smooth. Each night it is trained on the twenty most recent labelled campaign messages, so from one night to the next only a handful of labels change: three old ones drop out, three new ones come in.
 
 Here is what the dashboard showed for one week. The weight on the word “free” went from 2.2 to −8.2, back to −2.2, then to −5.9. The weight on “offer” jumped from −0.3 to 11.8. And the production error, the filter’s average loss on fresh campaign messages, swung from 0.384 to 0.632 and back to 0.387 in three nights. Three labels out of twenty changed each night. Nobody would call that a big change in the data. Yet the learner’s output jumped around like a nervous bird, and its true quality jumped with it.
 
-What is going on? The learner did exactly what it was told: it minimized the empirical risk, perfectly, every night. Nothing is broken in the optimization, and lesson 12 promised us the problem is convex. So why does a tiny change in the input make such a big change in the output, and why does that hurt the true risk? And the deeper question, the one lesson 12 left hanging: could a learner that *refuses* to jump around generalize for that very reason?
+What is going on? The learner did exactly what it was told: it minimized the empirical risk, perfectly, every night. Nothing is broken in the optimization, and lesson 12a promised us the problem is convex. So why does a tiny change in the input make such a big change in the output, and why does that hurt the true risk? And the deeper question, the one lesson 12b left hanging: could a learner that *refuses* to jump around generalize for that very reason?
 
 This lesson answers both. The fix is one extra term in the objective. The theory behind it is a new way to see that a learner does not overfit, one that never mentions uniform convergence, and lesson 13b turns it into a proof.
 
@@ -16,7 +16,7 @@ This lesson answers both. The fix is one extra term in the objective. The theory
 
 Let’s build a world small enough to compute everything in it, and big enough to show the bug. Call it the **campaign world**.
 
-The campaign uses five words that always travel together: “free”, “gift”, “prize”, “bonus” and “offer”. A message is a vector \(\mathbf x \in \mathbb R^5\), one coordinate per word, scaled so that each coordinate is about \(\pm 0.4\). Labels are \(y = +1\) for junk and \(y = -1\) for keep, as in lesson 9. Here is how a message is drawn:
+The campaign uses five words that always travel together: “free”, “gift”, “prize”, “bonus” and “offer”. A message is a vector \(\mathbf x \in \mathbb R^5\), one coordinate per word, scaled so that each coordinate is about \(\pm 0.4\). Labels are \(y = +1\) for junk and \(y = -1\) for keep, as in lesson 9a. Here is how a message is drawn:
 
 1. Flip a fair coin for the label \(y \in \{+1, -1\}\).
 2. Draw the campaign signal \(f = 0.4\,y\) with probability 0.8 and \(f = -0.4\,y\) with probability 0.2. So 80% of the time the campaign words point the right way.
@@ -28,12 +28,12 @@ The loss we use in this lesson is the **half square loss**,
 
 \[ \ell(\mathbf w, (\mathbf x, y)) = \tfrac12 \left( \langle \mathbf w, \mathbf x \rangle - y \right)^2, \]
 
-the square loss of lesson 9 with a factor \(\tfrac12\) in front. The half changes nothing about which \(\mathbf w\) is best, and it makes the constants below come out cleaner.
+the square loss of lesson 9b with a factor \(\tfrac12\) in front. The half changes nothing about which \(\mathbf w\) is best, and it makes the constants below come out cleaner.
 
 Read it from the inside out.
 
 - \(\mathbf w = (w_1, \dots, w_5)\) is the weight vector, one weight per word, and \(\mathbf x\) is the message’s vector of word coordinates. The pair \((\mathbf x, y)\) is one example \(z\), as in every lesson since lesson 1.
-- \(\langle \mathbf w, \mathbf x \rangle = \sum_j w_j x_j\) is the inner product from lesson 9: multiply each weight by its word’s coordinate and add. It is the filter’s **score** for the message.
+- \(\langle \mathbf w, \mathbf x \rangle = \sum_j w_j x_j\) is the inner product from lesson 9a: multiply each weight by its word’s coordinate and add. It is the filter’s **score** for the message.
 - \(\langle \mathbf w, \mathbf x \rangle - y\) is the miss: how far the score lands from the label \(+1\) or \(-1\).
 - Squaring makes every miss count positively, and bigger misses count much more; the \(\tfrac12\) halves the result.
 - \(\ell(\mathbf w, z)\) is lesson 3’s notation for “the loss of hypothesis \(\mathbf w\) on example \(z\)”, one example at a time.
@@ -46,7 +46,7 @@ In this world the true risk has a formula. Expand the square and take expectatio
 
 Read it from the inside out.
 
-- \(s = \sum_j w_j\) is the total weight, the sum of the five weights; \(q = \|\mathbf w\|^2 = \sum_j w_j^2\) is the squared length of the weight vector (lesson 9’s Euclidean norm, squared).
+- \(s = \sum_j w_j\) is the total weight, the sum of the five weights; \(q = \|\mathbf w\|^2 = \sum_j w_j^2\) is the squared length of the weight vector (lesson 9a’s Euclidean norm, squared).
 - \(L_{\mathcal D}(\mathbf w)\) is the true risk from lesson 1: the loss averaged over every message that could arrive, each weighted by how often \(\mathcal D\) sends it. Here it is \(\mathbb E_{z \sim \mathcal D}[\ell(\mathbf w, z)]\), where \(z \sim \mathcal D\) reads “\(z\) drawn from \(\mathcal D\)”.
 - \(0.16\,s^2\) is the average squared score coming from the shared signal \(f\); \(0.0016\,q\) is the extra squared score coming from the five private jitters; \(-0.48\,s\) is twice the average agreement between score and label, subtracted; and the 1 is the average of \(y^2\).
 - The outer \(\tfrac12\) is the half of the half square loss.
@@ -90,7 +90,7 @@ print(round(L_D([0.2994] * 5), 3), round(L_D([0] * 5), 3))
 
 It prints `0.321 0.32`, then `0.32 0.5`. The simulation agrees with the formula to within its noise. The best weight vector puts 0.2994 on every word (with \(c\) on each word, \(s = 5c\) and \(q = 5c^2\), so the bracket is \(4.008c^2 - 2.4c + 1\), lowest at \(c = 2.4/8.016 \approx 0.2994\)), with true risk 0.320, and the all-zero vector, which always scores 0, has true risk 0.5.
 
-Now the nightly retrain. Start with twenty labelled messages, fit by ERM (which is exactly least squares from lesson 9), and each night replace three of the twenty with fresh ones. Before you look at the table, a prediction: how much do you expect the weights to move when 3 of 20 examples change? (The code that produced this table is in the ridge regression section, where it runs two learners side by side on the same messages.)
+Now the nightly retrain. Start with twenty labelled messages, fit by ERM (which is exactly least squares from lesson 9b), and each night replace three of the twenty with fresh ones. Before you look at the table, a prediction: how much do you expect the weights to move when 3 of 20 examples change? (The code that produced this table is in the ridge regression section, where it runs two learners side by side on the same messages.)
 
 | night | ERM weights (free, gift, prize, bonus, offer) | production error |
 |---|---|---|
@@ -147,7 +147,7 @@ Over many independent training sequences of twenty, ERM’s production error ave
 
 ## Pay for the size: regularized loss minimization
 
-How do you tell the learner to stop sliding along the valley? You could restrict the hypothesis class, as lesson 1 taught, and allow only weight vectors with small norm. Lesson 12 did exactly that with its bounded classes \(\|\mathbf w\| \le B\). Here is a softer version of the same idea: let the learner go anywhere, but charge it for the size of the weights.
+How do you tell the learner to stop sliding along the valley? You could restrict the hypothesis class, as lesson 1 taught, and allow only weight vectors with small norm. Lesson 12b did exactly that with its bounded classes \(\|\mathbf w\| \le B\). Here is a softer version of the same idea: let the learner go anywhere, but charge it for the size of the weights.
 
 Put a number on it. On night 2 the ERM weights had squared length \(\sum_j w_j^2 \approx 389\), while the best weights, 0.3 on every word, have squared length \(5 \times 0.09 = 0.45\). Suppose every unit of squared length cost the learner 0.1 on top of its training loss. Night 2’s weights would then pay about 38.9, a hundred times more than any training loss in this world, so the learner would never choose them; the best weights would pay only 0.045. The learner keeps minimizing a training score, but the score now includes a price for size.
 
@@ -155,7 +155,7 @@ Put a number on it. On night 2 the ERM weights had squared length \(\sum_j w_j^2
 
 \[ \operatorname*{argmin}_{\mathbf w} \left( L_S(\mathbf w) + R(\mathbf w) \right). \]
 
-The regularization function measures, intuitively, how “complex” a hypothesis is, and RLM balances a low empirical risk against a “simpler” hypothesis. Many choices of \(R\) are possible, each reflecting some prior belief about the problem, much as the description language did for minimum description length in lesson 7. This lesson uses one of the simplest:
+The regularization function measures, intuitively, how “complex” a hypothesis is, and RLM balances a low empirical risk against a “simpler” hypothesis. Many choices of \(R\) are possible, each reflecting some prior belief about the problem, much as the description language did for minimum description length in lesson 7b. This lesson uses one of the simplest:
 
 \[ R(\mathbf w) = \lambda \|\mathbf w\|^2, \qquad \lambda > 0, \qquad \|\mathbf w\| = \sqrt{\textstyle\sum_{i=1}^d w_i^2}, \]
 
@@ -194,7 +194,7 @@ Look at what the penalty does to the valley. Along any unit direction \(\mathbf 
 
 There are two ways to read this rule, and both will pay off.
 
-**As structural risk minimization.** Lesson 7 chose among nested classes by trading empirical risk against a complexity charge. Define \(\mathcal H_1 \subset \mathcal H_2 \subset \mathcal H_3 \subset \dots\) with \(\mathcal H_i = \{\mathbf w : \|\mathbf w\|^2 \le i\}\). If the number of examples each \(\mathcal H_i\) needs grows with \(i\), then charging \(\lambda \|\mathbf w\|^2\) is a smooth version of “pay more for a bigger class”, and RLM behaves like SRM over this sequence.
+**As structural risk minimization.** Lesson 7a chose among nested classes by trading empirical risk against a complexity charge. Define \(\mathcal H_1 \subset \mathcal H_2 \subset \mathcal H_3 \subset \dots\) with \(\mathcal H_i = \{\mathbf w : \|\mathbf w\|^2 \le i\}\). If the number of examples each \(\mathcal H_i\) needs grows with \(i\), then charging \(\lambda \|\mathbf w\|^2\) is a smooth version of “pay more for a bigger class”, and RLM behaves like SRM over this sequence.
 
 **As a stabilizer.** The penalty makes the minimizer sit still when the data move a little. That is the reading this lesson and lesson 13b develop, and it leads to a proof that the learner does not overfit. But first, let’s see the rule work on the campaign.
 
@@ -206,11 +206,11 @@ Apply RLM with Tikhonov regularization to linear regression with the half square
 
 Linear regression solved this way is called **ridge regression**.
 
-To solve it, do what lesson 9 did for least squares: set the gradient to zero. The gradient of \(\lambda \|\mathbf w\|^2\) is \(2\lambda \mathbf w\). The gradient of one loss term is \((\langle \mathbf w, \mathbf x_i \rangle - y_i)\,\mathbf x_i\), by the chain rule; the half cancels the 2 from the square. So
+To solve it, do what lesson 9b did for least squares: set the gradient to zero. The gradient of \(\lambda \|\mathbf w\|^2\) is \(2\lambda \mathbf w\). The gradient of one loss term is \((\langle \mathbf w, \mathbf x_i \rangle - y_i)\,\mathbf x_i\), by the chain rule; the half cancels the 2 from the square. So
 
 \[ \nabla f_S(\mathbf w) = 2\lambda \mathbf w + \frac1m \sum_{i=1}^m (\langle \mathbf w, \mathbf x_i \rangle - y_i)\,\mathbf x_i. \]
 
-Multiply by \(m\) and use the same matrices as lesson 9, \(A = \sum_{i=1}^m \mathbf x_i \mathbf x_i^\top\) and \(\mathbf b = \sum_{i=1}^m y_i \mathbf x_i\). Since \(\sum_i \mathbf x_i \langle \mathbf x_i, \mathbf w \rangle = A\mathbf w\), the condition \(\nabla f_S(\mathbf w) = \mathbf 0\) becomes the linear system
+Multiply by \(m\) and use the same matrices as lesson 9b, \(A = \sum_{i=1}^m \mathbf x_i \mathbf x_i^\top\) and \(\mathbf b = \sum_{i=1}^m y_i \mathbf x_i\). Since \(\sum_i \mathbf x_i \langle \mathbf x_i, \mathbf w \rangle = A\mathbf w\), the condition \(\nabla f_S(\mathbf w) = \mathbf 0\) becomes the linear system
 
 \[ (2\lambda m I + A)\,\mathbf w = \mathbf b, \]
 
@@ -218,7 +218,7 @@ where \(I\) is the \(d \times d\) identity matrix. (The matrix \(A\) and the lea
 
 Read the system from the inside out.
 
-- \(\mathbf x_i \mathbf x_i^\top\) is the \(d \times d\) matrix whose entry \((j, k)\) is \(x_{i,j} x_{i,k}\) (lesson 9); \(A\) adds them up over all \(m\) examples, so entry \((j, k)\) of \(A\) is \(\sum_i x_{i,j}x_{i,k}\), how often words \(j\) and \(k\) light up together.
+- \(\mathbf x_i \mathbf x_i^\top\) is the \(d \times d\) matrix whose entry \((j, k)\) is \(x_{i,j} x_{i,k}\) (lesson 9b); \(A\) adds them up over all \(m\) examples, so entry \((j, k)\) of \(A\) is \(\sum_i x_{i,j}x_{i,k}\), how often words \(j\) and \(k\) light up together.
 - \(\mathbf b = \sum_i y_i \mathbf x_i\) adds up the messages, each signed by its label: entry \(j\) is how much word \(j\) leans toward junk.
 - \(I\) is the identity matrix, 1 on the diagonal and 0 elsewhere, so \(2\lambda m I\) adds \(2\lambda m\) to every diagonal entry of \(A\) and nothing else.
 - \(\nabla f_S(\mathbf w)\) is the gradient: the vector of partial derivatives, one per weight, pointing uphill.
@@ -250,13 +250,13 @@ is the unique minimizer of the ridge objective.
 
 If \((2\lambda m I + A)\mathbf v = \mathbf 0\), the left side is 0, so \(2\lambda m\|\mathbf v\|^2 \le 0\) and \(\mathbf v = \mathbf 0\). A square matrix whose only null vector is \(\mathbf 0\) is invertible. If \(\mu\) is an eigenvalue with unit eigenvector \(\mathbf v\), then \(\mu = \mathbf v^\top (2\lambda m I + A)\mathbf v \ge 2\lambda m\).
 
-It remains to see that the solution is a minimizer, not just a flat point. Expand the objective around any \(\mathbf w\) with a step \(\boldsymbol\Delta\), exactly as lesson 9 did:
+It remains to see that the solution is a minimizer, not just a flat point. Expand the objective around any \(\mathbf w\) with a step \(\boldsymbol\Delta\), exactly as lesson 9b did:
 
 \[ f_S(\mathbf w + \boldsymbol\Delta) = f_S(\mathbf w) + \langle \nabla f_S(\mathbf w), \boldsymbol\Delta \rangle + \frac{1}{2m}\sum_{i=1}^m \langle \boldsymbol\Delta, \mathbf x_i \rangle^2 + \lambda \|\boldsymbol\Delta\|^2. \]
 
 This is exact: \(\lambda\|\mathbf w + \boldsymbol\Delta\|^2 = \lambda\|\mathbf w\|^2 + 2\lambda\langle \mathbf w, \boldsymbol\Delta \rangle + \lambda\|\boldsymbol\Delta\|^2\), and each loss term is a parabola whose expansion has no higher terms. At the solution the gradient vanishes, so \(f_S(\mathbf w + \boldsymbol\Delta) - f_S(\mathbf w) \ge \lambda\|\boldsymbol\Delta\|^2\), which is strictly positive for every \(\boldsymbol\Delta \ne \mathbf 0\). So the solution is the unique minimizer. \(\blacksquare\)
 
-Two remarks. Lesson 9 had to reach for the pseudoinverse when \(A\) was singular, for instance when two words always appeared together. Ridge never needs it: \(2\lambda m\) lifts every eigenvalue off zero. And the last line of the proof, “the objective rises at least \(\lambda\|\boldsymbol\Delta\|^2\) as you leave the minimizer”, is the property the whole stability argument will rest on. Hold on to it.
+Two remarks. Lesson 9b had to reach for the pseudoinverse when \(A\) was singular, for instance when two words always appeared together. Ridge never needs it: \(2\lambda m\) lifts every eigenvalue off zero. And the last line of the proof, “the objective rises at least \(\lambda\|\boldsymbol\Delta\|^2\) as you leave the minimizer”, is the property the whole stability argument will rest on. Hold on to it.
 
 Now rerun the same week, same messages, same replacements, with \(\lambda = 0.1\). The function `fit` below builds the augmented matrix \([\,2\lambda m I + A \mid \mathbf b\,]\) by appending each label to its message, then solves the system by Gauss–Jordan elimination (divide a row by its diagonal entry, subtract multiples of it from every other row to clear that column, repeat for each column); with `lam = 0` it is plain least squares. Each night prints two lines, ERM first and ridge second.
 
@@ -482,7 +482,7 @@ Before you touch the slider, a prediction. If you push \(\lambda\) all the way u
 
 [[lab-act2]]
 
-Look at what your fix was built from: an average fit, an average replace-one change, and one identity. Nothing about the size of the hypothesis class, nothing about uniform convergence. The same identity holds for the hinge filter of lesson 12, or for any learner at all: measure how much it changes its mind about an example it has seen, and you have measured how much it overfits.
+Look at what your fix was built from: an average fit, an average replace-one change, and one identity. Nothing about the size of the hypothesis class, nothing about uniform convergence. The same identity holds for the hinge filter of lesson 12a, or for any learner at all: measure how much it changes its mind about an example it has seen, and you have measured how much it overfits.
 
 ## What people get wrong
 

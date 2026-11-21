@@ -2,9 +2,9 @@
 
 ## A filter that is always a day behind
 
-The regularized filter from lesson 13 is the best thing the team has shipped. It is a halfspace over word counts, trained with the hinge loss plus a penalty on the size of the weight vector, and on paper it has everything you could want: a convex problem, a stable learner, a guarantee on its true risk. The archive it trains on holds two million labelled messages.
+The regularized filter from lesson 13a is the best thing the team has shipped. It is a halfspace over word counts, trained with the hinge loss plus a penalty on the size of the weight vector, and on paper it has everything you could want: a convex problem, a stable learner, a guarantee on its true risk. The archive it trains on holds two million labelled messages.
 
-And yet the complaints are back. Every morning the spammers try something new, and every morning the filter is fooled by it until the evening. The retrain logs the manager pulled up at the end of lesson 13 make the reason plain: the exact solver for the regularized problem takes about six hours on the full archive, and the archive grows by thousands of labels a day. By the time a new filter ships, the junk it was trained to catch is already yesterday’s junk. The filter is always a day behind.
+And yet the complaints are back. Every morning the spammers try something new, and every morning the filter is fooled by it until the evening. The retrain logs the manager pulled up at the end of lesson 13b make the reason plain: the exact solver for the regularized problem takes about six hours on the full archive, and the archive grows by thousands of labels a day. By the time a new filter ships, the junk it was trained to catch is already yesterday’s junk. The filter is always a day behind.
 
 What would a faster learner even look like? Here is a thought that sounds almost too lazy to work. Instead of solving the whole optimization problem over two million messages, start with some weight vector, look at *one* message, nudge the weights a little so that message is handled better, and move on to the next message. Each nudge costs about as much as reading one message. Could a few thousand nudges, each based on a single message, produce a filter with a guarantee as good as the exact solver’s?
 
@@ -12,7 +12,7 @@ This lesson says yes, and proves it. The tool is **stochastic gradient descent**
 
 ## Walking downhill
 
-Let’s shrink the world so we can see every number. Pretend there are only six kinds of messages, each arriving equally often. Each is described by two scores built from word counts: \(x_1\), how strongly it talks about “free”, and \(x_2\), how strongly it talks about “meeting”. The counts are scaled so that every message has length \(\|\mathbf x\| \le 1\), where the double bars, as in lesson 9, give a vector’s length, \(\|\mathbf x\| = \sqrt{x_1^2 + x_2^2}\) (message A below has length \(\sqrt{0.68} \approx 0.82\)). As in lesson 9, labels are \(+1\) for junk and \(-1\) for keep.
+Let’s shrink the world so we can see every number. Pretend there are only six kinds of messages, each arriving equally often. Each is described by two scores built from word counts: \(x_1\), how strongly it talks about “free”, and \(x_2\), how strongly it talks about “meeting”. The counts are scaled so that every message has length \(\|\mathbf x\| \le 1\), where the double bars, as in lesson 9a, give a vector’s length, \(\|\mathbf x\| = \sqrt{x_1^2 + x_2^2}\) (message A below has length \(\sqrt{0.68} \approx 0.82\)). As in lesson 9a, labels are \(+1\) for junk and \(-1\) for keep.
 
 | message | gist | \(x_1\) | \(x_2\) | label \(y\) |
 |---|---|---|---|---|
@@ -23,7 +23,7 @@ Let’s shrink the world so we can see every number. Pretend there are only six 
 | E | free coffee at the meeting | 0.4 | 0.8 | keep, \(-1\) |
 | F | the newsletter: free webinar this week | 0.7 | 0.3 | keep, \(-1\) |
 
-We will learn a homogeneous halfspace (one with no bias term, so its boundary passes through the origin) with weight vector \(\mathbf w = (w_1, w_2)\). Recall the pieces from lessons 9 and 12. The inner product \(\langle \mathbf w, \mathbf x \rangle = w_1 x_1 + w_2 x_2\) is the filter’s score for a message, positive meaning junk, and multiplying it by the label gives the **signed score** \(y\langle \mathbf w, \mathbf x \rangle\), positive exactly when the filter is right. For this first walk we turn the signed score into a penalty with the logistic loss of lesson 9, \(\ell(\mathbf w, (\mathbf x, y)) = \log(1 + e^{-y \langle \mathbf w, \mathbf x \rangle})\). Here \(e \approx 2.718\) is Euler’s number and \(\log\) is the natural logarithm: the penalty is large for a very negative signed score, exactly \(\log 2 \approx 0.693\) at a signed score of 0, and near 0 for a large positive one. We use it because it is smooth everywhere. With the six messages equally likely, the true risk, the expected loss on the next message to arrive, is simply the average loss over the six:
+We will learn a homogeneous halfspace (one with no bias term, so its boundary passes through the origin) with weight vector \(\mathbf w = (w_1, w_2)\). Recall the pieces from lessons 9a and 12a. The inner product \(\langle \mathbf w, \mathbf x \rangle = w_1 x_1 + w_2 x_2\) is the filter’s score for a message, positive meaning junk, and multiplying it by the label gives the **signed score** \(y\langle \mathbf w, \mathbf x \rangle\), positive exactly when the filter is right. For this first walk we turn the signed score into a penalty with the logistic loss of lesson 9b, \(\ell(\mathbf w, (\mathbf x, y)) = \log(1 + e^{-y \langle \mathbf w, \mathbf x \rangle})\). Here \(e \approx 2.718\) is Euler’s number and \(\log\) is the natural logarithm: the penalty is large for a very negative signed score, exactly \(\log 2 \approx 0.693\) at a signed score of 0, and near 0 for a large positive one. We use it because it is smooth everywhere. With the six messages equally likely, the true risk, the expected loss on the next message to arrive, is simply the average loss over the six:
 
 \[ f(\mathbf w) = L_{\mathcal D}(\mathbf w) = \frac16 \sum_{i=1}^6 \log\left(1 + e^{-y_i \langle \mathbf w, \mathbf x_i \rangle}\right). \]
 
@@ -183,7 +183,7 @@ Before the proof, play with the walk yourself. In the lab below you set \(\eta\)
 
 You will have seen two failures in the lab. With a tiny step size the walk crawls and never gets anywhere in \(T\) steps. With a huge one it overshoots, zigzags across the valley, and the average lands somewhere off to the side. A good \(\eta\) sits in between, and the right value depends on \(T\). Let’s find it by proving a bound.
 
-We need three facts from lesson 12. A function \(f\) is **convex** when \(f(\alpha \mathbf u + (1-\alpha)\mathbf w) \le \alpha f(\mathbf u) + (1-\alpha) f(\mathbf w)\) for all \(\mathbf u, \mathbf w\) and \(\alpha \in [0, 1]\): between any two points the graph sits on or below the straight chord joining them, and \(\alpha\), a number from 0 to 1, says where along the chord you are. A differentiable convex function lies above each of its tangent planes, the **tangent inequality**:
+We need three facts from lesson 12a. A function \(f\) is **convex** when \(f(\alpha \mathbf u + (1-\alpha)\mathbf w) \le \alpha f(\mathbf u) + (1-\alpha) f(\mathbf w)\) for all \(\mathbf u, \mathbf w\) and \(\alpha \in [0, 1]\): between any two points the graph sits on or below the straight chord joining them, and \(\alpha\), a number from 0 to 1, says where along the chord you are. A differentiable convex function lies above each of its tangent planes, the **tangent inequality**:
 
 \[ f(\mathbf u) \ge f(\mathbf w) + \langle \mathbf u - \mathbf w, \nabla f(\mathbf w) \rangle \quad \text{for all } \mathbf u, \mathbf w. \]
 
@@ -302,7 +302,7 @@ Now the mystery column in the first snippet is explained. Every message in our t
 
 ## When the floor has a crease
 
-The filter in production does not use the logistic loss. It uses the **hinge loss** of lesson 12, \(\ell(\mathbf w, (\mathbf x, y)) = \max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\}\), where \(\max\{a, b\}\) is the larger of the two numbers (message A at \(\mathbf w = \mathbf 0\) has signed score 0 and loss \(\max\{0, 1\} = 1\)). It is zero once a message is on the right side with a signed score of at least 1, and growing linearly otherwise. Its graph has a crease where \(y \langle \mathbf w, \mathbf x \rangle = 1\), and at the crease there is no gradient. Gradient descent, as written, does not know what to do there.
+The filter in production does not use the logistic loss. It uses the **hinge loss** of lesson 12a, \(\ell(\mathbf w, (\mathbf x, y)) = \max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\}\), where \(\max\{a, b\}\) is the larger of the two numbers (message A at \(\mathbf w = \mathbf 0\) has signed score 0 and loss \(\max\{0, 1\} = 1\)). It is zero once a message is on the right side with a signed score of at least 1, and growing linearly otherwise. Its graph has a crease where \(y \langle \mathbf w, \mathbf x \rangle = 1\), and at the crease there is no gradient. Gradient descent, as written, does not know what to do there.
 
 What we used about the gradient in the analysis was not that it is a derivative. We used one inequality: the tangent plane lies below the function. Is there something else, at a crease, that lies below the function and touches it?
 
@@ -310,7 +310,7 @@ Look at the simplest crease, \(f(x) = |x|\) at \(x = 0\). The line \(y = 0.5x\) 
 
 [[diagram:subgradient]]
 
-This is in fact a characterization of convexity, a standard result of convex analysis that we state without proof. It needs one recap: a convex set (lesson 12) contains the segment between any two of its points, and an open one leaves every point a little room around it inside the set, as the whole plane does.
+This is in fact a characterization of convexity, a standard result of convex analysis that we state without proof. It needs one recap: a convex set (lesson 12a) contains the segment between any two of its points, and an open one leaves every point a little room around it inside the set, as the whole plane does.
 
 **Lemma (supporting planes).** Let \(A\) be an open convex set. A function \(f: A \to \mathbb R\) is convex if and only if for every \(\mathbf w \in A\) there is a vector \(\mathbf v\) with
 
@@ -353,7 +353,7 @@ The hinge loss on one message is the maximum of two affine pieces in \(\mathbf w
 
 \[ \mathbf v = \begin{cases} \mathbf 0 & \text{if } 1 - y\langle \mathbf w, \mathbf x \rangle \le 0, \\ -y\mathbf x & \text{if } 1 - y\langle \mathbf w, \mathbf x \rangle > 0. \end{cases} \]
 
-In plain words: **if the message is already handled with a signed score of at least 1, the subgradient is zero; otherwise it is \(-y\mathbf x\), so a step against it pushes the weights towards \(y\mathbf x\).** That should look familiar. It is the Perceptron’s update from lesson 9, with a stricter idea of “handled”. At \(\mathbf w = \mathbf 0\) every signed score is 0, so junk message B gives \(\mathbf v = -(0.6, 0.6)\); at \(\mathbf w = (5, 0)\), message A has signed score 4 and gives \(\mathbf 0\). The snippet also averages the six subgradients at \(\mathbf 0\) and compares that average with the slope of the hinge risk measured by nudging each weight; keep the second line in mind for “One message per step”:
+In plain words: **if the message is already handled with a signed score of at least 1, the subgradient is zero; otherwise it is \(-y\mathbf x\), so a step against it pushes the weights towards \(y\mathbf x\).** That should look familiar. It is the Perceptron’s update from lesson 9a, with a stricter idea of “handled”. At \(\mathbf w = \mathbf 0\) every signed score is 0, so junk message B gives \(\mathbf v = -(0.6, 0.6)\); at \(\mathbf w = (5, 0)\), message A has signed score 4 and gives \(\mathbf 0\). The snippet also averages the six subgradients at \(\mathbf 0\) and compares that average with the slope of the hinge risk measured by nudging each weight; keep the second line in mind for “One message per step”:
 
 ```python
 S = [((0.8, 0.2), 1), ((0.6, 0.6), 1), ((0.9, 0.4), 1),
@@ -383,7 +383,7 @@ The gradient descent corollary needed \(\|\mathbf v_t\| \le \rho\). Here is the 
 
 **Lemma (Lipschitz and subgradients).** Let \(A\) be an open convex set and \(f: A \to \mathbb R\) convex. Then \(f\) is \(\rho\)-Lipschitz over \(A\) if and only if \(\|\mathbf v\| \le \rho\) for every \(\mathbf w \in A\) and every \(\mathbf v \in \partial f(\mathbf w)\).
 
-*Proof.* First, suppose every subgradient has norm at most \(\rho\). Take \(\mathbf w, \mathbf u \in A\) and \(\mathbf v \in \partial f(\mathbf w)\). The subgradient inequality, rearranged, says \(f(\mathbf w) - f(\mathbf u) \le \langle \mathbf v, \mathbf w - \mathbf u \rangle\). The Cauchy-Schwarz inequality of lesson 9, \(\langle \mathbf a, \mathbf b \rangle \le \|\mathbf a\| \|\mathbf b\|\), bounds the inner product by \(\|\mathbf v\| \|\mathbf w - \mathbf u\| \le \rho \|\mathbf w - \mathbf u\|\). The same argument with the roles of \(\mathbf w\) and \(\mathbf u\) swapped (using a subgradient at \(\mathbf u\)) gives \(f(\mathbf u) - f(\mathbf w) \le \rho \|\mathbf w - \mathbf u\|\). Together, \(|f(\mathbf w) - f(\mathbf u)| \le \rho\|\mathbf w - \mathbf u\|\).
+*Proof.* First, suppose every subgradient has norm at most \(\rho\). Take \(\mathbf w, \mathbf u \in A\) and \(\mathbf v \in \partial f(\mathbf w)\). The subgradient inequality, rearranged, says \(f(\mathbf w) - f(\mathbf u) \le \langle \mathbf v, \mathbf w - \mathbf u \rangle\). The Cauchy-Schwarz inequality of lesson 9a, \(\langle \mathbf a, \mathbf b \rangle \le \|\mathbf a\| \|\mathbf b\|\), bounds the inner product by \(\|\mathbf v\| \|\mathbf w - \mathbf u\| \le \rho \|\mathbf w - \mathbf u\|\). The same argument with the roles of \(\mathbf w\) and \(\mathbf u\) swapped (using a subgradient at \(\mathbf u\)) gives \(f(\mathbf u) - f(\mathbf w) \le \rho \|\mathbf w - \mathbf u\|\). Together, \(|f(\mathbf w) - f(\mathbf u)| \le \rho\|\mathbf w - \mathbf u\|\).
 
 Now suppose \(f\) is \(\rho\)-Lipschitz, and take \(\mathbf w \in A\) and \(\mathbf v \in \partial f(\mathbf w)\) with \(\mathbf v \ne \mathbf 0\) (the zero vector has norm \(0 \le \rho\) anyway). Because \(A\) is open, there is a small radius \(r > 0\) such that \(\mathbf u = \mathbf w + r \mathbf v / \|\mathbf v\|\) is still in \(A\). This \(\mathbf u\) sits at distance \(\|\mathbf u - \mathbf w\| = r\) from \(\mathbf w\), in the direction of \(\mathbf v\), so \(\langle \mathbf u - \mathbf w, \mathbf v \rangle = r \|\mathbf v\|\). The subgradient inequality gives \(f(\mathbf u) - f(\mathbf w) \ge r \|\mathbf v\|\), and Lipschitzness gives \(f(\mathbf u) - f(\mathbf w) \le \rho r\). So \(r \|\mathbf v\| \le \rho r\), and dividing by \(r > 0\), \(\|\mathbf v\| \le \rho\). \(\blacksquare\)
 
@@ -639,7 +639,7 @@ SGD-Risk(η, T):
   return w̄ = (1/T) Σ_{t=1..T} w(t)
 ```
 
-Every step uses a new example, so the number of steps *is* the number of examples. A bound on steps is a sample complexity. Recall from lesson 12 that a **convex-Lipschitz-bounded** learning problem with parameters \(\rho, B\) has a convex hypothesis class \(\mathcal H\) with \(\|\mathbf w\| \le B\) for all \(\mathbf w \in \mathcal H\), and a loss \(\ell(\cdot, z)\) that is convex and \(\rho\)-Lipschitz for every \(z\). Plugging \(f = L_{\mathcal D}\) into the SGD guarantee:
+Every step uses a new example, so the number of steps *is* the number of examples. A bound on steps is a sample complexity. Recall from lesson 12b that a **convex-Lipschitz-bounded** learning problem with parameters \(\rho, B\) has a convex hypothesis class \(\mathcal H\) with \(\|\mathbf w\| \le B\) for all \(\mathbf w \in \mathcal H\), and a loss \(\ell(\cdot, z)\) that is convex and \(\rho\)-Lipschitz for every \(z\). Plugging \(f = L_{\mathcal D}\) into the SGD guarantee:
 
 **Corollary (SGD learns convex-Lipschitz-bounded problems).** Consider a convex-Lipschitz-bounded learning problem with parameters \(\rho, B\). For every \(\varepsilon > 0\), if SGD-Risk runs for
 
@@ -653,7 +653,7 @@ Here \(\min_{\mathbf w \in \mathcal H} L_{\mathcal D}(\mathbf w)\) is the smalle
 
 *Proof.* \(L_{\mathcal D}\) is an average of convex functions, so it is convex. Each \(\mathbf v_t\) is a subgradient of a \(\rho\)-Lipschitz convex function, so \(\|\mathbf v_t\| \le \rho\) by the Lipschitz lemma. We just showed \(\mathbb E[\mathbf v_t \mid \text{past}] \in \partial L_{\mathcal D}(\mathbf w^{(t)})\). Take \(\mathbf w^\star\) a minimizer of \(L_{\mathcal D}\) over \(\mathcal H\); it has \(\|\mathbf w^\star\| \le B\), and the minimum of \(L_{\mathcal D}\) over the ball \(\{\|\mathbf w\| \le B\}\) can only be smaller, so the SGD guarantee, applied with that ball, bounds the gap to \(\min_{\mathcal H} L_{\mathcal D}\) too. \(\blacksquare\)
 
-For the mail room, the hinge loss on messages with \(\|\mathbf x\| \le 1\) is 1-Lipschitz, so \(\rho = 1\). Say the team keeps the weight vector within \(B = 5\) and wants the filter’s expected hinge risk within \(\varepsilon = 0.05\) of the best in the class. (Since the 0-1 loss is at most the hinge loss, as lesson 12 showed, the filter’s expected error rate is at most its expected hinge risk.) Count the work, with two million messages in the archive and about 200 nonzero word counts per message:
+For the mail room, the hinge loss on messages with \(\|\mathbf x\| \le 1\) is 1-Lipschitz, so \(\rho = 1\). Say the team keeps the weight vector within \(B = 5\) and wants the filter’s expected hinge risk within \(\varepsilon = 0.05\) of the best in the class. (Since the 0-1 loss is at most the hinge loss, as lesson 12b showed, the filter’s expected error rate is at most its expected hinge risk.) Count the work, with two million messages in the archive and about 200 nonzero word counts per message:
 
 ```python
 import math
@@ -667,7 +667,7 @@ print(T, f"{gd_work:.1e}", f"{sgd_work:.1e}", gd_work // sgd_work)
 print(math.ceil(8 * rho**2 * B**2 / eps**2))
 ```
 
-It prints `10000 4.0e+12 2.0e+06 2000000`, then `80000`. Ten thousand steps. Gradient descent on the archive would spend \(4 \times 10^{12}\) operations reading every message at every step (and would still only be minimizing \(L_S\), with a generalization argument owed on top). SGD spends \(2 \times 10^6\), two million times less, and its guarantee is already about the true risk. The second line is lesson 13’s count for regularized loss minimization, \(8\rho^2B^2/\varepsilon^2\): the same order, eight times more examples, and an optimization problem still to solve on top.
+It prints `10000 4.0e+12 2.0e+06 2000000`, then `80000`. Ten thousand steps. Gradient descent on the archive would spend \(4 \times 10^{12}\) operations reading every message at every step (and would still only be minimizing \(L_S\), with a generalization argument owed on top). SGD spends \(2 \times 10^6\), two million times less, and its guarantee is already about the true risk. The second line is lesson 13b’s count for regularized loss minimization, \(8\rho^2B^2/\varepsilon^2\): the same order, eight times more examples, and an optimization problem still to solve on top.
 
 [[diagram:stream]]
 
@@ -745,7 +745,7 @@ In the lab below, each round gives you the norm bound \(B\), the Lipschitz const
 
 ## What people get wrong
 
-**“SGD is an approximation of gradient descent, so its guarantee must be worse.”** On a learning problem it is the other way round. Gradient descent on \(L_S\) only optimizes the empirical risk and still owes a generalization argument. SGD on fresh examples optimizes \(L_{\mathcal D}\) directly, with \(B^2\rho^2/\varepsilon^2\) examples, eight times fewer than lesson 13’s bound for regularized loss minimization.
+**“SGD is an approximation of gradient descent, so its guarantee must be worse.”** On a learning problem it is the other way round. Gradient descent on \(L_S\) only optimizes the empirical risk and still owes a generalization argument. SGD on fresh examples optimizes \(L_{\mathcal D}\) directly, with \(B^2\rho^2/\varepsilon^2\) examples, eight times fewer than lesson 13b’s bound for regularized loss minimization.
 
 **“The guarantee holds for every run.”** It holds in expectation over the random draws. A single run can do worse. If you need a statement with probability, the expectation bound still helps: the excess risk is a nonnegative random variable, so Markov’s inequality (lesson 4: a nonnegative variable reaches \(a\) with probability at most its mean over \(a\)) says it exceeds \(\varepsilon/\delta\) with probability at most \(\delta\) (a crude conversion; sharper ones exist).
 
@@ -763,7 +763,7 @@ In the lab below, each round gives you the norm bound \(B\), the Lipschitz const
 4. SGD steps along a random vector whose conditional mean is a subgradient. The guarantee \(\mathbb E[f(\bar{\mathbf w})] - f(\mathbf w^\star) \le B^2/(2\eta T) + \eta\rho^2/2\) survives, by the law of total expectation.
 5. On a learning problem, the (sub)gradient of the loss on one fresh example is an unbiased estimate for the true risk. SGD therefore learns convex-Lipschitz-bounded problems from \(B^2\rho^2/\varepsilon^2\) examples, in \(O(d)\) time per example and \(O(d)\) space.
 
-The filter retrains in minutes now, on the morning’s fresh labels, and it is no longer a day behind. Then the auditor from lesson 13b comes back with the certificate she signed. “This is for the regularized filter,” she says: the weight vector that minimizes lesson 13’s penalized objective on the audited training sequence, the two million labelled messages the team keeps on file. “I can check that filter against the audited messages. Your streaming filter is a different learner, and its guarantee is about a stream nobody kept.” She will sign a filter only if it is provably close to the minimum of that objective, and the exact solver for it still takes six hours. Can SGD solve a fixed objective on a fixed training sequence, one message per step, and certify how close to the exact minimum it lands? And how fast? That is lesson 14b.
+The filter retrains in minutes now, on the morning’s fresh labels, and it is no longer a day behind. Then the auditor from lesson 13b comes back with the certificate she signed. “This is for the regularized filter,” she says: the weight vector that minimizes lesson 13a’s penalized objective on the audited training sequence, the two million labelled messages the team keeps on file. “I can check that filter against the audited messages. Your streaming filter is a different learner, and its guarantee is about a stream nobody kept.” She will sign a filter only if it is provably close to the minimum of that objective, and the exact solver for it still takes six hours. Can SGD solve a fixed objective on a fixed training sequence, one message per step, and certify how close to the exact minimum it lands? And how fast? That is lesson 14b.
 
 ## Concept check
 
@@ -777,4 +777,4 @@ Write your answers down before moving on to the next lesson, with your reasoning
 
 Once the concept check is done, try this one. Hints come one at a time in the chat, and no full solutions.
 
-- **Problem 1 (the Perceptron as subgradient descent).** Let \(S = ((\mathbf x_1, y_1), \dots, (\mathbf x_m, y_m))\) with \(y_i \in \{\pm 1\}\), assume some \(\mathbf w\) has \(y_i\langle \mathbf w, \mathbf x_i \rangle \ge 1\) for every \(i\), let \(\mathbf w^\star\) have the smallest norm among such vectors, and let \(R = \max_i \|\mathbf x_i\|\). Define \(f(\mathbf w) = \max_{i \in [m]} \left(1 - y_i\langle \mathbf w, \mathbf x_i \rangle\right)\). (a) Show that \(\min_{\|\mathbf w\| \le \|\mathbf w^\star\|} f(\mathbf w) = 0\), and that every \(\mathbf w\) with \(f(\mathbf w) < 1\) separates \(S\). (b) Show how to compute a subgradient of \(f\). (c) Describe and analyse subgradient descent on \(f\), and compare the algorithm and its guarantee with the Perceptron of lesson 9.
+- **Problem 1 (the Perceptron as subgradient descent).** Let \(S = ((\mathbf x_1, y_1), \dots, (\mathbf x_m, y_m))\) with \(y_i \in \{\pm 1\}\), assume some \(\mathbf w\) has \(y_i\langle \mathbf w, \mathbf x_i \rangle \ge 1\) for every \(i\), let \(\mathbf w^\star\) have the smallest norm among such vectors, and let \(R = \max_i \|\mathbf x_i\|\). Define \(f(\mathbf w) = \max_{i \in [m]} \left(1 - y_i\langle \mathbf w, \mathbf x_i \rangle\right)\). (a) Show that \(\min_{\|\mathbf w\| \le \|\mathbf w^\star\|} f(\mathbf w) = 0\), and that every \(\mathbf w\) with \(f(\mathbf w) < 1\) separates \(S\). (b) Show how to compute a subgradient of \(f\). (c) Describe and analyse subgradient descent on \(f\), and compare the algorithm and its guarantee with the Perceptron of lesson 9a.

@@ -4,11 +4,11 @@
 
 Lesson 14a ended with a filter that is no longer a day behind. It learns from the morning’s fresh labels, one message per step, and its guarantee is about the true risk itself. Then the auditor from lesson 13b came back with the certificate she had signed, and it was for a different filter.
 
-Her filter is lesson 13’s regularized filter: the weight vector that minimizes the penalized objective on the audited training sequence, the two million labelled messages the team keeps on file, with a penalty weight of \(\lambda = 0.01\). She can check that filter against the audited messages. The streaming filter is a different learner, and its guarantee is about a stream nobody kept. So she has made an offer. She does not need the exact minimizer. She will sign any filter whose regularized objective is, on average, within 0.05 of the exact minimum.
+Her filter is lesson 13a’s regularized filter: the weight vector that minimizes the penalized objective on the audited training sequence, the two million labelled messages the team keeps on file, with a penalty weight of \(\lambda = 0.01\). She can check that filter against the audited messages. The streaming filter is a different learner, and its guarantee is about a stream nobody kept. So she has made an offer. She does not need the exact minimizer. She will sign any filter whose regularized objective is, on average, within 0.05 of the exact minimum.
 
 The trouble is the solver. The exact solver for that objective takes six hours on two million messages, which is how this whole story started. Lesson 14a warned against the obvious shortcut, looping SGD over a fixed archive, because it breaks the fresh-message guarantee for the true risk. But here we do not want the true risk. We want the minimum of one fixed function of the audited messages. Can SGD find it, one message per step, and can you certify how close it lands, before the six hours are up?
 
-It can, and it does better than you might expect. The penalty does more than steady the filter, as lesson 13 showed: it curves the objective upward, and that curvature buys SGD a much faster rate than the \(1/\sqrt T\) of lesson 14a. Getting there takes three relatives of SGD: a projection that keeps the iterates inside the class, a step size that shrinks as the walk goes on, and a rate for strongly convex functions. Along the way we also meet smooth losses, where the rate improves when the best filter is good.
+It can, and it does better than you might expect. The penalty does more than steady the filter, as lesson 13b showed: it curves the objective upward, and that curvature buys SGD a much faster rate than the \(1/\sqrt T\) of lesson 14a. Getting there takes three relatives of SGD: a projection that keeps the iterates inside the class, a step size that shrinks as the walk goes on, and a rate for strongly convex functions. Along the way we also meet smooth losses, where the rate improves when the best filter is good.
 
 ## What you need from lesson 14a
 
@@ -24,7 +24,7 @@ Here is the toolkit, one line each, so you can check that nothing has slipped.
 - **Jensen’s inequality.** For convex \(f\), \(f(\bar{\mathbf w}) \le \frac1T\sum_t f(\mathbf w^{(t)})\): the average point sits no higher than the iterates do on average.
 - **SGD.** Stochastic gradient descent chooses each \(\mathbf v_t\) at random so that \(\mathbb E[\mathbf v_t \mid \mathbf v_{1:t-1}] \in \partial f(\mathbf w^{(t)})\). Here \(\mathbb E\) is the expected value, the bar reads “given”, and \(\mathbf v_{1:t-1}\) is shorthand for the earlier choices \(\mathbf v_1, \dots, \mathbf v_{t-1}\): averaged over this step’s random choice with the past held fixed, the step direction is a subgradient at the current iterate.
 - **The SGD guarantee.** If \(f\) is convex, \(\|\mathbf v_t\| \le \rho\) always, and \(\mathbf w^\star\) is a lowest point of \(f\) in the ball \(\{\mathbf w : \|\mathbf w\| \le B\}\) (the weight vectors of length at most \(B\)), then \(\mathbb E[f(\bar{\mathbf w})] - f(\mathbf w^\star) \le B^2/(2\eta T) + \eta\rho^2/2\), the **certified gap**, which is \(B\rho/\sqrt T\) at \(\eta = B/(\rho\sqrt T)\). The proof’s one random step fixes the past, pulls the fixed vector \(\mathbf w^{(t)} - \mathbf w^\star\) out of the inner product, and applies the subgradient inequality to the conditional mean; the **law of total expectation** then averages over the past.
-- **SGD-Risk.** To minimize the true risk, draw a **fresh example** \(z_t \sim \mathcal D\) at each step (drawn from \(\mathcal D\), independent of the past) and step along a subgradient of the loss on it. A **convex-Lipschitz-bounded** problem (lesson 12: weight vectors of norm at most \(B\), each loss convex and \(\rho\)-Lipschitz) is learned within \(\varepsilon\) from \(T \ge B^2\rho^2/\varepsilon^2\) fresh examples.
+- **SGD-Risk.** To minimize the true risk, draw a **fresh example** \(z_t \sim \mathcal D\) at each step (drawn from \(\mathcal D\), independent of the past) and step along a subgradient of the loss on it. A **convex-Lipschitz-bounded** problem (lesson 12b: weight vectors of norm at most \(B\), each loss convex and \(\rho\)-Lipschitz) is learned within \(\varepsilon\) from \(T \ge B^2\rho^2/\varepsilon^2\) fresh examples.
 
 And the one identity everything in this lesson leans on. The step lemma of lesson 14a was proved by completing a square, which turns each step’s progress into a drop in squared distance to the target:
 
@@ -123,7 +123,7 @@ The output need not be the plain average of all iterates. Alternatives include r
 
 ### Strongly convex functions
 
-Recall from lesson 13 that a strongly convex function sags below each of its chords by at least a fixed multiple of the chord’s squared length. Lesson 13 wrote the constant as \(\sigma\); here we call it \(\lambda\), because below it will be the regularization weight. So \(f\) is **\(\lambda\)-strongly convex** when, for all \(\mathbf w, \mathbf u\) and \(\alpha \in (0, 1)\),
+Recall from lesson 13b that a strongly convex function sags below each of its chords by at least a fixed multiple of the chord’s squared length. Lesson 13b wrote the constant as \(\sigma\); here we call it \(\lambda\), because below it will be the regularization weight. So \(f\) is **\(\lambda\)-strongly convex** when, for all \(\mathbf w, \mathbf u\) and \(\alpha \in (0, 1)\),
 
 \[ f(\alpha\mathbf w + (1-\alpha)\mathbf u) \le \alpha f(\mathbf w) + (1-\alpha) f(\mathbf u) - \frac\lambda2 \alpha(1-\alpha)\|\mathbf w - \mathbf u\|^2. \]
 
@@ -202,7 +202,7 @@ The last step bounds the harmonic sum: \(\sum_{t=1}^T 1/t \le 1 + \int_1^T ds/s 
 
 (Sharper analyses remove the \(\log T\): for instance by averaging only the last \(T/2\) iterates, and it is also known that the bound holds for the last iterate \(\mathbf w^{(T)}\) itself. We will not prove those.)
 
-Before we put this rate to work, watch it run. Take the six messages again, and add to their hinge risk the bowl with \(\lambda = 0.1\): the function is \(f(\mathbf w) = 0.05\|\mathbf w\|^2\) plus the average hinge loss over the six. The bowl is \(0.1\)-strongly convex (lesson 13 showed it, and the section “SGD for regularized loss minimization” recalls why), and adding the convex hinge risk keeps that, so the theorem applies. At \(\mathbf w = (1, -1)\) this \(f\) is about 0.7833, and its lowest value is about 0.7466. Each step draws one message at random and steps along \(\lambda\mathbf w^{(t)}\) plus that message’s hinge subgradient; the section “SGD for regularized loss minimization” shows that this is an unbiased estimate of a subgradient of \(f\).
+Before we put this rate to work, watch it run. Take the six messages again, and add to their hinge risk the bowl with \(\lambda = 0.1\): the function is \(f(\mathbf w) = 0.05\|\mathbf w\|^2\) plus the average hinge loss over the six. The bowl is \(0.1\)-strongly convex (lesson 13b showed it, and the section “SGD for regularized loss minimization” recalls why), and adding the convex hinge risk keeps that, so the theorem applies. At \(\mathbf w = (1, -1)\) this \(f\) is about 0.7833, and its lowest value is about 0.7466. Each step draws one message at random and steps along \(\lambda\mathbf w^{(t)}\) plus that message’s hinge subgradient; the section “SGD for regularized loss minimization” shows that this is an unbiased estimate of a subgradient of \(f\).
 
 In the lab below you pick the schedule, either a constant step size \(\eta\) or the shrinking \(\eta_t = 1/(\lambda t)\), and the number of steps \(T\). You watch the path on the landscape of \(f\), and how far the average lands above the bottom, over 100 runs. Before you start, predict: with \(T = 4{,}000\) for both, which ends closer to the bottom, a constant \(\eta = 0.2\) or \(\eta_t = 1/(\lambda t)\)? Then push \(T\) up and watch which one keeps improving.
 
@@ -210,7 +210,7 @@ In the lab below you pick the schedule, either a constant step size \(\eta\) or 
 
 ## Smooth losses
 
-Lesson 12 had a second family besides convex-Lipschitz: losses that are **\(\beta\)-smooth**, meaning the gradient is \(\beta\)-Lipschitz, \(\|\nabla f(\mathbf v) - \nabla f(\mathbf w)\| \le \beta\|\mathbf v - \mathbf w\|\): the slope itself changes by at most \(\beta\) (beta) times the distance moved. The square loss and the logistic loss on bounded messages are examples. Lesson 12 also showed the key property we need: a nonnegative \(\beta\)-smooth function is **self-bounded**, \(\|\nabla f(\mathbf w)\|^2 \le 2\beta f(\mathbf w)\), the squared slope at most \(2\beta\) times the height. Its gradient is small wherever its value is small. (For \(f(w) = \frac12 w^2\), which is 1-smooth, both sides equal \(w^2\).) Here is why that helps: in the step lemma, the price of noise was \(\frac\eta2\sum_t\|\mathbf v_t\|^2\), and self-boundedness turns that price into a multiple of the loss itself.
+Lesson 12b had a second family besides convex-Lipschitz: losses that are **\(\beta\)-smooth**, meaning the gradient is \(\beta\)-Lipschitz, \(\|\nabla f(\mathbf v) - \nabla f(\mathbf w)\| \le \beta\|\mathbf v - \mathbf w\|\): the slope itself changes by at most \(\beta\) (beta) times the distance moved. The square loss and the logistic loss on bounded messages are examples. Lesson 12a also showed the key property we need: a nonnegative \(\beta\)-smooth function is **self-bounded**, \(\|\nabla f(\mathbf w)\|^2 \le 2\beta f(\mathbf w)\), the squared slope at most \(2\beta\) times the height. Its gradient is small wherever its value is small. (For \(f(w) = \frac12 w^2\), which is 1-smooth, both sides equal \(w^2\).) Here is why that helps: in the step lemma, the price of noise was \(\frac\eta2\sum_t\|\mathbf v_t\|^2\), and self-boundedness turns that price into a multiple of the loss itself.
 
 **Theorem (SGD on smooth losses).** Assume that for every \(z\), the loss \(\ell(\cdot, z)\) is convex, \(\beta\)-smooth and nonnegative, and let \(\eta < 1/\beta\). Then SGD-Risk satisfies, for every \(\mathbf w^\star\),
 
@@ -230,7 +230,7 @@ This holds for every outcome. Now take expectations over \(z_1, \dots, z_T\). On
 
 Notice the shape: if the best hypothesis has small risk, the noise term almost vanishes. Setting the knobs turns this into a sample complexity:
 
-**Corollary (SGD learns convex-smooth-bounded problems).** Consider a convex-smooth-bounded learning problem with parameters \(\beta, B\) (lesson 12: \(\mathcal H\) convex with \(\|\mathbf w\| \le B\), each \(\ell(\cdot, z)\) convex, nonnegative and \(\beta\)-smooth), with \(\mathbf 0 \in \mathcal H\) and \(\ell(\mathbf 0, z) \le 1\) for every \(z\). For every \(\varepsilon \in (0, 1]\), set \(\eta = 1/(\beta(1 + 3/\varepsilon))\). Then SGD-Risk with \(T \ge 12B^2\beta/\varepsilon^2\) gives
+**Corollary (SGD learns convex-smooth-bounded problems).** Consider a convex-smooth-bounded learning problem with parameters \(\beta, B\) (lesson 12b: \(\mathcal H\) convex with \(\|\mathbf w\| \le B\), each \(\ell(\cdot, z)\) convex, nonnegative and \(\beta\)-smooth), with \(\mathbf 0 \in \mathcal H\) and \(\ell(\mathbf 0, z) \le 1\) for every \(z\). For every \(\varepsilon \in (0, 1]\), set \(\eta = 1/(\beta(1 + 3/\varepsilon))\). Then SGD-Risk with \(T \ge 12B^2\beta/\varepsilon^2\) gives
 
 \[ \mathbb E[L_{\mathcal D}(\bar{\mathbf w})] \le \min_{\mathbf w \in \mathcal H} L_{\mathcal D}(\mathbf w) + \varepsilon. \]
 
@@ -254,15 +254,15 @@ for eps in (1.0, 0.5, 0.1, 0.01):
     print(eps, [round(e, 4) for e in excess], max(excess) <= eps)
 ```
 
-It prints `1.0 [0.2222, 0.3889, 0.5556] True`, then `0.5 [0.0851, 0.1684, 0.2517] True`, `0.1 [0.0133, 0.03, 0.0467] True` and `0.01 [0.0013, 0.0029, 0.0046] True`. The worst case, \(L^\star = 1\) at \(\varepsilon = 1\), is exactly \(5/9\). Lesson 13’s regularized learner needed \(150\beta B^2/\varepsilon^2\) examples for this guarantee; SGD needs \(12\beta B^2/\varepsilon^2\).
+It prints `1.0 [0.2222, 0.3889, 0.5556] True`, then `0.5 [0.0851, 0.1684, 0.2517] True`, `0.1 [0.0133, 0.03, 0.0467] True` and `0.01 [0.0013, 0.0029, 0.0046] True`. The worst case, \(L^\star = 1\) at \(\varepsilon = 1\), is exactly \(5/9\). Lesson 13b’s regularized learner needed \(150\beta B^2/\varepsilon^2\) examples for this guarantee; SGD needs \(12\beta B^2/\varepsilon^2\).
 
 ## SGD for regularized loss minimization
 
-SGD matches regularized loss minimization’s worst-case sample complexity, and beats its constants: \(B^2\rho^2/\varepsilon^2\) against \(8\rho^2B^2/\varepsilon^2\) for convex-Lipschitz-bounded problems (lesson 14a), and \(12\beta B^2/\varepsilon^2\) against \(150\beta B^2/\varepsilon^2\) for convex-smooth-bounded ones (“Smooth losses”). But on some distributions the regularized solution is genuinely better, and sometimes you want exactly the lesson 13 objective:
+SGD matches regularized loss minimization’s worst-case sample complexity, and beats its constants: \(B^2\rho^2/\varepsilon^2\) against \(8\rho^2B^2/\varepsilon^2\) for convex-Lipschitz-bounded problems (lesson 14a), and \(12\beta B^2/\varepsilon^2\) against \(150\beta B^2/\varepsilon^2\) for convex-smooth-bounded ones (“Smooth losses”). But on some distributions the regularized solution is genuinely better, and sometimes you want exactly the lesson 13a objective:
 
 \[ \min_{\mathbf w} \; f(\mathbf w) = \frac\lambda2 \|\mathbf w\|^2 + L_S(\mathbf w). \]
 
-Here \(\min_{\mathbf w}\) asks for the smallest value over all weight vectors, \(\frac\lambda2\|\mathbf w\|^2\) is the bowl, a charge on squared length scaled by the regularization weight \(\lambda\) (lambda), and \(L_S\) is the training fit. Lesson 13 charged \(\lambda\|\mathbf w\|^2\); the half is for convenience and only rescales \(\lambda\). In plain words: **find the weight vector with the best trade between training fit and half of \(\lambda\) times its squared length.** With \(\lambda = 0.1\), our six messages as \(S\) and the hinge loss, \(\mathbf w = (1, -1)\) pays \(0.1\) for its length and \(0.6833\) for its fit:
+Here \(\min_{\mathbf w}\) asks for the smallest value over all weight vectors, \(\frac\lambda2\|\mathbf w\|^2\) is the bowl, a charge on squared length scaled by the regularization weight \(\lambda\) (lambda), and \(L_S\) is the training fit. Lesson 13a charged \(\lambda\|\mathbf w\|^2\); the half is for convenience and only rescales \(\lambda\). In plain words: **find the weight vector with the best trade between training fit and half of \(\lambda\) times its squared length.** With \(\lambda = 0.1\), our six messages as \(S\) and the hinge loss, \(\mathbf w = (1, -1)\) pays \(0.1\) for its length and \(0.6833\) for its fit:
 
 ```python
 S = [((0.8, 0.2), 1), ((0.6, 0.6), 1), ((0.9, 0.4), 1),
@@ -276,7 +276,7 @@ print(round(bowl, 4), round(L_S(w), 4), round(bowl + L_S(w), 4))
 
 It prints `0.1 0.6833 0.7833`.
 
-Can SGD solve it fast? This \(f\) is \(\lambda\)-strongly convex: lesson 13 showed \(\lambda\|\mathbf w\|^2\) is \(2\lambda\)-strongly convex, so \(\frac\lambda2\|\mathbf w\|^2\) is \(\lambda\)-strongly convex, and adding the convex \(L_S\) keeps that. A strongly convex continuous function has a unique minimizer. So we can use the strongly convex variant with \(\mathcal H = \mathbb R^d\), where the projection does nothing. We need an unbiased subgradient estimate:
+Can SGD solve it fast? This \(f\) is \(\lambda\)-strongly convex: lesson 13b showed \(\lambda\|\mathbf w\|^2\) is \(2\lambda\)-strongly convex, so \(\frac\lambda2\|\mathbf w\|^2\) is \(\lambda\)-strongly convex, and adding the convex \(L_S\) keeps that. A strongly convex continuous function has a unique minimizer. So we can use the strongly convex variant with \(\mathcal H = \mathbb R^d\), where the projection does nothing. We need an unbiased subgradient estimate:
 
 Pick \(z\) uniformly at random from \(S\), take \(\mathbf v_t \in \partial \ell(\mathbf w^{(t)}, z)\) by a fixed rule, and step along \(\lambda\mathbf w^{(t)} + \mathbf v_t\).
 
@@ -331,7 +331,7 @@ for T in (10, 100, 1000, 10000):
           round(bound, 4))
 ```
 
-It prints `10 2.929 3.303 6.6052`, `100 5.187 5.605 1.121`, `1000 7.485 7.908 0.1582` and `10000 9.788 10.21 0.0204`. The harmonic sum always sits under \(1 + \log T\), and the bound falls almost like \(1/T\). Each step reads one example from \(S\), so this is a solver for the lesson 13 objective whose cost does not grow with \(m\). That is the solver the auditor asked for, and the one the next lesson builds on.
+It prints `10 2.929 3.303 6.6052`, `100 5.187 5.605 1.121`, `1000 7.485 7.908 0.1582` and `10000 9.788 10.21 0.0204`. The harmonic sum always sits under \(1 + \log T\), and the bound falls almost like \(1/T\). Each step reads one example from \(S\), so this is a solver for the lesson 13a objective whose cost does not grow with \(m\). That is the solver the auditor asked for, and the one the next lesson builds on.
 
 ## The regularized solver as code
 
@@ -421,7 +421,7 @@ The streaming filter of lesson 14a gets something too. Its optional projection, 
 
 **“Any shrinking step size gets the \(\log(T)/T\) rate.”** The fast rate needs a strongly convex function *and* the schedule \(\eta_t = 1/(\lambda t)\) matched to its curvature. On a merely convex function, the shrinking schedule \(B/(\rho\sqrt t)\) still gives only a rate of order \(1/\sqrt T\) (the second problem below). And if you claim more curvature than the function has, using a \(\lambda\) larger than the true one, the telescoping in the proof leaves positive terms behind and the bound is lost.
 
-**“The fast rate means SGD learns from fewer fresh messages.”** The \(\log(T)/T\) rate is about reaching the minimum of a strongly convex objective, such as the regularized objective on a fixed training sequence. How good that minimum is as a filter is lesson 13’s question, with its own price for the penalty. For the true risk of a convex-Lipschitz-bounded problem, the count is still \(B^2\rho^2/\varepsilon^2\) fresh messages.
+**“The fast rate means SGD learns from fewer fresh messages.”** The \(\log(T)/T\) rate is about reaching the minimum of a strongly convex objective, such as the regularized objective on a fixed training sequence. How good that minimum is as a filter is lesson 13b’s question, with its own price for the penalty. For the true risk of a convex-Lipschitz-bounded problem, the count is still \(B^2\rho^2/\varepsilon^2\) fresh messages.
 
 **“The measured gap is far below the certificate, so fewer steps would do.”** The measurement is one world and 100 runs. The certificate holds for every training sequence the auditor could hand you. A filter ships on what you can prove, not on how one test went.
 
@@ -447,5 +447,5 @@ Write your answers down before moving on to the next lesson, with your reasoning
 
 Once the concept check is done, try these. Hints come one at a time in the chat, and no full solutions.
 
-- **Problem 1 (strong convexity and subgradients).** Prove the claim used for strongly convex functions: if \(f\) is \(\lambda\)-strongly convex and \(\mathbf v \in \partial f(\mathbf w)\), then \(\langle \mathbf w - \mathbf u, \mathbf v \rangle \ge f(\mathbf w) - f(\mathbf u) + \frac\lambda2\|\mathbf w - \mathbf u\|^2\) for every \(\mathbf u\). Start from the definition of strong convexity at the point \(\mathbf w + \alpha(\mathbf u - \mathbf w)\), and remember how lesson 13 handled a minimizer.
+- **Problem 1 (strong convexity and subgradients).** Prove the claim used for strongly convex functions: if \(f\) is \(\lambda\)-strongly convex and \(\mathbf v \in \partial f(\mathbf w)\), then \(\langle \mathbf w - \mathbf u, \mathbf v \rangle \ge f(\mathbf w) - f(\mathbf u) + \frac\lambda2\|\mathbf w - \mathbf u\|^2\) for every \(\mathbf u\). Start from the definition of strong convexity at the point \(\mathbf w + \alpha(\mathbf u - \mathbf w)\), and remember how lesson 13b handled a minimizer.
 - **Problem 2 (variable step size; harder).** Prove an analog of the SGD guarantee for the step sizes \(\eta_t = B/(\rho\sqrt t)\), with the projection step onto \(\{\mathbf w : \|\mathbf w\| \le B\}\): a bound of order \(B\rho/\sqrt T\) on \(\mathbb E[f(\bar{\mathbf w})] - f(\mathbf w^\star)\).

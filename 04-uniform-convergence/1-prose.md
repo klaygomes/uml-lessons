@@ -610,7 +610,7 @@ It prints `9610` and `13538`: about ten thousand examples for one threshold to w
 
 [[diagram:discretization]]
 
-Lesson 6 replaces this trick with a measure of a class’s size that does not care about bits.
+Lesson 6a replaces this trick with a measure of a class’s size that does not care about bits.
 
 ## The dashboard as code
 
@@ -694,7 +694,7 @@ In the lab, you set the number of examples each week. Labels cost people’s tim
 
 ## Where this comes from
 
-Classes for which uniform convergence holds are also called Glivenko-Cantelli classes, after Valery Glivenko and Francesco Cantelli, who proved the first uniform convergence result in the 1930s. The connection between uniform convergence and learnability was studied in depth by Vapnik. Lesson 6 will show that for binary classification, uniform convergence is not only sufficient for learnability but also necessary. For more general learning problems that is not the case.
+Classes for which uniform convergence holds are also called Glivenko-Cantelli classes, after Valery Glivenko and Francesco Cantelli, who proved the first uniform convergence result in the 1930s. The connection between uniform convergence and learnability was studied in depth by Vapnik. Lesson 6a will show that for binary classification, uniform convergence is not only sufficient for learnability but also necessary. For more general learning problems that is not the case.
 
 ## Recap and the next bug
 

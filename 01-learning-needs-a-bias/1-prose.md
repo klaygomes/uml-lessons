@@ -406,7 +406,7 @@ In between sits **reinforcement learning**. Here the training examples carry mor
 
 **Batch or online?** In **batch** learning, the learner gets a large body of training data first and must produce its hypothesis afterwards, like a data miner analysing a big archive. In **online** learning, the learner has to respond throughout the learning process, like a stockbroker who must make decisions every day using only the experience gathered so far. Expertise built online is usually costlier, since early mistakes are paid for along the way.
 
-This course mostly studies **supervised statistical batch learning with a passive learner**, such as learning to predict patients’ outcomes from archives of past cases labelled with how each one turned out. Online learning comes back in lesson 21, and unsupervised learning, in particular clustering, in lesson 22.
+This course mostly studies **supervised statistical batch learning with a passive learner**, such as learning to predict patients’ outcomes from archives of past cases labelled with how each one turned out. Online learning comes back in lessons 21a and 21b, and unsupervised learning, in particular clustering, in lesson 22.
 
 ## Where learning theory sits
 

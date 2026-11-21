@@ -96,7 +96,7 @@ assert misses / 20000 <= delta
 
 It prints 44 and 64. Then come the miss rates over 20,000 runs: 0.023 (about 2.3%) with only 6 examples, and 0.0 with the 44 the bound asks for, well under \(\delta = 0.05\). The bound is safe, and here it is generous. A wrong feature agrees with the true label on a random message half the time, so it survives 44 examples with chance \(1/2\) multiplied by itself 44 times, written \(2^{-44}\) (about one in 18 trillion). There are 3 wrong features, so an impostor survives with probability at most \(3 \cdot 2^{-44}\).
 
-Finite classes are not the only learnable ones. Some infinite classes are PAC learnable too, such as circles centred at the origin, where a hypothesis says 1 inside the circle. What really decides learnability is not finiteness but a combinatorial measure called the VC dimension, which arrives in lesson 6.
+Finite classes are not the only learnable ones. Some infinite classes are PAC learnable too, such as circles centred at the origin, where a hypothesis says 1 inside the circle. What really decides learnability is not finiteness but a combinatorial measure called the VC dimension, which arrives in lesson 6a.
 
 ## Where realizability breaks
 
@@ -631,7 +631,7 @@ Labels cost people’s time, so the fewer you ask for, the better. In the lab yo
 
 ## Where these definitions come from
 
-PAC learning was introduced by Valiant (1984), who won the 2010 Turing Award for it. Valiant’s definition required the sample complexity to be polynomial in \(1/\varepsilon\), \(1/\delta\) and the size of the hypotheses’ representation, and the runtime to be polynomial too. Lesson 6 will show that whenever a problem is PAC learnable at all, its sample complexity depends polynomially on \(1/\varepsilon\) and \(\log(1/\delta)\). The agnostic formalization is due to Haussler (1992), and the general setting with loss functions follows Vapnik and Chervonenkis (1971) and Vapnik’s later work. From here on, “PAC learning” means the most general model, agnostic with a general loss, and the loss is understood from context. When the realizable case is meant, we will say so. Lesson 7 discusses other notions of learnability.
+PAC learning was introduced by Valiant (1984), who won the 2010 Turing Award for it. Valiant’s definition required the sample complexity to be polynomial in \(1/\varepsilon\), \(1/\delta\) and the size of the hypotheses’ representation, and the runtime to be polynomial too. Lesson 6a will show that whenever a problem is PAC learnable at all, its sample complexity depends polynomially on \(1/\varepsilon\) and \(\log(1/\delta)\). The agnostic formalization is due to Haussler (1992), and the general setting with loss functions follows Vapnik and Chervonenkis (1971) and Vapnik’s later work. From here on, “PAC learning” means the most general model, agnostic with a general loss, and the loss is understood from context. When the realizable case is meant, we will say so. Lesson 7a discusses other notions of learnability.
 
 ## Recap and the next bug
 

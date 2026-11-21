@@ -66,7 +66,7 @@ End-of-chapter problems (hints only, never solutions on the page; prose “Probl
   4. For a strict second inequality, try a class where some point is never labelled 1: it can never be in a shattered set, while the binomial sum counts it.
   5. Checked examples (for the critique only): (=,=) thresholds on 3 points {000,001,011,111}: 4, 4, 4; (<,=) {00,11}: 2, 3, 3; (=,<) {00,10}: 2, 2, 3; (<,<) {000,110}: 2, 3, 4 (`ex4_check.py`).
 
-Next bug: a teammate wants decision lists that can grow as long as needed; for each length k the class has finite VC dimension, but the union over all lengths shatters sets of every size, so it is not PAC learnable. A learner that prefers short lists seems reasonable: can such a class be learned in a weaker sense? Lesson 7, nonuniform learnability and structural risk minimization.
+Next bug: a teammate wants decision lists that can grow as long as needed; for each length k the class has finite VC dimension, but the union over all lengths shatters sets of every size, so it is not PAC learnable. A learner that prefers short lists seems reasonable: can such a class be learned in a weaker sense? Lesson 7a, nonuniform learnability and structural risk minimization.
 
 Assumptions:
 - Not checked yet by the book-check agents (gate 2). Every claim from the book was written from the PDF extract of pp. 67 to 82, 33 to 66 and 419 to 425 in the original lesson 6 session.

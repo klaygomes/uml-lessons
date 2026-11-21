@@ -302,7 +302,7 @@ On a mistake (\(s \le 0\)) the ramp loss charges exactly 1, like the 0-1 loss, w
 
 [[diagram:hinge]]
 
-So why does SVM use the hinge loss and not the ramp? Computation. The hinge loss is convex, so minimizing it is efficient: every local minimum is global, and the methods of lessons 12a to 14 apply. The ramp loss is not convex (it is flat for very negative \(s\), then slopes, then is flat again), and minimizing it is computationally intractable.
+So why does SVM use the hinge loss and not the ramp? Computation. The hinge loss is convex, so minimizing it is efficient: every local minimum is global, and the methods of lessons 12a to 14b apply. The ramp loss is not convex (it is flat for very negative \(s\), then slopes, then is flat again), and minimizing it is computationally intractable.
 
 ## Support vectors
 
@@ -443,13 +443,13 @@ The same method solves soft-SVM, with one change. Repeating the derivation for t
 
 ## Soft-SVM by stochastic gradient descent
 
-Quadratic-program solvers and dual coordinate ascent both work, but for the real mail system, with millions of messages and fifty thousand words, there is a much simpler method you already own. Lesson 14 showed how to solve regularized loss minimization with stochastic gradient descent. Let’s apply it to soft-SVM, in the homogeneous form
+Quadratic-program solvers and dual coordinate ascent both work, but for the real mail system, with millions of messages and fifty thousand words, there is a much simpler method you already own. Lesson 14b showed how to solve regularized loss minimization with stochastic gradient descent. Let’s apply it to soft-SVM, in the homogeneous form
 
 \[ \min_{\mathbf w} \left( \frac{\lambda}{2} \|\mathbf w\|^2 + \frac1m \sum_{i=1}^m \max\{0, 1 - y_i \langle \mathbf w, \mathbf x_i \rangle\} \right). \]
 
 (Notice the \(\lambda/2\). It makes the algebra below cleaner. Running this method with parameter \(\lambda\) solves soft-SVM as we defined it with parameter \(\lambda/2\); to get soft-SVM with parameter \(\lambda\), run it with \(2\lambda\).)
 
-Recall the method from lesson 14. The objective \(f(\mathbf w) = \tfrac{\lambda}{2}\|\mathbf w\|^2 + L_S(\mathbf w)\) is **\(\lambda\)-strongly convex** (lesson 13b): it curves upward at least as much as the bowl \(\tfrac{\lambda}{2}\|\mathbf w\|^2\), which is what makes a step size shrinking like \(1/t\) safe. **Stochastic gradient descent** (SGD) walks downhill using a cheap, noisy slope computed from one example at a time. At step \(t\), pick an example uniformly at random from \(S\) and a subgradient \(\mathbf v_t\) of its loss at the current weights \(\mathbf w^{(t)}\) (the superscript in parentheses counts steps; it is not a power); then \(\lambda \mathbf w^{(t)} + \mathbf v_t\) is, in expectation, a subgradient of \(f\), and the update with step size \(1/(\lambda t)\) is
+Recall the method from lesson 14b. The objective \(f(\mathbf w) = \tfrac{\lambda}{2}\|\mathbf w\|^2 + L_S(\mathbf w)\) is **\(\lambda\)-strongly convex** (lesson 13b): it curves upward at least as much as the bowl \(\tfrac{\lambda}{2}\|\mathbf w\|^2\), which is what makes a step size shrinking like \(1/t\) safe. **Stochastic gradient descent** (SGD) walks downhill using a cheap, noisy slope computed from one example at a time. At step \(t\), pick an example uniformly at random from \(S\) and a subgradient \(\mathbf v_t\) of its loss at the current weights \(\mathbf w^{(t)}\) (the superscript in parentheses counts steps; it is not a power); then \(\lambda \mathbf w^{(t)} + \mathbf v_t\) is, in expectation, a subgradient of \(f\), and the update with step size \(1/(\lambda t)\) is
 
 \[ \mathbf w^{(t+1)} = \mathbf w^{(t)} - \frac{1}{\lambda t} \left( \lambda \mathbf w^{(t)} + \mathbf v_t \right) = \left(1 - \frac1t\right) \mathbf w^{(t)} - \frac{1}{\lambda t} \mathbf v_t, \]
 
@@ -479,7 +479,7 @@ print([round(c, 6) for c in closed])
 
 Both lines print `[-0.685902, -0.263015, -0.231963]`.
 
-*The subgradient of the hinge loss.* Lesson 14 computed it: at \(\mathbf w\), for the example \((\mathbf x, y)\), take \(\mathbf v = \mathbf 0\) if \(y \langle \mathbf w, \mathbf x \rangle \ge 1\) (the flat part) and \(\mathbf v = -y\mathbf x\) otherwise (the sloped part). Write \(\boldsymbol\theta^{(t)} = -\sum_{j<t} \mathbf v_j\) for the running sum. Then \(\boldsymbol\theta\) changes only on examples with signed score below 1, by adding \(y_i \mathbf x_i\), and the closed form gives \(\mathbf w^{(t)} = \boldsymbol\theta^{(t)}/(\lambda (t-1))\) for \(t \ge 2\). The standard form of the algorithm, below, divides by \(\lambda t\) instead: it is defined already at \(t = 1\), and the two differ by the factor \((t-1)/t\), which tends to 1. That is the whole algorithm.
+*The subgradient of the hinge loss.* Lesson 14a computed it: at \(\mathbf w\), for the example \((\mathbf x, y)\), take \(\mathbf v = \mathbf 0\) if \(y \langle \mathbf w, \mathbf x \rangle \ge 1\) (the flat part) and \(\mathbf v = -y\mathbf x\) otherwise (the sloped part). Write \(\boldsymbol\theta^{(t)} = -\sum_{j<t} \mathbf v_j\) for the running sum. Then \(\boldsymbol\theta\) changes only on examples with signed score below 1, by adding \(y_i \mathbf x_i\), and the closed form gives \(\mathbf w^{(t)} = \boldsymbol\theta^{(t)}/(\lambda (t-1))\) for \(t \ge 2\). The standard form of the algorithm, below, divides by \(\lambda t\) instead: it is defined already at \(t = 1\), and the two differ by the factor \((t-1)/t\), which tends to 1. That is the whole algorithm.
 
 ```
 SGD-SoftSVM(S, λ, T):
@@ -498,7 +498,7 @@ Look at the update line. It is the Perceptron’s update, \(y_i \mathbf x_i\), t
 
 [[diagram:sgd]]
 
-How good is \(\bar{\mathbf w}\)? Lesson 14’s analysis of exactly this objective with a \(\rho\)-Lipschitz loss gives
+How good is \(\bar{\mathbf w}\)? Lesson 14b’s analysis of exactly this objective with a \(\rho\)-Lipschitz loss gives
 
 \[ \mathbb E[f(\bar{\mathbf w})] - \min_{\mathbf w} f(\mathbf w) \le \frac{2\rho^2}{\lambda T} (1 + \log T). \]
 

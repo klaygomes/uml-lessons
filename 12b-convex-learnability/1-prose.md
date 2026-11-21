@@ -2,7 +2,7 @@
 
 ## The certificate operations would not sign
 
-Lesson 12a ended on a small victory and an awkward email. The job that would have needed \(5 \times 10^{29}\) years finished in 87 steps: a walk down lesson 9’s logistic risk on the ten messages, stopped by a certificate proving that no weight vector in the ball of radius 3 does more than 0.01 better on those ten messages. Operations read the report and sent back two questions, and the certificate answers neither.
+Lesson 12a ended on a small victory and an awkward email. The job that would have needed \(5 \times 10^{29}\) years finished in 87 steps: a walk down lesson 9b’s logistic risk on the ten messages, stopped by a certificate proving that no weight vector in the ball of radius 3 does more than 0.01 better on those ten messages. Operations read the report and sent back two questions, and the certificate answers neither.
 
 The first question: “Certified on which mail?” The proof is about the training sequence, the messages you already have. Operations wants a promise about next month’s mail, bought with the 3,000 labels the budget pays for. A colleague reading over your shoulder says the loss is convex, so of course it learns; just add labels.
 
@@ -29,7 +29,7 @@ A short reminder of the pieces this lesson leans on, each built and proved in le
 | B′ | \((1, 2, 1)\) | \(-1\) |
 | E′ | \((1, 1, 2)\) | \(+1\) |
 
-- **Signed score and 0-1 loss.** For a weight vector \(\mathbf w\), the inner product \(\langle \mathbf w, \mathbf x \rangle\) multiplies matching entries and adds them up; the signed score \(y\langle \mathbf w, \mathbf x \rangle\) is positive when the halfspace agrees with the label. The 0-1 loss is \(\mathbb 1[y\langle \mathbf w, \mathbf x \rangle \le 0]\), 1 for a mistake (a zero score counts as one) and 0 otherwise. Lesson 9’s \(\mathbf w^\circ = (-1, 2, -2)\) makes the two forced mistakes, B′ and E′, so its 0-1 risk is 0.2, the floor.
+- **Signed score and 0-1 loss.** For a weight vector \(\mathbf w\), the inner product \(\langle \mathbf w, \mathbf x \rangle\) multiplies matching entries and adds them up; the signed score \(y\langle \mathbf w, \mathbf x \rangle\) is positive when the halfspace agrees with the label. The 0-1 loss is \(\mathbb 1[y\langle \mathbf w, \mathbf x \rangle \le 0]\), 1 for a mistake (a zero score counts as one) and 0 otherwise. Lesson 9a’s \(\mathbf w^\circ = (-1, 2, -2)\) makes the two forced mistakes, B′ and E′, so its 0-1 risk is 0.2, the floor.
 - **Length.** \(\|\mathbf x\|\) is the Euclidean length, the square root of the sum of squared entries. The longest message is C, with \(\|\mathbf x\| = \sqrt{21} \approx 4.58\), and we write \(R\) for a bound on every message’s length.
 - **Convex.** A set is convex when it contains the segment between any two of its points, such as the ball \(\{\mathbf w : \|\mathbf w\| \le B\}\). A function is convex when its graph lies on or below every chord, \(f(\alpha\mathbf u + (1 - \alpha)\mathbf v) \le \alpha f(\mathbf u) + (1 - \alpha) f(\mathbf v)\) for \(\alpha \in [0, 1]\). For convex functions every local minimum is global, and the tangent inequality \(f(\mathbf u) \ge f(\mathbf w) + \langle \nabla f(\mathbf w), \mathbf u - \mathbf w \rangle\) puts a floor under the graph, where the gradient \(\nabla f(\mathbf w)\) lists how steeply \(f\) rises in each weight.
 - **Building convex losses.** Convexity survives composition with a linear function, maxima, and sums with nonnegative weights. So the square loss, the logistic loss \(\log(1 + \exp(-y\langle \mathbf w, \mathbf x \rangle))\) and the **hinge loss** \(\max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\}\), which charges how far the signed score falls short of 1, are convex in \(\mathbf w\), and so are their empirical risks.
@@ -42,9 +42,9 @@ A short reminder of the pieces this lesson leans on, each built and proved in le
 
 Lesson 12a showed that convex problems can be *optimized*. Can they be *learned*? That is a different question: it asks whether the hypothesis ERM returns on \(m\) examples has small true risk, with a number of examples that depends only on \(\varepsilon\) and \(\delta\). As in lesson 3, \(\varepsilon\) is the extra true risk you tolerate above the best in the class, and \(\delta\) the chance you allow of an unlucky training sequence; the true risk \(L_{\mathcal D}(\mathbf w)\) is the average loss on a fresh example drawn from the distribution \(\mathcal D\). A problem is **agnostic PAC learnable**, in lesson 3’s words, when some learner meets that \((\varepsilon, \delta)\) promise for every distribution, with no assumption that a perfect hypothesis exists.
 
-You have good reasons to hope so. Lessons 6 and 9 showed that halfspaces in \(d\) dimensions are learnable (perhaps not efficiently). Lesson 4’s discretization trick suggested that any class described by \(d\) numbers is learnable with a number of examples that grows with \(d\). So surely, for a fixed small \(d\), every convex learning problem over \(\mathbb R^d\) is learnable?
+You have good reasons to hope so. Lessons 6a and 9a showed that halfspaces in \(d\) dimensions are learnable (perhaps not efficiently). Lesson 4’s discretization trick suggested that any class described by \(d\) numbers is learnable with a number of examples that grows with \(d\). So surely, for a fixed small \(d\), every convex learning problem over \(\mathbb R^d\) is learnable?
 
-No. Not even for \(d = 1\). This does not contradict lesson 6, which is about binary classification with the 0-1 loss, while here losses are real-valued and can be huge. Nor does it contradict the discretization trick, which assumed a bounded loss and that a finite number of bits per parameter is enough. Here is the counterexample, and it is worth going through slowly, because every step shows a different way that “convex” fails to imply “learnable”.
+No. Not even for \(d = 1\). This does not contradict lesson 6a, which is about binary classification with the 0-1 loss, while here losses are real-valued and can be huge. Nor does it contradict the discretization trick, which assumed a bounded loss and that a finite number of bits per parameter is enough. Here is the counterexample, and it is worth going through slowly, because every step shows a different way that “convex” fails to imply “learnable”.
 
 **Claim (linear regression in one dimension is not learnable).** Let \(\mathcal H = \mathbb R\), examples \(z = (x, y) \in \mathbb R^2\), and the square loss \(\ell(w, (x, y)) = (wx - y)^2\) (homogeneous: no bias term). This problem is convex, and it is not agnostic PAC learnable by any deterministic algorithm.
 
@@ -162,7 +162,7 @@ Example: let \(\mathcal X = \{\mathbf x \in \mathbb R^d : \|\mathbf x\| \le \sqr
 
 Go back to the counterexamples. The first had no bound \(B\). The second had \(B = 1\), but on \(z_1 = (1/\mu, 0)\) both the slope and the smoothness constant of the loss reached \(2/\mu^2\), with no limit fixed in advance.
 
-**The promise, proved in the next two lessons.** These two kinds of problems are learnable: convexity, boundedness, and Lipschitzness or smoothness of the loss together are sufficient. Lessons 13 and 14 prove it by giving learners that succeed. To have a number to work with, here is the result lesson 14 proves for the convex-Lipschitz-bounded case, stated now and used in the lab. There is a simple learner (stochastic gradient descent, which looks at each example once) whose output \(\bar{\mathbf w}\) on \(m\) i.i.d. examples satisfies
+**The promise, proved in the next two lessons.** These two kinds of problems are learnable: convexity, boundedness, and Lipschitzness or smoothness of the loss together are sufficient. Lessons 13b and 14a prove it by giving learners that succeed. To have a number to work with, here is the result lesson 14a proves for the convex-Lipschitz-bounded case, stated now and used in the lab. There is a simple learner (stochastic gradient descent, which looks at each example once) whose output \(\bar{\mathbf w}\) on \(m\) i.i.d. examples satisfies
 
 \[ \mathbb E_S \left[ L_{\mathcal D}(\bar{\mathbf w}) \right] \le \min_{\mathbf w \in \mathcal H} L_{\mathcal D}(\mathbf w) + \frac{\rho B}{\sqrt m}. \]
 
@@ -182,7 +182,7 @@ eps = 0.05
 print(math.ceil(rho ** 2 * B ** 2 / eps ** 2))
 ```
 
-It prints `0.1255` and `18900`. Note two things. The bound does not mention \(d\) at all; the number of words can be as large as you like. And the guarantee is about the expectation over training sequences, not “with probability at least \(1 - \delta\)”; lesson 13 has tools for the second form.
+It prints `0.1255` and `18900`. Note two things. The bound does not mention \(d\) at all; the number of words can be as large as you like. And the guarantee is about the expectation over training sequences, not “with probability at least \(1 - \delta\)”; lesson 13b has tools for the second form.
 
 ## Surrogate loss functions
 
@@ -195,7 +195,7 @@ For halfspaces, the hinge loss is a convex surrogate for the 0-1 loss. Lesson 12
 
 [[diagram:hinge]]
 
-On our ten messages, with lesson 9’s halfspace \(\mathbf w^\circ = (-1, 2, -2)\), here are the signed scores, the 0-1 losses and the hinge losses, plus a grid check of the upper bound.
+On our ten messages, with lesson 9a’s halfspace \(\mathbf w^\circ = (-1, 2, -2)\), here are the signed scores, the 0-1 losses and the hinge losses, plus a grid check of the upper bound.
 
 ```python
 S = [((3, 0), 1), ((2, 1), 1), ((4, 2), 1), ((1, 0), 1),
@@ -225,7 +225,7 @@ True
 
 The eight undisputed messages score at least 1 and cost nothing under either loss; B′ and E′ cost 1 each under the 0-1 loss and 2 and 4 under the hinge. So the hinge risk is 0.6 where the 0-1 risk is 0.2: always above, and harsher on confident mistakes.
 
-Does the logistic loss of lesson 9 also qualify? It is convex, but at signed score 0 it equals \(\log 2 \approx 0.693 < 1\), so it is not an upper bound on the 0-1 loss. Rescale it, though, by dividing by \(\log 2\), and it becomes \(\log_2(1 + \exp(-z))\), which equals 1 at \(z = 0\), is decreasing, and is positive everywhere, so it is at least the 0-1 loss for every \(z\). We will call this the **base-2 logistic loss**. It is convex, \((1/\log 2)\)-Lipschitz in the signed score, and \((1/(4\log 2))\)-smooth. The square loss in the form \((1 - z)^2\) is another convex upper bound (for \(z \le 0\) it is at least 1). You will meet all three in the lab.
+Does the logistic loss of lesson 9b also qualify? It is convex, but at signed score 0 it equals \(\log 2 \approx 0.693 < 1\), so it is not an upper bound on the 0-1 loss. Rescale it, though, by dividing by \(\log 2\), and it becomes \(\log_2(1 + \exp(-z))\), which equals 1 at \(z = 0\), is decreasing, and is positive everywhere, so it is at least the 0-1 loss for every \(z\). We will call this the **base-2 logistic loss**. It is convex, \((1/\log 2)\)-Lipschitz in the signed score, and \((1/(4\log 2))\)-smooth. The square loss in the form \((1 - z)^2\) is another convex upper bound (for \(z \le 0\) it is at least 1). You will meet all three in the lab.
 
 **What the switch guarantees.** Learn the hinge problem with some learner \(A\). The generalization requirement for a hinge-loss learner has the form
 
@@ -247,7 +247,7 @@ Each underbrace just labels the term above it, and the first two terms add back 
 
 [[diagram:decomposition]]
 
-Let’s see the three terms in a concrete world, the one the lab uses. Messages arrive as the eight undisputed types of the ten messages, A to H, each with probability \(1/8\). Each carries its usual label with probability 0.95, and the opposite label with probability 0.05 (your users misclick). Every message has \(\|\mathbf x\| \le R = \sqrt{21}\). No hypothesis can do better than 0.05 here, and \(\mathbf w^\circ\) achieves it, so the approximation error is 0.05. Take the class \(\|\mathbf w\| \le B\) with \(B = 1.5\). A numerical minimization of the hinge risk over that ball (the build-it challenge asks you to reproduce it) lands on \(\mathbf w = (-0.2, 1.1, -1.0)\). Let’s evaluate it, then plug in lesson 14’s rate with \(\rho = R\) and \(m = 3{,}000\) labels.
+Let’s see the three terms in a concrete world, the one the lab uses. Messages arrive as the eight undisputed types of the ten messages, A to H, each with probability \(1/8\). Each carries its usual label with probability 0.95, and the opposite label with probability 0.05 (your users misclick). Every message has \(\|\mathbf x\| \le R = \sqrt{21}\). No hypothesis can do better than 0.05 here, and \(\mathbf w^\circ\) achieves it, so the approximation error is 0.05. Take the class \(\|\mathbf w\| \le B\) with \(B = 1.5\). A numerical minimization of the hinge risk over that ball (the build-it challenge asks you to reproduce it) lands on \(\mathbf w = (-0.2, 1.1, -1.0)\). Let’s evaluate it, then plug in lesson 14a’s rate with \(\rho = R\) and \(m = 3{,}000\) labels.
 
 ```python
 import math
@@ -273,11 +273,11 @@ print(math.ceil((R * B / (0.36 - Lh)) ** 2))
 
 It prints `1.5 0.05 0.2238`, then `0.1255 0.349`, then `2546`. The vector sits on the edge of the ball, its 0-1 risk is the best possible 0.05, and its hinge risk is 0.2238. So the optimization error is \(0.2238 - 0.05 = 0.1738\). With 3,000 labels the estimation term is \(RB/\sqrt m = 0.1255\), and the certified bound on the expected 0-1 risk of the learned filter is \(0.05 + 0.1738 + 0.1255 = 0.349\), the three underbraced terms in order. To certify 0.36 with \(B = 1.5\) you need at least 2,546 labels.
 
-Is 0.349 a disappointing number, when the best halfspace makes only 5% mistakes? It is a *bound*, and a loose one, just like lesson 9’s mistake bound that promised 142 updates when the Perceptron used 3. The actual filter will usually do far better, and the lab shows you that. What the bound buys is a promise you can write down before you train, with no NP-hard search anywhere in sight.
+Is 0.349 a disappointing number, when the best halfspace makes only 5% mistakes? It is a *bound*, and a loose one, just like lesson 9a’s mistake bound that promised 142 updates when the Perceptron used 3. The actual filter will usually do far better, and the lab shows you that. What the bound buys is a promise you can write down before you train, with no NP-hard search anywhere in sight.
 
 ## Surrogate ERM as code
 
-This lesson introduces one algorithmic idea: replace the loss by a convex surrogate, and run ERM on the surrogate, which is now a convex optimization problem. Lesson 14 gives the general-purpose method for that. Here we build the simplest honest version, for a surrogate that is also smooth, using only what lesson 12a proved: the descent step that smoothness guarantees, and a stopping rule that convexity certifies.
+This lesson introduces one algorithmic idea: replace the loss by a convex surrogate, and run ERM on the surrogate, which is now a convex optimization problem. Lesson 14a gives the general-purpose method for that. Here we build the simplest honest version, for a surrogate that is also smooth, using only what lesson 12a proved: the descent step that smoothness guarantees, and a stopping rule that convexity certifies.
 
 We need two small facts first. Lesson 12a proved both for its fix; here they are again, with their proofs, in the form the algorithm uses.
 
@@ -309,7 +309,7 @@ ZeroOneERM_BruteForce(S):
   return a halfspace with the fewest
 ```
 
-**Cost.** Each step of SmoothSurrogateERM computes one gradient, a sum over the \(m\) examples of a \(d\)-dimensional vector: \(O(md)\) time. It keeps \(\mathbf w\) and \(\mathbf g\): \(O(d)\) space beyond the training sequence. With \(T\) steps, \(O(Tmd)\) time. Each step lowers \(L_S\) by at least \(\|\mathbf g\|^2/(2\beta)\), by lesson 12a’s smoothness argument, and the stopping rule is correct by Fact 2. How many steps it takes to reach a given tolerance is lesson 14’s business; this lesson only guarantees that every step helps and that the answer, when it comes, is certified. Compare the brute-force 0-1 learner: up to \(\sum_{i \le d} \binom{m}{i}\) labellings at \(O(md)\) each, which is the \(5 \times 10^{29}\) years from lesson 12a’s opening.
+**Cost.** Each step of SmoothSurrogateERM computes one gradient, a sum over the \(m\) examples of a \(d\)-dimensional vector: \(O(md)\) time. It keeps \(\mathbf w\) and \(\mathbf g\): \(O(d)\) space beyond the training sequence. With \(T\) steps, \(O(Tmd)\) time. Each step lowers \(L_S\) by at least \(\|\mathbf g\|^2/(2\beta)\), by lesson 12a’s smoothness argument, and the stopping rule is correct by Fact 2. How many steps it takes to reach a given tolerance is lesson 14a’s business; this lesson only guarantees that every step helps and that the answer, when it comes, is certified. Compare the brute-force 0-1 learner: up to \(\sum_{i \le d} \binom{m}{i}\) labellings at \(O(md)\) each, which is the \(5 \times 10^{29}\) years from lesson 12a’s opening.
 
 Run it on the ten messages with the base-2 logistic loss and \(B = 3\), checking at every step that the guaranteed decrease really happened.
 
@@ -350,7 +350,7 @@ It prints
 2.669 True [-0.92, 1.38, -0.95]
 ```
 
-The columns are the step, the empirical risk, the gradient norm and the certificate. Starting from 1 (the base-2 loss of a zero score), the risk falls to 0.6963, and after 300 steps the certificate proves it is within 0.0004 of the best possible over the ball of radius 3. The smoothness constant is \(\beta = 2.669\), every single step achieved its guaranteed decrease (`True`), and the weights are lesson 9’s logistic weights, \((-0.92, 1.38, -0.95)\). That is no coincidence: dividing a loss by \(\log 2\) does not move its minimizer, and \(0.6963 \times \log 2 \approx 0.483\) is lesson 9’s logistic risk. It is also the walk of lesson 12a’s fix, started at \(\mathbf 0\) instead: the base-2 gradient and \(\beta\) are the natural-log ones divided by \(\log 2\), so every step \(\mathbf g/\beta\) is the same.
+The columns are the step, the empirical risk, the gradient norm and the certificate. Starting from 1 (the base-2 loss of a zero score), the risk falls to 0.6963, and after 300 steps the certificate proves it is within 0.0004 of the best possible over the ball of radius 3. The smoothness constant is \(\beta = 2.669\), every single step achieved its guaranteed decrease (`True`), and the weights are lesson 9b’s logistic weights, \((-0.92, 1.38, -0.95)\). That is no coincidence: dividing a loss by \(\log 2\) does not move its minimizer, and \(0.6963 \times \log 2 \approx 0.483\) is lesson 9b’s logistic risk. It is also the walk of lesson 12a’s fix, started at \(\mathbf 0\) instead: the base-2 gradient and \(\beta\) are the natural-log ones divided by \(\log 2\), so every step \(\mathbf g/\beta\) is the same.
 
 **Build it yourself.** Fill in the functions and make every assert pass. The data are the ten messages and the lab world (the eight types with 5% label noise).
 
@@ -397,7 +397,7 @@ if __name__ == "__main__":
 1. The losses take the signed score \(z\). `risk(w, S, loss)` prepends the constant 1 to each message. `world_risk` averages over the eight types, weighting each type’s usual label by 0.95 and the flipped label by 0.05.
 2. `smooth_descent` starts at \(\mathbf 0\) and uses step \(1/\beta\) with \(\beta\) from Fact 1, and returns the final weights. Before returning, print the certificate of Fact 2 for \(B = 3\).
 3. `labels_needed` returns the smallest \(m\) with `certified_bound(...) <= target`, or `None` when the floor is already above the target (no label budget can help then).
-4. Harder: the hinge loss is not smooth, so `smooth_descent` cannot minimize it. Minimize the hinge risk of the lab world over the ball \(\|\mathbf w\| \le B\) anyway: at each step move against a slope vector (for a term with signed score below 1, use \(-y\mathbf x\); otherwise \(\mathbf 0\)), with step \(B/(R\sqrt t)\) at step \(t\), and pull \(\mathbf w\) back onto the ball by rescaling whenever \(\|\mathbf w\| > B\). Keep the best point seen. You should reproduce 0.2238 at \(B = 1.5\) and about 0.1625 for \(B \ge 2.7\). Lesson 14 explains why this works.
+4. Harder: the hinge loss is not smooth, so `smooth_descent` cannot minimize it. Minimize the hinge risk of the lab world over the ball \(\|\mathbf w\| \le B\) anyway: at each step move against a slope vector (for a term with signed score below 1, use \(-y\mathbf x\); otherwise \(\mathbf 0\)), with step \(B/(R\sqrt t)\) at step \(t\), and pull \(\mathbf w\) back onto the ball by rescaling whenever \(\|\mathbf w\| > B\). Keep the best point seen. You should reproduce 0.2238 at \(B = 1.5\) and about 0.1625 for \(B \ge 2.7\). Lesson 14a explains why this works.
 
 ## Fix the bug
 
@@ -426,7 +426,7 @@ The trade you just navigated is the bias-complexity tradeoff of lesson 5, reappe
 ## Recap and the next bug
 
 1. In a **convex learning problem**, ERM is a convex optimization problem, but convexity is not enough to learn, even in one dimension: whatever a deterministic learner outputs, one of two worlds that usually show it the same training sequence charges an excess of about 0.99, and more labels make it worse. Convexity plus a bounded class is still not enough, because one rare, huge example can make the loss arbitrarily steep.
-2. **Convex-Lipschitz-bounded** and **convex-smooth-bounded** problems add a norm bound \(B\) on the class and a Lipschitz or smoothness constant fixed in advance. They are learnable, as lessons 13 and 14 prove; with Lipschitz losses, \(m \ge \rho^2 B^2/\varepsilon^2\) examples suffice in expectation. Halfspaces with the hinge loss on messages of length at most \(R\) are convex-Lipschitz-bounded with parameters \(R, B\).
+2. **Convex-Lipschitz-bounded** and **convex-smooth-bounded** problems add a norm bound \(B\) on the class and a Lipschitz or smoothness constant fixed in advance. They are learnable, as lessons 13b and 14a prove; with Lipschitz losses, \(m \ge \rho^2 B^2/\varepsilon^2\) examples suffice in expectation. Halfspaces with the hinge loss on messages of length at most \(R\) are convex-Lipschitz-bounded with parameters \(R, B\).
 3. A **convex surrogate** is convex and upper bounds the original loss. The hinge loss is one for the 0-1 loss of halfspaces, and so is the base-2 logistic loss; the natural-log logistic loss is not, since it is below 1 at a zero score. The 0-1 risk of the learned halfspace is at most the approximation error plus the **optimization error** plus the estimation error.
 4. For a smooth surrogate, ERM is a walk with step \(1/\beta\) that lowers the empirical risk at every step and stops with a certificate, at \(O(md)\) time per step instead of a search through every labelling.
 5. The bound to certify is the best surrogate risk over the ball plus \(\rho B/\sqrt m\). A small ball raises the first term, a large ball the second: in the lab world with the hinge loss and 3,000 labels, \(B\) from 1.4 to 1.9 meets 0.36, and the best is \(B = 1.5\), with bound 0.349.
@@ -446,4 +446,4 @@ Write your answers down before moving on to the next lesson, with your reasoning
 Once the concept check is done, try these. Hints come one at a time in the chat, and no full solutions.
 
 - **Problem 1 (logistic regression is both kinds of problem).** Let \(\mathcal H = \mathcal X = \{\mathbf x \in \mathbb R^d : \|\mathbf x\| \le B\}\) for some scalar \(B > 0\), \(\mathcal Y = \{\pm 1\}\), and \(\ell(\mathbf w, (\mathbf x, y)) = \log(1 + \exp(-y\langle \mathbf w, \mathbf x \rangle))\). Show that this learning problem is both convex-Lipschitz-bounded and convex-smooth-bounded, and give the Lipschitz and smoothness parameters.
-- **Problem 2 (harder: convex-Lipschitz-bounded does not mean efficiently learnable).** Lesson 13 will show that every convex-Lipschitz-bounded problem is learnable from the statistical point of view. Our motivation, though, was computational. Show that convexity is not enough for efficiency, even in one dimension. Let \(\mathcal H = [0, 1]\), let the set of examples \(Z\) be the set of all Turing machines, and define the loss: \(\ell(0, T) = 1\) if \(T\) halts on input 0 and 0 otherwise; \(\ell(1, T) = 0\) if \(T\) halts on input 0 and 1 otherwise; and \(\ell(h, T) = h\,\ell(0, T) + (1 - h)\,\ell(1, T)\) for \(h \in (0, 1)\). (a) Show that the problem is convex-Lipschitz-bounded. (b) Show that no computable algorithm can learn it.
+- **Problem 2 (harder: convex-Lipschitz-bounded does not mean efficiently learnable).** Lesson 13b will show that every convex-Lipschitz-bounded problem is learnable from the statistical point of view. Our motivation, though, was computational. Show that convexity is not enough for efficiency, even in one dimension. Let \(\mathcal H = [0, 1]\), let the set of examples \(Z\) be the set of all Turing machines, and define the loss: \(\ell(0, T) = 1\) if \(T\) halts on input 0 and 0 otherwise; \(\ell(1, T) = 0\) if \(T\) halts on input 0 and 1 otherwise; and \(\ell(h, T) = h\,\ell(0, T) + (1 - h)\,\ell(1, T)\) for \(h \in (0, 1)\). (a) Show that the problem is convex-Lipschitz-bounded. (b) Show that no computable algorithm can learn it.

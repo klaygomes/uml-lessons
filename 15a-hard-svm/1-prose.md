@@ -2,7 +2,7 @@
 
 ## The filter that grazes
 
-Your colleague’s complaint from the end of lesson 14 comes with an example. On that quiet week the labelled mail could be split perfectly by a line, and on separable mail the retraining job takes the shortcut of lesson 9a: it runs the Perceptron, which stops at the first line that makes no training mistakes, and operations likes it because the mistake bound says in advance how long the job can take. The example comes from the facilities team, who write in again, confused this time rather than annoyed.
+Your colleague’s complaint from the end of lesson 14b comes with an example. On that quiet week the labelled mail could be split perfectly by a line, and on separable mail the retraining job takes the shortcut of lesson 9a: it runs the Perceptron, which stops at the first line that makes no training mistakes, and operations likes it because the mistake bound says in advance how long the job can take. The example comes from the facilities team, who write in again, confused this time rather than annoyed.
 
 On Monday, “free lunch at the meeting, meeting room 4” arrived in everyone’s inbox, exactly as it should. On Tuesday the same invitation went out with one small edit, “free lunch and free parking at the meeting, meeting room 4”, and the filter sent it to junk. One extra word. The message is obviously still a lunch invitation, and a filter that weighs the evidence should not change its mind over a single “free”.
 
