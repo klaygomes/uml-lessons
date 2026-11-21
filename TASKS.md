@@ -325,7 +325,7 @@ Folder: `10b-boosting-generalization/`
 Folder: `11-model-selection/`
 
 - [x] 1 prose and sheet (8,580 words, 9 snippets plus the build-it stub run by the lead, no book references; check its boosting terms against lesson 10 when it lands, 2026-11-20)
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (CPU rule)
+- [x] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (book check: all matches pp. 144 to 155, writer choices valid; one prose fix (10a to 10b); sheet resynced; 2026-11-21)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
