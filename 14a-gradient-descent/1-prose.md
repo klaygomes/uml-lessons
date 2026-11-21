@@ -2,7 +2,7 @@
 
 ## A filter that is always a day behind
 
-The regularized filter from lesson 13a is the best thing the team has shipped. It is a halfspace over word counts, trained with the hinge loss plus a penalty on the size of the weight vector, and on paper it has everything you could want: a convex problem, a stable learner, a guarantee on its true risk. The archive it trains on holds two million labelled messages.
+The regularized filter from lesson 13b is the best thing the team has shipped. It is a halfspace over word counts, trained with the hinge loss plus a penalty on the size of the weight vector, and on paper it has everything you could want: a convex problem, a stable learner, a guarantee on its true risk. The archive it trains on holds two million labelled messages.
 
 And yet the complaints are back. Every morning the spammers try something new, and every morning the filter is fooled by it until the evening. The retrain logs the manager pulled up at the end of lesson 13b make the reason plain: the exact solver for the regularized problem takes about six hours on the full archive, and the archive grows by thousands of labels a day. By the time a new filter ships, the junk it was trained to catch is already yesterday’s junk. The filter is always a day behind.
 

@@ -49,7 +49,7 @@ button.k-toggle[aria-pressed="true"]::before { content: "\2713\00a0"; }
 .k-still-text { display: none; }
 @media (prefers-reduced-motion: reduce) { .k-motion-text { display: none; } .k-still-text { display: inline; } }
 @media (max-width: 520px) { .k-meter { grid-template-columns: 1fr auto; } .k-meter > span:first-child { grid-column: 1 / -1; } .k-meter .bar { grid-column: 1; grid-row: 2; } .k-meter output { grid-column: 2; grid-row: 2; } .k-meter .scale { grid-column: 1; grid-row: 3; } }
-p .katex, li .katex, td .katex { white-space: nowrap; }
+p .katex, li .katex, td .katex { white-space: normal; }
 p .katex-display, li .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
 pre.code .c-keyword { color: var(--code-keyword); font-weight: var(--weight-medium); }
 pre.code .c-string { color: var(--code-string); }
@@ -66,7 +66,7 @@ pre.code .c-comment { color: var(--code-comment); font-style: italic; }
 <header><h1>From Gradient Descent to SGD</h1><p class="links">Lesson text (draft) · <a href="1-sheet.html">Teacher&#x27;s sheet</a></p></header>
 <section id="a-filter-that-is-always-a-day-behind">
 <h2>A filter that is always a day behind</h2>
-<p>The regularized filter from lesson 13a is the best thing the team has shipped. It is a halfspace over word counts, trained with the hinge loss plus a penalty on the size of the weight vector, and on paper it has everything you could want: a convex problem, a stable learner, a guarantee on its true risk. The archive it trains on holds two million labelled messages.</p>
+<p>The regularized filter from lesson 13b is the best thing the team has shipped. It is a halfspace over word counts, trained with the hinge loss plus a penalty on the size of the weight vector, and on paper it has everything you could want: a convex problem, a stable learner, a guarantee on its true risk. The archive it trains on holds two million labelled messages.</p>
 <p>And yet the complaints are back. Every morning the spammers try something new, and every morning the filter is fooled by it until the evening. The retrain logs the manager pulled up at the end of lesson 13b make the reason plain: the exact solver for the regularized problem takes about six hours on the full archive, and the archive grows by thousands of labels a day. By the time a new filter ships, the junk it was trained to catch is already yesterday’s junk. The filter is always a day behind.</p>
 <p>What would a faster learner even look like? Here is a thought that sounds almost too lazy to work. Instead of solving the whole optimization problem over two million messages, start with some weight vector, look at <em>one</em> message, nudge the weights a little so that message is handled better, and move on to the next message. Each nudge costs about as much as reading one message. Could a few thousand nudges, each based on a single message, produce a filter with a guarantee as good as the exact solver’s?</p>
 <p>This lesson says yes, and proves it. The tool is <strong>stochastic gradient descent</strong>. We will build it in three steps: gradient descent, which walks downhill on a function using its slope; subgradients, which let us walk downhill on functions with creases, like the hinge loss; and finally the stochastic version, which replaces the true slope with a cheap, noisy one computed from a single message. The surprise at the end is that the noisy version does not just approximate the exact solver: it minimizes the true risk directly.</p>
