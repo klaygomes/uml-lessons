@@ -655,7 +655,7 @@ Folder: `24b-discriminant-em/`
 Folder: `25-feature-selection/`
 
 - [x] 1 prose and sheet (about 16,100 words with code, 24 snippets run by the lead; the failing fence is the build-it stub; no book references; written with both rules; 2026-11-20). Writer's claims to verify, six book slips: ridge 2λm should be λm; OMP update divides by ‖u‖² not ‖u‖; clipping max should be min; R^m should be R; '≥ γ/2' weaker than the 2γ that follows; 10^8 should be about 4×10^8. Align recaps of ridge, naive Bayes, k-means, PCA and neural networks with lessons 13 and 20 to 24 (now drafted)
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
+- [x] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (book check: prose needed no change; five of six book slips confirmed, one a loose but true bound; sheet resynced; 2026-11-21)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
