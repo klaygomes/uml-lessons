@@ -36,7 +36,7 @@ for n in (10, 11, 12, 22):
 
 It prints `10 1.23e+10 0.149`, `11 2.7e+11 3.27`, `12 6.47e+12 78.1` and `22 1.55e+28 1.84e+17`: the size, the number of lists of that size or less, and the days needed. Size 10 is done in under four hours. Size 11 takes a long weekend, size 12 most of a season. Size 22, where the stopping rule is allowed to stop, needs \(1.84 \times 10^{17}\) days, about \(5 \times 10^{14}\) years.
 
-Notice which number is the problem. The statistics are fine: lesson 7b’s guarantee says a thousand labels are enough. Each extra size adds only a logarithm’s worth to the gap, while the number of lists to check grows by a factor of twenty or more. Every lesson so far asked how many examples learning needs. Nobody asked how long it takes to use them.
+Notice which number is the problem. The statistics are fine: lesson 7a’s guarantee says a thousand labels are enough. Each extra size adds only a logarithm’s worth to the gap, while the number of lists to check grows by a factor of twenty or more. Every lesson so far asked how many examples learning needs. Nobody asked how long it takes to use them.
 
 That is this lesson. We will ask when a learning problem is computationally easy, when it is hard, and, the twist that rescues the filter, when changing the hypothesis class makes a hard problem easy.
 

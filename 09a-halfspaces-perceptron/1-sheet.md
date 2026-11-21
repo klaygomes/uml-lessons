@@ -87,4 +87,4 @@ Assumptions:
 - When lesson 9 was written, lessons 4 to 8 did not exist. The prose assumes: lesson 6a defined shattering, VC dimension and stated the fundamental theorem; lesson 8 discussed the runtime of learners (the opening says only that lesson 8 “taught you to count the runtime of a learner”). Lesson 3 introduced the agnostic setting. Re-check terms against those sheets.
 - The prose says agnostic ERM for halfspaces is “known to be computationally hard”, as the book does (p. 119), without the reference.
 - Notation: vectors bold, \(\mathbf w^{(t)}\) for iterates, \(\varepsilon\) for accuracy.
-- Lesson numbering: the halves are “lesson 9a” and “lesson 9b” in the prose. Many other lessons (2, 8, 10 to 26, 30) still say “lesson 9”; they were not edited in the split, and each such reference should later point to 9a (halfspaces, Perceptron, VC dimension) or 9b (least squares, logistic regression).
+- Lesson numbering: the halves are “lesson 9a” and “lesson 9b”. References in other lessons were repointed to 9a (halfspaces, Perceptron, VC dimension) or 9b (least squares, logistic regression) on 2026-11-21.
