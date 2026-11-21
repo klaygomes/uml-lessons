@@ -460,7 +460,7 @@ Folder: `15b-soft-svm/`
 Folder: `16-kernel-methods/`
 
 - [x] 1 prose and sheet (about 10,100 words with code, 12 snippets run by the lead; the failing fence is the build-it stub; no book references, 2026-11-20). Writer's claims to verify: exercise 1's "norm 1, margin 1" looks unattainable with 0/1 substring features (prose uses norm 2); filled gaps in the kernel characterization proof. Align recaps with lessons 12 to 15
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (CPU rule)
+- [x] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (book check: exercise 1 margin and characterization-proof gaps confirmed, two new book slips noted; two prose fixes; sheet resynced; 2026-11-21)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
@@ -520,7 +520,7 @@ Folder: `18-decision-trees/`
 Folder: `19-nearest-neighbor/`
 
 - [x] 1 prose and sheet (about 9,050 words with code, 13 snippets run by the lead; the failing fence is the build-it stub; no book references, 2026-11-20). Writer's claims to verify: the 1-NN proof's parameter choice made rigorous; a possible book error (exercise 4 gives 2k, not k, unless m^{1/(d+1)}/2 is whole); the weighted-average formula looks like a typo. Align opening with lesson 18's cliffhanger
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (CPU rule)
+- [x] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (book check: 1-NN parameter and exercise 4 constant confirmed; Θ now introduced in the lesson; sheet resynced; 2026-11-21)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
