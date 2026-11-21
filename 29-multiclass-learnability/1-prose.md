@@ -405,7 +405,7 @@ Left to right: the mixtures, the folder vectors, the choices of \(l\) labellings
 
 It remains to see that this forces \(c \le 3D\log D\) when \(D \ge 4\). Let \(\phi(c) = c\log 2 - D\log(c+1)\); we know \(\phi(c) \le 0\), and we show \(\phi(c) > 0\) for every \(c > 3D\log D\). The slope of \(\phi\) is \(\log 2 - D/(c + 1)\), positive once \(c + 1 > D/\log 2 \approx 1.44D\); and \(3D\log D \ge 3D\log 4 > 4D\), so \(\phi\) is increasing beyond \(c_0 = 3D\log D\). At \(c_0\), \(\phi(c_0) \ge 0\) says \(2^{c_0} \ge (c_0 + 1)^D\). The left side is \(e^{3D\log D \cdot \log 2} = (D^{3\log 2})^D\), so taking \(D\)-th roots it is the inequality \(D^{3\log 2} \ge 3D\log D + 1\). With \(3\log 2 \approx 2.079\), at \(D = 4\) the left side is 17.9 and the right side 17.6; and the left side’s slope, \(2.079 D^{1.079}\), beats the right side’s, \(3\log D + 3\), for every \(D \ge 4\): at \(D = 4\) it is 9.3 against 7.2, and from there the left slope rises faster, since the slopes’ own rates of change are \(2.24 D^{0.079} \ge 2.24\) against \(3/D \le 0.75\). So \(\phi(c) > 0\) for \(c > c_0\), hence \(c \le 3D \log D\). \(\blacksquare\)
 
-The condition \(D \ge 4\) is real, not decoration: for \(D = 2\) and \(3\), the inequality \(c\log 2 \le D\log(c+1)\) allows sets larger than \(3D\log D\). Here is the largest \(c\) it allows, next to \(3D\log D\), and the last step checked numerically:
+The condition \(D \ge 4\) is real, not decoration: for \(D = 1\), \(2\) and \(3\), the inequality \(c\log 2 \le D\log(c+1)\) allows sets larger than \(3D\log D\). Here is the largest \(c\) it allows, next to \(3D\log D\), and the last step checked numerically:
 
 ```python
 from math import log
@@ -416,7 +416,7 @@ def largest_c(D):
         c += 1
     return c
 
-for D in (2, 3, 4, 10, 300, 9000):
+for D in (1, 2, 3, 4, 10, 300, 9000):
     print(D, largest_c(D), round(3 * D * log(D), 1))
 print(all(D ** (3 * log(2)) >= 3 * D * log(D) + 1
           for D in range(4, 10 ** 5)))
@@ -425,6 +425,7 @@ print(all(D ** (3 * log(2)) >= 3 * D * log(D) + 1
 It prints
 
 ```
+1 1 0.0
 2 5 4.2
 3 10 9.9
 4 16 16.6
@@ -434,7 +435,7 @@ It prints
 True
 ```
 
-From \(D = 4\) on, the counting argument never allows more than \(3D\log D\); at 2 and 3 it does, which is why the lemma asks for \(ld \ge 4\).
+From \(D = 4\) on, the counting argument never allows more than \(3D\log D\); at 1, 2 and 3 it does, which is why the lemma asks for \(ld \ge 4\).
 
 How tight is it? Take one-versus-all with \(k = 4\) folders over lesson 6a’s thresholds (VC dimension 1) on six scores. Python builds every rule from every choice of four thresholds and computes the Natarajan dimension by brute force:
 
