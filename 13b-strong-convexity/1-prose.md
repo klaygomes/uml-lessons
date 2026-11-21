@@ -16,7 +16,7 @@ That needs a proof that the penalty makes the learner stable, whatever the distr
 
 Here is the toolkit, one line each, so you can check that nothing has slipped.
 
-- **The campaign world.** Five near-twin words; a message is \(\mathbf x \in \mathbb R^5\) with \(x_j = f + e_j\), where the shared signal \(f\) is \(\pm 0.4\) and points the right way 80% of the time, and each private jitter \(e_j\) is \(\pm 0.04\). Every message has \(\|\mathbf x\| \le 0.98\), and the best weight vector, 0.2994 on every word, has production error 0.320.
+- **The campaign world.** Five near-twin words; a message is \(\mathbf x \in \mathbb R^5\) with \(x_j = f + e_j\), where the shared signal \(f\) is \(\pm 0.4\) and points the right way 80% of the time, and each private jitter \(e_j\) is \(\pm 0.04\). Every message has \(\|\mathbf x\| \le 0.984\), and the best weight vector, 0.2994 on every word, has production error 0.320.
 - **The one-word world.** The same campaign with only the word “free”: \(x = 0.4\,y\) with probability 0.8 and \(-0.4\,y\) otherwise, with true risk \(L_{\mathcal D}(w) = \tfrac12(0.16 w^2 - 0.48 w + 1)\).
 - **The half square loss.** \(\ell(\mathbf w, z) = \tfrac12(\langle \mathbf w, \mathbf x \rangle - y)^2\) for one example \(z = (\mathbf x, y)\): half the squared distance between the score and the label.
 - **The two risks.** \(L_S(\mathbf w)\), the empirical risk, is the average loss over the training sequence \(S = (z_1, \dots, z_m)\); \(L_{\mathcal D}(\mathbf w)\), the true risk, is the loss averaged over the distribution \(\mathcal D\). The story calls the true risk of the night’s filter its **production error**.
@@ -506,7 +506,7 @@ for every \(\mathbf w^*\). Take \(\mathbf w^*\) a minimizer of \(L_{\mathcal D}\
 
 *Proof.* The half square loss is convex and nonnegative, and \(\beta\)-smooth with \(\beta = \|\mathbf x\|^2 \le 1\), as computed in the smooth losses section. The ball \(\mathcal H\) is convex with norms at most \(B\). And \(\ell(\mathbf 0, (\mathbf x, y)) = y^2/2 \le 1/2 \le 1\). So the problem is convex-smooth-bounded with \(\beta = 1\), and the previous corollary applies. \(\blacksquare\)
 
-What does this cost in the campaign world? Every message has \(\|\mathbf x\| \le 0.98 \le 1\) and \(y \in \{\pm 1\}\). The best vector has norm \(0.2994\sqrt5 \approx 0.67\), so \(B = 0.7\) contains it. The same arithmetic, next to the Lipschitz corollary for a 1-Lipschitz loss such as the absolute loss on the unit ball:
+What does this cost in the campaign world? Every message has \(\|\mathbf x\| \le 0.984 \le 1\) and \(y \in \{\pm 1\}\). The best vector has norm \(0.2994\sqrt5 \approx 0.67\), so \(B = 0.7\) contains it. The same arithmetic, next to the Lipschitz corollary for a 1-Lipschitz loss such as the absolute loss on the unit ball:
 
 ```python
 from math import ceil
@@ -602,7 +602,7 @@ Before you start, write down a prediction: when the budget doubles, should the b
 
 [[lab-act2]]
 
-The fix holds for the hinge filter of lesson 12a as well. Its loss is not smooth, but it is Lipschitz, so the same penalty makes it stable with rate \(2\rho^2/(\lambda m)\), and the Lipschitz corollary tells you how to set \(\lambda\) from \(\rho\), \(B\) and \(m\). The weights stop jumping when a user corrects one label, and now you can say why.
+The fix holds for the hinge filter of lesson 12b as well. Its loss is not smooth, but it is Lipschitz, so the same penalty makes it stable with rate \(2\rho^2/(\lambda m)\), and the Lipschitz corollary tells you how to set \(\lambda\) from \(\rho\), \(B\) and \(m\). The weights stop jumping when a user corrects one label, and now you can say why.
 
 ## What people get wrong
 
