@@ -397,7 +397,7 @@ if __name__ == "__main__":
 1. The losses take the signed score \(z\). `risk(w, S, loss)` prepends the constant 1 to each message. `world_risk` averages over the eight types, weighting each type’s usual label by 0.95 and the flipped label by 0.05.
 2. `smooth_descent` starts at \(\mathbf 0\) and uses step \(1/\beta\) with \(\beta\) from Fact 1, and returns the final weights. Before returning, print the certificate of Fact 2 for \(B = 3\).
 3. `labels_needed` returns the smallest \(m\) with `certified_bound(...) <= target`, or `None` when the floor is already above the target (no label budget can help then).
-4. Harder: the hinge loss is not smooth, so `smooth_descent` cannot minimize it. Minimize the hinge risk of the lab world over the ball \(\|\mathbf w\| \le B\) anyway: at each step move against a slope vector (for a term with signed score below 1, use \(-y\mathbf x\); otherwise \(\mathbf 0\)), with step \(B/(R\sqrt t)\) at step \(t\), and pull \(\mathbf w\) back onto the ball by rescaling whenever \(\|\mathbf w\| > B\). Keep the best point seen. You should reproduce 0.2238 at \(B = 1.5\) and about 0.1625 for \(B \ge 2.7\). Lesson 14a explains why this works.
+4. Harder: the hinge loss is not smooth, so `smooth_descent` cannot minimize it. Minimize the hinge risk of the lab world over the ball \(\|\mathbf w\| \le B\) anyway: at each step move against a slope vector (for a term with signed score below 1, use \(-y\mathbf x\); otherwise \(\mathbf 0\)), with step \(B/(R\sqrt t)\) at step \(t\), and pull \(\mathbf w\) back onto the ball by rescaling whenever \(\|\mathbf w\| > B\). Keep the best point seen. You should reproduce 0.2238 at \(B = 1.5\) and about 0.1625 for \(B \ge 2.7\). Lessons 14a and 14b explain why this works.
 
 ## Fix the bug
 
@@ -439,7 +439,7 @@ Write your answers down before moving on to the next lesson, with your reasoning
 
 1. Consider the **squared hinge loss** \(\ell(\mathbf w, (\mathbf x, y)) = (\max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\})^2\), with messages \(\|\mathbf x\| \le R\) and class \(\|\mathbf w\| \le B\). Is it convex in \(\mathbf w\)? Is it a convex surrogate for the 0-1 loss? Is the problem convex-Lipschitz-bounded, and with which \(\rho\)? Is it convex-smooth-bounded, and with which \(\beta\)? Is it Lipschitz over all of \(\mathbb R^d\)?
 2. In the proof that one-dimensional linear regression is not learnable, point to the exact sentence where determinism of the learner is used, and explain why the argument needs the probability of the all-\(z_2\) sequence to exceed \(1 - \delta\), not just to be positive. Then take the bounded version (\(|w| \le 1\), \(z_1 = (1/\mu, 0)\)) and say which condition of a convex-Lipschitz-bounded problem it violates, with the offending constant as a function of \(\mu\).
-3. In the lab world (\(R = \sqrt{21}\)), the best hinge risk over the ball \(\|\mathbf w\| \le 1.9\) is 0.2003, and the best base-2 logistic risk over \(\|\mathbf w\| \le 4\) is 0.3676. For each, compute the certified bound at \(m = 3{,}000\) and the number of labels needed to certify 0.36. Which choice would you hand to operations?
+3. In the lab world (\(R = \sqrt{21}\)), the best hinge risk over the ball \(\|\mathbf w\| \le 1.9\) is 0.2003, and the best base-2 logistic risk over \(\|\mathbf w\| \le 4\) is 0.3675. For each, compute the certified bound at \(m = 3{,}000\) and the number of labels needed to certify 0.36. Which choice would you hand to operations?
 
 ## Problems
 
