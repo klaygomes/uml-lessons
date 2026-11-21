@@ -700,7 +700,7 @@ Folder: `27-covering-numbers/`
 Folder: `28-fundamental-theorem-proof/`
 
 - [x] 1 prose and sheet (about 12,600 words with code, 18 snippets run by the lead; the failing fence is the build-it stub; no book references; written with both rules; 2026-11-20). No exercises in the chapter: three problems written for the lesson. Writer's claims to verify: a lemma (A.2) needs b > 0, which fails for d ≥ 3, so a tangent-line lemma is used; the normal-tail lemma replaced by a Cauchy–Schwarz overlap lemma, fixing a tie mistake for even m; the dimension floor's proved constant is d/(512ε²) while the section heading says 8d/ε² (book/map.md quotes the heading verbatim, which is right as a map); the ε-net Chernoff chain is broken, Chebyshev used instead
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
+- [x] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (book-checked 2026-11-21; B.11 tie, p.395 typos, dimension floor, eps-net chain slips in sheet)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
