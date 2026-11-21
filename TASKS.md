@@ -505,7 +505,7 @@ Folder: `17b-ranking/`
 Folder: `18-decision-trees/`
 
 - [x] 1 prose and sheet (about 9,700 words with code, 10 snippets run by the lead; the 2 failing fences are build-it stubs, by design; no book references, 2026-11-20). Writer's claims to verify: the book's threshold indexing is off by one, and its ID3 pseudocode has a check that never triggers; opening still to align with lesson 17's cliffhanger
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (CPU rule)
+- [x] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (book check: threshold off-by-one, dead ID3 check and missing ceiling confirmed; three prose fixes; sheet resynced; 2026-11-21)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
