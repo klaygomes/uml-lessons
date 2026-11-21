@@ -459,7 +459,7 @@ Regret is measured against any fixed vector \(\mathbf w^\star\):
 
 In plain words: **the regret is how much more loss the learner paid than the best single weight vector it could have used throughout.** For example, if over 100 rounds the learner pays 60 and the best fixed vector would have paid 52, the regret against it is 8.
 
-The learner is **Online Gradient Descent**: lesson 14b’s gradient descent with projection, run on the losses as they arrive. Recall from lesson 14a that a **subgradient** \(\mathbf v\) of a convex \(f\) at \(\mathbf w\) is the slope of a supporting plane: \(f(\mathbf u) \ge f(\mathbf w) + \langle \mathbf u - \mathbf w, \mathbf v \rangle\) for every \(\mathbf u\); that \(f\) is **\(\rho\)-Lipschitz** exactly when every subgradient has norm at most \(\rho\); and the **projection lemma**: projecting onto a convex set never increases the distance to any point of the set.
+The learner is **Online Gradient Descent**: lesson 14b’s gradient descent with projection, run on the losses as they arrive. Recall from lesson 14a that a **subgradient** \(\mathbf v\) of a convex \(f\) at \(\mathbf w\) is the slope of a supporting plane: \(f(\mathbf u) \ge f(\mathbf w) + \langle \mathbf u - \mathbf w, \mathbf v \rangle\) for every \(\mathbf u\); that \(f\) is **\(\rho\)-Lipschitz** exactly when every subgradient has norm at most \(\rho\); and, from lesson 14b, the **projection lemma**: projecting onto a convex set never increases the distance to any point of the set.
 
 ```
 OnlineGradientDescent(η):
