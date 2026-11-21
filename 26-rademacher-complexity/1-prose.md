@@ -2,19 +2,19 @@
 
 ## The certificate that certifies nothing
 
-The four-feature filter of the last lesson was a stopgap. Since then the vocabulary has grown to fifty thousand words, the users have labelled 50,000 messages, and the production filter reads every word. Every message is a vector of 50,000 yes/no features, one per word in the vocabulary, and the filter is a weight vector \(\mathbf w\) with one weight per word: it calls a message junk when the score \(\langle \mathbf w, \mathbf x \rangle\) is positive. The team keeps the weight vector short, its length never allowed past a fixed budget \(B\), because lessons 13 and 15 showed that short weight vectors are stable and leave wide margins. And it works. On a month of fresh mail that nobody trained on, it misclassifies about 3 messages in 100.
+The four-feature filter of the last lesson was a stopgap. Since then the vocabulary has grown to fifty thousand words, the users have labelled 50,000 messages, and the production filter reads every word. Every message is a vector of 50,000 yes/no features, one per word in the vocabulary, and the filter is a weight vector \(\mathbf w\) with one weight per word: it calls a message junk when the score \(\langle \mathbf w, \mathbf x \rangle\) is positive. The team keeps the weight vector short, its length never allowed past a fixed budget \(B\), because lessons 13b and 15a showed that short weight vectors are stable and leave wide margins. And it works. On a month of fresh mail that nobody trained on, it misclassifies about 3 messages in 100.
 
-Then operations asks for something new. The lesson 15 certificate covered one learner, soft-SVM with one regularization weight, and only on average over training sequences. But the team no longer ships exactly that. Some weeks they stop the optimizer early, some weeks they hand-tune a few weights, some weeks they try a different solver. Operations wants a single written promise that covers *whatever* weight vector the team ships from the allowed set, holds with probability 95%, and is computed from the 50,000 labels the users can afford:
+Then operations asks for something new. The lesson 15b certificate covered one learner, soft-SVM with one regularization weight, and only on average over training sequences. But the team no longer ships exactly that. Some weeks they stop the optimizer early, some weeks they hand-tune a few weights, some weeks they try a different solver. Operations wants a single written promise that covers *whatever* weight vector the team ships from the allowed set, holds with probability 95%, and is computed from the 50,000 labels the users can afford:
 
 > For every weight vector of length at most \(B\), true risk is at most training risk plus a number we can write down today.
 
 You already know how to write promises like that. A promise for every hypothesis at once is exactly the uniform convergence property of lesson 4, and you have three ways to pay for it, each measuring how rich the class is.
 
 - **Size** (lessons 2 and 4): \(\log |\mathcal H|\). Our class is infinite, so this one is out at once.
-- **VC dimension** (lesson 6): halfspaces over 50,000 words have VC dimension 50,000.
-- **Description length** (lesson 7): write every weight as a 32-bit number and a weight vector takes 1.6 million bits.
+- **VC dimension** (lesson 6a): halfspaces over 50,000 words have VC dimension 50,000.
+- **Description length** (lesson 7b): write every weight as a 32-bit number and a weight vector takes 1.6 million bits.
 
-Let’s put numbers in. Lesson 6’s bound says that with probability at least \(1 - \delta\) every hypothesis has \(|L_{\mathcal D}(h) - L_S(h)| \le (4 + 2\sqrt{d \log(2em/d)})/(\delta\sqrt{2m})\), with \(d\) the VC dimension. Lesson 7’s bound adds \(\sqrt{(|h| + \log(2/\delta))/(2m)}\), with \(|h|\) the description length in bits. (Here \(\log\) is the natural logarithm, as everywhere in this course, \(L_{\mathcal D}\) is the true risk and \(L_S\) the empirical risk.)
+Let’s put numbers in. Lesson 6b’s bound says that with probability at least \(1 - \delta\) every hypothesis has \(|L_{\mathcal D}(h) - L_S(h)| \le (4 + 2\sqrt{d \log(2em/d)})/(\delta\sqrt{2m})\), with \(d\) the VC dimension. Lesson 7b’s bound adds \(\sqrt{(|h| + \log(2/\delta))/(2m)}\), with \(|h|\) the description length in bits. (Here \(\log\) is the natural logarithm, as everywhere in this course, \(L_{\mathcal D}\) is the true risk and \(L_S\) the empirical risk.)
 
 ```python
 from math import e, log, sqrt
@@ -31,7 +31,7 @@ It prints `37.1 4.0`. A risk is a number between 0 and 1, so a promise that the 
 
 Here is the thing to notice, and it is the research colleague’s complaint from the end of lesson 25. All three measures were computed before a single message arrived. The VC dimension asks about the *worst* set of 50,000 messages the class could face, and the description length asks how many bits the *worst* weight vector needs. None of them looks at the mail you actually have: short messages, a couple of dozen words each, scored by weight vectors that are short too. So here is the question for this lesson. Can you measure how rich a class is on the very data in hand, and turn that measurement into a certificate?
 
-The answer is yes, and the measurement has a name, the **Rademacher complexity**. By the end of this lesson you will have proved its generalization bound from scratch, learned a small calculus for computing it, used it to show that norm-bounded linear predictors need a number of labels that does not depend on the number of features, and finally proved the margin bound that lesson 15 stated and promised.
+The answer is yes, and the measurement has a name, the **Rademacher complexity**. By the end of this lesson you will have proved its generalization bound from scratch, learned a small calculus for computing it, used it to show that norm-bounded linear predictors need a number of labels that does not depend on the number of features, and finally proved the margin bound that lesson 15a stated and promised.
 
 ## Splitting the labels in two
 
@@ -160,7 +160,7 @@ Here \(L_{\mathcal D}(f) - L_S(f)\) is how much \(f\) looks better on the traini
 
 The subscript \(S \sim \mathcal D^m\) says the training sequence has \(m\) examples drawn i.i.d. from \(\mathcal D\) (independently, each from the same \(\mathcal D\)). In plain words: **on average over training sequences, the worst self-flattery in the class is at most twice its ability to fit random signs.**
 
-You have seen the two ideas of the proof before, in lesson 6: a ghost sample and random signs. Here they are again, now carried all the way to a clean statement.
+You have seen the two ideas of the proof before, in lesson 6b: a ghost sample and random signs. Here they are again, now carried all the way to a clean statement.
 
 *Step 1: replace the true risk by a ghost sample.* Let \(S' = (z'_1, \dots, z'_m)\) be a second training sequence, drawn i.i.d. from \(\mathcal D\) independently of \(S\), a **ghost sample** that nobody ever collects. Each \(f(z'_i)\) has mean \(L_{\mathcal D}(f)\), so by linearity of expectation \(L_{\mathcal D}(f) = \mathbb E_{S'}[L_{S'}(f)]\). Therefore, for every \(f\),
 
@@ -186,7 +186,7 @@ The equality moves \(L_S(f)\), which does not depend on \(S'\), inside the expec
 
 \[ \mathbb E_S\left[ \mathrm{Rep}_{\mathcal D}(\mathcal F, S) \right] \le 2\, \mathbb E_S\left[ R(\mathcal F \circ S) \right]. \qquad \blacksquare \]
 
-You can watch the lemma hold in a world where the true risk is known exactly. The messages are 20 spam scores, \(0, 1, \dots, 19\), equally likely; a message is junk when its score is at least 12; the class is the 21 thresholds of lesson 6, and the loss is the 0-1 loss. The snippet averages \(\mathrm{Rep}\) over random training sequences of 30 messages, and, separately, twice the best signed fit with one random sign vector per sequence (an unbiased estimate of \(2\,\mathbb E_S[R(\mathcal F \circ S)]\)).
+You can watch the lemma hold in a world where the true risk is known exactly. The messages are 20 spam scores, \(0, 1, \dots, 19\), equally likely; a message is junk when its score is at least 12; the class is the 21 thresholds of lesson 6a, and the loss is the 0-1 loss. The snippet averages \(\mathrm{Rep}\) over random training sequences of 30 messages, and, separately, twice the best signed fit with one random sign vector per sequence (an unbiased estimate of \(2\,\mathbb E_S[R(\mathcal F \circ S)]\)).
 
 ```python
 import random
@@ -353,7 +353,7 @@ The symmetrization lemma bounds \(\mathbb E_S[\mathrm{Rep}]\) by \(2\,\mathbb E_
 
 The middle bracket is at most 0, because ERM minimizes the empirical risk. The first bracket is bounded by part 2 with \(\delta/2\): \(2R + 3c\sqrt{2\log(8/\delta)/m}\), with probability at least \(1 - \delta/2\). For the last bracket, \(h^\star\) is fixed before \(S\) is drawn, so \(L_S(h^\star)\) is an average of \(m\) i.i.d. losses in \([-c, c]\), an interval of length \(2c\), with mean \(L_{\mathcal D}(h^\star)\). Hoeffding’s inequality with \(\delta/2\) gives, with probability at least \(1 - \delta/2\), \(L_S(h^\star) - L_{\mathcal D}(h^\star) \le 2c\sqrt{\log(4/\delta)/(2m)} = c\sqrt{2\log(4/\delta)/m}\), which is at most \(c\sqrt{2\log(8/\delta)/m}\). A union bound over the two events finishes it. \(\blacksquare\)
 
-Put numbers in. Suppose the loss is the ramp loss of lesson 15, so \(c = 1\), you have \(m = 50{,}000\) labels, \(\delta = 0.05\), and the class’s complexity, average or measured, is 0.045.
+Put numbers in. Suppose the loss is the ramp loss of lesson 15b, so \(c = 1\), you have \(m = 50{,}000\) labels, \(\delta = 0.05\), and the class’s complexity, average or measured, is 0.045.
 
 ```python
 from math import log, sqrt
@@ -403,7 +403,7 @@ It prints `0.1823 0.5469`: multiplying our three loss vectors by \(-3\) and shif
 
 ### Rule 2: mixing adds nothing
 
-A **convex combination** of vectors \(\mathbf a^{(1)}, \dots, \mathbf a^{(N)}\) is \(\sum_{j=1}^N \alpha_j \mathbf a^{(j)}\) with weights \(\alpha_j \ge 0\) that add up to 1 (written \(\|\boldsymbol\alpha\|_1 = 1\), the sum of the absolute values of the weights). The **convex hull** of \(A\) is the set of all convex combinations of finitely many vectors of \(A\): every way of mixing them. Averaging hypotheses, as boosting did in lesson 10, lands in the convex hull.
+A **convex combination** of vectors \(\mathbf a^{(1)}, \dots, \mathbf a^{(N)}\) is \(\sum_{j=1}^N \alpha_j \mathbf a^{(j)}\) with weights \(\alpha_j \ge 0\) that add up to 1 (written \(\|\boldsymbol\alpha\|_1 = 1\), the sum of the absolute values of the weights). The **convex hull** of \(A\) is the set of all convex combinations of finitely many vectors of \(A\): every way of mixing them. Averaging hypotheses, as boosting did in lesson 10a, lands in the convex hull.
 
 **Lemma (convex hull).** Let \(A'\) be the convex hull of \(A\). Then \(R(A') = R(A)\).
 
@@ -443,7 +443,7 @@ The first is an inequality about exponentials: for every real \(a\),
 
 The left side is the average of \(e^{\sigma a}\) over a fair sign \(\sigma\), which is exactly the quantity we will meet. In plain words: **the average of \(e^{a}\) and \(e^{-a}\) is at most \(e^{a^2/2}\).** At \(a = 1\): \((2.718 + 0.368)/2 = 1.543 \le e^{0.5} = 1.649\). *Proof.* Expand both sides as power series. The odd powers cancel on the left, leaving \(\sum_{n \ge 0} a^{2n}/(2n)!\); the right side is \(\sum_{n \ge 0} a^{2n}/(2^n n!)\). Term by term the left is smaller, because \((2n)! = \prod_{k=1}^{2n} k \ge \prod_{k=1}^{n} (2k) = 2^n n!\): dropping the odd factors \(1, 3, \dots, 2n - 1\), each at least 1, can only shrink the product, and the even factors \(2, 4, \dots, 2n\) that remain multiply to \(2^n n!\). \(\blacksquare\)
 
-The second is **Jensen’s inequality** for the logarithm. The logarithm is **concave**: its graph bends down, so the chord between two points on it lies below the graph (the mirror image of the convex functions of lesson 12). So the log of an average is at least the average of the logs, \(\mathbb E[\log Y] \le \log \mathbb E[Y]\) for a positive random variable \(Y\). If \(Y\) is 1 or 100 with equal chance, the average of the logs is \((0 + 4.605)/2 = 2.303\), and the log of the average is \(\log 50.5 = 3.922\). (Lesson 14 used Jensen for convex functions; a concave function flips the inequality.)
+The second is **Jensen’s inequality** for the logarithm. The logarithm is **concave**: its graph bends down, so the chord between two points on it lies below the graph (the mirror image of the convex functions of lesson 12a). So the log of an average is at least the average of the logs, \(\mathbb E[\log Y] \le \log \mathbb E[Y]\) for a positive random variable \(Y\). If \(Y\) is 1 or 100 with equal chance, the average of the logs is \((0 + 4.605)/2 = 2.303\), and the log of the average is \(\log 50.5 = 3.922\). (Lesson 14a used Jensen for convex functions; a concave function flips the inequality.)
 
 ```python
 from math import exp, log
@@ -500,7 +500,7 @@ It prints `0.2852 0.4229`: twenty random 0/1 vectors of length 10 have exact com
 
 ### Rule 4: Lipschitz functions contract
 
-The last rule is the one that connects losses to scores. Most losses we use are a function of the score: the ramp loss of lesson 15 is \(\min\{1, \max\{0, 1 - y\langle\mathbf w, \mathbf x\rangle\}\}\), a function of \(\langle \mathbf w, \mathbf x\rangle\). Recall from lesson 12 that a function \(\phi: \mathbb R \to \mathbb R\) is **\(\rho\)-Lipschitz** if \(|\phi(\alpha) - \phi(\beta)| \le \rho|\alpha - \beta|\) for all \(\alpha, \beta\): it never stretches distances by more than \(\rho\). The ramp loss is 1-Lipschitz in the score: its slope is 0 or \(\pm 1\).
+The last rule is the one that connects losses to scores. Most losses we use are a function of the score: the ramp loss of lesson 15b is \(\min\{1, \max\{0, 1 - y\langle\mathbf w, \mathbf x\rangle\}\}\), a function of \(\langle \mathbf w, \mathbf x\rangle\). Recall from lesson 12a that a function \(\phi: \mathbb R \to \mathbb R\) is **\(\rho\)-Lipschitz** if \(|\phi(\alpha) - \phi(\beta)| \le \rho|\alpha - \beta|\) for all \(\alpha, \beta\): it never stretches distances by more than \(\rho\). The ramp loss is 1-Lipschitz in the score: its slope is 0 or \(\pm 1\).
 
 **Lemma (contraction).** For each \(i \in [m]\) let \(\phi_i: \mathbb R \to \mathbb R\) be \(\rho\)-Lipschitz, and for \(\mathbf a \in \mathbb R^m\) write \(\phi(\mathbf a) = (\phi_1(a_1), \dots, \phi_m(a_m))\). Then
 
@@ -563,7 +563,7 @@ Each class is a set of score functions. \(\|\mathbf w\|_2 = \sqrt{\sum_j w_j^2}\
 
 In plain words: **unit-length weight vectors fit noise no better than the longest message’s length divided by \(\sqrt m\).** No dimension appears anywhere: the vectors may live in \(\mathbb R^{50{,}000}\), or even in an infinite-dimensional Hilbert space (lesson 16), and the bound does not change. For our mail, at most 25 words per message, \(\max_i\|\mathbf x_i\| \le 5\), and at \(m = 50{,}000\) the bound is \(5/223.6 = 0.0224\).
 
-*Proof.* *Step 1: the best weight vector.* For each \(\sigma\), \(\sum_i \sigma_i\langle\mathbf w, \mathbf x_i\rangle = \langle \mathbf w, \mathbf v\rangle\) with \(\mathbf v = \sum_i \sigma_i\mathbf x_i\), by linearity of the inner product. By the Cauchy–Schwarz inequality (lesson 9), \(\langle\mathbf w, \mathbf v\rangle \le \|\mathbf w\|\|\mathbf v\| \le \|\mathbf v\|\), and \(\mathbf w = \mathbf v/\|\mathbf v\|\) reaches it, so the supremum is exactly \(\|\sum_i \sigma_i \mathbf x_i\|\), and \(m R(\mathcal H_2 \circ S) = \mathbb E_\sigma\|\sum_i \sigma_i \mathbf x_i\|\).
+*Proof.* *Step 1: the best weight vector.* For each \(\sigma\), \(\sum_i \sigma_i\langle\mathbf w, \mathbf x_i\rangle = \langle \mathbf w, \mathbf v\rangle\) with \(\mathbf v = \sum_i \sigma_i\mathbf x_i\), by linearity of the inner product. By the Cauchy–Schwarz inequality (lesson 9a), \(\langle\mathbf w, \mathbf v\rangle \le \|\mathbf w\|\|\mathbf v\| \le \|\mathbf v\|\), and \(\mathbf w = \mathbf v/\|\mathbf v\|\) reaches it, so the supremum is exactly \(\|\sum_i \sigma_i \mathbf x_i\|\), and \(m R(\mathcal H_2 \circ S) = \mathbb E_\sigma\|\sum_i \sigma_i \mathbf x_i\|\).
 
 *Step 2: Jensen.* For any random variable \(Y\), \((\mathbb E Y)^2 \le \mathbb E[Y^2]\), because the difference is the variance, which is never negative. So \(\mathbb E\|\mathbf v\| \le \sqrt{\mathbb E\|\mathbf v\|^2}\).
 
@@ -632,7 +632,7 @@ It prints `50 0.0638 0.1517` and `50000 0.0075 0.2399`. The bound grows a little
 
 ## Generalization bounds for SVM
 
-Now assemble the pieces. In this section \(R\) stands for the radius of the messages, as in lesson 9: every \(\mathbf x\) has \(\|\mathbf x\| \le R\). (Lesson 15 wrote the radius as \(\rho\); here \(\rho\) is needed for the Lipschitz constant, so the radius goes back to \(R\). The Rademacher complexity keeps its brackets, \(R(\cdot)\), so the two never meet.) The class is \(\mathcal H = \{\mathbf w : \|\mathbf w\|_2 \le B\}\), the weight vectors within the **norm budget** \(B\), and the loss is a function of the score and the label: \(\ell(\mathbf w, (\mathbf x, y)) = \phi(\langle\mathbf w, \mathbf x\rangle, y)\), where for every label \(y\) the function \(a \mapsto \phi(a, y)\) is \(\rho\)-Lipschitz. The hinge loss, \(\phi(a, y) = \max\{0, 1 - ya\}\), and the ramp loss are both of this form with \(\rho = 1\) when \(y = \pm 1\).
+Now assemble the pieces. In this section \(R\) stands for the radius of the messages, as in lesson 9a: every \(\mathbf x\) has \(\|\mathbf x\| \le R\). (Lesson 15a wrote the radius as \(\rho\); here \(\rho\) is needed for the Lipschitz constant, so the radius goes back to \(R\). The Rademacher complexity keeps its brackets, \(R(\cdot)\), so the two never meet.) The class is \(\mathcal H = \{\mathbf w : \|\mathbf w\|_2 \le B\}\), the weight vectors within the **norm budget** \(B\), and the loss is a function of the score and the label: \(\ell(\mathbf w, (\mathbf x, y)) = \phi(\langle\mathbf w, \mathbf x\rangle, y)\), where for every label \(y\) the function \(a \mapsto \phi(a, y)\) is \(\rho\)-Lipschitz. The hinge loss, \(\phi(a, y) = \max\{0, 1 - ya\}\), and the ramp loss are both of this form with \(\rho = 1\) when \(y = \pm 1\).
 
 **Theorem (norm-bounded linear predictors).** Suppose \(\|\mathbf x\|_2 \le R\) with probability 1 under \(\mathcal D\), and \(|\phi(a, y)| \le c\) for all \(a \in [-BR, BR]\). Then for every \(\delta \in (0, 1)\), with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\),
 
@@ -642,13 +642,13 @@ Read it term by term: \(L_S(\mathbf w)\) is what you measure on your labels, \(2
 
 *Proof.* Let \(\mathcal F\) be the loss class. Its vectors on \(S\) are \((\phi(\langle\mathbf w, \mathbf x_1\rangle, y_1), \dots, \phi(\langle\mathbf w, \mathbf x_m\rangle, y_m))\). Each is the score vector of \(\mathbf w\) with \(\phi_i(a) = \phi(a, y_i)\) applied to entry \(i\), and each \(\phi_i\) is \(\rho\)-Lipschitz, so the contraction lemma gives \(R(\mathcal F \circ S) \le \rho R(\mathcal H \circ S)\). The score vectors of the ball of radius \(B\) are \(B\) times those of the unit ball, so by the scale rule and the Euclidean-ball lemma, \(R(\mathcal H\circ S) = BR(\mathcal H_2 \circ S) \le BR/\sqrt m\). This holds for every \(S\) the distribution can produce, so also for the average over \(S'\). Every score satisfies \(|\langle\mathbf w, \mathbf x\rangle| \le BR\) by Cauchy–Schwarz, so every loss is at most \(c\) in absolute value, and part 1 of the Rademacher theorem applies. \(\blacksquare\)
 
-Now the promise from lesson 15. There, hard-SVM was claimed to need a number of labels that grows with \((\rho/\gamma)^2\), the radius over the margin, and not with the dimension. Here is the proof, in this lesson’s letters.
+Now the promise from lesson 15a. There, hard-SVM was claimed to need a number of labels that grows with \((\rho/\gamma)^2\), the radius over the margin, and not with the dimension. Here is the proof, in this lesson’s letters.
 
 **Theorem (hard-SVM).** Suppose some \(\mathbf w^\star\) has \(y\langle\mathbf w^\star, \mathbf x\rangle \ge 1\) with probability 1 under \(\mathcal D\), and \(\|\mathbf x\| \le R\) with probability 1. Let \(\mathbf w_S\) be the homogeneous hard-SVM solution, the shortest \(\mathbf w\) with \(y_i\langle\mathbf w, \mathbf x_i\rangle \ge 1\) for every \(i\). Then with probability at least \(1 - \delta\),
 
 \[ \mathbb P_{(\mathbf x, y)\sim\mathcal D}\left[ y \ne \mathrm{sign}(\langle\mathbf w_S, \mathbf x\rangle) \right] \le \frac{2R\|\mathbf w^\star\|}{\sqrt m} + \sqrt{\frac{2\log(2/\delta)}{m}}. \]
 
-The left side is the 0-1 true risk of hard-SVM, the chance it mislabels a fresh message. In plain words: **hard-SVM’s true risk is at most twice the radius times the separator’s length over \(\sqrt m\), plus a confidence term.** If the mail is separable with margin \(\gamma\) by a unit vector \(\mathbf u\), then \(\mathbf w^\star = \mathbf u/\gamma\) has \(y\langle\mathbf w^\star, \mathbf x\rangle \ge 1\) and \(\|\mathbf w^\star\| = 1/\gamma\), so the first term is \(2R/(\gamma\sqrt m) = \sqrt{4(R/\gamma)^2/m}\): lesson 15’s statement exactly.
+The left side is the 0-1 true risk of hard-SVM, the chance it mislabels a fresh message. In plain words: **hard-SVM’s true risk is at most twice the radius times the separator’s length over \(\sqrt m\), plus a confidence term.** If the mail is separable with margin \(\gamma\) by a unit vector \(\mathbf u\), then \(\mathbf w^\star = \mathbf u/\gamma\) has \(y\langle\mathbf w^\star, \mathbf x\rangle \ge 1\) and \(\|\mathbf w^\star\| = 1/\gamma\), so the first term is \(2R/(\gamma\sqrt m) = \sqrt{4(R/\gamma)^2/m}\): lesson 15a’s statement exactly.
 
 *Proof.* Use the ramp loss: it is 1-Lipschitz in the score, takes values in \([0, 1]\) so \(c = 1\), and is at least the 0-1 loss (it charges 1 whenever \(y\langle\mathbf w, \mathbf x\rangle \le 0\)), so the 0-1 true risk is at most \(L_{\mathcal D}^{\text{ramp}}(\mathbf w_S)\). Take \(B = \|\mathbf w^\star\|\). With probability 1 every training example satisfies \(y_i\langle\mathbf w^\star, \mathbf x_i\rangle \ge 1\), so \(\mathbf w^\star\) is feasible for hard-SVM, and the shortest feasible vector has \(\|\mathbf w_S\| \le B\): \(\mathbf w_S\) is in the class. Every training example has signed score at least 1 under \(\mathbf w_S\), so its ramp loss is 0 and \(L_S^{\text{ramp}}(\mathbf w_S) = 0\). The norm-bounded theorem, which holds for every \(\mathbf w\) in the class at once, applies to \(\mathbf w_S\) in particular. \(\blacksquare\)
 
@@ -664,9 +664,9 @@ for m in (1_000, 10_000, 100_000):
     print(m, round(hard_svm_bound(10, m, 0.05), 4))
 ```
 
-It prints `1000 0.7183`, `10000 0.2272` and `100000 0.0718`, the very numbers lesson 15 quoted for \(\rho/\gamma = 10\). The promise is kept.
+It prints `1000 0.7183`, `10000 0.2272` and `100000 0.0718`, the very numbers lesson 15a quoted for \(\rho/\gamma = 10\). The promise is kept.
 
-There is one awkward thing about that theorem: \(\|\mathbf w^\star\|\) is the length of an unknown separator. Can the bound use the length of the vector you actually got? Yes, by spending confidence across norm budgets, the trick lesson 7 used for structural risk minimization.
+There is one awkward thing about that theorem: \(\|\mathbf w^\star\|\) is the length of an unknown separator. Can the bound use the length of the vector you actually got? Yes, by spending confidence across norm budgets, the trick lesson 7a used for structural risk minimization.
 
 **Theorem (a bound from the learned norm).** Under the same assumptions, with probability at least \(1 - \delta\), if \(\|\mathbf w_S\| \ge 2\),
 
@@ -814,7 +814,7 @@ In the lab below, you choose the norm (Euclidean or \(\ell_1\)), the budget \(B\
 2. **Symmetrization**: the expected worst self-flattery of a class is at most twice its expected Rademacher complexity. The proof replaces the true risk by a ghost sample and the swaps by random signs.
 3. **McDiarmid’s inequality**: a function of independent variables with bounded differences concentrates around its mean at the Hoeffding rate. With it, the bound holds with probability \(1 - \delta\) at the cost of \(\sqrt{\log(1/\delta)/m}\), and can even use the complexity measured on \(S\).
 4. **Rademacher calculus**: shifting adds nothing and scaling multiplies by \(|c|\); convex hulls add nothing; finite sets cost \(\sqrt{2\log N}\) (Massart); \(\rho\)-Lipschitz losses multiply by at most \(\rho\) (contraction).
-5. Euclidean-norm linear classes have complexity at most \(BR/\sqrt m\), and \(\ell_1\)-norm classes at most \(BR\sqrt{2\log(2d)/m}\). The resulting SVM and \(\ell_1\) bounds do not depend on the number of features, and they prove the hard-SVM bound of lesson 15.
+5. Euclidean-norm linear classes have complexity at most \(BR/\sqrt m\), and \(\ell_1\)-norm classes at most \(BR\sqrt{2\log(2d)/m}\). The resulting SVM and \(\ell_1\) bounds do not depend on the number of features, and they prove the hard-SVM bound of lesson 15a.
 
 The certificate ships. Then the data team comes back with a harder class. They want to certify a filter whose loss vectors are not a ball, not a finite set, and not a Lipschitz image of either: a depth 2 network from lesson 20, say, where a hidden layer of neurons each turns the message into a feature of its own and one output neuron combines those features. For a class like that the supremum inside the Rademacher complexity has no closed form, and Massart’s lemma, the one tool that works for any shape, applies only to finite sets. So the team asks: could a rich class be replaced, for every practical purpose, by a finite set of representative hypotheses, close to every member of the class? If every loss vector is within a small distance of one of the representatives, Massart’s lemma would apply to the representatives, and the small distance would cost only a little. How many representatives does it take? That is the next lesson.
 

@@ -151,7 +151,7 @@ The update is the heart of it:
 \[ \tilde w_i^{(t+1)} = \tilde w_i^{(t)} e^{-\eta v_{t,i}}, \qquad \mathbf w^{(t)} = \frac{\tilde{\mathbf w}^{(t)}}{Z_t}, \quad Z_t = \sum_{i=1}^d \tilde w_i^{(t)}. \]
 
 - \(\tilde w_i^{(t)}\) (“w tilde”) is expert \(i\)’s raw trust before round \(t\); it starts at 1.
-- \(e^{-\eta v_{t,i}}\) is the shrink factor: 1 when the cost is 0, and \(e^{-\eta} \approx 1 - \eta\) when the cost is 1. The number \(\eta > 0\) is the **step size**, as in lessons 14 and 15, and it sets how hard one bad round is punished. The pseudocode sets it to \(\sqrt{2 \log(d)/T}\), with \(\log\) the natural logarithm, as everywhere in this course.
+- \(e^{-\eta v_{t,i}}\) is the shrink factor: 1 when the cost is 0, and \(e^{-\eta} \approx 1 - \eta\) when the cost is 1. The number \(\eta > 0\) is the **step size**, as in lessons 14a and 15b, and it sets how hard one bad round is punished. The pseudocode sets it to \(\sqrt{2 \log(d)/T}\), with \(\log\) the natural logarithm, as everywhere in this course.
 - \(Z_t\) is the total raw trust, and dividing by it turns the raw trusts into weights that add up to 1: \(\mathbf w^{(t)}\) is a probability distribution.
 
 In plain words: **multiply each expert’s trust by \(e^{-\eta}\) raised to its cost, then rescale so the trusts add up to one.** With two experts, \(\eta = 0.5\), and a first round where expert 1 costs 1 and expert 2 costs 0: the raw trusts become \(e^{-0.5} \approx 0.607\) and 1, so the weights become \(0.607/1.607 \approx 0.38\) and \(1/1.607 \approx 0.62\).
@@ -444,7 +444,7 @@ In plain words: **with a coin, every class of finite Littlestone dimension can b
 
 ## Online convex optimization
 
-Weighted-Majority needs a list of experts, which for big classes is a big list. In lessons 12a and 14 you met a different way to make learning tractable: convex losses, minimized by stepping against a subgradient. Does that survive an adversary? Yes, almost word for word.
+Weighted-Majority needs a list of experts, which for big classes is a big list. In lessons 12a and 14a you met a different way to make learning tractable: convex losses, minimized by stepping against a subgradient. Does that survive an adversary? Yes, almost word for word.
 
 The setting in words: each round, the learner commits to a weight vector, the adversary (adapting to everything so far) reveals an example, and the learner pays a loss that is convex in the vector, as in lesson 12a, over a convex set of allowed vectors.
 
@@ -459,7 +459,7 @@ Regret is measured against any fixed vector \(\mathbf w^\star\):
 
 In plain words: **the regret is how much more loss the learner paid than the best single weight vector it could have used throughout.** For example, if over 100 rounds the learner pays 60 and the best fixed vector would have paid 52, the regret against it is 8.
 
-The learner is **Online Gradient Descent**: lesson 14’s gradient descent with projection, run on the losses as they arrive. Recall from lesson 14 that a **subgradient** \(\mathbf v\) of a convex \(f\) at \(\mathbf w\) is the slope of a supporting plane: \(f(\mathbf u) \ge f(\mathbf w) + \langle \mathbf u - \mathbf w, \mathbf v \rangle\) for every \(\mathbf u\); that \(f\) is **\(\rho\)-Lipschitz** exactly when every subgradient has norm at most \(\rho\); and the **projection lemma**: projecting onto a convex set never increases the distance to any point of the set.
+The learner is **Online Gradient Descent**: lesson 14b’s gradient descent with projection, run on the losses as they arrive. Recall from lesson 14a that a **subgradient** \(\mathbf v\) of a convex \(f\) at \(\mathbf w\) is the slope of a supporting plane: \(f(\mathbf u) \ge f(\mathbf w) + \langle \mathbf u - \mathbf w, \mathbf v \rangle\) for every \(\mathbf u\); that \(f\) is **\(\rho\)-Lipschitz** exactly when every subgradient has norm at most \(\rho\); and the **projection lemma**: projecting onto a convex set never increases the distance to any point of the set.
 
 ```
 OnlineGradientDescent(η):
@@ -484,9 +484,9 @@ If every \(f_t\) is \(\rho\)-Lipschitz and \(\eta = 1/\sqrt T\), then \(\mathrm{
 
 - \(\|\mathbf w^\star\|\) is the length of the comparison vector: how far it is from the starting point \(\mathbf 0\).
 - \(\|\mathbf v_t\|^2\) is the squared length of the step direction on round \(t\).
-- The two terms are lesson 14’s two forces again: a timid step size pays for the distance to cover, and a bold one pays for the size of its steps.
+- The two terms are lesson 14a’s two forces again: a timid step size pays for the distance to cover, and a bold one pays for the size of its steps.
 
-In plain words: **against any sequence of convex losses, Online Gradient Descent pays at most \(B\rho\sqrt T\) more than the best fixed vector, the same bound gradient descent had in lesson 14, now with no distribution at all.** With \(B = 1\), \(\rho = 1\) and \(T = 10{,}000\) rounds, the regret is at most 100, one hundredth of a loss per round.
+In plain words: **against any sequence of convex losses, Online Gradient Descent pays at most \(B\rho\sqrt T\) more than the best fixed vector, the same bound gradient descent had in lesson 14a, now with no distribution at all.** With \(B = 1\), \(\rho = 1\) and \(T = 10{,}000\) rounds, the regret is at most 100, one hundredth of a loss per round.
 
 *Proof.* Fix \(\mathbf w^\star \in \mathcal H\). Track the squared distance to it, \(\|\mathbf w^{(t)} - \mathbf w^\star\|^2\), and see how much one round changes it. Add and subtract the half step:
 
@@ -504,7 +504,7 @@ Sum over \(t = 1, \dots, T\). The left side telescopes to \(\|\mathbf w^{(T+1)} 
 
 The left side is the regret, since \(f_t(\mathbf w) = \ell(\mathbf w, z_t)\), and dropping the subtracted squared distance only makes the right side bigger. That is the first bound. If each \(f_t\) is \(\rho\)-Lipschitz, then \(\|\mathbf v_t\| \le \rho\), so the sum is at most \(T\rho^2\): with \(\eta = 1/\sqrt T\) the bound is \(\frac{\sqrt T}{2}\|\mathbf w^\star\|^2 + \frac{\sqrt T}{2}\rho^2\), and with \(\|\mathbf w^\star\| \le B\) and \(\eta = B/(\rho\sqrt T)\) it is \(\frac{B\rho\sqrt T}{2} + \frac{B\rho\sqrt T}{2} = B\rho\sqrt T\). \(\blacksquare\)
 
-The proof is lesson 14’s step lemma with one thing missing: there is no expectation anywhere. Lesson 14 needed fresh random examples to turn the step lemma into a statement about the true risk. Here the step lemma itself is the result, and it holds for every sequence, because it never cared where the \(\mathbf v_t\) came from.
+The proof is lesson 14a’s step lemma with one thing missing: there is no expectation anywhere. Lesson 14a needed fresh random examples to turn the step lemma into a statement about the true risk. Here the step lemma itself is the result, and it holds for every sequence, because it never cared where the \(\mathbf v_t\) came from.
 
 Let’s check it on a one-dimensional fight. The class is \(\mathcal H = [-1, 1]\), the loss is \(\ell(w, z) = |w - z|\) (convex and 1-Lipschitz in \(w\)), and the adversary always picks \(z_t\) at the end of the interval farthest from the learner’s current \(w\).
 
@@ -551,11 +551,11 @@ It prints `True 50.0 62.5`: the per-round inequality held on all 10,000 rounds, 
 
 ## The online Perceptron
 
-The filter of lessons 9a and 15 was a halfspace: a weight vector \(\mathbf w\) over word counts, predicting junk when the score \(\langle \mathbf w, \mathbf x \rangle\) is positive. For halfspaces we switch labels to \(y \in \{-1, +1\}\), as lesson 9a did, with \(+1\) for junk. Can an online filter learn halfspaces against an adversary?
+The filter of lessons 9a and 15a was a halfspace: a weight vector \(\mathbf w\) over word counts, predicting junk when the score \(\langle \mathbf w, \mathbf x \rangle\) is positive. For halfspaces we switch labels to \(y \in \{-1, +1\}\), as lesson 9a did, with \(+1\) for junk. Can an online filter learn halfspaces against an adversary?
 
 Not with a mistake bound in general. In two or more dimensions, halfspaces contain the thresholds in disguise: take messages \((s, 1, 0, \dots, 0)\) whose first coordinate is a score \(s\), and weight vectors \((-1, a, 0, \dots, 0)\); then \(\langle \mathbf w, \mathbf x \rangle = a - s\), which is positive when \(s < a\), a threshold on \(s\). Binary search on \(s\) shatters trees of every depth, so the Littlestone dimension of halfspaces is infinite, and by lesson 21a’s tree lower bound every online learner can be forced into a mistake on every round.
 
-So we need to assume more about the sequence, and lessons 9a and 15 tell us what: a **margin**. If some \(\mathbf w^\star\) scores every message with \(y_t \langle \mathbf w^\star, \mathbf x_t \rangle \ge 1\), the messages sit at distance at least \(1/\|\mathbf w^\star\|\) from its boundary, and an adversary cannot binary-search ever closer to it.
+So we need to assume more about the sequence, and lessons 9a and 15a tell us what: a **margin**. If some \(\mathbf w^\star\) scores every message with \(y_t \langle \mathbf w^\star, \mathbf x_t \rangle \ge 1\), the messages sit at distance at least \(1/\|\mathbf w^\star\|\) from its boundary, and an adversary cannot binary-search ever closer to it.
 
 The tool is the one lesson 12b introduced for exactly this purpose, a **convex surrogate loss**. The 0-1 loss, \(\mathbb 1[y\langle \mathbf w, \mathbf x \rangle \le 0]\) (1 on a mistake, 0 otherwise), is not convex. The **hinge loss** \(\max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\}\) is convex and is never below the 0-1 loss. Online, we may even pick a different surrogate on each round, after seeing the learner’s current vector, because Online Gradient Descent’s bound holds for every sequence of convex losses, however they were chosen. So we use
 
@@ -776,7 +776,7 @@ Before you start, work out what each budget allows. If the adversary sees your p
 1. A single contradictory label empties the version space, and every learner of lesson 21a is left with nothing to vote on. Without realizability, we measure regret against the best hypothesis in hindsight instead of counting mistakes.
 2. Deterministic learners can be forced to regret \(T/2\) (Cover’s impossibility). With a coin the adversary cannot see, Weighted-Majority has regret at most \(\sqrt{2 \log(d)\, T}\), proved by squeezing the total trust \(Z_t\) between the learner’s cost and the best expert’s. For a general \(\eta\) the bound is \(\log d/\eta + \eta T/2\): learning slowly against overreacting.
 3. With experts built from SOA, every class of finite Littlestone dimension has regret \(O(\sqrt{\mathrm{Ldim}(\mathcal H)\, T \log T})\), so the Littlestone dimension decides online learnability with and without a perfect hypothesis.
-4. For convex losses, Online Gradient Descent has regret at most \(B\rho\sqrt T\) against any sequence: lesson 14’s step lemma, with no expectations.
+4. For convex losses, Online Gradient Descent has regret at most \(B\rho\sqrt T\) against any sequence: lesson 14a’s step lemma, with no expectations.
 5. The Perceptron is Online Gradient Descent on hinge surrogates charged only on mistake rounds. Its mistakes are at most \(C + R\|\mathbf w^\star\|\sqrt C + R^2\|\mathbf w^\star\|^2\), and at most \(R^2\|\mathbf w^\star\|^2\) when \(\mathbf w^\star\) separates with margin.
 
 The filter holds its ground against the spammers now, with a promise written down before each week starts. Then a different problem lands on your desk. The team of people who label messages has quit, all of them, on the same day. Thousands of messages keep arriving and not one of them has a label: no junk, no keep, nothing to count mistakes against. And the company still wants the mail sorted into kinds, newsletters with newsletters, invoices with invoices, whatever the kinds turn out to be. Every learner in this course so far has needed labels. What can a learner possibly do with none? That is the next lesson.

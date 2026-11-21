@@ -70,7 +70,7 @@ Read it from the inside out.
 
 In plain words: **\(M_A(S)\) is how many mistakes learner \(A\) makes on one sequence, and \(M_A(\mathcal H)\) is the most mistakes any adversary can force on it, as long as the labels follow some hypothesis in \(\mathcal H\).** For a tiny number: if the learner predicts “junk” on every message and the adversary sends 1000, 0100, 0010 (all keep) and then 0001 (junk), labelled by \(h_N\), then \(M_A(S) = 3\).
 
-A bound \(M_A(\mathcal H) \le B < \infty\) is a **mistake bound** (here \(B\) is just a number, not the norm bound of lessons 12b to 15). A class \(\mathcal H\) is **online learnable** if some online learner \(A\) has a mistake bound for it. For now we ignore running time completely, as lesson 3 did at first with PAC learning: the learners in this lesson may be slow, and the efficient ones arrive in lesson 21b.
+A bound \(M_A(\mathcal H) \le B < \infty\) is a **mistake bound** (here \(B\) is just a number, not the norm bound of lessons 12b to 15b). A class \(\mathcal H\) is **online learnable** if some online learner \(A\) has a mistake bound for it. For now we ignore running time completely, as lesson 3 did at first with PAC learning: the learners in this lesson may be slow, and the efficient ones arrive in lesson 21b.
 
 ## Consistent: keep the survivors
 
@@ -529,7 +529,7 @@ Before you start, work out what each budget allows. How many mistakes can Consis
 
 ## What people get wrong
 
-**“Online learning is batch learning done one example at a time.”** The difference is not the order of the examples but who chooses them. Lesson 14’s SGD also sees one example per step, but its examples are fresh draws from \(\mathcal D\). Online learning assumes nothing about where they come from, and that is why thresholds, easy in the batch world, become impossible online.
+**“Online learning is batch learning done one example at a time.”** The difference is not the order of the examples but who chooses them. Lesson 14a’s SGD also sees one example per step, but its examples are fresh draws from \(\mathcal D\). Online learning assumes nothing about where they come from, and that is why thresholds, easy in the batch world, become impossible online.
 
 **“Any consistent hypothesis is a fine choice.”** It was in lesson 2. Online, Consistent can be forced into \(|\mathcal H| - 1\) mistakes while Halving makes at most \(\log_2|\mathcal H|\). Which survivor you follow matters exponentially.
 

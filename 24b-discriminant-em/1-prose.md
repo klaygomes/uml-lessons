@@ -91,7 +91,7 @@ print(max(abs(log_ratio(x) - (w[0] * x[0] + w[1] * x[1] + b))
 
 It prints `[2.0, 0.0] -4.0 2.0` and `True`: on 1,024 grid points, the difference of stretched distances and the linear rule agree.
 
-So a generative assumption has rederived the hypothesis class of lesson 9a, the halfspaces. The difference is in how the halfspace is chosen. LDA does not search for a good \(w\); it estimates the centres and the covariance, and computes \(w\) and \(b\) from them. The usual estimates are the maximum likelihood ones: each centre is the average of its class, and the shared covariance is the average, over all \(m\) examples, of the outer product of each example’s offset \(v = x_i - \mu_{y_i}\) from its own class centre. The outer product \(vv^\top\) is the \(d \times d\) matrix with entry \(v_j v_k\) in row \(j\), column \(k\), as in lesson 23; for the offset \((1, 0)\) it is \(\begin{pmatrix}1 & 0\\ 0 & 0\end{pmatrix}\).
+So a generative assumption has rederived the hypothesis class of lesson 9a, the halfspaces. The difference is in how the halfspace is chosen. LDA does not search for a good \(w\); it estimates the centres and the covariance, and computes \(w\) and \(b\) from them. The usual estimates are the maximum likelihood ones: each centre is the average of its class, and the shared covariance is the average, over all \(m\) examples, of the outer product of each example’s offset \(v = x_i - \mu_{y_i}\) from its own class centre. The outer product \(vv^\top\) is the \(d \times d\) matrix with entry \(v_j v_k\) in row \(j\), column \(k\), as in lesson 23a; for the offset \((1, 0)\) it is \(\begin{pmatrix}1 & 0\\ 0 & 0\end{pmatrix}\).
 
 ```
 LDATrain(S):

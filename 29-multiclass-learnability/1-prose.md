@@ -2,7 +2,7 @@
 
 ## Three hundred folders and one hungry folder
 
-The auditor signed, and the product team got its new plan. The filter no longer answers junk or keep: it files every message into one of 300 folders, invoices, newsletters, travel, receipts, one for each team’s project, and junk. The learner behind it is lesson 17’s four-folder filter grown up, a linear multiclass predictor with one weight vector per folder, trained by ERM on messages described by 30 features. It works. And then the launch review asks the question every launch since lesson 2 has had to answer: how many labelled messages does this need, and how sure can you be?
+The auditor signed, and the product team got its new plan. The filter no longer answers junk or keep: it files every message into one of 300 folders, invoices, newsletters, travel, receipts, one for each team’s project, and junk. The learner behind it is lesson 17a’s four-folder filter grown up, a linear multiclass predictor with one weight vector per folder, trained by ERM on messages described by 30 features. It works. And then the launch review asks the question every launch since lesson 2 has had to answer: how many labelled messages does this need, and how sure can you be?
 
 You reach for the fundamental theorem that lesson 28 has just finished proving: the labels a class needs grow with its VC dimension. But open the definition of the VC dimension and look at what it measures: how many points a class can label *in every possible way with two labels*. Junk or keep. Shattering asks for all \(2^{|C|}\) yes/no labellings of a set \(C\) of \(|C|\) messages. Your hypotheses don’t answer yes or no; they answer “folder 17” or “folder 243”. The VC dimension simply isn’t defined for them, and the review is stuck.
 
@@ -24,7 +24,7 @@ print(len(seen), round(L_bad, 4), L_good)
 
 It prints `9 0.0992 0.0`. The 60 labels came from only 9 distinct senders, so the team’s rule hides the mail of the other 991, about 9.9% of all mail, while the rule “everything in the inbox”, which is just as consistent, is perfect. Both are ERM. One learns, one doesn’t.
 
-So you have two bugs. You cannot say how many labels a 300-folder rule needs, because the tool you would use only speaks in two labels. And you have an ERM over a class of folder rules that learns badly, even though lesson 6 promised that, for two labels, *every* ERM learns whenever anything does. This lesson fixes both.
+So you have two bugs. You cannot say how many labels a 300-folder rule needs, because the tool you would use only speaks in two labels. And you have an ERM over a class of folder rules that learns badly, even though lesson 6a promised that, for two labels, *every* ERM learns whenever anything does. This lesson fixes both.
 
 ## What carries over from two labels
 
@@ -34,19 +34,19 @@ The loss is the **0-1 loss** of lesson 3: a hypothesis pays 1 for a wrong folder
 
 The definitions of lesson 3 carry over word for word, because they never mentioned how many labels there are. A class is **PAC learnable** when some learner, given \(m \ge m_{\mathcal H}(\varepsilon, \delta)\) i.i.d. examples labelled by some hypothesis in the class (the realizable case), returns a hypothesis with true risk at most \(\varepsilon\) with probability at least \(1 - \delta\). Here \(\varepsilon\) is the accuracy you tolerate, \(\delta\) the chance of failure you tolerate, \(m\) the number of examples, and \(m_{\mathcal H}\) the **sample complexity**, the smallest number of examples that suffices. It is **agnostic PAC learnable** when, with no assumption that any hypothesis is perfect, some learner gets within \(\varepsilon\) of the best hypothesis in the class. And it has the **uniform convergence property** (lesson 4) when enough examples make every hypothesis’s empirical risk close to its true risk at once; lesson 4 showed that this makes every ERM a successful learner.
 
-What does *not* carry over is the yardstick. Lesson 6 measured a class by its **restriction** to a finite set \(C = \{c_1, \dots, c_r\}\), the set of label vectors the class produces there,
+What does *not* carry over is the yardstick. Lesson 6a measured a class by its **restriction** to a finite set \(C = \{c_1, \dots, c_r\}\), the set of label vectors the class produces there,
 
 \[ \mathcal H_C = \{ (h(c_1), \dots, h(c_r)) : h \in \mathcal H \}, \]
 
 which now lives inside \([k]^r\), the vectors of \(r\) folder numbers. Read it as before: one vector of answers per hypothesis, collected in braces, duplicates kept once. If two hypotheses file two messages as (1, 2) and a third as (1, 3), then \(\mathcal H_C = \{(1, 2), (1, 3)\}\); the first snippet of the next section computes one. For two labels, \(\mathcal H\) **shatters** \(C\) when \(\mathcal H_C\) contains all \(2^r\) vectors, and the **VC dimension** is the size of the largest shattered set.
 
-Lesson 6 stated the **fundamental theorem of statistical learning**, and lesson 28 proved it with explicit constants. For two labels, a class with VC dimension \(d\) is learnable exactly when \(d\) is finite, and any ERM learns it. With noisy labels, no learner can do with fewer than \((d + \log(1/\delta))/(1024\,\varepsilon^2)\) labels (for \(\varepsilon \le 1/(8\sqrt2)\) and \(\delta \le 1/8\)), and ERM succeeds with order \((d\log(1/\varepsilon) + \log(1/\delta))/\varepsilon^2\), the theorem’s ceiling up to that extra \(\log(1/\varepsilon)\). With clean labels, ERM succeeds with order \((d\log(1/\varepsilon) + \log(1/\delta))/\varepsilon\). The engine of the ceilings was **Sauer’s lemma**: a class of VC dimension \(d\) produces at most \(\sum_{i=0}^{d}\binom{r}{i}\) labellings on \(r\) points, at most \((er/d)^d\) once \(r \ge d\), a polynomial in \(r\) rather than \(2^r\).
+Lesson 6a stated the **fundamental theorem of statistical learning**, and lesson 28 proved it with explicit constants. For two labels, a class with VC dimension \(d\) is learnable exactly when \(d\) is finite, and any ERM learns it. With noisy labels, no learner can do with fewer than \((d + \log(1/\delta))/(1024\,\varepsilon^2)\) labels (for \(\varepsilon \le 1/(8\sqrt2)\) and \(\delta \le 1/8\)), and ERM succeeds with order \((d\log(1/\varepsilon) + \log(1/\delta))/\varepsilon^2\), the theorem’s ceiling up to that extra \(\log(1/\varepsilon)\). With clean labels, ERM succeeds with order \((d\log(1/\varepsilon) + \log(1/\delta))/\varepsilon\). The engine of the ceilings was **Sauer’s lemma**: a class of VC dimension \(d\) produces at most \(\sum_{i=0}^{d}\binom{r}{i}\) labellings on \(r\) points, at most \((er/d)^d\) once \(r \ge d\), a polynomial in \(r\) rather than \(2^r\).
 
 So the question is: what should “shatter” mean when there are 300 labels?
 
 ## Two choices per message
 
-Let’s work it out on a class small enough to hold in your head. Suppose the scoring service from lesson 6 now returns an **urgency score** between 0 and 1, and the filter files each message into one of \(k = 3\) **urgency folders**: 1 (low), 2 (normal), 3 (urgent). A rule picks two cut points, \(t_1 \le t_2\), and files a message as low if its score is at most \(t_1\), normal if it is above \(t_1\) but at most \(t_2\), and urgent if it is above \(t_2\). Call these rules **urgency levels**. With cut points 0.5 and 1.0, a message scoring 0.3 is low and one scoring 0.7 is normal.
+Let’s work it out on a class small enough to hold in your head. Suppose the scoring service from lesson 6a now returns an **urgency score** between 0 and 1, and the filter files each message into one of \(k = 3\) **urgency folders**: 1 (low), 2 (normal), 3 (urgent). A rule picks two cut points, \(t_1 \le t_2\), and files a message as low if its score is at most \(t_1\), normal if it is above \(t_1\) but at most \(t_2\), and urgent if it is above \(t_2\). Call these rules **urgency levels**. With cut points 0.5 and 1.0, a message scoring 0.3 is low and one scoring 0.7 is normal.
 
 Now take two messages, scoring 0.3 and 0.7. A first idea would be to ask for all \(3^2 = 9\) ways to file them, by analogy with \(2^2\). But urgency levels can never file 0.3 as urgent and 0.7 as low, because a higher score never gets a lower folder. Asking for all \(k^{|C|}\) labellings is so demanding that hardly any interesting class would shatter anything, and the measure would say nothing.
 
@@ -144,13 +144,13 @@ Inside out: \(\{ j \in [k-1] : x > t_j \}\) is the set of cut points that the sc
 
 Upper bound: suppose \(r\) scores \(c_1 < \dots < c_r\) are shattered, with candidates \(\mathrm{lo}_i < \mathrm{hi}_i\). For each \(i < r\), the mixture taking \(\mathrm{hi}_i\) on \(c_i\) and \(\mathrm{lo}_{i+1}\) on \(c_{i+1}\) is achieved by some urgency level, which never files a higher score lower, so \(\mathrm{hi}_i \le \mathrm{lo}_{i+1}\). Chaining, \(1 \le \mathrm{lo}_1 < \mathrm{hi}_1 \le \mathrm{lo}_2 < \dots < \mathrm{hi}_r\), which is \(r\) strict steps, so \(\mathrm{hi}_r \ge r + 1\). Since \(\mathrm{hi}_r \le k\), we get \(r \le k - 1\). \(\blacksquare\)
 
-With \(k = 2\) folders, urgency levels are lesson 6’s thresholds, whose VC dimension is 1. That is no coincidence.
+With \(k = 2\) folders, urgency levels are lesson 6a’s thresholds, whose VC dimension is 1. That is no coincidence.
 
 **Proposition (two labels).** If \(k = 2\), then \(\mathrm{Ndim}(\mathcal H) = \mathrm{VCdim}(\mathcal H)\).
 
-*Proof.* With only two labels, \(f_0(x) \ne f_1(x)\) means that \(\{f_0(x), f_1(x)\}\) is the whole label set at every point. So the mixtures are exactly all \(2^{|C|}\) labellings of \(C\), and \(\mathcal H\) shatters \(C\) in the multiclass sense precisely when it produces all of them, which is lesson 6’s shattering. Conversely, if \(\mathcal H\) shatters \(C\) in lesson 6’s sense, take \(f_0\) constantly the first label and \(f_1\) constantly the second. The two notions of shattering coincide, so their largest shattered sets do too. \(\blacksquare\)
+*Proof.* With only two labels, \(f_0(x) \ne f_1(x)\) means that \(\{f_0(x), f_1(x)\}\) is the whole label set at every point. So the mixtures are exactly all \(2^{|C|}\) labellings of \(C\), and \(\mathcal H\) shatters \(C\) in the multiclass sense precisely when it produces all of them, which is lesson 6a’s shattering. Conversely, if \(\mathcal H\) shatters \(C\) in lesson 6a’s sense, take \(f_0\) constantly the first label and \(f_1\) constantly the second. The two notions of shattering coincide, so their largest shattered sets do too. \(\blacksquare\)
 
-Python can check this on 300 random classes of two-label functions on four points, every subset \(C\), comparing the new test with lesson 6’s count \(|\mathcal H_C| = 2^{|C|}\):
+Python can check this on 300 random classes of two-label functions on four points, every subset \(C\), comparing the new test with lesson 6a’s count \(|\mathcal H_C| = 2^{|C|}\):
 
 ```python
 import random
@@ -176,13 +176,13 @@ print(all(shatters(H, C, 2) == vc_shatters(H, C)
 
 It prints `True`. So the Natarajan dimension is a genuine generalization: on two labels it *is* the VC dimension.
 
-Before the formulas take over, play with it. In the lab below, drop messages on the urgency line, choose two candidate folders for each, and watch the grid of mixtures light up as the class achieves them. Then switch to two folders and see lesson 6 come back.
+Before the formulas take over, play with it. In the lab below, drop messages on the urgency line, choose two candidate folders for each, and watch the grid of mixtures light up as the class achieves them. Then switch to two folders and see lesson 6a come back.
 
 [[lab]]
 
 ## Counting what a class can do: Natarajan’s lemma
 
-Lesson 6’s proofs ran on one engine: a class of small VC dimension produces few labellings, polynomially many in the number of points instead of exponentially many. Does a small Natarajan dimension buy the same thing?
+Lesson 6b’s proofs ran on one engine: a class of small VC dimension produces few labellings, polynomially many in the number of points instead of exponentially many. Does a small Natarajan dimension buy the same thing?
 
 Before the general statement, a number. The class of *all* filings of four messages into three folders has \(3^4 = 81\) members and Natarajan dimension 4. A class of Natarajan dimension 1 on four messages and three folders should be much smaller. The lemma below says it has at most \(4^1 \cdot 3^2 = 36\) members.
 
@@ -270,7 +270,7 @@ It prints `[(0, 1.0), (1, 0.1667), (2, 0.017), (3, 0.0006)]`. Every ratio is at 
 
 ## The multiclass fundamental theorem
 
-With a dimension and a counting lemma in hand, the whole of lesson 6’s theorem comes back, with one new ingredient: the number of folders, \(k\), appears, but only inside a logarithm.
+With a dimension and a counting lemma in hand, the whole of lesson 6a’s theorem comes back, with one new ingredient: the number of folders, \(k\), appears, but only inside a logarithm.
 
 **The multiclass fundamental theorem.** There are absolute constants \(C_1, C_2 > 0\) such that, for every class \(\mathcal H \subseteq [k]^{\mathcal X}\) with \(\mathrm{Ndim}(\mathcal H) = d\):
 
@@ -283,7 +283,7 @@ With a dimension and a counting lemma in hand, the whole of lesson 6’s theorem
 
 All three have the same anatomy, so read the second from the inside out.
 
-- \(d\) is the Natarajan dimension, playing exactly the role the VC dimension played in lesson 6.
+- \(d\) is the Natarajan dimension, playing exactly the role the VC dimension played in lesson 6a.
 - \(\log(1/\delta)\) is the price of confidence; \(\log\) is the natural logarithm throughout.
 - \(d \log k\) is new: the dimension, multiplied by the logarithm of the number of folders. Going from 300 folders to 3,000 multiplies \(\log k\) by about 1.4, not by 10.
 - Dividing by \(\varepsilon^2\) means halving the tolerance quadruples the labels; in the third line, where some hypothesis is perfect, the division is by \(\varepsilon\), and the extra \(\log(kd/\varepsilon)\) is the logarithm of the folder count times the dimension over the tolerance.
@@ -311,13 +311,13 @@ It prints `9000 3601198 20534815 5.7`, then `180060 3204869 17.8`. In the agnost
 
 ### Why the upper bounds hold
 
-Before lesson 28, lesson 6 proved a weaker form of the theorem (with \(1/\delta\) where \(\log(1/\delta)\) belongs, the price of Markov’s inequality) through a theorem we can reuse almost untouched: **uniform convergence from a small growth function.** It said that with probability at least \(1 - \delta\), every \(h\) has \(|L_{\mathcal D}(h) - L_S(h)| \le (4 + 2\sqrt{\log \tau_{\mathcal H}(2m)})/(\delta\sqrt{2m})\), where the **growth function** \(\tau_{\mathcal H}(2m)\) is the largest restriction \(|\mathcal H_C|\) over sets \(C\) of \(2m\) points. Look back at Step 4 of its proof. The only thing it used about the class was that, once the \(2m\) training and ghost examples are fixed, each example’s 0-1 loss depends on \(h\) only through \(h\)’s label on that example’s message, so the number of distinct loss vectors is at most \(|\mathcal H_C|\). That is just as true with 300 folders: whether \(h\) files message \(x_i\) correctly depends only on \(h(x_i)\). So the same theorem holds for multiclass classes, with \(\tau_{\mathcal H}(2m)\) counting folder vectors.
+Before lesson 28, lesson 6b proved a weaker form of the theorem (with \(1/\delta\) where \(\log(1/\delta)\) belongs, the price of Markov’s inequality) through a theorem we can reuse almost untouched: **uniform convergence from a small growth function.** It said that with probability at least \(1 - \delta\), every \(h\) has \(|L_{\mathcal D}(h) - L_S(h)| \le (4 + 2\sqrt{\log \tau_{\mathcal H}(2m)})/(\delta\sqrt{2m})\), where the **growth function** \(\tau_{\mathcal H}(2m)\) is the largest restriction \(|\mathcal H_C|\) over sets \(C\) of \(2m\) points. Look back at Step 4 of its proof. The only thing it used about the class was that, once the \(2m\) training and ghost examples are fixed, each example’s 0-1 loss depends on \(h\) only through \(h\)’s label on that example’s message, so the number of distinct loss vectors is at most \(|\mathcal H_C|\). That is just as true with 300 folders: whether \(h\) files message \(x_i\) correctly depends only on \(h(x_i)\). So the same theorem holds for multiclass classes, with \(\tau_{\mathcal H}(2m)\) counting folder vectors.
 
 Now apply Natarajan’s lemma to the restriction \(\mathcal H_C\), a class on the at most \(2m\) messages of \(C\). It cannot shatter more than \(\mathcal H\) does, so its Natarajan dimension is at most \(d\), and \(|\mathcal H_C| \le (2m)^d k^{2d}\). Taking logs, \(\log \tau_{\mathcal H}(2m) \le d \log(2m) + 2d \log k\), and with probability at least \(1 - \delta\), for every \(h \in \mathcal H\),
 
 \[ |L_{\mathcal D}(h) - L_S(h)| \le \frac{4 + 2\sqrt{d \log(2m) + 2d \log k}}{\delta\sqrt{2m}}. \]
 
-From the inside out: \(d\log(2m) + 2d\log k\) is the log of Natarajan’s count on \(2m\) messages; its square root, doubled and plus 4, is the numerator from lesson 6; \(\delta\sqrt{2m}\) underneath shrinks the bound as labels grow. In plain words: **every hypothesis’s training score is within a quantity that shrinks like \(\sqrt{d(\log m + \log k)/m}\) of its true score, with probability at least \(1 - \delta\).** For three urgency folders (\(d = 2\), \(k = 3\)) at \(\delta = 0.1\):
+From the inside out: \(d\log(2m) + 2d\log k\) is the log of Natarajan’s count on \(2m\) messages; its square root, doubled and plus 4, is the numerator from lesson 6b; \(\delta\sqrt{2m}\) underneath shrinks the bound as labels grow. In plain words: **every hypothesis’s training score is within a quantity that shrinks like \(\sqrt{d(\log m + \log k)/m}\) of its true score, with probability at least \(1 - \delta\).** For three urgency folders (\(d = 2\), \(k = 3\)) at \(\delta = 0.1\):
 
 ```python
 from math import log, sqrt
@@ -363,7 +363,7 @@ print(round(g_errs / n, 4), round(h_errs / n, 4), g_only)
 
 It prints `0.5014 0.8014 0`: the disguised learner errs on about half the examples and the multiclass one on about 80%, and the last number counts examples where \(g\) erred but \(h\) did not. There are none.
 
-So if \(A\) agnostically learns \(\mathcal H\) with \(m\) examples, then \(A'\) agnostically learns a two-label class of VC dimension \(d\) with \(m\) examples, and lesson 28’s floor forces \(m \ge (d + \log(1/\delta))/(1024\,\varepsilon^2)\), so \(C_1 = 1/1024\) works here too. In the realizable case the same disguise works: if \(\mathcal D'\) is labelled by some \(b'\), then \(\mathcal D\) is labelled by the matching \(h'\), and \(L_{\mathcal D'}(g) \le L_{\mathcal D}(h)\), so any two-label realizable floor carries over; the one lesson 6 stated has \(\varepsilon\) in place of \(\varepsilon^2\) (lesson 28 left only its \(\log(1/\delta)\) part, as a problem). For uniform convergence, recall from lesson 4 that an \(\varepsilon/2\)-representative sample makes any ERM \(\varepsilon\)-accurate, so \(m_{\mathcal H}(\varepsilon, \delta) \le m^{\mathrm{UC}}_{\mathcal H}(\varepsilon/2, \delta)\). Writing \(\varepsilon'\) for \(\varepsilon/2\), \(m^{\mathrm{UC}}_{\mathcal H}(\varepsilon', \delta) \ge m_{\mathcal H}(2\varepsilon', \delta) \ge C_1 (d + \log(1/\delta))/(4\varepsilon'^2)\): the first floor, with the constant divided by 4.
+So if \(A\) agnostically learns \(\mathcal H\) with \(m\) examples, then \(A'\) agnostically learns a two-label class of VC dimension \(d\) with \(m\) examples, and lesson 28’s floor forces \(m \ge (d + \log(1/\delta))/(1024\,\varepsilon^2)\), so \(C_1 = 1/1024\) works here too. In the realizable case the same disguise works: if \(\mathcal D'\) is labelled by some \(b'\), then \(\mathcal D\) is labelled by the matching \(h'\), and \(L_{\mathcal D'}(g) \le L_{\mathcal D}(h)\), so any two-label realizable floor carries over; the one lesson 6a stated has \(\varepsilon\) in place of \(\varepsilon^2\) (lesson 28 left only its \(\log(1/\delta)\) part, as a problem). For uniform convergence, recall from lesson 4 that an \(\varepsilon/2\)-representative sample makes any ERM \(\varepsilon\)-accurate, so \(m_{\mathcal H}(\varepsilon, \delta) \le m^{\mathrm{UC}}_{\mathcal H}(\varepsilon/2, \delta)\). Writing \(\varepsilon'\) for \(\varepsilon/2\), \(m^{\mathrm{UC}}_{\mathcal H}(\varepsilon', \delta) \ge m_{\mathcal H}(2\varepsilon', \delta) \ge C_1 (d + \log(1/\delta))/(4\varepsilon'^2)\): the first floor, with the constant divided by 4.
 
 [[diagram:disguise]]
 
@@ -373,7 +373,7 @@ A dimension is only useful if you can compute it, or at least bound it, for the 
 
 ### One-versus-all
 
-Recall lesson 17’s **one-versus-all**: train one yes/no filter per folder, “is it folder \(i\) or not?”, and file a message in a folder whose filter says yes, breaking ties (several yeses, or none) by the smallest folder number. Lesson 17 wrote the answers as \(+1\) and \(-1\); here yes is 1 and no is 0, which picks the same folder. If each yes/no filter comes from a class \(\mathcal H_{\mathrm{bin}}\) of VC dimension \(d\), the multiclass class is
+Recall lesson 17a’s **one-versus-all**: train one yes/no filter per folder, “is it folder \(i\) or not?”, and file a message in a folder whose filter says yes, breaking ties (several yeses, or none) by the smallest folder number. Lesson 17a wrote the answers as \(+1\) and \(-1\); here yes is 1 and no is 0, which picks the same folder. If each yes/no filter comes from a class \(\mathcal H_{\mathrm{bin}}\) of VC dimension \(d\), the multiclass class is
 
 \[ \mathcal H^{\mathrm{OvA}, k}_{\mathrm{bin}} = \left\{ T(h_1, \dots, h_k) : h_1, \dots, h_k \in \mathcal H_{\mathrm{bin}} \right\}, \qquad T(h_1, \dots, h_k)(x) = \operatorname*{argmax}_{i \in [k]} h_i(x). \]
 
@@ -383,7 +383,7 @@ How big should its Natarajan dimension be? A hypothesis takes \(k\) filters to w
 
 ### General reductions
 
-One-versus-all is one of many **multiclass-to-binary reductions**: train \(l\) yes/no filters, and let a fixed rule \(r: \{0,1\}^l \to [k]\) turn their \(l\) answers into a folder. All-pairs from lesson 17 is another, with \(l = \binom{k}{2}\). The class is
+One-versus-all is one of many **multiclass-to-binary reductions**: train \(l\) yes/no filters, and let a fixed rule \(r: \{0,1\}^l \to [k]\) turn their \(l\) answers into a folder. All-pairs from lesson 17a is another, with \(l = \binom{k}{2}\). The class is
 
 \[ \mathcal H^{r}_{\mathrm{bin}} = \left\{ R(h_1, \dots, h_l) : h_1, \dots, h_l \in \mathcal H_{\mathrm{bin}} \right\}, \qquad R(h_1, \dots, h_l)(x) = r\big(h_1(x), \dots, h_l(x)\big). \]
 
@@ -436,7 +436,7 @@ True
 
 From \(D = 4\) on, the counting argument never allows more than \(3D\log D\); at 2 and 3 it does, which is why the lemma asks for \(ld \ge 4\).
 
-How tight is it? Take one-versus-all with \(k = 4\) folders over lesson 6’s thresholds (VC dimension 1) on six scores. Python builds every rule from every choice of four thresholds and computes the Natarajan dimension by brute force:
+How tight is it? Take one-versus-all with \(k = 4\) folders over lesson 6a’s thresholds (VC dimension 1) on six scores. Python builds every rule from every choice of four thresholds and computes the Natarajan dimension by brute force:
 
 ```python
 from itertools import combinations as comb, product
@@ -469,7 +469,7 @@ It prints `7 2401 204 4`. Seven threshold labellings of six scores, \(7^4 = 2{,}
 
 ### Linear multiclass predictors
 
-Your 300-folder filter is not a reduction; it is lesson 17’s **linear multiclass predictor**, the class \(\mathcal H_{\Psi, W}\) with every weight vector allowed, \(W = \mathbb R^d\). In this section, as in lesson 17, \(d\) is the length of the feature vectors, not a dimension of a class. Recall: a **class-sensitive feature mapping** \(\Psi: \mathcal X \times [k] \to \mathbb R^d\) turns a message \(x\) and a candidate folder \(i\) into a vector \(\Psi(x, i)\) of \(d\) numbers; a weight vector \(\mathbf w \in \mathbb R^d\) scores the pair by the **inner product** \(\langle \mathbf w, \Psi(x, i) \rangle\) (multiply matching entries and add); and the predictor files the message in the folder with the highest score. The class is
+Your 300-folder filter is not a reduction; it is lesson 17a’s **linear multiclass predictor**, the class \(\mathcal H_{\Psi, W}\) with every weight vector allowed, \(W = \mathbb R^d\). In this section, as in lesson 17a, \(d\) is the length of the feature vectors, not a dimension of a class. Recall: a **class-sensitive feature mapping** \(\Psi: \mathcal X \times [k] \to \mathbb R^d\) turns a message \(x\) and a candidate folder \(i\) into a vector \(\Psi(x, i)\) of \(d\) numbers; a weight vector \(\mathbf w \in \mathbb R^d\) scores the pair by the **inner product** \(\langle \mathbf w, \Psi(x, i) \rangle\) (multiply matching entries and add); and the predictor files the message in the folder with the highest score. The class is
 
 \[ \mathcal H_\Psi = \left\{ x \mapsto \operatorname*{argmax}_{i \in [k]} \langle \mathbf w, \Psi(x, i) \rangle \;:\; \mathbf w \in \mathbb R^d \right\}. \]
 
@@ -519,7 +519,7 @@ So set \(\mathbf u(x) = \rho(x)\) on \(C_<\) and \(\mathbf u(x) = -\rho(x)\) on 
 
 [[diagram:difference-vector]]
 
-For your filter, \(\Psi\) is the **multivector construction** of lesson 17: with messages \(\mathbf x \in \mathbb R^n\) and \(k\) folders, \(\Psi(\mathbf x, y) \in \mathbb R^{kn}\) is \(k\) blocks of \(n\) entries, all zero except block \(y\), which holds \(\mathbf x\):
+For your filter, \(\Psi\) is the **multivector construction** of lesson 17a: with messages \(\mathbf x \in \mathbb R^n\) and \(k\) folders, \(\Psi(\mathbf x, y) \in \mathbb R^{kn}\) is \(k\) blocks of \(n\) entries, all zero except block \(y\), which holds \(\mathbf x\):
 
 \[ \Psi(\mathbf x, y) = \big[\, \underbrace{0, \dots, 0}_{(y-1)n},\ \underbrace{x_1, \dots, x_n}_{n},\ \underbrace{0, \dots, 0}_{(k-y)n} \,\big]. \]
 
@@ -695,7 +695,7 @@ Three lessons hide in those two claims, and they are worth slowing down for.
 
 **Different ERMs can need wildly different numbers of labels.** In the two-label world this never happens: the fundamental theorem makes every ERM a learner with the same rate. With many labels, the choice of tie-breaking is part of the learner, and it can cost you a factor of the number of senders.
 
-**Learnable does not mean learnable by every ERM.** Let \(\mathcal X\) be infinite, say all possible email addresses. The good ERM still learns with \(\lceil \log(1/\delta)/\varepsilon \rceil\) labels (the brackets round up), so the class is PAC learnable. But for any \(m\), pick \(n\) senders with \((n-1)/6 \ge m\) and the distribution of the bad-ERM claim on them: the bad ERM fails on every training sequence of size \(m\). So no number of labels makes it a learner. And this rules out uniform convergence too: by lesson 4, uniform convergence would make *every* ERM a learner. So here is a class that is learnable, by a perfectly natural ERM, and yet has no uniform convergence property. For two labels, lesson 6 proved that impossible: learnability, uniform convergence and “every ERM learns” were one property. With many labels they come apart, and they come apart even with the plain 0-1 loss.
+**Learnable does not mean learnable by every ERM.** Let \(\mathcal X\) be infinite, say all possible email addresses. The good ERM still learns with \(\lceil \log(1/\delta)/\varepsilon \rceil\) labels (the brackets round up), so the class is PAC learnable. But for any \(m\), pick \(n\) senders with \((n-1)/6 \ge m\) and the distribution of the bad-ERM claim on them: the bad ERM fails on every training sequence of size \(m\). So no number of labels makes it a learner. And this rules out uniform convergence too: by lesson 4, uniform convergence would make *every* ERM a learner. So here is a class that is learnable, by a perfectly natural ERM, and yet has no uniform convergence property. For two labels, lesson 6b proved that impossible: learnability, uniform convergence and “every ERM learns” were one property. With many labels they come apart, and they come apart even with the plain 0-1 loss.
 
 **The \(\log k\) in the theorem is not a ghost.** The auto-folder class has Natarajan dimension 1, but with \(n\) senders it uses \(k = 2^n\) labels, so \(\log k = n\log 2\). The theorem’s realizable ceiling, \(C_2(d\log(kd/\varepsilon) + \log(1/\delta))/\varepsilon\), grows with \(n\), and the bad ERM really does need on the order of \(n\) labels. And with infinitely many senders the label set is infinite, \(\log k = \infty\), and the theorem says nothing, which is just as well, since the class lacks uniform convergence. The theorem covers every ERM, so it must pay for the worst one.
 
@@ -821,7 +821,7 @@ The auto-folder filter is yours to fix in the lab. There are 1,000 senders, the 
 
 **“More folders means proportionally more labels.”** The number of folders enters the theorem only through \(\log k\), and for a good ERM perhaps not at all. Going from 300 folders to 3,000 multiplies \(\log k\) by about 1.4.
 
-**“Any ERM will do.”** For two labels, yes, and that is lesson 6’s theorem. With many labels, two ERMs with the same training error can differ by a factor of the number of senders in the labels they need, and with infinitely many labels one can learn while the other never does.
+**“Any ERM will do.”** For two labels, yes, and that is lesson 6a’s theorem. With many labels, two ERMs with the same training error can differ by a factor of the number of senders in the labels they need, and with infinitely many labels one can learn while the other never does.
 
 **“If a class is learnable, it has uniform convergence.”** The auto-folder class with infinitely many senders is learnable, by the good ERM, and has no uniform convergence property. The equivalence was a two-label fact.
 

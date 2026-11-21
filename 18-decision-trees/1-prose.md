@@ -61,7 +61,7 @@ The tree in the picture has three internal nodes (U, F, L) and four leaves, so \
 
 Why insist that every internal node has two children? A node with only one child asks a question and then ignores the answer. You can always replace it by its child without changing what the tree predicts, so we lose nothing by forbidding it, and it makes the counting below much cleaner.
 
-When features are numbers rather than bits, say the hour a message was sent, the natural splitting rule is a threshold, \(\mathbb 1[x_i < \theta]\) for a feature \(i\) and a cut-off number \(\theta\) (the Greek letter theta): the question “is the hour below 6?” is \(\mathbb 1[x_i < 6]\), which is 1 for a message sent at 2.0 and 0 for one sent at 9.0. That is lesson 10’s decision stump, used as a question inside a tree. We will come back to real-valued features near the end. Until then, everything is yes/no.
+When features are numbers rather than bits, say the hour a message was sent, the natural splitting rule is a threshold, \(\mathbb 1[x_i < \theta]\) for a feature \(i\) and a cut-off number \(\theta\) (the Greek letter theta): the question “is the hour below 6?” is \(\mathbb 1[x_i < 6]\), which is 1 for a message sent at 2.0 and 0 for one sent at 9.0. That is lesson 10a’s decision stump, used as a question inside a tree. We will come back to real-valued features near the end. Until then, everything is yes/no.
 
 ## How big can a tree get?
 
@@ -89,19 +89,19 @@ ok = all(tuple(chain(ys)(x) for x in points) == ys
 print(k, len(cuts) + 1, ok)
 ```
 
-It prints `5 5 True`: with five leaves, all 32 labellings of the five messages are produced. Recall from lesson 6 that a class **shatters** a set when it produces every labelling of it, and that the **VC dimension** is the size of the largest set it shatters. The argument works for any \(k\), so:
+It prints `5 5 True`: with five leaves, all 32 labellings of the five messages are produced. Recall from lesson 6a that a class **shatters** a set when it produces every labelling of it, and that the **VC dimension** is the size of the largest set it shatters. The argument works for any \(k\), so:
 
-**Proposition (trees with \(k\) leaves shatter \(k\) points).** For every \(k \ge 1\), threshold trees with \(k\) leaves shatter some set of \(k\) messages. So the class of threshold trees of unrestricted size has infinite VC dimension, and by lesson 6’s theorem it is not PAC learnable: no finite number of examples is enough to guarantee, for every distribution, a small true risk with high confidence.
+**Proposition (trees with \(k\) leaves shatter \(k\) points).** For every \(k \ge 1\), threshold trees with \(k\) leaves shatter some set of \(k\) messages. So the class of threshold trees of unrestricted size has infinite VC dimension, and by lesson 6a’s theorem it is not PAC learnable: no finite number of examples is enough to guarantee, for every distribution, a small true risk with high confidence.
 
 *Proof.* Pick \(k\) messages whose values on one feature are distinct, and sort them so that \(v_1 < v_2 < \dots < v_k\). Put the cuts \(\theta_j = (v_j + v_{j+1})/2\) for \(j = 1, \dots, k - 1\): cut number \(j\) sits halfway between the \(j\)-th smallest value and the next one, which is how the snippet got its cuts 1.5, 2.5, 3.5, 4.5 from the values 1 to 5. Then build the chain tree whose \(j\)-th internal node asks \(\mathbb 1[x < \theta_j]\), with a leaf on its “yes” side and the next internal node (or, after \(\theta_{k-1}\), a final leaf) on its “no” side. Message \(j\) answers “no” to the questions \(\theta_1, \dots, \theta_{j-1}\), since \(v_j > \theta_{j'}\) for \(j' < j\), and “yes” to \(\theta_j\), since \(v_j < \theta_j\). So it stops at the \(j\)-th leaf, and message \(k\) reaches the final leaf. The \(k\) messages land in \(k\) different leaves, and writing \(y_j\) into leaf \(j\) produces any labelling \((y_1, \dots, y_k)\) we want. Since this works for every \(k\), no finite number bounds the VC dimension. \(\blacksquare\)
 
-With yes/no features the class is finite, since there are only finitely many functions from \(\{0,1\}^d\) to \(\{0,1\}\), but it is still enormous. Any such function at all can be written as a tree: ask about feature 1 at the root, about feature 2 at both children, and so on down to feature \(d\), giving a full tree with \(2^d\) leaves, one per message, and write the function’s value into each leaf. That tree has depth \(d\) (so \(d + 1\) levels of nodes), and proving that it works is the first problem at the end of this lesson. The consequence is that trees over \(\{0,1\}^d\) shatter the whole domain, so their VC dimension is \(2^d\). With the 29 features our auditors approved, that is \(2^{29} = 536{,}870{,}912\). By the fundamental theorem of lesson 6, the number of examples needed to PAC learn the class grows linearly with that. Hopeless.
+With yes/no features the class is finite, since there are only finitely many functions from \(\{0,1\}^d\) to \(\{0,1\}\), but it is still enormous. Any such function at all can be written as a tree: ask about feature 1 at the root, about feature 2 at both children, and so on down to feature \(d\), giving a full tree with \(2^d\) leaves, one per message, and write the function’s value into each leaf. That tree has depth \(d\) (so \(d + 1\) levels of nodes), and proving that it works is the first problem at the end of this lesson. The consequence is that trees over \(\{0,1\}^d\) shatter the whole domain, so their VC dimension is \(2^d\). With the 29 features our auditors approved, that is \(2^{29} = 536{,}870{,}912\). By the fundamental theorem of lesson 6a, the number of examples needed to PAC learn the class grows linearly with that. Hopeless.
 
-So we are back where lesson 7 left us: a class that is too large to learn as a whole, which is the union of small classes that are each easy to learn. Small trees are few; big trees are many. What we need is a way to say “a small tree that fits the data is trustworthy, and a big one needs more evidence”, and lesson 7 built exactly that tool.
+So we are back where lesson 7a left us: a class that is too large to learn as a whole, which is the union of small classes that are each easy to learn. Small trees are few; big trees are many. What we need is a way to say “a small tree that fits the data is trustworthy, and a big one needs more evidence”, and lesson 7b built exactly that tool.
 
 ## Paying for size: the description length of a tree
 
-Recall lesson 7’s **minimum description length** bound. A **description language** for a class \(\mathcal H\) maps each hypothesis \(h\) to a binary string \(d(h)\), its description, whose length is the **description length** \(|h|\). The language is **prefix-free** when no description is a prefix of another. The MDL bound then says: for every distribution \(\mathcal D\), every \(m\) and every \(\delta \in (0,1)\), with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\),
+Recall lesson 7b’s **minimum description length** bound. A **description language** for a class \(\mathcal H\) maps each hypothesis \(h\) to a binary string \(d(h)\), its description, whose length is the **description length** \(|h|\). The language is **prefix-free** when no description is a prefix of another. The MDL bound then says: for every distribution \(\mathcal D\), every \(m\) and every \(\delta \in (0,1)\), with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\),
 
 \[ \forall h \in \mathcal H, \qquad L_{\mathcal D}(h) \le L_S(h) + \sqrt{\frac{|h| + \log(2/\delta)}{2m}}, \]
 
@@ -129,7 +129,7 @@ print(round(LS + penalty, 3))
 
 It prints `3.689 0.148` and `0.248`. Remember the 40 bits; they will come back as a tree.
 
-The prior knowledge sits in the language: hypotheses with short descriptions get small penalties. And lesson 7’s one warning: the language must be fixed before the training sequence is seen.
+The prior knowledge sits in the language: hypotheses with short descriptions get small penalties. And lesson 7b’s one warning: the language must be fixed before the training sequence is seen.
 
 So all we need is a prefix-free language in which small trees have short descriptions. Here is one. Write a tree with \(n\) nodes as \(n + 1\) **blocks** of equal length. The first \(n\) blocks list the nodes in **preorder**: the root first, then the whole “yes” subtree in preorder, then the whole “no” subtree in preorder. The last block marks the end. Each block says one of the following:
 
@@ -162,7 +162,7 @@ It prints `3 24` and `010000100001100101101110`: eight blocks of three bits, 24 
 
 [[diagram:code]]
 
-Two things need checking before lesson 7’s bound applies: no description is a proper prefix of another, and two different trees never get the same description.
+Two things need checking before lesson 7b’s bound applies: no description is a proper prefix of another, and two different trees never get the same description.
 
 **Lemma (the tree code is prefix-free).** For every \(d\), the preorder code with an end block assigns distinct trees distinct descriptions, and no description is a proper prefix of another.
 
@@ -206,7 +206,7 @@ There is one subtlety left. A hypothesis is a function, and many trees compute t
 
 This is the MDL bound we just read, with the tree’s bit count \((n + 1) b\) in the place of \(|h|\), so nothing new needs naming. In plain words: **a tree’s true risk is at most its training error plus a penalty paid per node.** With the 29 approved features, \(b = \lceil \log_2 32 \rceil = 5\), so a 7-node tree costs \(8 \times 5 = 40\) bits: the 40 bits of the earlier snippet, which certified 0.248 at 1,000 examples. The `tree_bound` snippet below computes exactly this right-hand side.
 
-*Proof.* Let \(\mathcal H\) be the set of functions computed by decision trees over \(\{0,1\}^d\), described as above by a smallest tree. By the lemma this description language is prefix-free, and it is fixed before any data is seen: it depends only on \(d\). So lesson 7’s MDL bound applies. With probability at least \(1 - \delta\), every \(h \in \mathcal H\) satisfies \(L_{\mathcal D}(h) \le L_S(h) + \sqrt{(|h| + \log(2/\delta))/(2m)}\). Take any tree with \(n\) nodes and let \(h\) be its function. A smallest tree for \(h\) has \(n' \le n\) nodes, so \(|h| = (n' + 1) b \le (n + 1) b\). The square root grows with its numerator, so replacing \(|h|\) by \((n + 1)b\) can only loosen the bound. The bound then holds for every tree simultaneously, on the same event of probability at least \(1 - \delta\). \(\blacksquare\)
+*Proof.* Let \(\mathcal H\) be the set of functions computed by decision trees over \(\{0,1\}^d\), described as above by a smallest tree. By the lemma this description language is prefix-free, and it is fixed before any data is seen: it depends only on \(d\). So lesson 7b’s MDL bound applies. With probability at least \(1 - \delta\), every \(h \in \mathcal H\) satisfies \(L_{\mathcal D}(h) \le L_S(h) + \sqrt{(|h| + \log(2/\delta))/(2m)}\). Take any tree with \(n\) nodes and let \(h\) be its function. A smallest tree for \(h\) has \(n' \le n\) nodes, so \(|h| = (n' + 1) b \le (n + 1) b\). The square root grows with its numerator, so replacing \(|h|\) by \((n + 1)b\) can only loosen the bound. The bound then holds for every tree simultaneously, on the same event of probability at least \(1 - \delta\). \(\blacksquare\)
 
 Two words in that statement do a lot of work. “Every” means the bound holds for all trees at once, so it still applies to a tree you chose after looking at \(S\), for instance the one your algorithm grew. And \(L_{\mathcal D}\) is the true risk with respect to any distribution, including noisy labels, so nothing here assumes that some tree is perfect.
 
@@ -232,7 +232,7 @@ It prints `0.898`, `0.244`, `0.217` and `971`. The big tree is perfect on its tr
 
 ## Why not just minimize the bound?
 
-The bound suggests its own learner: search over all trees for the one with the smallest right-hand side. Lesson 7 called this the MDL rule. For trees, it is out of reach. Finding the tree that minimizes this bound is computationally hard: unless \(\mathrm P = \mathrm{NP}\) (lesson 8’s shorthand for “every problem whose answers are easy to check is also easy to solve”, which almost nobody believes), no algorithm solves it in time polynomial in \(n\), \(d\) and \(m\). We met this situation in lesson 8, where the statistics were fine and the computation was not.
+The bound suggests its own learner: search over all trees for the one with the smallest right-hand side. Lesson 7b called this the MDL rule. For trees, it is out of reach. Finding the tree that minimizes this bound is computationally hard: unless \(\mathrm P = \mathrm{NP}\) (lesson 8’s shorthand for “every problem whose answers are easy to check is also easy to solve”, which almost nobody believes), no algorithm solves it in time polynomial in \(n\), \(d\) and \(m\). We met this situation in lesson 8, where the statistics were fine and the computation was not.
 
 So practical tree learners give up on the optimum and build the tree **greedily**: one node at a time, making the locally best choice at each node and never revisiting it. Such algorithms cannot promise the best tree, but they tend to work reasonably well in practice. And the certificate does not care how the tree was found: since the bound holds for every tree at once, any tree a heuristic produces gets an honest certificate.
 
@@ -532,7 +532,7 @@ It prints `9 7`, then `(-inf, 2.0) (3.5, 9.0)`: the first gap lies below everyth
 
 Build \(T'\) by replacing each node’s rule this way and keeping all leaves. A training message answers every question of \(T'\) exactly as it answers the corresponding question of \(T\), so it follows the same path and reaches the same leaf. Same shape, same number of nodes, same label on every training message. \(\blacksquare\)
 
-**Runtime.** Done naively, the reduction is expensive. There are about \(dm\) constructed features, and computing the gain of each costs \(O(m)\), so evaluating every split at one node takes \(O(dm^2)\) operations. A cleverer implementation brings it to \(O(dm \log m)\), using the same idea as the fast search for the best decision stump in lesson 10: sort, then sweep. In the pseudocode, \(x_{(t),i}\) is feature \(i\) of the \(t\)-th example after sorting and \(y_{(t)}\) its label.
+**Runtime.** Done naively, the reduction is expensive. There are about \(dm\) constructed features, and computing the gain of each costs \(O(m)\), so evaluating every split at one node takes \(O(dm^2)\) operations. A cleverer implementation brings it to \(O(dm \log m)\), using the same idea as the fast search for the best decision stump in lesson 10a: sort, then sweep. In the pseudocode, \(x_{(t),i}\) is feature \(i\) of the \(t\)-th example after sorting and \(y_{(t)}\) its label.
 
 ```
 BestThreshold(S, i, C)
@@ -676,7 +676,7 @@ assert forest_disagreement < 0.05 and tree_disagreement > 0.1
 
 1. A **decision tree** labels a message by following yes/no questions from the root to a leaf. Every root-to-leaf path is a readable rule, which is the whole reason auditors like them.
 2. Trees of unrestricted size are too rich: threshold trees with \(k\) leaves shatter \(k\) points, and over \(\{0,1\}^d\) trees can express every function, so their VC dimension is \(2^d\).
-3. A prefix-free code with \((n + 1)\lceil\log_2(d+3)\rceil\) bits for a tree of \(n\) nodes turns lesson 7’s MDL bound into a certificate for every tree at once: \(L_{\mathcal D}(h) \le L_S(h) + \sqrt{((n+1)b + \log(2/\delta))/(2m)}\).
+3. A prefix-free code with \((n + 1)\lceil\log_2(d+3)\rceil\) bits for a tree of \(n\) nodes turns lesson 7b’s MDL bound into a certificate for every tree at once: \(L_{\mathcal D}(h) \le L_S(h) + \sqrt{((n+1)b + \log(2/\delta))/(2m)}\).
 4. Minimizing that bound is computationally hard, so **ID3** grows a tree greedily, splitting on the feature with the largest gain, in \(O(md^2)\) time. Information gain and the Gini index are strictly concave and see every useful split; training error misses any split that leaves both majorities unchanged.
 5. **Pruning** walks the tree bottom-up and replaces nodes by leaves or subtrees whenever that lowers the bound, trading a little empirical risk for many fewer nodes.
 6. Real-valued features reduce to yes/no features with one threshold per gap between sorted training values; a sort-and-sweep finds the best threshold in \(O(dm\log m)\) per node.
@@ -689,7 +689,7 @@ The compliance office is happy for exactly one month. Then the mail changes agai
 Write your answers down before moving on to the next lesson, with your reasoning, not just the answer.
 
 1. Your training sequence contains just two examples, the same message 1011 labelled once junk and once keep, and \(d = 4\). Trace ID3 with information gain (ties toward the lowest feature, majority ties toward junk). What tree does it return, how many nodes does it have, and what is its empirical risk? What is the smallest possible empirical risk of any tree on this sequence, and what does pruning with the description-length bound return?
-2. Lesson 7 warned that choosing a description language after seeing the labels breaks the MDL guarantee. Pruning chooses a tree after seeing the labels. Explain precisely why the pruned tree’s certificate is still valid. Then say which step of the description-length theorem’s proof would fail if, after seeing \(S\), you shortened the blocks by dropping the features that no tree you grew ever used.
+2. Lesson 7b warned that choosing a description language after seeing the labels breaks the MDL guarantee. Pruning chooses a tree after seeing the labels. Explain precisely why the pruned tree’s certificate is still valid. Then say which step of the description-length theorem’s proof would fail if, after seeing \(S\), you shortened the blocks by dropping the features that no tree you grew ever used.
 3. With \(d = 29\), \(\delta = 0.05\) and \(m = 1{,}500\), compare two pruned trees: one with 11 nodes and empirical risk 0.08, one with 7 nodes and empirical risk 0.10. Which has the smaller bound, and by how much? Assuming both empirical risks stay where they are, from which \(m\) on does the 11-node tree win?
 
 ## Problems

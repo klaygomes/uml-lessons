@@ -88,7 +88,7 @@ End-of-chapter problem (new in the split; the book's exercises are all for lesso
   4. \(Wv_I = -Wv_J\), so \(a = v_I\) and \(b = -v_J\) have \(Wa = Wb\); both are s-sparse. They differ: if \(a = b\) then \(v_I = -v_J\), but their supports are disjoint, so both are 0 and \(v = 0\), a contradiction.
   5. A decoder returns one vector for the stored \(Wa = Wb\), wrong on \(a\) or on \(b\). Check: the icosahedron has \(n = 3 < 4 = 2s\) for \(s = 2\), and the twin is free 1 + claim 1 against prize \(\varphi\) + winner \(\varphi\). Remark: \(n \ge 2s\) is necessary, and the lesson's results need far more (order \(s \ln d\)).
 
-Next bug: every learner so far draws a boundary between junk and keep; a colleague proposes instead to model how each kind of message is produced, word by word, and to ask which kind most likely produced a new message. Is that better? Lesson 24, generative models (maximum likelihood, naive Bayes, LDA, EM).
+Next bug: every learner so far draws a boundary between junk and keep; a colleague proposes instead to model how each kind of message is produced, word by word, and to ask which kind most likely produced a new message. Is that better? Lessons 24a and 24b, generative models (maximum likelihood, naive Bayes, LDA, EM).
 
 Checks:
 - Every Python fence of the prose was run by `_kit/check_prose.py` (python3 -I): 23b-compressed-sensing: 9,474 words, 17 python fences, failing [18] (the build-it starter), lines>66 0, book refs 0, em dashes 0, \epsilon 0. The three new fences (the smear, the null vector, the three constants) and the recap fence were run with `python3 -I` and their outputs pasted; the filled build-it passes.

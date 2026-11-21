@@ -16,7 +16,7 @@ How can counting words, the most honest estimate imaginable, produce a filter th
 
 Let’s name the two approaches before we look at Ines’s numbers.
 
-Every filter in lessons 2 to 23 followed the **discriminative** approach: the goal is a hypothesis that labels messages accurately, and nothing more. We never tried to say how likely a given message is to arrive; we only asked which side of a boundary it lands on. Lesson 3 made one big promise about this approach: it is **distribution free**, meaning the guarantees hold for every distribution \(\mathcal D\) over messages and labels, with no assumption at all about its shape.
+Every filter in lessons 2 to 23b followed the **discriminative** approach: the goal is a hypothesis that labels messages accurately, and nothing more. We never tried to say how likely a given message is to arrive; we only asked which side of a boundary it lands on. Lesson 3 made one big promise about this approach: it is **distribution free**, meaning the guarantees hold for every distribution \(\mathcal D\) over messages and labels, with no assumption at all about its shape.
 
 The **generative** approach makes the opposite bet. It assumes the distribution \(\mathcal D\) has a specific form described by a handful of numbers, called **parameters**, and its goal is to estimate those parameters from the training sequence. A distribution described this way is a **parametric model**, and estimating its parameters from data is called **parametric density estimation**. Ines’s model has one parameter per word and per kind of message: the probability that a message of that kind contains that word.
 

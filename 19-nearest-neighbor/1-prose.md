@@ -2,7 +2,7 @@
 
 ## Mail that matches no rule
 
-Every filter you have built so far began the same way: before seeing a single label, you fixed a hypothesis class, and the learner searched it. Halfspaces in lesson 9, boosted votes of stumps in lesson 10, decision trees in lesson 18. Each class was a bet about what junk looks like, placed in advance.
+Every filter you have built so far began the same way: before seeing a single label, you fixed a hypothesis class, and the learner searched it. Halfspaces in lesson 9a, boosted votes of stumps in lesson 10a, decision trees in lesson 18. Each class was a bet about what junk looks like, placed in advance.
 
 This month the bets stopped paying. New kinds of mail keep arriving that match no rule anyone wrote and no hypothesis anyone trained: parcel-delivery notices that are half genuine and half phishing, and supplier invoices that are half real and half fraud. The filters shrug at them. So a colleague suggested the oldest trick there is. When a new message arrives, find the labelled messages that look most like it, and give it their label. No class, no search, no training. Just “this one looks like those, and those were junk.”
 
@@ -258,7 +258,7 @@ Now the assumption. In the invoice world, nudge the message at (0.6, 0.5) to (0.
 
 \[ |\eta(x) - \eta(x')| \le c\, \|x - x'\|. \]
 
-The single bars \(|\cdot|\) are the absolute value, the size of a change ignoring its sign; the double bars are the distance from before. In plain words: **if two messages are close, their probabilities of junk are close: moving a distance \(r\) through the domain changes \(\eta\) by at most \(cr\).** A small \(c\) means junk changes gently from message to message; a large \(c\) means a tiny change in the scores can flip the odds. Lesson 12 used the same word for losses; here it is a property of the world, not of anything we choose.
+The single bars \(|\cdot|\) are the absolute value, the size of a change ignoring its sign; the double bars are the distance from before. In plain words: **if two messages are close, their probabilities of junk are close: moving a distance \(r\) through the domain changes \(\eta\) by at most \(cr\).** A small \(c\) means junk changes gently from message to message; a large \(c\) means a tiny change in the scores can flip the odds. Lesson 12a used the same word for losses; here it is a property of the world, not of anything we choose.
 
 [[diagram:lipschitz]]
 
@@ -685,7 +685,7 @@ It prints
 
 In one dimension, the nearest of a thousand messages is a thousand times closer than a typical one. In thirty, the nearest neighbour is two thirds as far away as a message picked at random. “Nearest” has almost stopped meaning anything. The invoice team’s filter was copying labels from messages that were not similar in any way that matters, which is why it was wrong on 32% of them.
 
-And notice the subtler point. In the invoice world \(\eta\) depends on two scores and its Lipschitz constant is \(2\sqrt 2\) in thirty dimensions just as in two. Nothing about the labels got harder. What got harder is the space the neighbours live in. The nearest neighbour rule searches no hypothesis class, yet it carries prior knowledge all the same: its success depends on the assumption that the dimension and the Lipschitz constant of \(\eta\) are not too high. Choosing which scores to compare on is choosing that dimension. This is why, in practice, nearest neighbour usually runs after a step that reduces the number of scores; lesson 23 is about how to do that well.
+And notice the subtler point. In the invoice world \(\eta\) depends on two scores and its Lipschitz constant is \(2\sqrt 2\) in thirty dimensions just as in two. Nothing about the labels got harder. What got harder is the space the neighbours live in. The nearest neighbour rule searches no hypothesis class, yet it carries prior knowledge all the same: its success depends on the assumption that the dimension and the Lipschitz constant of \(\eta\) are not too high. Choosing which scores to compare on is choosing that dimension. This is why, in practice, nearest neighbour usually runs after a step that reduces the number of scores; lesson 23a is about how to do that well.
 
 ## Nearest neighbours as code
 
@@ -705,7 +705,7 @@ KNN-Predict(S, x, k):
 
 For regression, replace the last line by the average of \(\{y_i : i \in N\}\), or by any \(\phi\) of the \(k\) neighbours.
 
-**Cost.** Recall from lesson 8 that \(O(\cdot)\) means “at most a constant times” and \(\Theta(\cdot)\) “a constant times, up to and down to”. Training is nothing more than storing the training sequence: \(O(md)\) space, and no time beyond copying. Nearest neighbour is a learning-by-memorization rule, and the whole training sequence must be kept. Prediction is where the work is: computing all \(m\) distances costs \(\Theta(md)\), selecting the \(k\) smallest with a heap of size \(k\) costs \(O(m \log k)\), and the vote costs \(O(k)\), so one prediction is \(O(md + m\log k)\) time and \(O(k)\) extra space. For the 1-NN rule it is \(\Theta(md)\). Compare that with a halfspace from lesson 9, which predicts in \(O(d)\) no matter how many examples trained it. Nearest neighbour moves all the cost from training to prediction, and every single prediction pays it.
+**Cost.** Recall from lesson 8 that \(O(\cdot)\) means “at most a constant times” and \(\Theta(\cdot)\) “a constant times, up to and down to”. Training is nothing more than storing the training sequence: \(O(md)\) space, and no time beyond copying. Nearest neighbour is a learning-by-memorization rule, and the whole training sequence must be kept. Prediction is where the work is: computing all \(m\) distances costs \(\Theta(md)\), selecting the \(k\) smallest with a heap of size \(k\) costs \(O(m \log k)\), and the vote costs \(O(k)\), so one prediction is \(O(md + m\log k)\) time and \(O(k)\) extra space. For the 1-NN rule it is \(\Theta(md)\). Compare that with a halfspace from lesson 9a, which predicts in \(O(d)\) no matter how many examples trained it. Nearest neighbour moves all the cost from training to prediction, and every single prediction pays it.
 
 **Faster search.** When \(d\) is small, data structures from computational geometry can answer a nearest-neighbour query in time polynomial in \(d\) times \(\log m\), instead of scanning. The catch is space: roughly \(m^{O(d)}\), which is impractical once \(d\) is more than a handful. The way out is to ask for less. An **r-approximate search** is a procedure guaranteed to return a training message within distance at most \(r\) times the distance to the true nearest neighbour. Three popular methods are **kd-trees**, **ball trees** and **locality-sensitive hashing**. A kd-tree, the one you will build below, splits the training messages in half by one score at a time, cycling through the scores, and at query time skips any half that cannot contain anything closer than the best message found so far. In low dimension the skipping saves most of the work. In high dimension, by the curse you just met, almost nothing can be skipped, because almost everything is about equally far.
 

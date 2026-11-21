@@ -70,7 +70,7 @@ Problems written for this lesson (the chapter has no exercises; marked as the le
    - Hint 2: gap \((2 \cdot 16.995 + \sqrt{2\log 40})/\sqrt m \le 0.25\) needs \(m \ge 21{,}559\).
    - Hint 3: a segment of length \(2c\) has \(N(r) = \lceil c/r\rceil\), so \(N(c2^{-k}) = 2^k\); the chained constant is \(6\sum_k 2^{-k}\sqrt{k\log 2} = 6.73\), and the gap needs only \(m \ge 4{,}187\).
 
-Next bug: lesson 6 stated the fundamental theorem (finite VC dimension if and only if learnable, with rates) and promised a proof; with uniform convergence, Rademacher complexity, Massart and covers in hand, prove both directions with the exact rates (lesson 28, Chapter 28).
+Next bug: lesson 6a stated the fundamental theorem (finite VC dimension if and only if learnable, with rates) and promised a proof; with uniform convergence, Rademacher complexity, Massart and covers in hand, prove both directions with the exact rates (lesson 28, Chapter 28).
 
 Assumptions:
 - Every claim about Chapter 27 was checked by the writer against the PDF (pp. 388 to 391) and Chapter 26's Massart and contraction lemmas (pp. 376 to 381) on 2026-11-20. Book-check agents not yet run.

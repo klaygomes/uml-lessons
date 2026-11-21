@@ -2,9 +2,9 @@
 
 ## The junk that hides in pairs
 
-The filter still runs the way lesson 15 shipped it. Every message becomes a vector of yes/no word features over the 50,000-word vocabulary, the labels are \(+1\) for junk and \(-1\) for keep, and soft-SVM finds a halfspace with a large margin. It weighs the evidence word by word, it does not care how large the vocabulary is, and the margin bound told you, before shipping, roughly how many labels it needed.
+The filter still runs the way lesson 15b shipped it. Every message becomes a vector of yes/no word features over the 50,000-word vocabulary, the labels are \(+1\) for junk and \(-1\) for keep, and soft-SVM finds a halfspace with a large margin. It weighs the evidence word by word, it does not care how large the vocabulary is, and the margin bound told you, before shipping, roughly how many labels it needed.
 
-But the data team’s finding from the end of lesson 15, that junk is often marked by combinations of words, has stopped being a curiosity. A wave of phishing arrives, and the filter lets almost all of it through.
+But the data team’s finding from the end of lesson 15b, that junk is often marked by combinations of words, has stopped being a curiosity. A wave of phishing arrives, and the filter lets almost all of it through.
 
 The new messages say things like “You are a winner, claim your reward” or “Verify your password today”. Look at the words one at a time and none of them is suspicious. The facilities team announces the “winner” of the office bake-off every month. People “claim” expenses all the time. IT asks staff to “verify” their laptops, and the helpdesk resets “password”s daily. What marks the junk is not any single word but a **combination**: “winner” together with “claim”, or “verify” together with “password”.
 
@@ -17,7 +17,7 @@ So what? A halfspace adds up evidence; surely it can add up two words. Let’s t
 | C | 1 | 0 | 1 | 0 | 1 | keep |
 | D | 0 | 1 | 0 | 1 | 1 | keep |
 
-Recall lesson 9’s halfspace: a weight vector \(\mathbf w\) with one weight per word, a bias term \(b\), and the score \(\langle \mathbf w, \mathbf x \rangle + b\), where the inner product \(\langle \mathbf w, \mathbf x \rangle = \sum_j w_j x_j\) multiplies each weight by its word’s count and adds. The message is called junk when the score is positive. Before you read on, try to find \(\mathbf w\) and \(b\) with \(\langle \mathbf w, \mathbf x \rangle + b > 0\) on A and B and \(\le 0\) on C and D. Give winner a big weight and C becomes junk. Give claim a big weight and D does. You will run out of ideas quickly, and for a good reason.
+Recall lesson 9a’s halfspace: a weight vector \(\mathbf w\) with one weight per word, a bias term \(b\), and the score \(\langle \mathbf w, \mathbf x \rangle + b\), where the inner product \(\langle \mathbf w, \mathbf x \rangle = \sum_j w_j x_j\) multiplies each weight by its word’s count and adds. The message is called junk when the score is positive. Before you read on, try to find \(\mathbf w\) and \(b\) with \(\langle \mathbf w, \mathbf x \rangle + b > 0\) on A and B and \(\le 0\) on C and D. Give winner a big weight and C becomes junk. Give claim a big weight and D does. You will run out of ideas quickly, and for a good reason.
 
 Add the two junk vectors, and add the two keep vectors:
 
@@ -117,7 +117,7 @@ print(lhs, rhs)
 
 It prints `2/21 2/21`. Nothing is lost in translation.
 
-You have seen one embedding before. In lesson 9, polynomial regression was least squares on \(\psi(x) = (1, x, x^2, \dots, x^k)\): a polynomial of degree \(k\) in \(x\) is a linear function of \(\psi(x)\). The same works with many variables. A polynomial of degree \(k\) from \(\mathbb R^n\) to \(\mathbb R\) is a weighted sum of monomials, products of at most \(k\) of the coordinates:
+You have seen one embedding before. In lesson 9b, polynomial regression was least squares on \(\psi(x) = (1, x, x^2, \dots, x^k)\): a polynomial of degree \(k\) in \(x\) is a linear function of \(\psi(x)\). The same works with many variables. A polynomial of degree \(k\) from \(\mathbb R^n\) to \(\mathbb R\) is a weighted sum of monomials, products of at most \(k\) of the coordinates:
 
 \[ p(\mathbf x) = \sum_{r=0}^{k} \; \sum_{J \in [n]^r} w_J \prod_{i=1}^{r} x_{J_i}. \]
 
@@ -146,9 +146,9 @@ print([p(x) for x in [(1, 1), (1, 0), (0, 1), (0, 0)]])
 
 It prints `[1, -1, -1, -1]`. Give \(\psi(\mathbf x)\) one coordinate for each index tuple \(J\), equal to the monomial \(\prod_i x_{J_i}\), and then \(p(\mathbf x) = \langle \mathbf w, \psi(\mathbf x) \rangle\). Halfspaces over this \(\psi\) are exactly the polynomial threshold rules of degree \(k\), and that includes “junk when winner and claim both appear”.
 
-So the plan is sound in principle. In practice it raises two problems, and they are the same two that lesson 15 opened with.
+So the plan is sound in principle. In practice it raises two problems, and they are the same two that lesson 15a opened with.
 
-The first is **statistical**. Halfspaces in \(\mathbb R^n\) have VC dimension \(n + 1\) (lesson 6’s largest number of points a class labels in every possible way, computed for halfspaces in lesson 9), so a feature space with trillions of coordinates seems to demand trillions of labels. Lesson 15 already answered this one: a large margin, or equivalently a small norm \(\|\mathbf w\| = \sqrt{\sum_j w_j^2}\), the length of the weight vector, gives a sample complexity that does not depend on the dimension at all. We will put numbers on it near the end of this lesson.
+The first is **statistical**. Halfspaces in \(\mathbb R^n\) have VC dimension \(n + 1\) (lesson 6a’s largest number of points a class labels in every possible way, computed for halfspaces in lesson 9a), so a feature space with trillions of coordinates seems to demand trillions of labels. Lesson 15b already answered this one: a large margin, or equivalently a small norm \(\|\mathbf w\| = \sqrt{\sum_j w_j^2}\), the length of the weight vector, gives a sample complexity that does not depend on the dimension at all. We will put numbers on it near the end of this lesson.
 
 The second is **computational**: computing in the feature space is too expensive, and even writing down \(\mathbf w\) can be impossible. That is the bug from the opening, and the rest of this lesson takes it apart.
 
@@ -166,7 +166,7 @@ Now write down a weight vector \(\mathbf u\) by hand: put 1 on the four coordina
 
 \[ \langle \mathbf u, \psi(\mathbf x) \rangle = 2 x_1 x_2 + 2 x_3 x_4 - 1. \]
 
-Each pair product sits in two coordinates, \((1, 2)\) and \((2, 1)\), which is where the 2s come from, and the \(-1\) is the weight on the constant. In plain words: **the score is 1 or 3 when a junk pair is present and \(-1\) otherwise.** For “winner claim lunch”, \(x_1 x_2 = 1\) and \(x_3 x_4 = 0\), so the score is \(2 - 1 = 1\). On a junk message at least one product is 1, so the score is at least 1. On a keep message both products are 0, so the score is exactly \(-1\). Every message gets \(y \langle \mathbf u, \psi(\mathbf x) \rangle \ge 1\): the label times the score is at least 1, so the message is on its correct side with score to spare. That is lesson 9’s rescaled separability condition.
+Each pair product sits in two coordinates, \((1, 2)\) and \((2, 1)\), which is where the 2s come from, and the \(-1\) is the weight on the constant. In plain words: **the score is 1 or 3 when a junk pair is present and \(-1\) otherwise.** For “winner claim lunch”, \(x_1 x_2 = 1\) and \(x_3 x_4 = 0\), so the score is \(2 - 1 = 1\). On a junk message at least one product is 1, so the score is at least 1. On a keep message both products are 0, so the score is exactly \(-1\). Every message gets \(y \langle \mathbf u, \psi(\mathbf x) \rangle \ge 1\): the label times the score is at least 1, so the message is on its correct side with score to spare. That is lesson 9a’s rescaled separability condition.
 
 Here is the check over all 56 three-word subject lines from an 8-word vocabulary, building \(\psi\) explicitly:
 
@@ -201,7 +201,7 @@ Here is a question that sounds idle and turns out to be the key. When soft-SVM f
 
 Think about the training sequence. The learner only ever sees \(m\) vectors, \(\psi(x_1), \dots, \psi(x_m)\). A direction in feature space that is perpendicular to all of them is invisible to the training data: moving \(\mathbf w\) along it changes no score \(\langle \mathbf w, \psi(x_i) \rangle\). It only makes \(\mathbf w\) longer. And soft-SVM dislikes long vectors. So you would expect it never to bother with such directions, and to keep \(\mathbf w\) inside the span of the training vectors. That hunch is a theorem.
 
-First, the setting. Lesson 15’s learners all minimize something of the form
+First, the setting. Lesson 15b’s learners all minimize something of the form
 
 \[ \min_{\mathbf w} \; f\big(\langle \mathbf w, \psi(x_1) \rangle, \dots, \langle \mathbf w, \psi(x_m) \rangle\big) + R(\|\mathbf w\|), \]
 
@@ -209,10 +209,10 @@ where \(f: \mathbb R^m \to \mathbb R\) is any function at all and \(R: \mathbb R
 
 - \(\langle \mathbf w, \psi(x_i) \rangle\) is the score of training message \(i\) in feature space, one for each of the \(m\) examples.
 - \(f\) takes those \(m\) scores (it may also look at the labels, which are fixed) and returns one number, the data term; that is what \(f: \mathbb R^m \to \mathbb R\) says.
-- \(R\) turns the length \(\|\mathbf w\|\) into a penalty, the regularizer of lesson 13; \(\mathbb R_+\), the nonnegative numbers, is where lengths live.
+- \(R\) turns the length \(\|\mathbf w\|\) into a penalty, the regularizer of lesson 13a; \(\mathbb R_+\), the nonnegative numbers, is where lengths live.
 - \(\min_{\mathbf w}\) asks for the smallest total over all weight vectors, and an optimal solution is a \(\mathbf w\) that attains it.
 
-In plain words: **score the training messages, add a penalty that grows with the length of \(\mathbf w\), and make the total as small as possible.** Soft-SVM for homogeneous halfspaces is the case \(R(a) = \lambda a^2\) and \(f(a_1, \dots, a_m) = \frac{1}{m} \sum_i \max\{0, 1 - y_i a_i\}\), the average hinge loss of lessons 12 and 15, which charges nothing when the label times the score is at least 1 and charges the shortfall otherwise. On the line, with \(\psi(x) = (1, x, x^2)\), the eleven points \(-5, \dots, 5\) and \(\lambda = 0.1\), the weight vector \((-5, 0, 1)\) scores \(x^2 - 5\) and clears every point by at least 1, so \(f = 0\), but \(R = 0.1 \times 26 = 2.6\). Halve it to \((-2.5, 0, 0.5)\): the points \(\pm 2\) now score \(-0.5\) and pay 0.5 each, so \(f = 1/11\), while \(R\) drops to 0.65. The shorter vector wins:
+In plain words: **score the training messages, add a penalty that grows with the length of \(\mathbf w\), and make the total as small as possible.** Soft-SVM for homogeneous halfspaces is the case \(R(a) = \lambda a^2\) and \(f(a_1, \dots, a_m) = \frac{1}{m} \sum_i \max\{0, 1 - y_i a_i\}\), the average hinge loss of lessons 12b and 15b, which charges nothing when the label times the score is at least 1 and charges the shortfall otherwise. On the line, with \(\psi(x) = (1, x, x^2)\), the eleven points \(-5, \dots, 5\) and \(\lambda = 0.1\), the weight vector \((-5, 0, 1)\) scores \(x^2 - 5\) and clears every point by at least 1, so \(f = 0\), but \(R = 0.1 \times 26 = 2.6\). Halve it to \((-2.5, 0, 0.5)\): the points \(\pm 2\) now score \(-0.5\) and pay 0.5 each, so \(f = 1/11\), while \(R\) drops to 0.65. The shorter vector wins:
 
 ```python
 S = [(x, 1 if abs(x) > 2 else -1) for x in range(-5, 6)]
@@ -430,7 +430,7 @@ for other in ({"winner", "claim", "report"},
 
 It prints `2 [0.0183, 0.3679, 0.7788]` and `6 [0.0, 0.0498, 0.4724]`. A small \(\sigma\) calls even a one-word swap far; a large one calls even disjoint lines fairly close. The same computation in many variables gives an embedding with a coordinate \(\frac{1}{\sqrt{n!}} e^{-\|\mathbf x\|^2/2} \prod_{i=1}^n x_{J_i}\) for every \(n\) and every monomial, so a halfspace over it can express any polynomial predictor at all.
 
-Wait. The class of all polynomial threshold rules has infinite VC dimension. Shouldn’t lesson 6 forbid learning with it? There is no contradiction, and the reason is the thread running through lessons 15 and 16: the sample complexity of a large-margin learner depends on the margin in the feature space, not on its dimension. If the data happen to be separable with a large margin in this feature space, few labels suffice. If not, the margin can be arbitrarily small, and the bound says nothing. Large margins are the luck you hope for, not something the kernel promises.
+Wait. The class of all polynomial threshold rules has infinite VC dimension. Shouldn’t lesson 6a forbid learning with it? There is no contradiction, and the reason is the thread running through lessons 15a to 16: the sample complexity of a large-margin learner depends on the margin in the feature space, not on its dimension. If the data happen to be separable with a large margin in this feature space, few labels suffice. If not, the margin can be arbitrarily small, and the bound says nothing. Large margins are the luck you hope for, not something the kernel promises.
 
 Now it is your turn to play. In the lab below you can lift the points of the line onto the parabola, switch kernels on a small mail world, and watch both the Gram matrix and the number of coefficients the learner keeps.
 
@@ -442,7 +442,7 @@ Choosing an embedding is choosing a hypothesis class, so it is choosing an induc
 
 If you believe the positive examples are the ones inside some ellipse, use all monomials of degree at most 2, or simply the degree-2 polynomial kernel: an ellipse is a degree-2 threshold rule. If you believe junk is marked by pairs of words, the same kernel says it. The Gaussian kernel says something different: messages that are close should get the same label. On subject lines, “close” means “share most of their words”. Is that a good belief about pair-marked junk? Look at three subject lines: \(\{\)winner, claim, lunch\(\}\), \(\{\)winner, claim, report\(\}\) and \(\{\)winner, verify, lunch\(\}\). The first differs from each of the other two in exactly one word, so the Gaussian kernel finds it equally similar to both. But the second is junk like the first, and the third is keep. The kernel’s idea of similarity is blind to the very distinction that matters. You will see what that costs, in labels, in the lab at the end of this lesson.
 
-Here is a cleaner example, from a different domain. To spot a virus, look for a **signature**, a short string of characters whose presence in a file means trouble. Let \(\mathcal X_d\) be the strings of length at most \(d\) over an alphabet \(\Sigma\), and let the class be \(\mathcal H = \{h_v : v \in \mathcal X_d\}\), the set of all \(h_v\) with \(v\) a string of length at most \(d\), where \(h_v(x) = 1\) if \(v\) is a substring of \(x\) and \(-1\) otherwise. Embed each string \(x\) as a vector \(\psi(x) \in \{0, 1\}^{|\mathcal X_d|}\), a list of 0s and 1s with one entry for each of the \(|\mathcal X_d|\) possible strings \(v\), equal to 1 when \(v\) is a substring of \(x\). Each \(h_v\) is then a halfspace over \(\psi\) with a short weight vector: put weight 2 on coordinate \(v\), 0 elsewhere, and use the bias term \(-1\). The score is \(2 - 1 = 1\) when \(v\) is a substring of \(x\) and \(0 - 1 = -1\) when it is not, so every string sits at distance at least 1 from the boundary in the rescaled sense of lesson 9, with a weight vector of norm 2 whatever \(d\) is. A string of length \(d\) has \(d\) substrings starting at its first letter, \(d - 1\) at its second, and so on, at most \(d + (d - 1) + \dots + 1 = d(d+1)/2\) in all, and the squared norm of a 0/1 vector counts its 1s, so \(\|\psi(x)\| \le \sqrt{d(d+1)/2} = O(d)\): **the embedded string is never longer than about \(d\).** The margin bound of lesson 15 then gives a sample complexity polynomial in \(d\).
+Here is a cleaner example, from a different domain. To spot a virus, look for a **signature**, a short string of characters whose presence in a file means trouble. Let \(\mathcal X_d\) be the strings of length at most \(d\) over an alphabet \(\Sigma\), and let the class be \(\mathcal H = \{h_v : v \in \mathcal X_d\}\), the set of all \(h_v\) with \(v\) a string of length at most \(d\), where \(h_v(x) = 1\) if \(v\) is a substring of \(x\) and \(-1\) otherwise. Embed each string \(x\) as a vector \(\psi(x) \in \{0, 1\}^{|\mathcal X_d|}\), a list of 0s and 1s with one entry for each of the \(|\mathcal X_d|\) possible strings \(v\), equal to 1 when \(v\) is a substring of \(x\). Each \(h_v\) is then a halfspace over \(\psi\) with a short weight vector: put weight 2 on coordinate \(v\), 0 elsewhere, and use the bias term \(-1\). The score is \(2 - 1 = 1\) when \(v\) is a substring of \(x\) and \(0 - 1 = -1\) when it is not, so every string sits at distance at least 1 from the boundary in the rescaled sense of lesson 9a, with a weight vector of norm 2 whatever \(d\) is. A string of length \(d\) has \(d\) substrings starting at its first letter, \(d - 1\) at its second, and so on, at most \(d + (d - 1) + \dots + 1 = d(d+1)/2\) in all, and the squared norm of a 0/1 vector counts its 1s, so \(\|\psi(x)\| \le \sqrt{d(d+1)/2} = O(d)\): **the embedded string is never longer than about \(d\).** The margin bound of lesson 15b then gives a sample complexity polynomial in \(d\).
 
 But the dimension \(|\mathcal X_d|\) is exponential in \(d\), so running SVM on \(\psi\) directly is hopeless. The kernel, though, is just “how many substrings do these two strings share?”, which takes polynomial time in \(d\):
 
@@ -565,11 +565,11 @@ It prints `-0.9665884814 -0.9665884814` and `True`: the value of \(f\) at 1.7 eq
 
 ## Soft-SVM with kernels, trained by SGD
 
-We could hand the \(\boldsymbol\alpha\) form of soft-SVM to a quadratic-programming solver. There is a simpler road, and it reuses something you already built. In lesson 15 you solved soft-SVM in the form
+We could hand the \(\boldsymbol\alpha\) form of soft-SVM to a quadratic-programming solver. There is a simpler road, and it reuses something you already built. In lesson 15b you solved soft-SVM in the form
 
 \[ \min_{\mathbf w} \; \frac{\lambda}{2} \|\mathbf w\|^2 + \frac{1}{m} \sum_{i=1}^m \max\{0, 1 - y_i \langle \mathbf w, \mathbf x_i \rangle\} \]
 
-with SGD, lesson 14’s stochastic gradient descent, which steps against the slope of one random example’s loss at a time. The \(\frac{\lambda}{2}\) is a convenience of SGD: it is the \(\lambda \|\mathbf w\|^2\) form with \(\lambda\) halved, so the two line vectors from the representer section now cost \(1.3\) and \(0.0909 + 0.325 = 0.4159\). The algorithm had this shape, where \([m]\) is the positions \(1, \dots, m\):
+with SGD, lesson 14a’s stochastic gradient descent, which steps against the slope of one random example’s loss at a time. The \(\frac{\lambda}{2}\) is a convenience of SGD: it is the \(\lambda \|\mathbf w\|^2\) form with \(\lambda\) halved, so the two line vectors from the representer section now cost \(1.3\) and \(0.0909 + 0.325 = 0.4159\). The algorithm had this shape, where \([m]\) is the positions \(1, \dots, m\):
 
 ```
 SGD-SoftSVM(S, λ, T):
@@ -723,9 +723,9 @@ if __name__ == "__main__":
 
 ## How many labels? Margins in feature space
 
-The kernel trick solved the computational half of the bug. Now the statistical half: is it reasonable to learn in a feature space with over a billion coordinates from a budget of labels you can afford? Lesson 15 gave the tool, and it transfers to kernels without a change.
+The kernel trick solved the computational half of the bug. Now the statistical half: is it reasonable to learn in a feature space with over a billion coordinates from a budget of labels you can afford? Lesson 15b gave the tool, and it transfers to kernels without a change.
 
-Recall it. Let every message satisfy \(\|\psi(x)\| \le \rho\), so \(\rho\) is lesson 15’s radius, and let \(A(S)\) be the solution of soft-SVM, \(\min_{\mathbf w} \lambda \|\mathbf w\|^2 + L^{\text{hinge}}_S(\mathbf w)\), on the image sequence. Then for every vector \(\mathbf u\) in the feature space,
+Recall it. Let every message satisfy \(\|\psi(x)\| \le \rho\), so \(\rho\) is lesson 15b’s radius, and let \(A(S)\) be the solution of soft-SVM, \(\min_{\mathbf w} \lambda \|\mathbf w\|^2 + L^{\text{hinge}}_S(\mathbf w)\), on the image sequence. Then for every vector \(\mathbf u\) in the feature space,
 
 \[ \mathop{\mathbb E}_{S \sim \mathcal D^m}\big[ L^{0-1}_{\mathcal D}(A(S)) \big] \le L^{\text{hinge}}_{\mathcal D}(\mathbf u) + \lambda \|\mathbf u\|^2 + \frac{2\rho^2}{\lambda m}. \]
 
@@ -743,7 +743,7 @@ Which \(\lambda\) makes the right side smallest? For positive numbers \(a\) and 
 
 \[ \mathop{\mathbb E}\big[ L^{0-1}_{\mathcal D}(A(S)) \big] \le \sqrt{\frac{8 \rho^2 B^2}{m}}. \]
 
-In plain words: **the expected error shrinks like one over the square root of the number of labels, at a rate set by \(\rho B\).** No dimension anywhere. To guarantee an expected true risk of at most \(\varepsilon\), the error rate you are willing to accept, solve \(\sqrt{8\rho^2B^2/m} \le \varepsilon\) for \(m\): it is enough that \(m \ge 8\rho^2 B^2/\varepsilon^2\). And both quantities can be read through the kernel: \(\rho^2 = \max_x K(x, x)\), the largest squared length \(\|\psi(x)\|^2\) over all messages, and a separator written as \(\mathbf u = \sum_i \gamma_i \psi(z_i)\) has \(B^2 = \sum_{i,j} \gamma_i \gamma_j K(z_i, z_j)\). As in lesson 9, any separator with margin 1 everywhere is a **certificate**: its norm bounds the labels you need. You never need the best one, just one you can check.
+In plain words: **the expected error shrinks like one over the square root of the number of labels, at a rate set by \(\rho B\).** No dimension anywhere. To guarantee an expected true risk of at most \(\varepsilon\), the error rate you are willing to accept, solve \(\sqrt{8\rho^2B^2/m} \le \varepsilon\) for \(m\): it is enough that \(m \ge 8\rho^2 B^2/\varepsilon^2\). And both quantities can be read through the kernel: \(\rho^2 = \max_x K(x, x)\), the largest squared length \(\|\psi(x)\|^2\) over all messages, and a separator written as \(\mathbf u = \sum_i \gamma_i \psi(z_i)\) has \(B^2 = \sum_{i,j} \gamma_i \gamma_j K(z_i, z_j)\). As in lesson 9a, any separator with margin 1 everywhere is a **certificate**: its norm bounds the labels you need. You never need the best one, just one you can check.
 
 Now the mail. For the degree-2 polynomial kernel on three-word subject lines, \(K(x, x) = (1 + 3)^2 = 16\), so \(\rho = 4\); that was the 16 printed earlier. And the hand-built \(\mathbf u\) is a certificate with \(B^2 = 5\). Push them through: with \(m = 16{,}000\), the best \(\lambda\) is \(\sqrt{2 \cdot 16/(5 \cdot 16{,}000)} = 0.02\), the two terms \(\lambda B^2\) and \(2\rho^2/(\lambda m)\) are both 0.1, and their sum is the bound 0.2:
 
@@ -777,9 +777,9 @@ for k in (2, 3, 4):
 
 It prints `2 2 2.236 8.944 16000`, `3 12 1.291 10.328 21334` and `4 50 1.077 17.233 59392`. Degree 2 certifies an expected true risk of at most 0.2 with 16,000 labels. Higher degrees have smaller certificates \(B\) but a larger radius \(\rho\), and the product grows. A richer kernel is not a free upgrade.
 
-Two things about these numbers. First, compare them with counting dimensions. Halfspaces over pairs of a 50,000-word vocabulary live in a space of about \(1.25 \times 10^9\) dimensions, so a guarantee that grows with the VC dimension, like those of lesson 6, needs labels in proportion to that. The margin certificate does not mention the vocabulary at all: 16,000 labels for 1,000 words, 50,000 words or a million. Second, the guarantee is an upper bound in expectation, and a loose one. The filter will usually do far better than 0.2; what the bound gives you is a promise you can make before you train, the kind operations asked for in lesson 9.
+Two things about these numbers. First, compare them with counting dimensions. Halfspaces over pairs of a 50,000-word vocabulary live in a space of about \(1.25 \times 10^9\) dimensions, so a guarantee that grows with the VC dimension, like those of lesson 6a, needs labels in proportion to that. The margin certificate does not mention the vocabulary at all: 16,000 labels for 1,000 words, 50,000 words or a million. Second, the guarantee is an upper bound in expectation, and a loose one. The filter will usually do far better than 0.2; what the bound gives you is a promise you can make before you train, the kind operations asked for in lesson 9a.
 
-One honest caveat. The bound is about the exact soft-SVM solution, and KernelSGD-SoftSVM approximates it, with an optimization error that lesson 14 showed shrinks as the number of steps \(T\) grows. In the lab, \(T\) is large enough for that gap to be small, but it is not part of the certificate.
+One honest caveat. The bound is about the exact soft-SVM solution, and KernelSGD-SoftSVM approximates it, with an optimization error that lesson 14a showed shrinks as the number of steps \(T\) grows. In the lab, \(T\) is large enough for that gap to be small, but it is not part of the certificate.
 
 ## Fix the bug
 
@@ -799,7 +799,7 @@ Before you train, work out each kernel’s label count from the table above, and
 
 **“A Gaussian kernel can separate anything, so it is the safe default.”** With a small enough \(\sigma\), the Gram matrix of distinct messages is close to the identity and any labelling is separable. That is exactly the memorizer of lesson 1 in a new coat: separable with a norm that grows with the number of messages, so the margin bound needs more labels than there are messages (the first concept-check question asks you to show it). The kernel is prior knowledge, and the wrong prior costs labels.
 
-**“The representer theorem says the solution uses only a few training messages.”** It says the solution is a combination of the training messages, possibly all \(m\) of them. Which coefficients are zero depends on the loss; for hard-SVM, lesson 15’s support vectors are the ones that remain.
+**“The representer theorem says the solution uses only a few training messages.”** It says the solution is a combination of the training messages, possibly all \(m\) of them. Which coefficients are zero depends on the loss; for hard-SVM, lesson 15b’s support vectors are the ones that remain.
 
 ## Recap and the next bug
 
@@ -808,7 +808,7 @@ Before you train, work out each kernel’s label count from the table above, and
 3. The **kernel trick**: rewritten in \(\boldsymbol\alpha\), learning and prediction need only the **kernel** \(K(x, x') = \langle \psi(x), \psi(x') \rangle\), through the **Gram matrix**. The polynomial kernel \((1 + \langle \mathbf x, \mathbf x' \rangle)^k\) costs \(O(n)\) for a space of \((n+1)^k\) coordinates; the Gaussian kernel costs \(O(n)\) for an infinite one.
 4. A kernel is **prior knowledge**: the polynomial kernel believes in combinations of words, the Gaussian kernel in nearness, the substring kernel in signatures.
 5. A symmetric \(K\) is a kernel exactly when every Gram matrix is **positive semidefinite**.
-6. **KernelSGD-SoftSVM** stores \(\boldsymbol\beta \in \mathbb R^m\) instead of \(\boldsymbol\theta\) and computes exactly the same hypothesis as SGD in the feature space. In lesson 10, boosting handled a huge feature space with a weak learner that hands it one good coordinate at a time; kernels handle it by never needing coordinates at all.
+6. **KernelSGD-SoftSVM** stores \(\boldsymbol\beta \in \mathbb R^m\) instead of \(\boldsymbol\theta\) and computes exactly the same hypothesis as SGD in the feature space. In lesson 10a, boosting handled a huge feature space with a weak learner that hands it one good coordinate at a time; kernels handle it by never needing coordinates at all.
 7. The margin bound \(\sqrt{8 \rho^2 B^2/m}\) does not depend on the dimension, and any separator with margin 1 is a certificate for it.
 
 Your filter is catching the pair-marked junk again, and the certificate is pinned above your desk. Then the product team walks over with a survey. Users are grateful, they say, but junk or keep is not what they actually want. They want their mail sorted into folders: work, personal, promotions and junk. And within the inbox, they want the important messages first. A single yes/no filter cannot do either: it has two answers, and folders need four, while an ordering needs a score for every message that is right relative to the others. Can the halfspaces, margins and kernels you have built answer questions with more than two answers? That is the next lesson: multiclass, ranking and complex prediction problems.
@@ -825,6 +825,6 @@ Write your answers down before moving on, with your reasoning, not just the answ
 
 These are this lesson’s own problems, to work on after the concept check. Hints are available on request; try each one for a while first.
 
-1. **A kernel Perceptron.** Rewrite the Perceptron of lesson 9 so that it touches the messages only through a kernel \(K\). What does it store, what does each update cost, and how does it predict?
+1. **A kernel Perceptron.** Rewrite the Perceptron of lesson 9a so that it touches the messages only through a kernel \(K\). What does it store, what does each update cost, and how does it predict?
 2. **The minimum is a kernel.** Let \(N\) be a positive integer, and for \(x, x' \in \{1, \dots, N\}\) let \(K(x, x') = \min\{x, x'\}\). Prove that \(K\) is a valid kernel by finding an explicit embedding \(\psi: \{1, \dots, N\} \to \mathbb R^n\), for some \(n\), with \(K(x, x') = \langle \psi(x), \psi(x') \rangle\). (Contrast it with \(\max\), which you saw fail.)
 3. **The nearest average.** A simple learner labels a new message by whichever class has the closer average in feature space. With \(\mathbf c_{+} = \frac{1}{m_+} \sum_{i : y_i = +1} \psi(x_i)\) and \(\mathbf c_{-}\) defined the same way (both classes nonempty), it predicts \(+1\) when \(\|\psi(x) - \mathbf c_+\| \le \|\psi(x) - \mathbf c_-\|\) and \(-1\) otherwise. Show that this is the halfspace \(\operatorname{sign}(\langle \mathbf w, \psi(x) \rangle + b)\) with \(\mathbf w = \mathbf c_+ - \mathbf c_-\) and \(b = \frac12 (\|\mathbf c_-\|^2 - \|\mathbf c_+\|^2)\), and then compute it using only the kernel.

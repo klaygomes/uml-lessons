@@ -2,7 +2,7 @@
 
 ## The auditor’s question
 
-At the end of the last review, someone from the research team asked whether you could prove the fundamental theorem of lesson 6, both directions, with the exact rates. That question now has a deadline. The interval filter of lesson 6, which scores every message with the spam score, a number between 0 and 1, and labels it junk when the score falls inside an interval it has learned, is about to get its first outside audit. The class of intervals has VC dimension 2 (it can label two messages every possible way, but never three), and the certificate your team filed back then rests on one sentence from lesson 6: the fundamental theorem of statistical learning, quantitative version. Write \(d\) for the VC dimension, \(\varepsilon\) for the accuracy you ask for and \(\delta\) for the chance you allow the guarantee to fail. The theorem says the number of labels a class needs grows like \(d + \log(1/\delta)\) over \(\varepsilon^2\) when labels are noisy, and roughly like \(d \log(1/\varepsilon) + \log(1/\delta)\) over \(\varepsilon\) when some interval is perfect.
+At the end of the last review, someone from the research team asked whether you could prove the fundamental theorem of lesson 6a, both directions, with the exact rates. That question now has a deadline. The interval filter of lesson 6a, which scores every message with the spam score, a number between 0 and 1, and labels it junk when the score falls inside an interval it has learned, is about to get its first outside audit. The class of intervals has VC dimension 2 (it can label two messages every possible way, but never three), and the certificate your team filed back then rests on one sentence from lesson 6a: the fundamental theorem of statistical learning, quantitative version. Write \(d\) for the VC dimension, \(\varepsilon\) for the accuracy you ask for and \(\delta\) for the chance you allow the guarantee to fail. The theorem says the number of labels a class needs grows like \(d + \log(1/\delta)\) over \(\varepsilon^2\) when labels are noisy, and roughly like \(d \log(1/\varepsilon) + \log(1/\delta)\) over \(\varepsilon\) when some interval is perfect.
 
 The certificate has two lines. The clean line covers the mailboxes where one interval really does separate junk from keep. The noisy line covers the shared mailboxes, where users disagree and no interval is perfect. Both promise a filter within \(\varepsilon = 0.1\) of the best possible, with confidence \(1 - \delta = 0.95\), and both budgets were computed by plugging the numbers into the theorem’s shapes:
 
@@ -17,9 +17,9 @@ print(round(agnostic_shape), round(realizable_shape))
 
 It prints `500 76`. So the certificate says: 76 labels for the clean line, 500 for the noisy line.
 
-The auditor reads it twice and puts down her pen. “Lesson 6 says there *are* constants \(C_1\) and \(C_2\) that make this true. You used 1 for both. Where is the proof that 1 works? And the lower constant: how do you know a smaller budget could not have done the job? If you can’t show me a floor and a ceiling, this certificate is a guess with a theorem’s name on it.”
+The auditor reads it twice and puts down her pen. “Lesson 6a says there *are* constants \(C_1\) and \(C_2\) that make this true. You used 1 for both. Where is the proof that 1 works? And the lower constant: how do you know a smaller budget could not have done the job? If you can’t show me a floor and a ceiling, this certificate is a guess with a theorem’s name on it.”
 
-She is right, and it is a little embarrassing. Lesson 6 stated the quantitative theorem and promised the proof for later. Your team has been quoting its rates ever since without anyone checking where they come from. This lesson pays that debt and answers the research team’s question. We will prove three things, each with explicit constants:
+She is right, and it is a little embarrassing. Lesson 6a stated the quantitative theorem and promised the proof for later. Your team has been quoting its rates ever since without anyone checking where they come from. This lesson pays that debt and answers the research team’s question. We will prove three things, each with explicit constants:
 
 1. **The ceiling with noisy labels**: enough labels, of order \((d \log(1/\varepsilon) + \log(1/\delta))/\varepsilon^2\), make ERM (lesson 2’s learner that returns a hypothesis with the smallest empirical risk) succeed for every distribution.
 2. **The floor with noisy labels**: fewer than about \((d + \log(1/\delta))/\varepsilon^2\) labels make *every* learner fail on some distribution.
@@ -31,7 +31,7 @@ By the end you will rewrite both lines of the certificate with numbers you can d
 
 Let’s set out the vocabulary, since every step below leans on it.
 
-A **hypothesis class** \(\mathcal H\) is a set of hypotheses \(h: \mathcal X \to \{0, 1\}\), where \(\mathcal X\) is the domain (here, spam scores) and the label 1 means junk. Its **VC dimension** \(d\) (lesson 6) is the size of the largest set \(C\) of messages that \(\mathcal H\) **shatters**, that is, labels in all \(2^{|C|}\) possible ways, where \(|C|\) is the number of messages in \(C\). For intervals, \(d = 2\): any two scores can be labelled every way, but no three can, since “junk, keep, junk” would need a gap inside an interval.
+A **hypothesis class** \(\mathcal H\) is a set of hypotheses \(h: \mathcal X \to \{0, 1\}\), where \(\mathcal X\) is the domain (here, spam scores) and the label 1 means junk. Its **VC dimension** \(d\) (lesson 6a) is the size of the largest set \(C\) of messages that \(\mathcal H\) **shatters**, that is, labels in all \(2^{|C|}\) possible ways, where \(|C|\) is the number of messages in \(C\). For intervals, \(d = 2\): any two scores can be labelled every way, but no three can, since “junk, keep, junk” would need a gap inside an interval.
 
 A training sequence \(S = (z_1, \dots, z_m)\) is \(m\) examples \(z_i = (x_i, y_i)\) drawn i.i.d. from a distribution \(\mathcal D\) over messages and labels; we write \(S \sim \mathcal D^m\). The **true risk** \(L_{\mathcal D}(h)\) is the chance that \(h\) mislabels a fresh example, and the **empirical risk** \(L_S(h)\) is the fraction of \(S\) that \(h\) gets wrong. The **best in the class** is \(\min_{h \in \mathcal H} L_{\mathcal D}(h)\), the smallest true risk any hypothesis in \(\mathcal H\) can reach. When a learner \(A\) returns \(A(S)\), the amount by which it falls short of the best in the class,
 
@@ -113,7 +113,7 @@ Formally, fix \(S = ((x_1, y_1), \dots, (x_m, y_m))\) and let
 
 \[ A = \left\{ \left( \mathbb 1[h(x_1) \neq y_1], \dots, \mathbb 1[h(x_m) \neq y_m] \right) : h \in \mathcal H \right\}. \]
 
-The indicator \(\mathbb 1[\cdot]\) is 1 when the statement inside is true and 0 otherwise, so each coordinate is the 0-1 loss of \(h\) on one example. The braces collect one vector per hypothesis, and the colon reads “such that \(h\) ranges over \(\mathcal H\)”; two hypotheses with the same mistakes give the same vector, counted once. In plain words: **\(A\) is the set of all mistake patterns the class can make on this training sequence.** The map from labelling \((h(x_1), \dots, h(x_m))\) to mistake pattern flips coordinate \(i\) exactly when \(y_i = 1\), and flipping twice undoes it, so the map is a bijection. Hence \(|A|\) equals the number of labellings the class produces on \(x_1, \dots, x_m\), which is at most the growth function \(\tau_{\mathcal H}(m)\) of lesson 6, the largest number of labellings the class makes on any \(m\) messages. By Sauer’s lemma, for \(m \ge d\),
+The indicator \(\mathbb 1[\cdot]\) is 1 when the statement inside is true and 0 otherwise, so each coordinate is the 0-1 loss of \(h\) on one example. The braces collect one vector per hypothesis, and the colon reads “such that \(h\) ranges over \(\mathcal H\)”; two hypotheses with the same mistakes give the same vector, counted once. In plain words: **\(A\) is the set of all mistake patterns the class can make on this training sequence.** The map from labelling \((h(x_1), \dots, h(x_m))\) to mistake pattern flips coordinate \(i\) exactly when \(y_i = 1\), and flipping twice undoes it, so the map is a bijection. Hence \(|A|\) equals the number of labellings the class produces on \(x_1, \dots, x_m\), which is at most the growth function \(\tau_{\mathcal H}(m)\) of lesson 6b, the largest number of labellings the class makes on any \(m\) messages. By Sauer’s lemma, for \(m \ge d\),
 
 \[ |A| \le \tau_{\mathcal H}(m) \le \left( \frac{em}{d} \right)^d. \]
 
@@ -262,7 +262,7 @@ It prints `True` (the log stays under its tangent at 10,000 test points) and `11
 
 ### What this ceiling does and does not prove
 
-Look at the shape: \((d \log(1/\varepsilon) + \log(1/\delta))/\varepsilon^2\), up to constants. The theorem of lesson 6 promises \(d + \log(1/\delta)\) in the numerator, with no \(\log(1/\varepsilon)\) next to the \(d\). Our proof is off by that log factor. The log factor comes from Massart’s lemma, which measures the class at one scale. Removing it needs lesson 27’s chaining, which measures it at many scales at once, fed with a bound on the covering numbers of a class of VC dimension \(d\) that does not grow with \(m\); that covering bound is a separate, harder proof that this course does not give. So be honest with the auditor: the ceiling we have proved is the theorem’s shape up to a factor of \(\log(1/\varepsilon)\), with explicit constants, and its constants are large. Large, but proved.
+Look at the shape: \((d \log(1/\varepsilon) + \log(1/\delta))/\varepsilon^2\), up to constants. The theorem of lesson 6a promises \(d + \log(1/\delta)\) in the numerator, with no \(\log(1/\varepsilon)\) next to the \(d\). Our proof is off by that log factor. The log factor comes from Massart’s lemma, which measures the class at one scale. Removing it needs lesson 27’s chaining, which measures it at many scales at once, fed with a bound on the covering numbers of a class of VC dimension \(d\) that does not grow with \(m\); that covering bound is a separate, harder proof that this course does not give. So be honest with the auditor: the ceiling we have proved is the theorem’s shape up to a factor of \(\log(1/\varepsilon)\), with explicit constants, and its constants are large. Large, but proved.
 
 ## The floor, part one: one message, two worlds
 
@@ -673,7 +673,7 @@ Then, with probability at least \(1 - \delta\) over \(S \sim \mathcal D^m\), \(S
 
 The bracket has the VC dimension times a log of \(1/\varepsilon\), plus the log of \(2/\delta\), and the whole is multiplied by \(8/\varepsilon\), not divided by \(\varepsilon^2\). In plain words: **about \(16 d \log(16e/\varepsilon)/\varepsilon\) random points, plus a confidence term, hit every heavy set of a class of VC dimension \(d\).** For intervals at \(\varepsilon = 0.1\), \(\delta = 0.05\), that is 2,239.2 points.
 
-The proof has the same skeleton as the uniform-convergence proof in lesson 6: a ghost sample, then a swap. Let \(B\) be the bad event “\(S\) is not an \(\varepsilon\)-net”: some \(r \in \mathcal R\) has \(\mathcal D(r) \ge \varepsilon\) and contains no point of \(S\). Draw a **ghost sample** \(T \sim \mathcal D^m\), independent of \(S\), that nobody ever collects, and let \(B'\) be the event “some \(r \in \mathcal R\) has \(\mathcal D(r) \ge \varepsilon\), contains no point of \(S\), and contains more than \(\varepsilon m/2\) points of \(T\)”, counting points of \(T\) with repetition.
+The proof has the same skeleton as the uniform-convergence proof in lesson 6b: a ghost sample, then a swap. Let \(B\) be the bad event “\(S\) is not an \(\varepsilon\)-net”: some \(r \in \mathcal R\) has \(\mathcal D(r) \ge \varepsilon\) and contains no point of \(S\). Draw a **ghost sample** \(T \sim \mathcal D^m\), independent of \(S\), that nobody ever collects, and let \(B'\) be the event “some \(r \in \mathcal R\) has \(\mathcal D(r) \ge \varepsilon\), contains no point of \(S\), and contains more than \(\varepsilon m/2\) points of \(T\)”, counting points of \(T\) with repetition.
 
 **Claim 1.** If \(\varepsilon m \ge 8\), then \(\mathbb P[B] \le 2\,\mathbb P[B']\).
 
@@ -712,7 +712,7 @@ The exact chance that a set of mass \(p\) gets at most half its expected share o
 
 **Claim 2 (the swap).** \(\mathbb P[B'] \le \tau_{\mathcal R}(2m) \, e^{-\varepsilon m/4}\), where \(\tau_{\mathcal R}\) is the growth function.
 
-The idea is lesson 6’s: put all \(2m\) points in one row, \(S\) first and \(T\) second. Because they are i.i.d., any other way of splitting the row into two halves of \(m\) is equally likely to have produced it. And for a set that holds many of the \(2m\) points, it is very unlikely that a random half avoids all of them.
+The idea is lesson 6b’s: put all \(2m\) points in one row, \(S\) first and \(T\) second. Because they are i.i.d., any other way of splitting the row into two halves of \(m\) is equally likely to have produced it. And for a set that holds many of the \(2m\) points, it is very unlikely that a random half avoids all of them.
 
 [[diagram:ghost-swap]]
 

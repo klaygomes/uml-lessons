@@ -40,7 +40,7 @@ button.k-toggle[aria-pressed="true"]::before { content: "\2713\00a0"; }
 .k-still-text { display: none; }
 @media (prefers-reduced-motion: reduce) { .k-motion-text { display: none; } .k-still-text { display: inline; } }
 @media (max-width: 520px) { .k-meter { grid-template-columns: 1fr auto; } .k-meter > span:first-child { grid-column: 1 / -1; } .k-meter .bar { grid-column: 1; grid-row: 2; } .k-meter output { grid-column: 2; grid-row: 2; } .k-meter .scale { grid-column: 1; grid-row: 3; } }
-p .katex, li .katex, td .katex { white-space: nowrap; }
+p .katex, li .katex, td .katex { white-space: normal; }
 p .katex-display, li .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
 pre.code .c-keyword { color: var(--code-keyword); font-weight: var(--weight-medium); }
 pre.code .c-string { color: var(--code-string); }

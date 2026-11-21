@@ -2,13 +2,13 @@
 
 ## The junk nobody had a feature for
 
-Your invoice filter from lesson 19 works, and it comes with a certificate. But remember what it stood on: two scores that somebody invented, picked out of thirty that somebody else designed. Look back over the whole course and the pattern is the same. The one-feature hypotheses of lesson 1 looked at bits someone chose (“FREE”, a link, an unknown sender). The halfspaces of lesson 9 weighed word counts. The trees of lesson 18 asked questions about features a person had written down. Every filter so far is only as good as the imagination of whoever built its features.
+Your invoice filter from lesson 19 works, and it comes with a certificate. But remember what it stood on: two scores that somebody invented, picked out of thirty that somebody else designed. Look back over the whole course and the pattern is the same. The one-feature hypotheses of lesson 1 looked at bits someone chose (“FREE”, a link, an unknown sender). The halfspaces of lesson 9a weighed word counts. The trees of lesson 18 asked questions about features a person had written down. Every filter so far is only as good as the imagination of whoever built its features.
 
 This week that imagination ran out. A new wave of junk is arriving, and every filter you own lets it through. You pull a few hundred of the messages and stare at them. No word gives them away. No sender list catches them. Then a colleague plots two numbers the mail server records for every message anyway, before anyone designs anything: the time of day it was sent and its length. We’ll call these **raw signals**, and scale each one to lie between −1 and 1, so a message becomes a point \(u = (u_1, u_2)\) in a square. Here \(u_1\) is the send time (−1 is midnight at the start of the day, 1 is midnight at the end) and \(u_2\) is the length (−1 is the shortest message, 1 the longest).
 
 On that plot the new junk sits in a slanted triangle, with corners at \((-0.6, -0.6)\), \((0.6, -0.2)\) and \((-0.2, 0.6)\). It covers 16% of the square. Inside the triangle, everything is junk; outside, everything is keep, apart from the 2% of messages your users label carelessly.
 
-Why does every old filter miss it? A hand-made feature such as “sent in the morning” or “longer than average” cuts the square with a vertical or horizontal line. A halfspace on the two raw signals, lesson 9’s tool, cuts it with one slanted line. A triangle is neither: it is the region inside *three* lines at once. The filter you would need has to invent three new features, “on the correct side of line 1”, “of line 2”, “of line 3”, and then combine them. Nobody thought of those features, and next month’s junk will need different ones.
+Why does every old filter miss it? A hand-made feature such as “sent in the morning” or “longer than average” cuts the square with a vertical or horizontal line. A halfspace on the two raw signals, lesson 9a’s tool, cuts it with one slanted line. A triangle is neither: it is the region inside *three* lines at once. The filter you would need has to invent three new features, “on the correct side of line 1”, “of line 2”, “of line 3”, and then combine them. Nobody thought of those features, and next month’s junk will need different ones.
 
 So here is this lesson’s question. Could a filter build its own features, straight from the raw signals, and learn the junk rule on top of them, all from labelled examples? That is what a neural network does. By the end you will know what such a network can express, how many labels it costs, why training it is hard in the worst case, and how to train it anyway with stochastic gradient descent and an algorithm called backpropagation.
 
@@ -16,7 +16,7 @@ So here is this lesson’s question. Could a filter build its own features, stra
 
 Let’s build the triangle detector by hand first, with real numbers, and only then give the parts their names.
 
-Start with one of the three lines. The first edge of the triangle is where \(3u_1 - u_2 + 1.2\) equals 0, and the triangle lies on the side where that number is positive. So here is a tiny machine: take the two raw signals, multiply them by 3 and −1, add 1.2, and answer +1 if the total is positive and −1 if it is not. On the message \(u = (0.3, -0.1)\), the total is \(3 \cdot 0.3 - (-0.1) + 1.2 = 0.9 + 0.1 + 1.2 = 2.2\), which is positive, so the machine says +1. That machine is a halfspace, exactly as in lesson 9, and its answer is a brand new feature of the message: “on the inner side of edge 1”.
+Start with one of the three lines. The first edge of the triangle is where \(3u_1 - u_2 + 1.2\) equals 0, and the triangle lies on the side where that number is positive. So here is a tiny machine: take the two raw signals, multiply them by 3 and −1, add 1.2, and answer +1 if the total is positive and −1 if it is not. On the message \(u = (0.3, -0.1)\), the total is \(3 \cdot 0.3 - (-0.1) + 1.2 = 0.9 + 0.1 + 1.2 = 2.2\), which is positive, so the machine says +1. That machine is a halfspace, exactly as in lesson 9a, and its answer is a brand new feature of the message: “on the inner side of edge 1”.
 
 Build two more machines for the other two edges, with weights \((-1, 3)\) and a constant 1.2, and weights \((-1, -1)\) and a constant 0.4. Now each message has three new features, each +1 or −1. A message is in the triangle exactly when all three are +1. One more machine finishes the job: add the three features, subtract 2, and answer by the sign. If all three are +1 the total is \(3 - 2 = 1\), positive. If even one is −1, the total is at most \(1 + 1 - 1 - 2 = -1\), negative. So the last machine computes “all three are +1”, the logical AND.
 
@@ -62,7 +62,7 @@ Try it in the lab before we formalize anything. You drag three lines across the 
 
 Now the names. Each tiny machine is a **neuron**. A neuron receives some numbers, multiplies each by its own **weight**, adds them up, and passes the total through a fixed scalar function \(\sigma: \mathbb R \to \mathbb R\), read “sigma, a function from real numbers to real numbers”, called the **activation function**. We will use three activation functions. Here they are in words first, with the total \(a = 0.4\) as an example:
 
-- the **sign** function answers +1 when \(a\) is positive and −1 otherwise, so \(\operatorname{sign}(0.4) = 1\) and \(\operatorname{sign}(0) = -1\) (the same convention as lesson 9);
+- the **sign** function answers +1 when \(a\) is positive and −1 otherwise, so \(\operatorname{sign}(0.4) = 1\) and \(\operatorname{sign}(0) = -1\) (the same convention as lesson 9a);
 - the **threshold** function \(\mathbb 1[a > 0]\) answers 1 when \(a\) is positive and 0 otherwise (recall from lesson 1 that \(\mathbb 1[\text{statement}]\) is 1 when the statement is true and 0 when it is false), so it gives 1 at 0.4;
 - the **sigmoid** function \(\sigma(a) = 1/(1 + e^{-a})\) is a smooth version of the threshold: it climbs from 0 to 1, is exactly \(1/2\) at \(a = 0\), and at \(a = 0.4\) gives \(1/(1 + e^{-0.4}) \approx 0.599\). It borrows the letter \(\sigma\), so whenever \(\sigma\) gets a formula, it means the sigmoid.
 
@@ -304,11 +304,11 @@ So networks are wonderfully expressive. How much does that cost in labels?
 
 ## How many labels a network needs
 
-Lesson 6 answered “how many labels” for any class through one number. Recall that a class **shatters** a set of \(m\) points when it produces all \(2^m\) labellings of them, and its **VC dimension** is the size of the largest set it shatters. The fundamental theorem of lesson 6 says that a class of binary hypotheses is learnable exactly when its VC dimension is finite, and that the number of labels grows in proportion to it. So we want the VC dimension of a sign network with a single output neuron.
+Lesson 6a answered “how many labels” for any class through one number. Recall that a class **shatters** a set of \(m\) points when it produces all \(2^m\) labellings of them, and its **VC dimension** is the size of the largest set it shatters. The fundamental theorem of lesson 6a says that a class of binary hypotheses is learnable exactly when its VC dimension is finite, and that the number of labels grows in proportion to it. So we want the VC dimension of a sign network with a single output neuron.
 
-A guess first. A network is named by \(|E|\) numbers, and a halfspace named by \(d\) numbers has VC dimension \(d\) (lesson 9). So perhaps the VC dimension is about \(|E|\). That is nearly right: we will prove at most a constant times \(|E| \log |E|\).
+A guess first. A network is named by \(|E|\) numbers, and a halfspace named by \(d\) numbers has VC dimension \(d\) (lesson 9a). So perhaps the VC dimension is about \(|E|\). That is nearly right: we will prove at most a constant times \(|E| \log |E|\).
 
-The tool is the **growth function** of lesson 6, which counts labellings. For a set \(C\) of \(m\) points, \(\mathcal H_C\) is the set of distinct ways the hypotheses of \(\mathcal H\) label the points of \(C\) (the restrictions of \(\mathcal H\) to \(C\)), and
+The tool is the **growth function** of lesson 6b, which counts labellings. For a set \(C\) of \(m\) points, \(\mathcal H_C\) is the set of distinct ways the hypotheses of \(\mathcal H\) label the points of \(C\) (the restrictions of \(\mathcal H\) to \(C\)), and
 
 \[ \tau_{\mathcal H}(m) = \max_{C \subset \mathcal X \,:\, |C| = m} |\mathcal H_C|. \]
 
@@ -355,7 +355,7 @@ Here \(O(\cdot)\) means “at most a constant times”, as in every complexity s
 
 *Step 2, cut each layer into neurons.* Within layer \(t\), the neurons work side by side, each with its own weights: \(\mathcal H^{(t)} = \mathcal H^{(t,1)} \times \cdots \times \mathcal H^{(t,|V_t|)}\), where \(\mathcal H^{(t,i)}\) holds the functions neuron \(i\) can compute from the layer below. The product lemma gives \(\tau_{\mathcal H^{(t)}}(m) \le \prod_i \tau_{\mathcal H^{(t,i)}}(m)\).
 
-*Step 3, one neuron.* Let \(d_{t,i}\) be the number of edges into neuron \(v_{t,i}\), its **in-degree**. The neuron computes \(\operatorname{sign}(\langle w, z \rangle)\), where \(z\) is the list of the \(d_{t,i}\) outputs wired into it: a homogeneous halfspace in \(\mathbb R^{d_{t,i}}\), whose VC dimension is \(d_{t,i}\) (lesson 9). Sauer’s lemma (lesson 6) bounds its growth function. When \(1 \le d_{t,i} \le m\), it gives \(\tau \le (em/d_{t,i})^{d_{t,i}} \le (em)^{d_{t,i}}\). When \(m < d_{t,i}\), the trivial bound gives \(\tau \le 2^m < e^m \le (em)^{d_{t,i}}\): since \(em \ge e\) and \(d_{t,i} > m\), we have \((em)^{d_{t,i}} \ge e^{d_{t,i}} \ge e^m\). When \(d_{t,i} = 0\), as for a constant neuron, the neuron computes one function, so \(\tau = 1 = (em)^0\). In every case,
+*Step 3, one neuron.* Let \(d_{t,i}\) be the number of edges into neuron \(v_{t,i}\), its **in-degree**. The neuron computes \(\operatorname{sign}(\langle w, z \rangle)\), where \(z\) is the list of the \(d_{t,i}\) outputs wired into it: a homogeneous halfspace in \(\mathbb R^{d_{t,i}}\), whose VC dimension is \(d_{t,i}\) (lesson 9a). Sauer’s lemma (lesson 6b) bounds its growth function. When \(1 \le d_{t,i} \le m\), it gives \(\tau \le (em/d_{t,i})^{d_{t,i}} \le (em)^{d_{t,i}}\). When \(m < d_{t,i}\), the trivial bound gives \(\tau \le 2^m < e^m \le (em)^{d_{t,i}}\): since \(em \ge e\) and \(d_{t,i} > m\), we have \((em)^{d_{t,i}} \ge e^{d_{t,i}} \ge e^m\). When \(d_{t,i} = 0\), as for a constant neuron, the neuron computes one function, so \(\tau = 1 = (em)^0\). In every case,
 
 \[ \tau_{\mathcal H^{(t,i)}}(m) \le (em)^{d_{t,i}}. \]
 
@@ -385,7 +385,7 @@ It prints `13`, then `7.19e+15 3.62e+22`, then `3.62e+22 1.05e+06`. The Sauer bo
 
 The arrow comes from taking \(\log_2\) of both sides (\(\log_2\) is increasing, so the inequality keeps its direction) and using \(\log_2(a^b) = b \log_2 a\). In plain words: **a set the network shatters can have at most about \(|E|\) times a logarithm many points.**
 
-*Step 6, untie \(m\).* The unknown \(m\) sits on both sides. Switch to natural logarithms: \(\log_2(em) = (1 + \ln m)/\ln 2\), so a shattered \(m\) satisfies \(m \le \alpha \ln m + \alpha\) with \(\alpha = |E|/\ln 2 \ge 1\). Lesson 6’s **log lemma** says: if \(\alpha \ge 1\) and \(\beta \ge 0\), then \(m \ge 4\alpha \ln(2\alpha) + 2\beta\) implies \(m \ge \alpha \ln m + \beta\). Use it with \(\beta = \alpha + 1\): any \(m \ge 4\alpha\ln(2\alpha) + 2\alpha + 2\) has \(m \ge \alpha \ln m + \alpha + 1 > \alpha \ln m + \alpha\), so it cannot be shattered. Hence the VC dimension is below \(4\alpha\ln(2\alpha) + 2\alpha + 2\), which is \(O(|E| \log |E|)\). \(\blacksquare\)
+*Step 6, untie \(m\).* The unknown \(m\) sits on both sides. Switch to natural logarithms: \(\log_2(em) = (1 + \ln m)/\ln 2\), so a shattered \(m\) satisfies \(m \le \alpha \ln m + \alpha\) with \(\alpha = |E|/\ln 2 \ge 1\). Lesson 6b’s **log lemma** says: if \(\alpha \ge 1\) and \(\beta \ge 0\), then \(m \ge 4\alpha \ln(2\alpha) + 2\beta\) implies \(m \ge \alpha \ln m + \beta\). Use it with \(\beta = \alpha + 1\): any \(m \ge 4\alpha\ln(2\alpha) + 2\alpha + 2\) has \(m \ge \alpha \ln m + \alpha + 1 > \alpha \ln m + \alpha\), so it cannot be shattered. Hence the VC dimension is below \(4\alpha\ln(2\alpha) + 2\alpha + 2\), which is \(O(|E| \log |E|)\). \(\blacksquare\)
 
 Here is Step 5 solved exactly by search, next to \(|E| \log_2 |E|\) and the closed form of Step 6:
 
@@ -408,7 +408,7 @@ It prints `9 67 29 197`, `13 106 48 311`, `100 1162 664 3560` and `1000 15348 99
 
 [[diagram:growth-layers]]
 
-Combine this with the fundamental theorem of lesson 6: a sign network is learnable with a number of labels proportional to \(|E| \log |E|\) (plus \(\log(1/\delta)\)), divided by \(\varepsilon^2\) in the agnostic case. Here \(\varepsilon\) is the accuracy and \(\delta\) the allowed failure probability, as always. The price in labels grows only a little faster than the number of weights.
+Combine this with the fundamental theorem of lesson 6a: a sign network is learnable with a number of labels proportional to \(|E| \log |E|\) (plus \(\log(1/\delta)\)), divided by \(\varepsilon^2\) in the agnostic case. Here \(\varepsilon\) is the accuracy and \(\delta\) the allowed failure probability, as always. The price in labels grows only a little faster than the number of weights.
 
 ## Most functions need exponentially many neurons
 
@@ -492,7 +492,7 @@ Could we escape? Two natural ideas, and the evidence against each:
 - **Settle for nearly the best weights.** Even finding weights whose empirical risk is close to the minimum is known to be computationally infeasible.
 - **Use a bigger network, or another activation.** Lesson 8 showed that a hard class can sometimes be learned through a larger, easier one. But under a widely believed cryptographic assumption, intersections of halfspaces cannot be learned efficiently by *any* learner, whatever hypotheses it outputs. Any network class that contains them inherits the hardness.
 
-So no efficient algorithm is guaranteed to train a network well in the worst case. What people do instead is run stochastic gradient descent and hope. Lesson 14 proved that SGD succeeds when the loss is convex; for networks it is far from convex, so there is no such guarantee. Yet on many practical tasks it finds good weights. The certificate of the last section is what lets us use the result safely: we do not need SGD to be optimal, only to land on a network whose training error is small, and then the certificate tells us what that is worth on fresh mail.
+So no efficient algorithm is guaranteed to train a network well in the worst case. What people do instead is run stochastic gradient descent and hope. Lesson 14a proved that SGD succeeds when the loss is convex; for networks it is far from convex, so there is no such guarantee. Yet on many practical tasks it finds good weights. The certificate of the last section is what lets us use the result safely: we do not need SGD to be optimal, only to land on a network whose training error is small, and then the certificate tells us what that is worth on fresh mail.
 
 ## Training by stochastic gradient descent
 
@@ -531,7 +531,7 @@ print(round(total / n, 3))
 
 It prints `0.241`. Training will push that number down.
 
-SGD from lesson 14, in one breath: start somewhere, then repeatedly draw one example, compute the gradient of the loss on it, and take a small step against it. For networks four things change.
+SGD from lesson 14a, in one breath: start somewhere, then repeatedly draw one example, compute the gradient of the loss on it, and take a small step against it. For networks four things change.
 
 **First, start at random, near zero, not at zero.** If every weight starts at 0 in a fully connected layered network, all the hidden neurons of a layer compute the same function, receive the same gradient, and stay identical forever: the layer behaves like a single neuron. Random starting weights break the tie. Here is the trap, run on three hidden neurons, with the label kept short: junk when the message is inside the long edge of the triangle.
 
@@ -561,13 +561,13 @@ zero = sgd([[0.0] * 3 for _ in range(3)], [0.0] * 4, 2000, rng)
 print([[round(w, 3) for w in r] for r in zero])
 ```
 
-It prints `[[-2.46, -2.323, 0.377], [-2.46, -2.323, 0.377], [-2.46, -2.323, 0.377]]`: after 2,000 steps, three copies of one neuron. (The update lines are backpropagation, derived in the next section.) The hope with random starts goes further. SGD can get stuck in a **local minimum** (lesson 12): weights where every small step raises the loss, although weights far away do better. Run SGD several times from different random points, and one of the runs may reach a good one.
+It prints `[[-2.46, -2.323, 0.377], [-2.46, -2.323, 0.377], [-2.46, -2.323, 0.377]]`: after 2,000 steps, three copies of one neuron. (The update lines are backpropagation, derived in the next section.) The hope with random starts goes further. SGD can get stuck in a **local minimum** (lesson 12a): weights where every small step raises the loss, although weights far away do better. Run SGD several times from different random points, and one of the runs may reach a good one.
 
 The other three changes:
 
-- **A step size that changes,** \(\eta_i\) at step \(i\), as in lesson 14’s variants. Without convexity the schedule matters more, and in practice it is tuned by trial and error.
-- **Output the best iterate,** judged on a validation set (lesson 11), rather than the average of lesson 14.
-- **Optionally, a penalty on large weights,** with a parameter \(\lambda > 0\): minimize \(L_{\mathcal D}(\mathbf w) + \frac{\lambda}{2}\|\mathbf w\|^2\), the regularization of lesson 13.
+- **A step size that changes,** \(\eta_i\) at step \(i\), as in lesson 14b’s variants. Without convexity the schedule matters more, and in practice it is tuned by trial and error.
+- **Output the best iterate,** judged on a validation set (lesson 11), rather than the average of lesson 14a.
+- **Optionally, a penalty on large weights,** with a parameter \(\lambda > 0\): minimize \(L_{\mathcal D}(\mathbf w) + \frac{\lambda}{2}\|\mathbf w\|^2\), the regularization of lesson 13a.
 
 The penalty’s gradient is \(\lambda \mathbf w\), so the step from iterate \(\mathbf w^{(i)}\) (the weights after \(i - 1\) steps), with \(\mathbf v_i\) the gradient of the loss on the example drawn, is
 
@@ -855,9 +855,9 @@ Before you start, use the table of margins. Which values of \(k\) can carve the 
 
 **“The VC bound covers sigmoid networks too.”** Its proof needs each neuron’s output to take finitely many values. Sigmoid networks with real weights can have VC dimension of order \(|E|^2\). What rescues the engineer is the discretization trick: \(b\)-bit weights give at most \(2^{b|E|}\) networks and VC dimension at most \(b|E|\).
 
-**“Gradient descent finds the best weights.”** Lesson 14’s guarantee needs a convex loss, and the loss of a network is not convex. Worse, finding the ERM weights is NP-hard even for three feature neurons, and is believed hard even approximately. SGD is a heuristic that often works; the certificate is what tells you what the result is worth.
+**“Gradient descent finds the best weights.”** Lesson 14a’s guarantee needs a convex loss, and the loss of a network is not convex. Worse, finding the ERM weights is NP-hard even for three feature neurons, and is believed hard even approximately. SGD is a heuristic that often works; the certificate is what tells you what the result is worth.
 
-**“Start every weight at zero, as lesson 14 did.”** In a fully connected layer, zero starts make all neurons of a layer identical forever, so the layer acts like one neuron. Start at small random values.
+**“Start every weight at zero, as lesson 14a did.”** In a fully connected layer, zero starts make all neurons of a layer identical forever, so the layer acts like one neuron. Start at small random values.
 
 **“Choosing the best of several runs is cheating.”** Not when the guarantee is uniform over the class: the certificate bounds the true risk of every network in the class at once, including the one you picked.
 

@@ -614,7 +614,7 @@ It prints `9900 0.1107 0.2488`: with the actual grid sizes at the best depth, 9,
 4. One cover plus Massart’s lemma bounds the Rademacher complexity of an infinite set.
 5. Chaining walks from a single point down through halving scales; each link is short and comes from a small set, which gives \(R(A) \le c2^{-M}/\sqrt m + (6c/m)\sum_k 2^{-k}\sqrt{\log N(c2^{-k}, A)}\). Refine while \(6\sqrt{\log N} \le \sqrt m\). For a flat filter it gives a bound of order \(c\sqrt{d\log d}/m\) that never grows with \(m\).
 
-The certificate is signed. Then, at the review, someone from the research team leans back and asks a question that has been waiting since lesson 6. That lesson stated the fundamental theorem of learning: a class is learnable exactly when its VC dimension is finite, with sample sizes of a precise order, and it promised a full proof later. You now hold every tool that proof needs: uniform convergence, Rademacher complexity, Massart’s lemma, and as of today, covers. So can you prove it, both directions, with the exact rates? That’s the next lesson.
+The certificate is signed. Then, at the review, someone from the research team leans back and asks a question that has been waiting since lesson 6a. That lesson stated the fundamental theorem of learning: a class is learnable exactly when its VC dimension is finite, with sample sizes of a precise order, and it promised a full proof later. You now hold every tool that proof needs: uniform convergence, Rademacher complexity, Massart’s lemma, and as of today, covers. So can you prove it, both directions, with the exact rates? That’s the next lesson.
 
 ## Concept check
 

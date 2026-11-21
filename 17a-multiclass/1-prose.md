@@ -4,7 +4,7 @@
 
 For sixteen lessons the filter has answered one question: junk or keep. Your users are grateful, but that is no longer what they want. They want their mail sorted into four **folders**, work, personal, promotions and junk, and they want the inbox itself in order, with the messages that matter at the top of the morning’s list.
 
-The team did what any sensible team does first. You already own a good learner for yes/no questions, the halfspace of lesson 9, trained with the hinge loss of lesson 15. So they trained four of them. One answers “is this work?”, one “is this personal?”, one “is this a promotion?”, one “is this junk?”. Each was trained on the same labelled messages, relabelled as “this folder” against “everything else”. To file a message, ask all four and pick the folder whose filter says yes.
+The team did what any sensible team does first. You already own a good learner for yes/no questions, the halfspace of lesson 9a, trained with the hinge loss of lesson 15b. So they trained four of them. One answers “is this work?”, one “is this personal?”, one “is this a promotion?”, one “is this junk?”. Each was trained on the same labelled messages, relabelled as “this folder” against “everything else”. To file a message, ask all four and pick the folder whose filter says yes.
 
 Within a day the bug reports describe two kinds of nonsense. Some messages get a yes from two filters at once, a message that is both work and a promotion, and the folder it lands in depends on which filter the code happened to ask first. Other messages get a no from all four filters, so they belong nowhere, and they all end up in the first folder in the list. When you dig in, there is a whole kind of message that is never filed correctly, however much data you feed the filters: the routine work mail, the meeting notes and status updates that read a bit like personal mail and a bit like promotions.
 
@@ -12,7 +12,7 @@ So here is the puzzle. Each yes/no filter is a perfectly good learner for its ow
 
 ## Bolting yes/no filters together
 
-Let’s name what the team built, because it is the most common first attempt and it deserves a fair trial. The setting is **multiclass** prediction: we want a hypothesis \(h: \mathcal X \to \mathcal Y\) where the label set \(\mathcal Y\) is a finite set of \(k\) labels, written \(\mathcal Y = \{1, \dots, k\}\). For us, \(\mathcal X\) is the set of messages, as word-count vectors in \(\mathbb R^n\) since lesson 9, and the four folders are labels 1 (work), 2 (personal), 3 (promotions) and 4 (junk).
+Let’s name what the team built, because it is the most common first attempt and it deserves a fair trial. The setting is **multiclass** prediction: we want a hypothesis \(h: \mathcal X \to \mathcal Y\) where the label set \(\mathcal Y\) is a finite set of \(k\) labels, written \(\mathcal Y = \{1, \dots, k\}\). For us, \(\mathcal X\) is the set of messages, as word-count vectors in \(\mathbb R^n\) since lesson 9a, and the four folders are labels 1 (work), 2 (personal), 3 (promotions) and 4 (junk).
 
 The idea of a **reduction** is to answer a multiclass question with a learner built for binary questions. Two reductions are standard.
 
@@ -43,7 +43,7 @@ Run a binary learner \(A\) on each \(S_i\) to get \(h_i = A(S_i)\), and predict 
 
 \[ h(\mathbf x) \in \operatorname*{argmax}_{i \in [k]} h_i(\mathbf x). \]
 
-The “\(\in\)” admits what the team discovered: when several \(h_i\) say \(+1\), or none does, the argmax is a tie and something has to break it, for instance taking the smallest index. When each \(h_i\) is a halfspace \(\operatorname{sign}(\langle \mathbf w_i, \mathbf x \rangle)\), there is a better option. (Recall from lesson 9 that \(\langle \mathbf u, \mathbf v \rangle\) is the inner product, “multiply matching entries and add”, so \(\langle (2, -1), (1, 1) \rangle = 2 - 1 = 1\).) The number \(\langle \mathbf w_i, \mathbf x \rangle\) before the sign can be read as the filter’s confidence, and we can take the argmax over those real numbers instead, which rarely ties.
+The “\(\in\)” admits what the team discovered: when several \(h_i\) say \(+1\), or none does, the argmax is a tie and something has to break it, for instance taking the smallest index. When each \(h_i\) is a halfspace \(\operatorname{sign}(\langle \mathbf w_i, \mathbf x \rangle)\), there is a better option. (Recall from lesson 9a that \(\langle \mathbf u, \mathbf v \rangle\) is the inner product, “multiply matching entries and add”, so \(\langle (2, -1), (1, 1) \rangle = 2 - 1 = 1\).) The number \(\langle \mathbf w_i, \mathbf x \rangle\) before the sign can be read as the filter’s confidence, and we can take the argmax over those real numbers instead, which rarely ties.
 
 Read the prediction rule from the inside out.
 
@@ -109,7 +109,7 @@ Is the hypothesis class to blame? No. Here are three weight vectors, one per fol
 
 and the rule “file \(\mathbf x\) in the folder whose weight vector gives the largest \(\langle \mathbf w_y, \mathbf x \rangle\)”.
 
-Two reminders first. \(\langle \mathbf u, \mathbf v \rangle\) is the inner product of lesson 9: multiply matching entries and add, \(u_1 v_1 + u_2 v_2\) in the plane. \(\|\mathbf u\|\) is the length, \(\sqrt{\langle \mathbf u, \mathbf u \rangle}\). Now read the three vectors.
+Two reminders first. \(\langle \mathbf u, \mathbf v \rangle\) is the inner product of lesson 9a: multiply matching entries and add, \(u_1 v_1 + u_2 v_2\) in the plane. \(\|\mathbf u\|\) is the length, \(\sqrt{\langle \mathbf u, \mathbf u \rangle}\). Now read the three vectors.
 
 - The subscript names the folder the vector belongs to; nothing more.
 - \(\tfrac{1}{\sqrt 2} \approx 0.707\), so \(\mathbf w_{\text{personal}}\) points up and to the left at 45 degrees, \(\mathbf w_{\text{work}}\) straight up, and \(\mathbf w_{\text{promotions}}\) up and to the right.
@@ -251,7 +251,7 @@ A halfspace predicts \(\operatorname{sign}(\langle \mathbf w, \mathbf x \rangle)
 
 \[ h(\mathbf x) = \operatorname*{argmax}_{y \in \{\pm 1\}} \langle \mathbf w, y\mathbf x \rangle, \]
 
-because the positive one of \(\pm\langle \mathbf w, \mathbf x \rangle\) wins (at a score of exactly 0 both labels tie, the same boundary case as \(\operatorname{sign}(0)\) in lesson 9). A halfspace scores each label by an inner product with a vector that depends on both the message and the label, and returns the label with the highest score. That shape is what generalizes.
+because the positive one of \(\pm\langle \mathbf w, \mathbf x \rangle\) wins (at a score of exactly 0 both labels tie, the same boundary case as \(\operatorname{sign}(0)\) in lesson 9a). A halfspace scores each label by an inner product with a vector that depends on both the message and the label, and returns the label with the highest score. That shape is what generalizes.
 
 Read it from the inside out.
 
@@ -479,9 +479,9 @@ print(12 * (k - 1))
 
 It prints `[True, True, True]`, then `[False, True, True]`, then `36`.
 
-That is \(m(k - 1)\) strict inequalities in \(\mathbf w\). The strictness is harmless, by the same rescaling as for halfspaces in lesson 9: if some \(\mathbf w\) satisfies them, let \(\gamma > 0\) be the smallest gap among the finitely many, and \(\mathbf w/\gamma\) satisfies every difference \(\ge 1\). So finding a consistent \(\mathbf w\) is a linear program. There is also a multiclass Perceptron, with a mistake bound just like lesson 9’s; you will prove it yourself in the problems.
+That is \(m(k - 1)\) strict inequalities in \(\mathbf w\). The strictness is harmless, by the same rescaling as for halfspaces in lesson 9a: if some \(\mathbf w\) satisfies them, let \(\gamma > 0\) be the smallest gap among the finitely many, and \(\mathbf w/\gamma\) satisfies every difference \(\ge 1\). So finding a consistent \(\mathbf w\) is a linear program. There is also a multiclass Perceptron, with a mistake bound just like lesson 9a’s; you will prove it yourself in the problems.
 
-Without realizability, ERM over this class is computationally hard in general, just as it is for halfspaces. Lesson 12’s answer applies here too: replace the loss with a convex **surrogate** that upper bounds it, and minimize that.
+Without realizability, ERM over this class is computationally hard in general, just as it is for halfspaces. Lesson 12b’s answer applies here too: replace the loss with a convex **surrogate** that upper bounds it, and minimize that.
 
 ## The generalized hinge loss
 
@@ -547,7 +547,7 @@ print(ok)
 
 It prints `[True, True, True]`.
 
-The difference \(\langle \mathbf w, \Psi(\mathbf x, y) \rangle - \langle \mathbf w, \Psi(\mathbf x, y') \rangle\) is the **margin** of \(y\) over \(y'\), the word lesson 15 used for halfspaces. So the loss demands a margin that grows with the cost: work must beat junk by 1, but promotions only has to beat the other folders by 0.2. When \(\ell = 0\) the bound is tight too: with every margin positive, \(h_{\mathbf w}(\mathbf x) = y\), so \(\Delta(h_{\mathbf w}(\mathbf x), y) = 0 = \ell\).
+The difference \(\langle \mathbf w, \Psi(\mathbf x, y) \rangle - \langle \mathbf w, \Psi(\mathbf x, y') \rangle\) is the **margin** of \(y\) over \(y'\), the word lesson 15a used for halfspaces. So the loss demands a margin that grows with the cost: work must beat junk by 1, but promotions only has to beat the other folders by 0.2. When \(\ell = 0\) the bound is tight too: with every margin positive, \(h_{\mathbf w}(\mathbf x) = y\), so \(\Delta(h_{\mathbf w}(\mathbf x), y) = 0 = \ell\).
 
 [[diagram:hinge-margin]]
 
@@ -574,11 +574,11 @@ for x, y in S:
 
 Each line prints the prediction, its cost and the generalized hinge loss: `0 0 0`, `0 0.5 0.5`, `2 0.2 0.2`, `3 1 2`. The first message is work with margin 2 over every rival, more than any cost, so the loss is 0. The second is a personal message that ties with work, the tie goes to work, and loss and cost are both 0.5. The last is a work message that mentions “prize” twice: it is filed as junk at cost 1, and the hinge charges 2, because it also counts how far junk outscored work.
 
-Two reminders from lesson 12 before the next result. A function is **convex** when the straight segment between any two points of its graph lies on or above the graph, like \(w \mapsto |w|\). It is **\(\rho\)-Lipschitz** when moving its input a distance \(\delta\) changes its output by at most \(\rho\delta\); \(w \mapsto 3w\) is 3-Lipschitz.
+Two reminders from lesson 12a before the next result. A function is **convex** when the straight segment between any two points of its graph lies on or above the graph, like \(w \mapsto |w|\). It is **\(\rho\)-Lipschitz** when moving its input a distance \(\delta\) changes its output by at most \(\rho\delta\); \(w \mapsto 3w\) is 3-Lipschitz.
 
 **Proposition (convex and Lipschitz).** For fixed \((\mathbf x, y)\), the function \(\mathbf w \mapsto \ell(\mathbf w, (\mathbf x, y))\) is convex and \(\rho\)-Lipschitz with \(\rho = \max_{y' \in \mathcal Y} \|\Psi(\mathbf x, y') - \Psi(\mathbf x, y)\|\).
 
-*Proof.* For each label \(y'\), the function \(f_{y'}(\mathbf w) = \Delta(y', y) + \langle \mathbf w, \Psi(\mathbf x, y') - \Psi(\mathbf x, y) \rangle\) is affine in \(\mathbf w\), hence convex, and \(\ell\) is their maximum. Lesson 12 showed that a maximum of convex functions is convex, so \(\ell\) is convex.
+*Proof.* For each label \(y'\), the function \(f_{y'}(\mathbf w) = \Delta(y', y) + \langle \mathbf w, \Psi(\mathbf x, y') - \Psi(\mathbf x, y) \rangle\) is affine in \(\mathbf w\), hence convex, and \(\ell\) is their maximum. Lesson 12a showed that a maximum of convex functions is convex, so \(\ell\) is convex.
 
 For the Lipschitz bound, first each \(f_{y'}\): by Cauchy–Schwarz, \(|f_{y'}(\mathbf u) - f_{y'}(\mathbf v)| = |\langle \mathbf u - \mathbf v, \Psi(\mathbf x, y') - \Psi(\mathbf x, y) \rangle| \le \rho\, \|\mathbf u - \mathbf v\|\). Then the maximum. Let \(y^*\) be a label achieving \(\ell(\mathbf u) = f_{y^*}(\mathbf u)\). Since \(\ell(\mathbf v) \ge f_{y^*}(\mathbf v)\),
 
@@ -608,7 +608,7 @@ Swapping the roles of \(\mathbf u\) and \(\mathbf v\) bounds \(\ell(\mathbf v) -
 
 For the multivector map, \(\Psi(\mathbf x, y') - \Psi(\mathbf x, y)\) has \(\mathbf x\) in one block and \(-\mathbf x\) in another, so \(\rho = \sqrt 2\, \|\mathbf x\|\): for the “prize” message, \(\sqrt{2 \times 6} = 3.464\), the factor the snippet multiplied by the distance.
 
-**The binary case.** Why call it a hinge loss? Take \(\mathcal Y = \{\pm 1\}\), the zero-one cost and \(\Psi(\mathbf x, y) = y\mathbf x / 2\). The term \(y' = y\) is 0. The term \(y' = -y\) is \(1 + \langle \mathbf w, (-y\mathbf x - y\mathbf x)/2 \rangle = 1 - y\langle \mathbf w, \mathbf x \rangle\). The maximum of the two is \(\max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\}\), lesson 15’s hinge loss exactly. (The factor \(1/2\) is there so the gap between the two labels’ scores is \(y\langle \mathbf w, \mathbf x \rangle\) rather than twice that.)
+**The binary case.** Why call it a hinge loss? Take \(\mathcal Y = \{\pm 1\}\), the zero-one cost and \(\Psi(\mathbf x, y) = y\mathbf x / 2\). The term \(y' = y\) is 0. The term \(y' = -y\) is \(1 + \langle \mathbf w, (-y\mathbf x - y\mathbf x)/2 \rangle = 1 - y\langle \mathbf w, \mathbf x \rangle\). The maximum of the two is \(\max\{0, 1 - y\langle \mathbf w, \mathbf x \rangle\}\), lesson 15b’s hinge loss exactly. (The factor \(1/2\) is there so the gap between the two labels’ scores is \(y\langle \mathbf w, \mathbf x \rangle\) rather than twice that.)
 
 ```python
 import random
@@ -633,9 +633,9 @@ It prints `8.9e-16`, floating-point dust: the two losses agree.
 
 ## Multiclass SVM and SGD
 
-A convex, Lipschitz surrogate is exactly what lessons 13 and 14 know how to learn with. Let’s use both.
+A convex, Lipschitz surrogate is exactly what lessons 13b and 14a know how to learn with. Let’s use both.
 
-**Multiclass SVM.** Lesson 13’s regularized loss minimization, which picks the \(\mathbf w\) minimizing the empirical loss plus \(\lambda\|\mathbf w\|^2\) so that long weight vectors are penalized (with \(\lambda = 0.01\), a vector of length 5 pays 0.25), applied to the generalized hinge loss, gives this rule.
+**Multiclass SVM.** Lesson 13a’s regularized loss minimization, which picks the \(\mathbf w\) minimizing the empirical loss plus \(\lambda\|\mathbf w\|^2\) so that long weight vectors are penalized (with \(\lambda = 0.01\), a vector of length 5 pays 0.25), applied to the generalized hinge loss, gives this rule.
 
 ```
 MulticlassSVM(S, λ, Δ, Ψ):
@@ -648,7 +648,7 @@ MulticlassSVM(S, λ, Δ, Ψ):
   output: h_w(x) = argmax over y of <w, Ψ(x, y)>
 ```
 
-The objective is convex, so any convex optimizer solves it. How good is the result? Recall lesson 13’s oracle inequality: for a convex, \(\rho\)-Lipschitz loss, the rule \(A\) that minimizes \(L_S(\mathbf w) + \lambda\|\mathbf w\|^2\) satisfies, for every fixed \(\mathbf w^*\),
+The objective is convex, so any convex optimizer solves it. How good is the result? Recall lesson 13b’s oracle inequality: for a convex, \(\rho\)-Lipschitz loss, the rule \(A\) that minimizes \(L_S(\mathbf w) + \lambda\|\mathbf w\|^2\) satisfies, for every fixed \(\mathbf w^*\),
 
 \[ \mathbb E_{S \sim \mathcal D^m}\left[ L_{\mathcal D}(A(S)) \right] \le L_{\mathcal D}(\mathbf w^*) + \lambda \|\mathbf w^*\|^2 + \frac{2\rho^2}{\lambda m}. \]
 
@@ -698,7 +698,7 @@ Their sum is \(2\sqrt{2\rho^2 B^2/m} = \sqrt{8\rho^2 B^2/m}\). The bound holds f
 
 Look at what is missing from the bound: the number of labels. The constant depends on \(\rho\) and \(B\), and nothing else. The number of labels can still sneak in, through the size of \(\Psi\) or because with many labels no short \(\mathbf u\) has small hinge loss, but there is no explicit factor of \(k\). Remember this; it is what makes the section on structured output possible.
 
-**SGD for multiclass learning.** Lesson 14’s stochastic gradient descent needs one subgradient of the loss per example. A subgradient is the slope of a line (or plane) through the current point that stays below the function everywhere; where the function is smooth it is the gradient, and at a corner, like 0 for \(|w|\), any slope between \(-1\) and \(1\) qualifies. The loss is a maximum of affine functions, and lesson 14 showed that the gradient of any function achieving the maximum is a subgradient of the maximum. The affine function for label \(y'\) has gradient \(\Psi(\mathbf x, y') - \Psi(\mathbf x, y)\). So: find the label that achieves the max, and step against its gradient.
+**SGD for multiclass learning.** Lesson 14a’s stochastic gradient descent needs one subgradient of the loss per example. A subgradient is the slope of a line (or plane) through the current point that stays below the function everywhere; where the function is smooth it is the gradient, and at a corner, like 0 for \(|w|\), any slope between \(-1\) and \(1\) qualifies. The loss is a maximum of affine functions, and lesson 14a showed that the gradient of any function achieving the maximum is a subgradient of the maximum. The affine function for label \(y'\) has gradient \(\Psi(\mathbf x, y') - \Psi(\mathbf x, y)\). So: find the label that achieves the max, and step against its gradient.
 
 ```
 MulticlassSGD(η, T, Δ, Ψ):
@@ -739,7 +739,7 @@ for eps in (0.1, 0.05):
 
 It prints `0.1 10000 0.025`, then `0.05 40000 0.0125`.
 
-*Proof.* The loss is convex and \(\rho\)-Lipschitz, as in the previous proof, and \(\mathbf v_t\) is a subgradient of \(\ell(\cdot, (\mathbf x, y))\) at \(\mathbf w^{(t)}\) by the rule for maxima. These are exactly the conditions of lesson 14’s guarantee for SGD on convex, Lipschitz, bounded learning problems, which gives the right inequality. The left one is the pointwise bound \(\Delta \le \ell\), taken in expectation, as before. \(\blacksquare\)
+*Proof.* The loss is convex and \(\rho\)-Lipschitz, as in the previous proof, and \(\mathbf v_t\) is a subgradient of \(\ell(\cdot, (\mathbf x, y))\) at \(\mathbf w^{(t)}\) by the rule for maxima. These are exactly the conditions of lesson 14a’s guarantee for SGD on convex, Lipschitz, bounded learning problems, which gives the right inequality. The left one is the pointwise bound \(\Delta \le \ell\), taken in expectation, as before. \(\blacksquare\)
 
 For \(\varepsilon = 0.1\) that was ten thousand examples and a step of 0.025. SGD sees each example once and stores one vector, which is why it is the workhorse.
 

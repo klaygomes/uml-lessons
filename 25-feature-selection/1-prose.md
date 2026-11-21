@@ -8,7 +8,7 @@ You shipped it with the company’s whole dictionary, 20,000 words. That is \(2 
 
 The first is about speed. The filter touches every word of the dictionary for every message, even though a typical message uses a hundred of them. The operations team would like it to be a lot cheaper.
 
-The second is stranger. Every so often a perfectly ordinary message gets flagged as junk with near certainty. You trace one case to a few rare product codes that appeared once in your training sequence, each time in junk. Smoothing keeps their keep estimate off zero, but a word seen once among 800 junk messages and never among 1,200 keep messages gets the estimates \(2/802\) and \(1/1202\), so it triples the odds of junk, and three such words multiply them by 27. How common is this? Here is a small simulation with a realistic shape: word frequencies fall off like \(1/r\) for the \(r\)-th most common word, each message draws about a hundred words, and the 2,000 training messages are 800 junk and 1,200 keep, all drawn from the same mix, so that no word carries any real signal and every message is junk with probability 0.4 whatever it says. The snippet trains the filter, then computes its log-odds of junk for 2,000 fresh messages, as lesson 24’s code did, by adding logs instead of multiplying: `off[j]` is word \(j\)’s term when it is absent, `on[j]` what changes when it is present. Then it counts how sure the filter is.
+The second is stranger. Every so often a perfectly ordinary message gets flagged as junk with near certainty. You trace one case to a few rare product codes that appeared once in your training sequence, each time in junk. Smoothing keeps their keep estimate off zero, but a word seen once among 800 junk messages and never among 1,200 keep messages gets the estimates \(2/802\) and \(1/1202\), so it triples the odds of junk, and three such words multiply them by 27. How common is this? Here is a small simulation with a realistic shape: word frequencies fall off like \(1/r\) for the \(r\)-th most common word, each message draws about a hundred words, and the 2,000 training messages are 800 junk and 1,200 keep, all drawn from the same mix, so that no word carries any real signal and every message is junk with probability 0.4 whatever it says. The snippet trains the filter, then computes its log-odds of junk for 2,000 fresh messages, as lesson 24a’s code did, by adding logs instead of multiplying: `off[j]` is word \(j\)’s term when it is absent, `on[j]` what changes when it is present. Then it counts how sure the filter is.
 
 ```python
 import random
@@ -37,7 +37,7 @@ print(only, sum(p > 0.5 for p in prob),
 
 It prints `2637 237 22 976`. Purely by chance, 2,637 words showed up in junk and never in keep. An honest filter would give every fresh message a junk probability of 0.4; this one calls 237 of the 2,000 junk, 22 of them with more than 99% certainty, and is more than 99% sure that 976 others are keep. The filter has memorized its rare words, the way the memorizer of lesson 1 memorized whole messages, and smoothing only softened the memory.
 
-The third complaint comes from a colleague who tried to fix things by switching to a linear junk score trained by **ridge regression** (lesson 13: least squares plus a price \(\lambda\|\mathbf w\|^2\) on the squared length of the weight vector), and by adding two numeric features that seemed obviously useful: the message length in bytes, and the sender’s monthly volume, which for bulk senders runs into the millions. The new filter got worse. Those two numbers are thousands or millions of times larger than a yes/no word feature, and they swamp everything else.
+The third complaint comes from a colleague who tried to fix things by switching to a linear junk score trained by **ridge regression** (lesson 13a: least squares plus a price \(\lambda\|\mathbf w\|^2\) on the squared length of the weight vector), and by adding two numeric features that seemed obviously useful: the message length in bytes, and the sender’s monthly volume, which for bulk senders runs into the millions. The new filter got worse. Those two numbers are thousands or millions of times larger than a yes/no word feature, and they swamp everything else.
 
 So the filter uses too many features, most of them noise, and a few of its features are on the wrong scale. Which features should it keep, and how should it present them to the learner? That is this lesson.
 
@@ -80,9 +80,9 @@ The lesson has three parts, and the map below shows how they fit together.
 
 ## Why keep only a few features?
 
-There are four good reasons to want a filter that looks at only \(k\) of its \(d\) features, with \(k\) much smaller than \(d\). A filter that uses few features needs less memory and runs faster. Some features cost something to measure: looking up the sender’s reputation means a network call, in the same way a medical test costs money, so a predictor that needs fewer of them can be worth a small loss of accuracy. And restricting the class to predictors that use few features shrinks it, which, as lessons 2 to 6 taught you, reduces the estimation error (the part of the risk that comes from learning on a finite sample) and fights overfitting. The rare-word disaster above is overfitting in its purest form.
+There are four good reasons to want a filter that looks at only \(k\) of its \(d\) features, with \(k\) much smaller than \(d\). A filter that uses few features needs less memory and runs faster. Some features cost something to measure: looking up the sender’s reputation means a network call, in the same way a medical test costs money, so a predictor that needs fewer of them can be worth a small loss of accuracy. And restricting the class to predictors that use few features shrinks it, which, as lessons 2 to 6b taught you, reduces the estimation error (the part of the risk that comes from learning on a finite sample) and fights overfitting. The rare-word disaster above is overfitting in its purest form.
 
-For the linear predictors of lesson 9, a halfspace or a linear score \(\langle \mathbf w, \mathbf x \rangle\), “uses only \(k\) features” has a clean meaning: the weight vector \(\mathbf w\) has at most \(k\) nonzero entries, because a feature with weight zero never affects the output. (A reminder: \(\langle \mathbf w, \mathbf x \rangle = \sum_j w_j x_j\) is the inner product, the weighted sum of the features.) Take a weight vector over five features, \(\mathbf w = (0, 0.7, 0, -1.2, 0)\). Only features 2 and 4 matter; you never even need to measure the other three. A vector with few nonzero entries is called **sparse**, and the number of nonzero entries has a name and a symbol. With it, feature selection becomes an optimization problem:
+For the linear predictors of lesson 9a, a halfspace or a linear score \(\langle \mathbf w, \mathbf x \rangle\), “uses only \(k\) features” has a clean meaning: the weight vector \(\mathbf w\) has at most \(k\) nonzero entries, because a feature with weight zero never affects the output. (A reminder: \(\langle \mathbf w, \mathbf x \rangle = \sum_j w_j x_j\) is the inner product, the weighted sum of the features.) Take a weight vector over five features, \(\mathbf w = (0, 0.7, 0, -1.2, 0)\). Only features 2 and 4 matter; you never even need to measure the other three. A vector with few nonzero entries is called **sparse**, and the number of nonzero entries has a name and a symbol. With it, feature selection becomes an optimization problem:
 
 \[ \|\mathbf w\|_0 = \left| \{ i \in [d] : w_i \neq 0 \} \right|, \qquad \min_{\mathbf w \in \mathbb R^d} L_S(\mathbf w) \ \ \text{subject to} \ \ \|\mathbf w\|_0 \le k. \]
 
@@ -134,7 +134,7 @@ It prints `1 2e+04`, `3 1.33e+12` and `10 2.82e+36`. Three words out of twenty t
 
 The simplest idea is a **filter method**: give every feature a score that measures how useful it is on its own, then keep the \(k\) features with the best scores (or keep every feature whose score passes a threshold). The mail filter is the product; a filter method is one way of choosing its features. The scores are computed one feature at a time, ignoring the others.
 
-Which score? The most natural one asks: if the learner could use only this feature, how well would it do? Let’s make that concrete with linear regression and the square loss, the setting of lesson 9. Here is a training sequence of eight messages with labels \(+1\) for junk and \(-1\) for keep, and three candidate features: the number of exclamation marks (“bangs”), the number of links, and whether it was sent at night.
+Which score? The most natural one asks: if the learner could use only this feature, how well would it do? Let’s make that concrete with linear regression and the square loss, the setting of lesson 9b. Here is a training sequence of eight messages with labels \(+1\) for junk and \(-1\) for keep, and three candidate features: the number of exclamation marks (“bangs”), the number of links, and whether it was sent at night.
 
 | message | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 |---|---|---|---|---|---|---|---|---|
@@ -155,7 +155,7 @@ To score a feature, fit the best line through it. Write the feature’s eight va
 - \(\frac1m\) turns the total into an average: this is the empirical risk \(L_S\) of the line.
 - \(\min_{a,b \in \mathbb R}\) asks for the smallest such average over every slope and intercept.
 
-In plain words: **the training error of the best line that uses only this feature.** For bangs, the flat line \(a = 0, b = 0\) predicts 0 everywhere, misses every label by exactly 1, and scores 1.0; the best line, which Python’s `statistics.linear_regression` finds exactly (lesson 9’s least squares for one feature), scores about 0.623. With twenty thousand features we want a formula for that number. Two steps get us there.
+In plain words: **the training error of the best line that uses only this feature.** For bangs, the flat line \(a = 0, b = 0\) predicts 0 everywhere, misses every label by exactly 1, and scores 1.0; the best line, which Python’s `statistics.linear_regression` finds exactly (lesson 9b’s least squares for one feature), scores about 0.623. With twenty thousand features we want a formula for that number. Two steps get us there.
 
 **Step 1: centering changes nothing.** Write \(\bar v = \frac1m \sum_{i=1}^m v_i\) for the average of the feature (for bangs, \(15/8 = 1.875\)) and \(\bar y\) for the average label (here 0, four junk and four keep). Subtract the averages from both vectors before fitting, and the best achievable loss is the same:
 
@@ -166,7 +166,7 @@ In plain words: **the training error of the best line that uses only this featur
 
 In plain words: **shifting the feature and the labels to average zero does not change how well a line can fit them.** That is believable: a line can absorb any shift through its intercept. Proving it carefully is the first problem at the end of this lesson; the snippet after step 2 checks it on bangs.
 
-**Step 2: solve the centered problem.** On centered data, write \(\mathbf v' = \mathbf v - \bar v\) and \(\mathbf y' = \mathbf y - \bar y\); both have entries summing to zero. The objective is \(g(a, b) = \frac1m \sum_i (a v'_i + b - y'_i)^2\). It is a convex quadratic in \((a, b)\) (lesson 12), so its minimum is where both partial derivatives vanish.
+**Step 2: solve the centered problem.** On centered data, write \(\mathbf v' = \mathbf v - \bar v\) and \(\mathbf y' = \mathbf y - \bar y\); both have entries summing to zero. The objective is \(g(a, b) = \frac1m \sum_i (a v'_i + b - y'_i)^2\). It is a convex quadratic in \((a, b)\) (lesson 12a), so its minimum is where both partial derivatives vanish.
 
 The derivative in \(b\) is \(\frac2m \sum_i (a v'_i + b - y'_i) = \frac2m \left(a \sum_i v'_i + m b - \sum_i y'_i\right) = 2b\), because the two centered sums are zero. So \(b = 0\): on centered data, the best line passes through the origin.
 
@@ -234,7 +234,7 @@ for name, v in features.items():
 
 It prints `bangs 0.6138 0.6233`, `links 0.2582 0.9333`, `night 0.5 0.75`: bangs gets back the loss of 0.6233 found above. A filter method with \(k = 1\) keeps bangs, and with \(k = 2\) keeps bangs and night. Scoring each feature costs one pass over its \(m\) values, so the whole filter method costs \(O(dm)\) time plus \(O(d \log d)\) to sort the scores, and \(O(d)\) extra space. Cheap enough for twenty thousand words.
 
-Pearson’s coefficient is not the only score in use. Two other popular ones are the **mutual information** between a feature and the label (lesson 24’s relative entropy from the joint distribution of the pair to the product of their separate distributions: how much knowing the feature reduces the surprise about the label) and the **area under the ROC curve** of the feature (the chance that a random junk message has a higher value of it than a random keep message). They all share the weakness we are about to find.
+Pearson’s coefficient is not the only score in use. Two other popular ones are the **mutual information** between a feature and the label (lesson 24a’s relative entropy from the joint distribution of the pair to the product of their separate distributions: how much knowing the feature reduces the surprise about the label) and the **area under the ROC curve** of the feature (the chance that a random junk message has a higher value of it than a random keep message). They all share the weakness we are about to find.
 
 ## When a lonely score lies
 
@@ -307,7 +307,7 @@ The filter’s mistake was to judge each feature in isolation. The fix is to jud
 
 Let’s watch it on the cancelling world. Round 1 fits each feature alone, which is exactly the filter method’s question: old wins with error \(4/8 = 0.5\). Round 2 tries old plus link, and old plus bangs, and old plus link fits perfectly. The greedy method finds the pair the filter method could not, because in round 2 it asks the right question: given old, which feature helps?
 
-Now let’s make the rounds precise for linear regression with the square loss. Put the \(m\) training messages as the rows of a matrix \(X\), so \(X\) has \(m\) rows and \(d\) columns, and write \(X_j\) for its \(j\)-th column, the values of feature \(j\) on all \(m\) messages. For a set of feature positions \(I\), let \(X_I\) be the matrix made of just the columns in \(I\). We drop the intercept here, as lesson 9 did with its homogeneous form: you can always include a constant feature among the columns.
+Now let’s make the rounds precise for linear regression with the square loss. Put the \(m\) training messages as the rows of a matrix \(X\), so \(X\) has \(m\) rows and \(d\) columns, and write \(X_j\) for its \(j\)-th column, the values of feature \(j\) on all \(m\) messages. For a set of feature positions \(I\), let \(X_I\) be the matrix made of just the columns in \(I\). We drop the intercept here, as lesson 9a did with its homogeneous form: you can always include a constant feature among the columns.
 
 Here is a smaller example we will follow through the next three subsections: six messages, labels \(\mathbf y = (1, 1, 1, -1, -1, -1)\), and three features,
 
@@ -323,7 +323,7 @@ Read it from the inside out.
 - \(I_{t-1} \cup \{j\}\) is that set with the candidate \(j\) added, \(t\) features in all.
 - \(X_{I_{t-1} \cup \{j\}} \mathbf w\) is the prediction of a linear predictor that uses only those \(t\) columns, with weights \(\mathbf w \in \mathbb R^t\).
 - \(\|\cdot - \mathbf y\|^2\) is its total square loss on the training sequence.
-- \(\min_{\mathbf w}\) fits the weights: this is a least-squares fit, lesson 9’s algorithm, on \(t\) columns.
+- \(\min_{\mathbf w}\) fits the weights: this is a least-squares fit, lesson 9b’s algorithm, on \(t\) columns.
 - \(\operatorname{argmin}_{j \notin I_{t-1}}\) returns the candidate \(j\) (among those not already chosen) whose fitted loss is smallest. The symbol \(\in\) is there because several candidates can tie; any one of them will do.
 
 In plain words: **in each round, add the feature that, fitted together with the ones you already have, gives the smallest training loss.** In round 1 of the six-message example, each single column is fitted by the weight \(w = \langle X_j, \mathbf y \rangle / \|X_j\|^2\) (the same calculation as the slope in the filter-method section, without centering), and the losses are:
@@ -424,11 +424,11 @@ As written, round \(t\) costs \(O(dmt)\), since each of up to \(d\) candidates i
 
 ## Cheaper greedy criteria
 
-OMP is special to the square loss. For a general empirical risk \(R(\mathbf w)\), such as the logistic loss of lesson 9, two cheaper versions of the greedy round are common.
+OMP is special to the square loss. For a general empirical risk \(R(\mathbf w)\), such as the logistic loss of lesson 9b, two cheaper versions of the greedy round are common.
 
 The first keeps the old weights frozen and optimizes only the newcomer: pick the \(j\) for which \(\min_{\eta \in \mathbb R} R(\mathbf w_{t-1} + \eta\mathbf e_j)\) is smallest, where \(\mathbf e_j\) is the vector with 1 in position \(j\) and 0 elsewhere. Each candidate costs a one-dimensional minimization instead of a \(t\)-dimensional one.
 
-The second is cheaper still: pick the coordinate where the gradient is steepest. Why should that work? Recall smoothness from lesson 12: a function is \(\beta\)-smooth when its gradient cannot change faster than \(\beta\) times the distance moved, and such a function sits below a parabola that touches it. Moving along coordinate \(j\) by a step \(\eta\), that parabola reads
+The second is cheaper still: pick the coordinate where the gradient is steepest. Why should that work? Recall smoothness from lesson 12a: a function is \(\beta\)-smooth when its gradient cannot change faster than \(\beta\) times the distance moved, and such a function sits below a parabola that touches it. Moving along coordinate \(j\) by a step \(\eta\), that parabola reads
 
 \[ R(\mathbf w + \eta \mathbf e_j) \le R(\mathbf w) + \eta \, \frac{\partial R(\mathbf w)}{\partial w_j} + \frac{\beta\eta^2}{2}, \qquad\text{and at the best } \eta: \qquad R(\mathbf w + \eta \mathbf e_j) \le R(\mathbf w) - \frac{1}{2\beta}\left(\frac{\partial R(\mathbf w)}{\partial w_j}\right)^2. \]
 
@@ -457,7 +457,7 @@ print(round(R0, 4), round(beta, 4))
 
 It prints `1 -1.0 0.15 0.5`, `2 -2.0 0.6 0.6`, `3 -1.0 0.15 0.5`, then `1.0 3.3333`. Each row is the slope, the guaranteed decrease and the actual best decrease along that coordinate (in average loss, so divide the earlier totals by 6). The steepest coordinate is feature 2, the same choice forward greedy made, and for it the guarantee is tight. For features 1 and 3 the guarantee is loose, because \(\beta\) was set by feature 2’s larger curvature. The gradient rule costs one gradient evaluation, \(O(dm)\), per round.
 
-If this “pick the best coordinate, then step” loop feels familiar, it should. AdaBoost from lesson 10 is exactly this greedy rule, run over a list of weak hypotheses \(h_1, \dots, h_d\) treated as features, on the risk \(R(\mathbf w) = \log \sum_{i=1}^m \exp\left(-y_i \sum_j w_j h_j(x_i)\right)\). Inside, \(y_i \sum_j w_j h_j(x_i)\) is positive when the weighted vote is right on example \(i\), so its \(\exp\) term is below 1 when right and above 1 when wrong, and \(R\) is a smooth count of mistakes (at \(\mathbf w = \mathbf 0\) every term is 1, so \(R = \log m\)). The second problem at the end of this lesson walks you through why.
+If this “pick the best coordinate, then step” loop feels familiar, it should. AdaBoost from lesson 10a is exactly this greedy rule, run over a list of weak hypotheses \(h_1, \dots, h_d\) treated as features, on the risk \(R(\mathbf w) = \log \sum_{i=1}^m \exp\left(-y_i \sum_j w_j h_j(x_i)\right)\). Inside, \(y_i \sum_j w_j h_j(x_i)\) is positive when the weighted vote is right on example \(i\), so its \(\exp\) term is below 1 when right and above 1 when wrong, and \(R\) is a smooth count of mistakes (at \(\mathbf w = \mathbf 0\) every term is 1, so \(R = \log m\)). The second problem at the end of this lesson walks you through why.
 
 ## Backward elimination
 
@@ -469,11 +469,11 @@ In the cancelling world with a fourth, pure-noise feature added (as in the build
 
 Greedy methods build the sparse predictor one decision at a time. The third approach changes the problem instead, so that an ordinary convex optimizer returns sparse solutions on its own.
 
-The trouble with the sparsity constraint \(\|\mathbf w\|_0 \le k\) is that it is not convex: the set of vectors with at most one nonzero entry, in the plane, is the union of the two axes, and the midpoint of \((1, 0)\) and \((0, 1)\) is not on it. Lesson 12 taught you that convexity is what makes minimization reliable. So replace the count by the closest convex stand-in, the \(\ell_1\) norm \(\|\mathbf w\|_1 = \sum_i |w_i|\), which you met above (1.9 for our five-feature \(\mathbf w\)). There are two ways to use it, a hard budget and a price:
+The trouble with the sparsity constraint \(\|\mathbf w\|_0 \le k\) is that it is not convex: the set of vectors with at most one nonzero entry, in the plane, is the union of the two axes, and the midpoint of \((1, 0)\) and \((0, 1)\) is not on it. Lesson 12a taught you that convexity is what makes minimization reliable. So replace the count by the closest convex stand-in, the \(\ell_1\) norm \(\|\mathbf w\|_1 = \sum_i |w_i|\), which you met above (1.9 for our five-feature \(\mathbf w\)). There are two ways to use it, a hard budget and a price:
 
 \[ \min_{\mathbf w} \ L_S(\mathbf w) \ \ \text{subject to} \ \ \|\mathbf w\|_1 \le k_1 \qquad\qquad \min_{\mathbf w} \ \left( L_S(\mathbf w) + \lambda\|\mathbf w\|_1 \right). \]
 
-- \(k_1\) is a budget on the total absolute weight; \(\lambda > 0\) is a **regularization parameter**, a price per unit of absolute weight, as in lesson 13’s regularized loss minimization, which used \(\lambda\|\mathbf w\|^2\) instead.
+- \(k_1\) is a budget on the total absolute weight; \(\lambda > 0\) is a **regularization parameter**, a price per unit of absolute weight, as in lesson 13a’s regularized loss minimization, which used \(\lambda\|\mathbf w\|^2\) instead.
 - If \(L_S\) is convex, both problems are convex, because \(\|\cdot\|_1\) is a convex function, and can be solved efficiently.
 
 In plain words: **either fit as well as you can while spending at most \(k_1\) of total absolute weight, or fit while paying \(\lambda\) for every unit you spend.** The two are closely related, and one direction is easy to prove.
@@ -526,7 +526,7 @@ It prints `-0.9 -0.65 -0.65`, `-0.2 0.0 0.0`, `0.1 0.0 0.0`, `0.25 0.0 0.0`, `0.
 
 [[diagram:soft-threshold]]
 
-Now a real regression with one feature. Take \(m\) messages, one feature with values \(x_1, \dots, x_m\), labels \(y_1, \dots, y_m\), the square loss halved for convenience, and the \(\ell_1\) price. Assume the feature has been scaled so that \(\frac1m\sum_i x_i^2 = 1\) (the normalization section shows how), and write \(\langle \mathbf x, \mathbf y \rangle = \sum_i x_i y_i\). Expanding each square, \(\frac1{2m}\sum_i (x_i w - y_i)^2 = \tfrac12\left(\tfrac1m\sum_i x_i^2\right)w^2 - \tfrac1m\langle \mathbf x, \mathbf y \rangle w + \tfrac1{2m}\sum_i y_i^2\), and the last term does not depend on \(w\). With the scaling, the objective is the soft-thresholding objective with \(x\) replaced by \(\langle \mathbf x, \mathbf y \rangle/m\), plus a constant. Compare the same problem priced by the squared weight \(\lambda w^2\) instead, lesson 13’s choice: setting the derivative \(\frac1m\sum_i x_i(x_i w - y_i) + 2\lambda w\) to zero gives the second formula below.
+Now a real regression with one feature. Take \(m\) messages, one feature with values \(x_1, \dots, x_m\), labels \(y_1, \dots, y_m\), the square loss halved for convenience, and the \(\ell_1\) price. Assume the feature has been scaled so that \(\frac1m\sum_i x_i^2 = 1\) (the normalization section shows how), and write \(\langle \mathbf x, \mathbf y \rangle = \sum_i x_i y_i\). Expanding each square, \(\frac1{2m}\sum_i (x_i w - y_i)^2 = \tfrac12\left(\tfrac1m\sum_i x_i^2\right)w^2 - \tfrac1m\langle \mathbf x, \mathbf y \rangle w + \tfrac1{2m}\sum_i y_i^2\), and the last term does not depend on \(w\). With the scaling, the objective is the soft-thresholding objective with \(x\) replaced by \(\langle \mathbf x, \mathbf y \rangle/m\), plus a constant. Compare the same problem priced by the squared weight \(\lambda w^2\) instead, lesson 13a’s choice: setting the derivative \(\frac1m\sum_i x_i(x_i w - y_i) + 2\lambda w\) to zero gives the second formula below.
 
 \[ w_{\ell_1} = \operatorname{sign}(\langle \mathbf x, \mathbf y \rangle)\left[\frac{|\langle \mathbf x, \mathbf y \rangle|}{m} - \lambda\right]_+, \qquad\qquad w_{\ell_2} = \frac{\langle \mathbf x, \mathbf y \rangle/m}{\|\mathbf x\|^2/m + 2\lambda}. \]
 
@@ -635,7 +635,7 @@ if __name__ == "__main__":
     print("all asserts pass")
 ```
 
-1. Implement `ls_loss` by solving the normal equations of lesson 9 with Gaussian elimination. Break ties in every selector by the smaller feature index, and return the filter’s choice sorted.
+1. Implement `ls_loss` by solving the normal equations of lesson 9b with Gaussian elimination. Break ties in every selector by the smaller feature index, and return the filter’s choice sorted.
 2. Make all the asserts pass. Then explain the `lasso_cd(X, y, 0.5)` line: why is 0.5 exactly the price at which every weight dies? (Look at \(\langle X_j, \mathbf y \rangle/m\) for each feature.)
 3. Time `forward_greedy` and `omp` on random data with \(m = 200\) and \(d = 50, 100, 200\), and check that the ratio grows the way the complexity analysis predicts.
 
@@ -647,15 +647,15 @@ Here is the cleanest example of scale changing what a learner can do. Ridge regr
 
 Build a world with two features. Draw the label \(y\) as a fair \(\pm 1\) coin and an independent fair \(\pm1\) coin \(\alpha\). Feature 1 is \(x_1 = y + 0.5\alpha\): it agrees with the label in sign, plus noise of size 0.5. Feature 2 is \(x_2 = 0.0001\,y\): the label itself, measured in very small units. The perfect predictor is \(\mathbf w^\star = (0, 10{,}000)\), since \(10{,}000 \cdot 0.0001\,y = y\), with true risk 0. But its squared length is \(10^8\).
 
-Recall ridge regression exactly as lesson 13 defined it, with the half square loss:
+Recall ridge regression exactly as lesson 13a defined it, with the half square loss:
 
 \[ \operatorname*{argmin}_{\mathbf w} \left( \lambda\|\mathbf w\|^2 + \frac1m \sum_{i=1}^m \tfrac12\left(\langle \mathbf w, \mathbf x_i \rangle - y_i\right)^2 \right), \qquad \text{solved by} \quad (2\lambda m I + A)\,\mathbf w = \mathbf b. \]
 
 - The sum is the average half square loss on the training sequence, \(L_S(\mathbf w)\); \(\lambda\|\mathbf w\|^2 = \lambda\sum_j w_j^2\) is the price on squared length.
-- \(A = \sum_i \mathbf x_i\mathbf x_i^\top\) is the \(d \times d\) table of how features light up together, and \(\mathbf b = \sum_i y_i\mathbf x_i\) adds up the messages signed by their labels (lesson 13).
+- \(A = \sum_i \mathbf x_i\mathbf x_i^\top\) is the \(d \times d\) table of how features light up together, and \(\mathbf b = \sum_i y_i\mathbf x_i\) adds up the messages signed by their labels (lesson 13a).
 - \(2\lambda m I\) adds \(2\lambda m\) to every diagonal entry of \(A\), which always makes the system solvable.
 
-In plain words: **least squares with \(2\lambda m\) added to the diagonal, which pulls the weights towards zero.** Now compare the objective at two points. At \(\mathbf w^\star = (0, 10^4)\), the loss is 0 and the price is \(\lambda \cdot 10^8\). At \(\mathbf w = (1, 0)\), the prediction is \(x_1 = y + 0.5\alpha\), the miss is always \(0.5\alpha\), the half square loss is \(\tfrac12 \cdot 0.25 = 0.125\), and the price is \(\lambda\). So the useless-looking \((1, 0)\) wins whenever \(\lambda \cdot 10^8 > 0.125 + \lambda\), that is, whenever \(\lambda > 0.125/(10^8 - 1) \approx 1.25 \times 10^{-9}\). Lesson 13’s analysis wants \(\lambda\) at least \(2\beta/m\), of order \(1/m\), so this happens unless you have hundreds of millions of examples. With \(\lambda = 10^{-3}\), averaging over the four equally likely values of \((y, \alpha)\):
+In plain words: **least squares with \(2\lambda m\) added to the diagonal, which pulls the weights towards zero.** Now compare the objective at two points. At \(\mathbf w^\star = (0, 10^4)\), the loss is 0 and the price is \(\lambda \cdot 10^8\). At \(\mathbf w = (1, 0)\), the prediction is \(x_1 = y + 0.5\alpha\), the miss is always \(0.5\alpha\), the half square loss is \(\tfrac12 \cdot 0.25 = 0.125\), and the price is \(\lambda\). So the useless-looking \((1, 0)\) wins whenever \(\lambda \cdot 10^8 > 0.125 + \lambda\), that is, whenever \(\lambda > 0.125/(10^8 - 1) \approx 1.25 \times 10^{-9}\). Lesson 13b’s analysis wants \(\lambda\) at least \(2\beta/m\), of order \(1/m\), so this happens unless you have hundreds of millions of examples. With \(\lambda = 10^{-3}\), averaging over the four equally likely values of \((y, \alpha)\):
 
 ```python
 from itertools import product
@@ -700,7 +700,7 @@ It prints `(0.7987, 0.0101, '0.1')` and `(0.0117, 0.9902, '9.5e-06')`. Before no
 
 [[diagram:scales]]
 
-There is a second gain, on the guarantee side. Lesson 13’s bounds for regularized loss minimization, and lesson 14’s iteration count for SGD, grow with \(\|\mathbf w^\star\|^2\) times the largest \(\|\mathbf x\|^2\) (the half square loss is \(\|\mathbf x\|^2\)-smooth, which is why lesson 13 took \(\beta = 0.16\) for a word worth 0.4). Here normalization takes \(\|\mathbf w^\star\|^2\) from \(10^8\) to 1, while the largest \(\|\mathbf x\|\) stays about the same (about 1.5 before, about 1.4 after). So the same normalization shrinks the estimation error bound and the runtime by a factor of the order of a hundred million.
+There is a second gain, on the guarantee side. Lesson 13b’s bounds for regularized loss minimization, and lesson 14a’s iteration count for SGD, grow with \(\|\mathbf w^\star\|^2\) times the largest \(\|\mathbf x\|^2\) (the half square loss is \(\|\mathbf x\|^2\)-smooth, which is why lesson 13b took \(\beta = 0.16\) for a word worth 0.4). Here normalization takes \(\|\mathbf w^\star\|^2\) from \(10^8\) to 1, while the largest \(\|\mathbf x\|\) stays about the same (about 1.5 before, about 1.4 after). So the same normalization shrinks the estimation error bound and the runtime by a factor of the order of a hundred million.
 
 ### Clipping: when big values lie
 
@@ -800,13 +800,13 @@ One caution matters for guarantees. A transformation whose constants (\(\bar f\)
 
 ## Feature learning: let the data build the features
 
-Selection keeps some of the given features; transformation reshapes them one at a time. **Feature learning** goes further: it learns a whole map \(\psi\) from messages (or images, or sounds) to feature vectors in \(\mathbb R^k\), so that a simple class, usually linear predictors, works well on top of \(\psi\). You have seen hand-built maps of this kind: lesson 9’s polynomial features and lesson 16’s embeddings. Lesson 20’s networks learned one from labels: their hidden neurons are features fitted by backpropagation together with the predictor on top. The methods below build \(\psi\) without labels. And no-free-lunch applies again: a feature learner can only succeed by assuming something about the distribution.
+Selection keeps some of the given features; transformation reshapes them one at a time. **Feature learning** goes further: it learns a whole map \(\psi\) from messages (or images, or sounds) to feature vectors in \(\mathbb R^k\), so that a simple class, usually linear predictors, works well on top of \(\psi\). You have seen hand-built maps of this kind: lesson 9b’s polynomial features and lesson 16’s embeddings. Lesson 20’s networks learned one from labels: their hidden neurons are features fitted by backpropagation together with the predictor on top. The methods below build \(\psi\) without labels. And no-free-lunch applies again: a feature learner can only succeed by assuming something about the distribution.
 
 The motivating example is the **bag of words**, which this filter already uses. Given a dictionary of \(k\) words, a message becomes a vector in \(\{0, 1\}^k\) with a 1 in position \(i\) exactly when word \(i\) appears. Linear predictors on this representation work remarkably well for text: each word is a small measurement of the message, and the learner weighs them. But what is a “word” for an image of a face, where the raw pixels make a poor input for a linear predictor? We would like “visual words”, such as “there is an eye in the image”, and we would like the data to tell us what they are. That is **dictionary learning**.
 
 A first naive idea uses clustering (lesson 22). Learn a clustering \(c\) that sends each instance to one of \(k\) clusters, and treat clusters as words: \(\psi(x)\) is the vector in \(\{0,1\}^k\) with a single 1, in position \(c(x)\). What can a linear predictor do on top of this? For any weights \(\mathbf w\), \(\langle \mathbf w, \psi(x) \rangle = \sum_{i=1}^k w_i \mathbb 1[c(x) = i] = w_{c(x)}\), where \(\mathbb 1[c(x) = i]\) is 1 when \(x\) is in cluster \(i\) and 0 otherwise: exactly one term survives. So **a linear predictor on cluster indicators gives the same value to every instance in a cluster**, and if the clusters come from lesson 22’s k-means algorithm, which assigns each instance to its nearest centre, it is a piecewise constant predictor over the regions nearest each centre.
 
-Clustering (lesson 22) and principal component analysis (lesson 23) are both special cases of one idea. An **auto-encoder** is a pair of functions: an **encoder** \(\psi : \mathbb R^d \to \mathbb R^k\) that turns an instance into a code, and a **decoder** \(\phi : \mathbb R^k \to \mathbb R^d\) that turns the code back into an instance. The pair is learned so that decoding the code gives back something close to what you started with:
+Clustering (lesson 22) and principal component analysis (lesson 23a) are both special cases of one idea. An **auto-encoder** is a pair of functions: an **encoder** \(\psi : \mathbb R^d \to \mathbb R^k\) that turns an instance into a code, and a **decoder** \(\phi : \mathbb R^k \to \mathbb R^d\) that turns the code back into an instance. The pair is learned so that decoding the code gives back something close to what you started with:
 
 \[ \sum_{i=1}^m \left\| \mathbf x_i - \phi(\psi(\mathbf x_i)) \right\|^2 \ \ \text{is small.} \]
 
@@ -814,7 +814,7 @@ Clustering (lesson 22) and principal component analysis (lesson 23) are both spe
 - \(\|\mathbf x_i - \phi(\psi(\mathbf x_i))\|^2\) is the squared distance between an instance and its reconstruction.
 - \(\sum_{i=1}^m\) adds this **reconstruction error** over the \(m\) training instances.
 
-In plain words: **an auto-encoder learns a code from which the instances can be rebuilt.** Without restrictions this is trivial: take \(k = d\) and let both maps be the identity, and the error is 0 while nothing has been learned. So the pair must be restricted. PCA keeps \(k < d\) (lesson 23 called it \(n\)) and makes both maps matrices: lesson 23’s compression matrix \(W\) is the encoder, its recovery matrix \(U\) the decoder, and the best pair has the top \(k\) principal components as the columns of \(U\), with \(W = U^\top\). k-means allows any \(k\), even \(k > d\), but uses \(k\) centres \(\boldsymbol\mu_1, \dots, \boldsymbol\mu_k\): the encoder returns the indicator vector of the nearest centre, and the decoder \(\phi(\mathbf v) = \sum_i v_i\boldsymbol\mu_i\) returns that centre, so the reconstruction error, minimized over the centres, is exactly lesson 22’s k-means cost. Here are six messages described by two numbers (the base-10 logarithm of the length and the number of bangs) and two centres:
+In plain words: **an auto-encoder learns a code from which the instances can be rebuilt.** Without restrictions this is trivial: take \(k = d\) and let both maps be the identity, and the error is 0 while nothing has been learned. So the pair must be restricted. PCA keeps \(k < d\) (lesson 23a called it \(n\)) and makes both maps matrices: lesson 23a’s compression matrix \(W\) is the encoder, its recovery matrix \(U\) the decoder, and the best pair has the top \(k\) principal components as the columns of \(U\), with \(W = U^\top\). k-means allows any \(k\), even \(k > d\), but uses \(k\) centres \(\boldsymbol\mu_1, \dots, \boldsymbol\mu_k\): the encoder returns the indicator vector of the nearest centre, and the decoder \(\phi(\mathbf v) = \sum_i v_i\boldsymbol\mu_i\) returns that centre, so the reconstruction error, minimized over the centres, is exactly lesson 22’s k-means cost. Here are six messages described by two numbers (the base-10 logarithm of the length and the number of bangs) and two centres:
 
 ```python
 xs = [(2.1, 4), (2.4, 5), (2.0, 6), (3.6, 0), (3.9, 1), (3.5, 0)]
@@ -883,7 +883,7 @@ Lesson 4 gave you one for any finite class: for every \(h\) in \(\mathcal H\) at
 
 and it says junk exactly when the signed sum of the transformed features exceeds \(\theta\). The number of filters is at most \(\binom{d}{k} \cdot 4^k \cdot 2^k \cdot (20k + 1)\).
 
-Now the bound. You are allowed to try several \(k\) and keep the best certificate, so we split the failure probability \(\delta\) over the values of \(k\), giving \(\mathcal H_k\) the share \(\delta_k = \delta/2^k\); these shares add up to at most \(\delta\), the same device as lesson 7’s structural risk minimization. Lesson 4’s uniform convergence, Hoeffding’s inequality plus the union bound, then says: with probability at least \(1 - \delta\) over the training sequence \(S \sim \mathcal D^m\), simultaneously for every \(k\) and every filter \(h \in \mathcal H_k\),
+Now the bound. You are allowed to try several \(k\) and keep the best certificate, so we split the failure probability \(\delta\) over the values of \(k\), giving \(\mathcal H_k\) the share \(\delta_k = \delta/2^k\); these shares add up to at most \(\delta\), the same device as lesson 7a’s structural risk minimization. Lesson 4’s uniform convergence, Hoeffding’s inequality plus the union bound, then says: with probability at least \(1 - \delta\) over the training sequence \(S \sim \mathcal D^m\), simultaneously for every \(k\) and every filter \(h \in \mathcal H_k\),
 
 \[ L_{\mathcal D}(h) \ \le \ L_S(h) + \sqrt{\frac{\log\left(2|\mathcal H_k|/\delta_k\right)}{2m}}. \]
 
@@ -947,13 +947,13 @@ Before you start, think about three things. Which of the transformations in the 
 7. **Feature learning** builds \(\psi\) from data. Auto-encoders minimize reconstruction error under restrictions: PCA (a compression and a recovery matrix, \(k < d\)), k-means (the one-hot code of the nearest centre), sparse coding (at most \(s\) dictionary vectors, or an \(\ell_1\) price).
 8. With a finite class of \(k\)-feature filters, the gap in the uniform-convergence bound grows like \(\sqrt{k \log d / m}\): few features can be certified with 2,000 labels, all 20,002 cannot.
 
-Your filter now reads three words and a log-scaled length, carries a certificate below 0.19, and touches four features per message instead of twenty thousand. Then a colleague from the research team looks at the certificate and frowns. “You counted every filter you *could* have built. Most of them behave identically on the mail you actually have. Your bound pays for richness your data never sees.” She is right, and the problem is older than this lesson: every guarantee so far measured a class’s richness before seeing any data (its size in lesson 2, its VC dimension in lesson 6, its description length in lesson 7), as a worst case over every possible set of messages. Can a class’s richness be measured on the very data in hand? That is the next lesson: Rademacher complexity.
+Your filter now reads three words and a log-scaled length, carries a certificate below 0.19, and touches four features per message instead of twenty thousand. Then a colleague from the research team looks at the certificate and frowns. “You counted every filter you *could* have built. Most of them behave identically on the mail you actually have. Your bound pays for richness your data never sees.” She is right, and the problem is older than this lesson: every guarantee so far measured a class’s richness before seeing any data (its size in lesson 2, its VC dimension in lesson 6a, its description length in lesson 7b), as a worst case over every possible set of messages. Can a class’s richness be measured on the very data in hand? That is the next lesson: Rademacher complexity.
 
 ## Concept check
 
 Write your answers down before moving on to the next lesson, with your reasoning, not just the answer.
 
-1. In the build-it challenge, `lasso_cd(X, y, 0.5)` returns all zeros, and the price 0.5 equals the largest value of \(|\langle X_j, \mathbf y \rangle|/m\) over the features. Prove that, for the LASSO objective \(F(\mathbf w) = g(\mathbf w) + \lambda\|\mathbf w\|_1\) with \(g(\mathbf w) = \frac1{2m}\|X\mathbf w - \mathbf y\|^2\), the vector \(\mathbf w = \mathbf 0\) is a minimizer whenever \(\lambda \ge \max_j |\langle X_j, \mathbf y \rangle|/m\). (Hint: use the tangent-line inequality for the convex function \(g\) from lesson 12, and compute \(\nabla g(\mathbf 0)\).) What happens at a price just below that value?
+1. In the build-it challenge, `lasso_cd(X, y, 0.5)` returns all zeros, and the price 0.5 equals the largest value of \(|\langle X_j, \mathbf y \rangle|/m\) over the features. Prove that, for the LASSO objective \(F(\mathbf w) = g(\mathbf w) + \lambda\|\mathbf w\|_1\) with \(g(\mathbf w) = \frac1{2m}\|X\mathbf w - \mathbf y\|^2\), the vector \(\mathbf w = \mathbf 0\) is a minimizer whenever \(\lambda \ge \max_j |\langle X_j, \mathbf y \rangle|/m\). (Hint: use the tangent-line inequality for the convex function \(g\) from lesson 12a, and compute \(\nabla g(\mathbf 0)\).) What happens at a price just below that value?
 2. In the proof that OMP picks what forward greedy picks, find the exact step that uses \(V^\top V = I\). Suppose a buggy implementation keeps the chosen columns themselves as \(V\), without orthonormalizing, and computes \(\mathbf u_j = X_j - VV^\top X_j\). Which step of the proof breaks, and why can the cross term no longer be dropped?
 3. Take the clipping example with \(a = 4\). Compute \(w^\star\) and \(L_{\mathcal D}(w^\star)\) on the raw feature, exactly as fractions, and the risk after clipping. Then describe a distribution of the same shape (a common case and a rare large value) where clipping at 1 makes the best linear predictor *worse*, and say what prior belief the clipping transformation was betting on.
 
@@ -967,4 +967,4 @@ Prove it by showing each side is at most the other: from a minimizer of one side
 2. **AdaBoost is a greedy selection.** Let \(h_1, \dots, h_d\) be hypotheses with values in \(\{\pm 1\}\), and for weights \(\mathbf w \in \mathbb R^d\) let \(f_{\mathbf w} = \sum_j w_j h_j\) and \(R(\mathbf w) = \log \sum_{i=1}^m \exp(-y_i f_{\mathbf w}(x_i))\).
    - First show why a finite list is enough: if \(\mathcal H\) has finite VC dimension, then for fixed \(x_1, \dots, x_m\) there are \(d\) hypotheses \(h_1, \dots, h_d \in \mathcal H\) such that every \(h \in \mathcal H\) agrees on all \(m\) points with one of them.
    - With \(D_i = \exp(-y_i f_{\mathbf w}(x_i))/Z\), where \(Z\) makes \(D\) sum to 1, show \(\partial R/\partial w_j = -\sum_i D_i y_i h_j(x_i)\), and that this equals \(2\varepsilon_j - 1\) with \(\varepsilon_j = \sum_i D_i \mathbb 1[h_j(x_i) \ne y_i]\), the weighted error of \(h_j\). Conclude that if \(\varepsilon_j \le \tfrac12 - \gamma\), the slope along \(j\) has absolute value at least \(2\gamma\), so the steepest-coordinate rule picks a hypothesis with small weighted error, which is what AdaBoost asks of its weak learner.
-   - Show that one round of AdaBoost, as in lesson 10, lowers \(R\) by at least \(-\log\sqrt{1 - 4\gamma^2}\).
+   - Show that one round of AdaBoost, as in lesson 10a, lowers \(R\) by at least \(-\log\sqrt{1 - 4\gamma^2}\).

@@ -51,7 +51,7 @@ Let’s read it.
 - \(d(x, y) = d(y, x)\) is **symmetry**: the distance from \(x\) to \(y\) is the distance from \(y\) to \(x\).
 - \(d(x, x) = 0\): every message is at distance 0 from itself.
 
-Often, though not always, \(d\) also satisfies the **triangle inequality** \(d(x, z) \le d(x, y) + d(y, z)\): going via \(y\) is never shorter than going straight. In plain words: **a distance function gives every pair of messages a non-negative number, the same in both directions, and zero for a message and itself.** On the twelve messages we use the ordinary straight-line distance, \(d(x, y) = \|x - y\|\), the square root of the summed squared differences of the two scores (lesson 9 used the same norm \(\|\cdot\|\) for vectors). Messages 1 and 7 are at \(\|(0, 0) - (0, 2)\| = 2\); messages 1 and 6 are at 5.
+Often, though not always, \(d\) also satisfies the **triangle inequality** \(d(x, z) \le d(x, y) + d(y, z)\): going via \(y\) is never shorter than going straight. In plain words: **a distance function gives every pair of messages a non-negative number, the same in both directions, and zero for a message and itself.** On the twelve messages we use the ordinary straight-line distance, \(d(x, y) = \|x - y\|\), the square root of the summed squared differences of the two scores (lesson 9a used the same norm \(\|\cdot\|\) for vectors). Messages 1 and 7 are at \(\|(0, 0) - (0, 2)\| = 2\); messages 1 and 6 are at 5.
 
 Instead of a distance, a method may receive a **similarity function** \(s : \mathcal X \times \mathcal X \to [0, 1]\), symmetric, with \(s(x, x) = 1\): large means alike. Some methods also take a number \(k\), the number of groups wanted.
 
@@ -277,7 +277,7 @@ Let’s name every piece first.
 
 In plain words: **moving the centre away from the mean adds exactly (number of points) times (squared distance moved) to the spread.** Since that added term is never negative and is zero only at \(\mu = \bar x\), the mean is the one and only best centre. For the bottom row, \(\bar x = (2.5, 0)\) and the spread around it is 17.5; move the centre to \(\mu = (1, 0)\), 1.5 away, and the spread becomes \(17.5 + 6 \times 2.25 = 31\).
 
-*Proof.* Write \(x - \mu = (x - \bar x) + (\bar x - \mu)\) and expand the square of a sum, \(\|u + v\|^2 = \|u\|^2 + 2\langle u, v \rangle + \|v\|^2\), where \(\langle u, v\rangle\) is the inner product (lesson 9):
+*Proof.* Write \(x - \mu = (x - \bar x) + (\bar x - \mu)\) and expand the square of a sum, \(\|u + v\|^2 = \|u\|^2 + 2\langle u, v \rangle + \|v\|^2\), where \(\langle u, v\rangle\) is the inner product (lesson 9a):
 
 \[ \|x - \mu\|^2 = \|x - \bar x\|^2 + 2 \langle x - \bar x,\ \bar x - \mu \rangle + \|\bar x - \mu\|^2. \]
 
@@ -515,7 +515,7 @@ In the first sum, do the inner sum over \(s\) first: \(\sum_s W_{r,s} = D_{r,r}\
 
 using that \(v^\top D v = \sum_r D_{r,r} v_r^2\) for a diagonal \(D\). \(\blacksquare\)
 
-Two facts fall out at once. Every \(v^\top L v\) is a sum of non-negative terms, so \(v^\top L v \ge 0\). And the all-ones vector \(\mathbf 1\) gives \(v_r - v_s = 0\) on every edge, so \(\mathbf 1^\top L \mathbf 1 = 0\); in fact \(L \mathbf 1 = 0\), since each row of \(L\) adds to 0. Recall from lesson 9 that a nonzero vector \(u\) which a matrix only stretches, \(L u = \lambda u\) for some number \(\lambda\), is an **eigenvector**, and \(\lambda\) its **eigenvalue**. So \(\mathbf 1\) is an eigenvector of \(L\) with eigenvalue 0. And no eigenvalue of \(L\) is negative: if \(L u = \lambda u\) then \(0 \le u^\top L u = \lambda \|u\|^2\).
+Two facts fall out at once. Every \(v^\top L v\) is a sum of non-negative terms, so \(v^\top L v \ge 0\). And the all-ones vector \(\mathbf 1\) gives \(v_r - v_s = 0\) on every edge, so \(\mathbf 1^\top L \mathbf 1 = 0\); in fact \(L \mathbf 1 = 0\), since each row of \(L\) adds to 0. Recall from lesson 9b that a nonzero vector \(u\) which a matrix only stretches, \(L u = \lambda u\) for some number \(\lambda\), is an **eigenvector**, and \(\lambda\) its **eigenvalue**. So \(\mathbf 1\) is an eigenvector of \(L\) with eigenvalue 0. And no eigenvalue of \(L\) is negative: if \(L u = \lambda u\) then \(0 \le u^\top L u = \lambda \|u\|^2\).
 
 The same charge, summed over clusters, gives RatioCut. Turn each cluster into a column of numbers: \(1/\sqrt{|C_j|}\) on its members and 0 elsewhere, so the first triangle becomes \(1/\sqrt 3\) on vertices 0, 1, 2. The charge of that column is the bridge weight 0.2 divided by 3, which is exactly the first triangle’s share of RatioCut.
 
@@ -562,7 +562,7 @@ print(round(quad([1, 1, 1, 0, 0, 0, 0]), 3),
 
 It prints `0.2 0.117`: the quadratic form of the triangle indicator is the bridge weight, and the trace of \(H^\top L H\) is the RatioCut of the bridge split.
 
-**The relaxation.** So minimizing RatioCut means minimizing \(\operatorname{trace}(H^\top L H)\) over matrices \(H\) with orthonormal columns whose entries are either 0 or \(1/\sqrt{|C_j|}\). That last condition makes it a search over integer-like patterns, which we cannot do efficiently. So we drop it, and minimize \(\operatorname{trace}(H^\top L H)\) over all \(m \times k\) matrices with orthonormal columns. That relaxed problem has a clean answer, which lesson 23 proves (it is the same fact that makes principal component analysis work): take as columns the eigenvectors of \(L\) belonging to its \(k\) smallest eigenvalues.
+**The relaxation.** So minimizing RatioCut means minimizing \(\operatorname{trace}(H^\top L H)\) over matrices \(H\) with orthonormal columns whose entries are either 0 or \(1/\sqrt{|C_j|}\). That last condition makes it a search over integer-like patterns, which we cannot do efficiently. So we drop it, and minimize \(\operatorname{trace}(H^\top L H)\) over all \(m \times k\) matrices with orthonormal columns. That relaxed problem has a clean answer, which lesson 23a proves (it is the same fact that makes principal component analysis work): take as columns the eigenvectors of \(L\) belonging to its \(k\) smallest eigenvalues.
 
 The relaxed solution is no longer a clustering, so one more step turns it back into one. Each vertex \(r\) gets the \(r\)-th row of that matrix, a point in \(\mathbb R^k\), and k-means clusters those points.
 
@@ -679,7 +679,7 @@ Each line gives the clustering, \(I(x; C)\), \(I(C; y)\) and the objective. It p
 
 Read the four lines in order: one cluster for everything (`0000`), the two kinds (`0011`), a mixed pairing (`0101`), and every message alone (`0123`). The kinds cost 1 bit of compression and keep 1 bit about the words, the best value at \(\beta = 2\). The mixed pairing pays the same bit and keeps only 0.191 bits. Keeping every message apart keeps the most, 1.191 bits, but pays 2 bits for it. Turn \(\beta\) up and relevance wins: from \(\beta = 1/0.191 \approx 5.2\) on, the singletons beat the kinds. Turn it below 1 and one cluster for everything wins. So, once again, the answer depends on a number someone has to choose.
 
-The bottleneck generalizes the statistician’s **minimal sufficient statistic**: a summary of the data that keeps everything relevant to the question and nothing else. Solving the optimization is hard in general, and the methods proposed for it resemble the expectation-maximization procedure of lesson 24. We will not build one.
+The bottleneck generalizes the statistician’s **minimal sufficient statistic**: a summary of the data that keeps everything relevant to the question and nothing else. Solving the optimization is hard in general, and the methods proposed for it resemble the expectation-maximization procedure of lesson 24b. We will not build one.
 
 ## What is clustering, really?
 
