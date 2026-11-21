@@ -730,7 +730,7 @@ Folder: `29-multiclass-learnability/`
 Folder: `30-compression-bounds/`
 
 - [x] 1 prose and sheet (about 13,700 words with code, 18 snippets run by the lead; the failing fence is the build-it stub; no book references; written with both rules; 2026-11-20). No exercises in the chapter: three problems written for the lesson. Writer's own: proof of a Bernstein lemma part the book skips, Carathéodory with proof, Gilbert's algorithm, the Moran–Yehudayoff 2016 result (verify the citation)
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
+- [x] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (book-checked 2026-11-21; Lemma B.10 part 1 slip recorded in sheet)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
