@@ -12,7 +12,7 @@ Last updated 2026-11-20. Tick here and in **Status** as each lands; commit and p
 - [x] Split lesson 24 the same way (done 2026-11-21: 24a, 24b)
 - [x] Repoint "lesson N" references in every prose and sheet to the right half for the split lessons 6, 7, 9, 10, 12, 13, 14, 15, 17, 21, 23, 24 (done 2026-11-21: 566 references changed by two agents, reviewed by the lead; provenance notes like "split from lesson N" kept)
 - [x] Book check and sheet resync (`docs/bookcheck-brief.md`) for unsplit lessons: done 2, 3, 4, 5, 8, 11, 16, 18, 19, 20, 22, 25, 26, 27, 28, 29, 30, 31 (2026-11-21)
-- [ ] Book check and sheet resync for every split half: 6a, 6b, 7a, 7b, 9a, 9b, 10a, 10b, 12a, 12b, 13a, 13b, 14a, 14b, 15a, 15b, 17a, 17b, 21a, 21b, then 23a, 23b, 24a, 24b. Done 6a, 6b, 7a, 7b, 9a, 9b, 10a, 10b, 12a, 12b, 13a, 13b, 14a, 14b, 15a, 15b, 17a, 17b, 21a, 21b, 23a; running 23b, 24a, 24b (2026-11-21); same brief plus "cover only this half, edit only this half's files"
+- [ ] Book check and sheet resync for every split half: 6a, 6b, 7a, 7b, 9a, 9b, 10a, 10b, 12a, 12b, 13a, 13b, 14a, 14b, 15a, 15b, 17a, 17b, 21a, 21b, then 23a, 23b, 24a, 24b. Done 6a, 6b, 7a, 7b, 9a, 9b, 10a, 10b, 12a, 12b, 13a, 13b, 14a, 14b, 15a, 15b, 17a, 17b, 21a, 21b, 23a, 24a; running 23b, 24b (2026-11-21); same brief plus "cover only this half, edit only this half's files"
 - [ ] After each edit: `python3 -I _kit/read.py <folder>` then `python3 -I _kit/index.py`, commit, push
 - [ ] Figures (diagram-design) and labs (named iwrzwr studies) lesson by lesson from lesson 2: `2-figures/`, `3-page/`, `build.py`, `fit.mjs`, impeccable pass
 - [x] Commit the `klay-learning-ladder` skill changes in ~/dotfiles: done 2026-11-21 as dd6d3e4 (KaTeX `math.mjs`, `shot.mjs`, `prose.py` fixes, phases and rules in SKILL.md, series template synced with the kit)
@@ -625,7 +625,7 @@ Folder: `23b-compressed-sensing/`
 Folder: `24a-maximum-likelihood/`
 
 - [x] 1 prose and sheet (split from lesson 24 on 2026-11-21; original in `_archive/24-generative-models`; clean-context review carried over)
-- [ ] 2 gates: book check (PDF agents), sheet resync, greps
+- [x] 2 gates: book check (book-checked 2026-11-21; Eq 24.15 prior, p.346 variance, p.354 equality slips confirmed)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
