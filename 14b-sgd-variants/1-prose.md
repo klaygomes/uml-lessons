@@ -210,7 +210,7 @@ In the lab below you pick the schedule, either a constant step size \(\eta\) or 
 
 ## Smooth losses
 
-Lesson 12b had a second family besides convex-Lipschitz: losses that are **\(\beta\)-smooth**, meaning the gradient is \(\beta\)-Lipschitz, \(\|\nabla f(\mathbf v) - \nabla f(\mathbf w)\| \le \beta\|\mathbf v - \mathbf w\|\): the slope itself changes by at most \(\beta\) (beta) times the distance moved. The square loss and the logistic loss on bounded messages are examples. Lesson 12a also showed the key property we need: a nonnegative \(\beta\)-smooth function is **self-bounded**, \(\|\nabla f(\mathbf w)\|^2 \le 2\beta f(\mathbf w)\), the squared slope at most \(2\beta\) times the height. Its gradient is small wherever its value is small. (For \(f(w) = \frac12 w^2\), which is 1-smooth, both sides equal \(w^2\).) Here is why that helps: in the step lemma, the price of noise was \(\frac\eta2\sum_t\|\mathbf v_t\|^2\), and self-boundedness turns that price into a multiple of the loss itself.
+Lesson 12b had a second family besides convex-Lipschitz, built on lesson 12a’s **\(\beta\)-smooth** losses, meaning the gradient is \(\beta\)-Lipschitz, \(\|\nabla f(\mathbf v) - \nabla f(\mathbf w)\| \le \beta\|\mathbf v - \mathbf w\|\): the slope itself changes by at most \(\beta\) (beta) times the distance moved. The square loss and the logistic loss on bounded messages are examples. Lesson 12a also showed the key property we need: a nonnegative \(\beta\)-smooth function is **self-bounded**, \(\|\nabla f(\mathbf w)\|^2 \le 2\beta f(\mathbf w)\), the squared slope at most \(2\beta\) times the height. Its gradient is small wherever its value is small. (For \(f(w) = \frac12 w^2\), which is 1-smooth, both sides equal \(w^2\).) Here is why that helps: in the step lemma, the price of noise was \(\frac\eta2\sum_t\|\mathbf v_t\|^2\), and self-boundedness turns that price into a multiple of the loss itself.
 
 **Theorem (SGD on smooth losses).** Assume that for every \(z\), the loss \(\ell(\cdot, z)\) is convex, \(\beta\)-smooth and nonnegative, and let \(\eta < 1/\beta\). Then SGD-Risk satisfies, for every \(\mathbf w^\star\),
 
@@ -331,7 +331,7 @@ for T in (10, 100, 1000, 10000):
           round(bound, 4))
 ```
 
-It prints `10 2.929 3.303 6.6052`, `100 5.187 5.605 1.121`, `1000 7.485 7.908 0.1582` and `10000 9.788 10.21 0.0204`. The harmonic sum always sits under \(1 + \log T\), and the bound falls almost like \(1/T\). Each step reads one example from \(S\), so this is a solver for the lesson 13a objective whose cost does not grow with \(m\). That is the solver the auditor asked for, and the one the next lesson builds on.
+It prints `10 2.929 3.303 6.6052`, `100 5.187 5.605 1.121`, `1000 7.485 7.908 0.1582` and `10000 9.788 10.21 0.0204`. The harmonic sum always sits under \(1 + \log T\), and the bound falls almost like \(1/T\). Each step reads one example from \(S\), so this is a solver for the lesson 13a objective whose cost does not grow with \(m\). That is the solver the auditor asked for, and the one lesson 15b builds on.
 
 ## The regularized solver as code
 
