@@ -482,7 +482,7 @@ Before you touch the slider, a prediction. If you push \(\lambda\) all the way u
 
 [[lab-act2]]
 
-Look at what your fix was built from: an average fit, an average replace-one change, and one identity. Nothing about the size of the hypothesis class, nothing about uniform convergence. The same identity holds for the hinge filter of lesson 12a, or for any learner at all: measure how much it changes its mind about an example it has seen, and you have measured how much it overfits.
+Look at what your fix was built from: an average fit, an average replace-one change, and one identity. Nothing about the size of the hypothesis class, nothing about uniform convergence. The same identity holds for the hinge filter of lesson 12b, or for any learner at all: measure how much it changes its mind about an example it has seen, and you have measured how much it overfits.
 
 ## What people get wrong
 
