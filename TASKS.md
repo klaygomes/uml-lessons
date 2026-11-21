@@ -685,7 +685,7 @@ Folder: `26-rademacher-complexity/`
 Folder: `27-covering-numbers/`
 
 - [x] 1 prose and sheet (about 9,400 words, 13 snippets run by the lead; the failing fence is the build-it stub; no book references; written with both rules; 2026-11-20). No exercises in the chapter: three problems written for the lesson. Writer's claims to verify: a lemma's inequality reversed for stretch factors above 1; an example's grid count off; Massart reproved in uncentered form. Align terms with lesson 26 when it lands
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
+- [x] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (book check: prose needed no change; lemma 27.2 direction and example 27.1 grid count confirmed as slips; a wrong lab gap fixed in the sheet; 2026-11-21)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
