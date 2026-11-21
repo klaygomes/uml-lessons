@@ -9,7 +9,7 @@ To resume: read **Session handoff** near the end first (every skill, tool, refer
 Last updated 2026-11-20. Tick here and in **Status** as each lands; commit and push after every step (user: "commit and push as you go").
 
 - [x] Split lesson 23: done 2026-11-21 (23a, 23b)
-- [ ] Split lesson 24 the same way (done 2026-11-21: 24a, 24b)
+- [x] Split lesson 24 the same way (done 2026-11-21: 24a, 24b)
 - [ ] Repoint "lesson N" references in every prose and sheet to the right half for the split lessons 6, 7, 9, 10, 12, 13, 14, 15, 17, 21, 23, 24 (one agent with the list)
 - [ ] Book check and sheet resync (`docs/bookcheck-brief.md`) for lessons 11, 16, 18, 19, 20, 22, 25, 26, 27, 28, 29, 30, 31
 - [ ] Book check and sheet resync for every split half: 6a, 6b, 7a, 7b, 9a, 9b, 10a, 10b, 12a, 12b, 13a, 13b, 14a, 14b, 15a, 15b, 17a, 17b, 21a, 21b, then 23a, 23b, 24a, 24b
