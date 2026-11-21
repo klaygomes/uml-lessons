@@ -1,0 +1,136 @@
+@import url("https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400&family=Rubik:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+:root {
+  --paper: #F7F6F2;
+  --paper-2: #ECEAE4;
+  --ink: #1F2226;
+  --ink-soft: #585C63;
+  --rule: #D8D5CD;
+  --accent: #C47A0A;
+  --accent-ink: #8C5300;
+  --accent-soft: #F6E7C8;
+  --input: #1F5BA8;
+  --input-soft: #DCE6F4;
+  --ok: #25774A;
+  --ok-soft: #DCEFE2;
+  --selection: var(--input-soft);
+  --code-bg: var(--paper-2);
+  --code-text: var(--ink);
+  --code-keyword: #83339A;
+  --code-string: #2E6B1E;
+  --code-number: #8C5300;
+  --code-function: #0B6470;
+  --code-call: #264F8C;
+  --code-builtin: #0B6470;
+  --code-comment: #61646A;
+
+  --font-body: "Literata", Georgia, serif;
+  --font-title: "Rubik", system-ui, sans-serif;
+  --font-ui: "Rubik", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-math: "Literata", "STIX Two Math", serif;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 600;
+  --weight-title: 600;
+
+  --text-fig: 12px;
+  --text-fig-tick: 12.5px;
+  --text-fig-name: 15px;
+  --text-fig-note: 17px;
+  --text-fig-math: 18px;
+  --text-micro: 13px;
+  --text-small: 14.5px;
+  --text-caption: 15.5px;
+  --text-ui: 16px;
+  --text-body: 18px;
+  --text-h3: 19px;
+  --text-result: 19px;
+  --text-lead: clamp(20px, 2.3vw, 23px);
+  --text-h2: clamp(25px, 2.9vw, 29px);
+  --text-h1: clamp(36px, 5.4vw, 50px);
+  --text-table: 14px;
+  --text-code: 14.5px;
+  --text-math: 1.02em;
+  --text-math-display: 1.15em;
+
+  --leading-body: 1.62;
+  --leading-ui: 1.4;
+  --leading-caption: 1.5;
+  --leading-code: 1.5;
+  --leading-heading: 1.18;
+  --leading-title: 1.08;
+  --tracking-title: -0.022em;
+  --tracking-heading: -0.015em;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-14: 56px;
+  --space-18: 72px;
+  --space-20: 80px;
+
+  --space-gutter: var(--space-4);
+  --space-block: var(--space-5);
+  --space-section: var(--space-18);
+  --space-heading-after: var(--space-3);
+  --space-header-gap: var(--space-4);
+  --space-crumbs-top: var(--space-8);
+  --space-header-top: var(--space-10);
+  --space-header-after: var(--space-14);
+  --space-page-bottom: var(--space-20);
+  --space-list: var(--space-2);
+  --space-lab: var(--space-5);
+  --space-control: var(--space-3);
+  --space-cell-x: var(--space-5);
+  --space-cell-y: var(--space-2);
+
+  --layout-measure: 35em;
+  --layout-breakout: 780px;
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --line-hair: 1px;
+  --line-strong: 1.5px;
+  --line-mark: 3px;
+  --focus-ring: 2px;
+  --motion-step: 650ms;
+
+  --measure: var(--layout-measure);
+  --column: var(--layout-breakout);
+  --block-gap: var(--space-block);
+  --section-gap: var(--space-section);
+}
+
+@media (max-width: 520px) {
+  :root {
+    --text-body: 17px;
+    --text-table: 12.5px;
+    --text-math-display: 0.82em;
+    --space-cell-x: var(--space-3);
+    --space-crumbs-top: var(--space-5);
+    --space-header-top: var(--space-6);
+    --space-lab: var(--space-4);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #17181B; --paper-2: #222429; --ink: #ECEAE5; --ink-soft: #A4A39E; --rule: #35373C;
+    --accent: #F0A73A; --accent-ink: #F4BD68; --accent-soft: #3B2C12; --input: #79A6E6; --input-soft: #233A5C; --ok: #5FC28E; --ok-soft: #15301F;
+    --code-keyword: #D3A2F2; --code-string: #A3D58F; --code-number: #F4BD68; --code-function: #7CCAD3; --code-call: #A9C4F0; --code-builtin: #7CCAD3; --code-comment: #9C9C97;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #17181B; --paper-2: #222429; --ink: #ECEAE5; --ink-soft: #A4A39E; --rule: #35373C;
+  --accent: #F0A73A; --accent-ink: #F4BD68; --accent-soft: #3B2C12; --input: #79A6E6; --input-soft: #233A5C; --ok: #5FC28E; --ok-soft: #15301F;
+    --code-keyword: #D3A2F2; --code-string: #A3D58F; --code-number: #F4BD68; --code-function: #7CCAD3; --code-call: #A9C4F0; --code-builtin: #7CCAD3; --code-comment: #9C9C97;
+  color-scheme: dark;
+}

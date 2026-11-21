@@ -55,7 +55,8 @@ Every lesson of the course, delivered or not. `_kit/index.py` reads this table f
 | 21b | Online regret | When no rule is perfect and the adversary reads every decision, how can a filter promise to be nearly as good as the best rule? |
 | 22 | Clustering | How do you group messages when nobody has labelled any of them? |
 | 23 | Dimensionality reduction | How do you squeeze thousands of features into a few without losing what matters? |
-| 24 | Generative models | What if you model how each kind of message is produced, then ask which one made this? |
+| 24a | Generative models and maximum likelihood | Why does a filter that estimates each word's frequency by counting become certain of nonsense, and how do you count so the estimate carries a guarantee? |
+| 24b | Discriminant analysis and EM | Why does a loop that guesses each message's hidden kind and refits make the archive's log-likelihood fall every round, and what makes the safe loop never fall? |
 | 25 | Feature selection and generation | Which features should the filter keep, and which new ones should it build? |
 | 26 | Rademacher complexity | Can you measure a class's richness on the very data you have? |
 | 27 | Covering numbers | How many representative rules does it take to cover a whole class? |

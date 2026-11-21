@@ -9,7 +9,7 @@ To resume: read **Session handoff** near the end first (every skill, tool, refer
 Last updated 2026-11-20. Tick here and in **Status** as each lands; commit and push after every step (user: "commit and push as you go").
 
 - [ ] Split lesson 23 (`scratchpad/brief-split-23.md`, regenerate from `docs/split-brief.md` with the split point under Open items), then `python3 -I _kit/split_apply.py 23 ...`
-- [ ] Split lesson 24 the same way (24b needs its own bug and lab)
+- [ ] Split lesson 24 the same way (done 2026-11-21: 24a, 24b)
 - [ ] Repoint "lesson N" references in every prose and sheet to the right half for the split lessons 6, 7, 9, 10, 12, 13, 14, 15, 17, 21, 23, 24 (one agent with the list)
 - [ ] Book check and sheet resync (`docs/bookcheck-brief.md`) for lessons 11, 16, 18, 19, 20, 22, 25, 26, 27, 28, 29, 30, 31
 - [ ] Book check and sheet resync for every split half: 6a, 6b, 7a, 7b, 9a, 9b, 10a, 10b, 12a, 12b, 13a, 13b, 14a, 14b, 15a, 15b, 17a, 17b, 21a, 21b, then 23a, 23b, 24a, 24b
@@ -605,12 +605,27 @@ Folder: `23-dimensionality-reduction/`
 - [ ] 9 concept check: mastery confirmed
 - [ ] 10 end-of-chapter problems done
 
-### 24. Ch. 24 generative models
+### 24a. Generative models and maximum likelihood
 
-Folder: `24-generative-models/`
+Folder: `24a-maximum-likelihood/`
 
-- [x] 1 prose and sheet (about 18,300 words with code, 17 snippets run by the lead; the 3 failing fences are build-it stubs; no book references; written with the walkthrough and concept-before-symbol rules; 2026-11-20). Split candidate: 24a (likelihood, pseudo-counts, naive Bayes) and 24b (LDA, EM). Writer's claims to verify: five book slips (Bayesian prior not integrating to 1, a variance typo, strict vs non-strict inequality, an inequality that is an equality, row vs column form of w)
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
+- [x] 1 prose and sheet (split from lesson 24 on 2026-11-21; original in `_archive/24-generative-models`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
+- [ ] 3 review stop: user approved the prose
+- [ ] 4 figures
+- [ ] 5 page
+- [ ] 6 learner judge: ready
+- [ ] 7 verification
+- [ ] 8 delivery: series.md, index.html
+- [ ] 9 concept check: mastery confirmed
+- [ ] 10 end-of-chapter problems done
+
+### 24b. Discriminant analysis and EM
+
+Folder: `24b-discriminant-em/`
+
+- [x] 1 prose and sheet (split from lesson 24 on 2026-11-21; original in `_archive/24-generative-models`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
