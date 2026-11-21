@@ -745,7 +745,7 @@ Folder: `30-compression-bounds/`
 Folder: `31-pac-bayes/`
 
 - [x] 1 prose and sheet (about 11,600 words with code, 18 snippets run by the lead; the failing fence is the build-it stub; no book references; written with both rules; the series' closing look-back; 2026-11-20). Writer's claims to verify: the book's proof uses a one-sided Hoeffding tail for Δ², run on Δ⁺ instead; Equation 31.2's last '=' should be '≤'. Recheck the look-back paragraph on lessons 26 to 30 (now drafted)
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
+- [x] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (book-checked 2026-11-21; Exercise 1 counterexample and 31.2 slips in sheet)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page

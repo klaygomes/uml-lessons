@@ -17,7 +17,7 @@ Then the reviewer from lesson 7a arrives with the same deal as before. The filte
 So you try every certificate the course has built. On this week’s labels the committee errs on 2.94% of the examples, and the single best threshold on 1.69%.
 
 - Lesson 4’s certificate for a finite class adds the same margin to every hypothesis in it, \(\sqrt{\log(2|\mathcal H|/\delta)/(2m)}\): its sample size \(m \ge \log(2|\mathcal H|/\delta)/(2\varepsilon^2)\), solved for the accuracy \(\varepsilon\). Here \(|\mathcal H|\) is the number of hypotheses in the class, a billion; \(m = 650\) is the number of labelled examples; \(\log\) is the natural logarithm. Because the margin is the same for every threshold, it also covers any average of thresholds, the committee included. But it charges the full size of the class and ignores every bit of the team’s trust.
-- Lesson 7a’s certificate uses trust. A hypothesis \(h\) with trust \(w(h)\) (lesson 7a called it a weight) gets the margin \(\sqrt{(\log(1/w(h)) + \log(2/\delta))/(2m)}\), which is small when the trust is large. But it certifies one hypothesis at a time, and here the trust is spread so thinly that each single threshold in the band gets only \(0.99/10^8 + 0.01/10^9 \approx 9.9 \times 10^{-9}\), less than one part in a hundred million.
+- Lesson 7b’s certificate uses trust. A hypothesis \(h\) with trust \(w(h)\) (lesson 7b called it a weight, one per hypothesis, where lesson 7a had one per size class) gets the margin \(\sqrt{(\log(1/w(h)) + \log(2/\delta))/(2m)}\), which is small when the trust is large. But it certifies one hypothesis at a time, and here the trust is spread so thinly that each single threshold in the band gets only \(0.99/10^8 + 0.01/10^9 \approx 9.9 \times 10^{-9}\), less than one part in a hundred million.
 
 ```python
 from math import log, sqrt
@@ -30,9 +30,9 @@ print(round(log(1 / w), 1), round(occam, 3))
 print(round(0.0169 + occam, 3), round(0.0294 + occam, 3))
 ```
 
-It prints `0.137 0.166`, then `18.4 0.13`, then `0.147 0.16`. Lesson 4’s margin is 0.137, so the committee gets a certificate of 0.166. A single threshold’s trust costs \(\log(1/w) = 18.4\) in lesson 7a’s formula, its margin is 0.130, and the best single threshold gets 0.147; averaging lesson 7a’s certificates over the committee gives 0.160. Every number is above 0.13. The reviewer does not sign.
+It prints `0.137 0.166`, then `18.4 0.13`, then `0.147 0.16`. Lesson 4’s margin is 0.137, so the committee gets a certificate of 0.166. A single threshold’s trust costs \(\log(1/w) = 18.4\) in lesson 7b’s formula, its margin is 0.130, and the best single threshold gets 0.147; averaging lesson 7b’s certificates over the committee gives 0.160. Every number is above 0.13. The reviewer does not sign.
 
-Look at what went wrong. Lesson 4’s certificate can average over a mix, but it cannot use trust. Lesson 7a’s can use trust, but only one hypothesis at a time, and the trust is spread so thinly over the band that no single threshold carries much of it. Yet the team’s trust is anything but thin: 99% of it sits in a band that holds the committee’s whole window. What the team needs is a certificate for a mix chosen after seeing the data, one that charges for the trust the mix actually uses, rather than for the trust of any one member.
+Look at what went wrong. Lesson 4’s certificate can average over a mix, but it cannot use trust. Lesson 7b’s can use trust, but only one hypothesis at a time, and the trust is spread so thinly over the band that no single threshold carries much of it. Yet the team’s trust is anything but thin: 99% of it sits in a band that holds the committee’s whole window. What the team needs is a certificate for a mix chosen after seeing the data, one that charges for the trust the mix actually uses, rather than for the trust of any one member.
 
 How does trust written down before the data turn into a guarantee for a mix chosen after it? That is the question of this lesson, the last of the course, and its answer is called the **PAC-Bayes** bound.
 
@@ -136,7 +136,7 @@ One consequence is worth saying out loud now, because it surprises people later.
 
 The team’s trust is also a distribution over the class, and it gets its own name. A **prior** is a probability distribution \(P\) over \(\mathcal H\), a number \(P(h) \ge 0\) for each hypothesis with \(\sum_{h} P(h) = 1\), that is **fixed before the training sequence is drawn**. Its value \(P(h)\) is the **prior score** of \(h\). In the small rulebook, \(P(h_{0.60}) = 0.4\) and \(P(h_{0.50}) = 0.1\).
 
-So the two distributions differ only in when they are chosen. The prior is written down before any labels exist, like lesson 7a’s weights; the posterior is chosen afterwards, and may depend on the labels in any way at all. Lesson 7a’s weight functions are almost priors already: they had to sum to at most 1, and a prior sums to exactly 1, so you can turn weights into a prior by dividing each one by their total, which only increases each weight.
+So the two distributions differ only in when they are chosen. The prior is written down before any labels exist, like the weights of lessons 7a and 7b; the posterior is chosen afterwards, and may depend on the labels in any way at all. Lesson 7b’s weights \(w(h)\) are almost priors already: they had to sum to at most 1, and a prior sums to exactly 1, so you can turn weights into a prior by dividing each one by their total, which only increases each weight.
 
 [[diagram:prior-posterior]]
 
@@ -210,9 +210,9 @@ print(round(log(1 / P[3]), 4))
 
 It prints `[0, 0, 0.6667, 0.3333, 0]`, then `0.5108 0.5108`, then `1.6094`.
 
-The last line is the third fact, and the most important special case. **A posterior that puts all its belief on one hypothesis pays \(\log(1/P(h))\).** That is the lemma with \(A = \{h\}\). For \(h_{0.65}\), with prior 0.2, the price is \(\log 5 = 1.6094\). This is exactly the cost \(\log(1/w(h))\) that lesson 7a charged a single hypothesis. The relative entropy extends that cost from one hypothesis to any mix of them.
+The last line is the third fact, and the most important special case. **A posterior that puts all its belief on one hypothesis pays \(\log(1/P(h))\).** That is the lemma with \(A = \{h\}\). For \(h_{0.65}\), with prior 0.2, the price is \(\log 5 = 1.6094\). This is exactly the cost \(\log(1/w(h))\) that lesson 7b charged a single hypothesis. The relative entropy extends that cost from one hypothesis to any mix of them.
 
-Now go back to the committee on the dial. The team’s prior is flat inside the band [0.55, 0.65], so restricted to the window [0.60, 0.64] it is uniform on the window: that is exactly the committee, “every threshold in the window equally likely”. The lemma applies. The window’s share of the prior is \(0.99 \times 0.04/0.1\) from the band, plus \(0.01 \times 0.04\) from the thin layer of trust spread over everything, which is \(0.3964\). So the committee pays \(\log(1/0.3964) = 0.9253\). A single threshold in the band pays \(\log(1/(9.9 \times 10^{-9})) = 18.4\), the number that sank lesson 7a’s certificate. Spreading the belief over the window is twenty times cheaper than pinning it to one threshold.
+Now go back to the committee on the dial. The team’s prior is flat inside the band [0.55, 0.65], so restricted to the window [0.60, 0.64] it is uniform on the window: that is exactly the committee, “every threshold in the window equally likely”. The lemma applies. The window’s share of the prior is \(0.99 \times 0.04/0.1\) from the band, plus \(0.01 \times 0.04\) from the thin layer of trust spread over everything, which is \(0.3964\). So the committee pays \(\log(1/0.3964) = 0.9253\). A single threshold in the band pays \(\log(1/(9.9 \times 10^{-9})) = 18.4\), the number that sank lesson 7b’s certificate. Spreading the belief over the window is twenty times cheaper than pinning it to one threshold.
 
 [[diagram:relative-entropy]]
 
@@ -226,7 +226,7 @@ On this week’s labels, the whole band has empirical risk 0.0471 and relative e
 
 ## The PAC-Bayes theorem
 
-Here is the guarantee. It reads like lesson 4’s and lesson 7a’s, with the cost of the posterior in place of the cost of the class.
+Here is the guarantee. It reads like lesson 4’s and lesson 7b’s, with the cost of the posterior in place of the cost of the class.
 
 **Theorem (PAC-Bayes).** Let \(\mathcal D\) be any distribution over examples, \(\mathcal H\) a countable hypothesis class, \(\ell: \mathcal H \times Z \to [0, 1]\) a loss, \(P\) a prior over \(\mathcal H\), \(\delta \in (0, 1)\) and \(m \ge 2\). Then with probability at least \(1 - \delta\) over an i.i.d. training sequence \(S \sim \mathcal D^m\), every posterior \(Q\) over \(\mathcal H\), including any that depends on \(S\), satisfies
 
@@ -237,7 +237,7 @@ Read it from the inside out.
 - \(\ell: \mathcal H \times Z \to [0, 1]\) says the loss takes a hypothesis and an example (from the set \(Z\) of all examples) and returns a number between 0 and 1; the 0-1 loss qualifies.
 - \(S \sim \mathcal D^m\) reads “\(S\) is drawn from \(\mathcal D^m\)”: \(m\) examples, each drawn from \(\mathcal D\), independently of each other (i.i.d., lesson 1). The probability \(1 - \delta\) is over that draw.
 - \(\delta \in (0, 1)\) says \(\delta\) is strictly between 0 and 1: the chance of failure you accept, 0.05 for the reviewer.
-- \(D(Q\|P)\) is the price of the posterior; \(\log(m/\delta)\) is a price for the confidence, larger than the \(\log(2/\delta)\) that lessons 4 and 7a paid for one fixed hypothesis (9.47 against 3.69 here), because it grows with \(m\).
+- \(D(Q\|P)\) is the price of the posterior; \(\log(m/\delta)\) is a price for the confidence, larger than the \(\log(2/\delta)\) that lessons 4 and 7b paid for one fixed hypothesis (9.47 against 3.69 here), because it grows with \(m\).
 - Dividing by \(2(m - 1)\) and taking the square root turns the total price into a margin that shrinks like one over the square root of \(m\).
 - “Every posterior \(Q\)” is the key phrase. The bad event, the unlucky training sequences, is fixed before any posterior is chosen, and outside it the inequality holds for all of them simultaneously. So you may look at \(S\), pick any \(Q\), and the certificate still holds.
 
