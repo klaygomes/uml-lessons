@@ -547,7 +547,7 @@ print(ok)
 
 It prints `[True, True, True]`.
 
-The difference \(\langle \mathbf w, \Psi(\mathbf x, y) \rangle - \langle \mathbf w, \Psi(\mathbf x, y') \rangle\) is the **margin** of \(y\) over \(y'\), the word lesson 15a used for halfspaces. So the loss demands a margin that grows with the cost: work must beat junk by 1, but promotions only has to beat the other folders by 0.2. When \(\ell = 0\) the bound is tight too: with every margin positive, \(h_{\mathbf w}(\mathbf x) = y\), so \(\Delta(h_{\mathbf w}(\mathbf x), y) = 0 = \ell\).
+The difference \(\langle \mathbf w, \Psi(\mathbf x, y) \rangle - \langle \mathbf w, \Psi(\mathbf x, y') \rangle\) is the **margin** of \(y\) over \(y'\), the word lesson 15a used for halfspaces. So the loss demands a margin that grows with the cost: work must beat junk by 1, but promotions only has to beat the other folders by 0.2. When \(\ell = 0\) the bound is tight too: \(0 \le \Delta(h_{\mathbf w}(\mathbf x), y) \le \ell = 0\). With a cost that is positive for every confusion, like your users’ table, every margin is then positive and \(h_{\mathbf w}(\mathbf x) = y\).
 
 [[diagram:hinge-margin]]
 
