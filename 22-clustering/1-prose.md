@@ -255,7 +255,7 @@ print(sum(abs(x - y) for x, y in permutations(C1, 2)))
 
 It prints `32`.
 
-Here is the bad news, stated without proof: finding a clustering that minimizes the k-means cost is NP-hard, and even NP-hard to approximate within some constant factor, and the same holds for most of these costs. (Lesson 8 explained what NP-hard means for learning.) So in practice “k-means” usually names not the cost, but a fast algorithm that tries to lower it. Before we meet it, one small fact about centres.
+Here is the bad news, stated without proof: finding a clustering that minimizes the k-means cost is NP-hard, and even NP-hard to approximate within some constant factor. Most of these costs are NP-hard to minimize, and some are NP-hard even to approximate. (Lesson 8 explained what NP-hard means for learning.) So in practice “k-means” usually names not the cost, but a fast algorithm that tries to lower it. Before we meet it, one small fact about centres.
 
 ## The best centre is the mean
 

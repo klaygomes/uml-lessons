@@ -535,7 +535,7 @@ Folder: `19-nearest-neighbor/`
 Folder: `20-neural-networks/`
 
 - [x] 1 prose and sheet (about 13,000 words with code, 20 snippets run by the lead; the failing fence is the build-it stub; no book references; written with the walkthrough and concept-before-symbol rules; 2026-11-20). Long: the sheet lists what could move to a 20b. Writer's claims to verify: a sharper exponential-size bound than the book's; own explicit VC constant; constant neurons output 1
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
+- [x] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred (book check: three writer choices valid, two prose overclaims fixed; sheet resynced; 2026-11-21)
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page

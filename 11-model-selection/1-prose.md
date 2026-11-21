@@ -2,7 +2,7 @@
 
 ## The number that went wrong
 
-Lesson 10a gave the mail room a boosted filter. Each round of boosting adds one decision stump, a tiny hypothesis that looks at a single feature, and the filter after \(T\) rounds is a weighted vote of \(T\) stumps. You saw there that \(T\) is a dial on the bias-complexity tradeoff: too few rounds and the vote is too crude to describe junk, too many and it starts to describe the accidents of the training sequence. The obvious question is the one lesson 10b left hanging. How do you set \(T\)?
+Lesson 10a gave the mail room a boosted filter. Each round of boosting adds one decision stump, a tiny hypothesis that looks at a single feature, and the filter after \(T\) rounds is a weighted vote of \(T\) stumps. Lesson 10b showed that \(T\) is a dial on the bias-complexity tradeoff: too few rounds and the vote is too crude to describe junk, too many and it starts to describe the accidents of the training sequence. The obvious question is the one it left hanging. How do you set \(T\)?
 
 Your team answered it the way most teams would. Users had labelled 300 messages. The team trained on 100 of them and put the other 200 aside as a **test set**, examples the learner never sees during training. They ran boosting for 60 rounds, which gives sixty filters at once, one after each round, and measured every one of them on the 200 test messages. The filter after 11 rounds made the fewest mistakes: 33 out of 200, a test error of 16.5%. The report said “16.5% error on held-out data”, everyone nodded, and the filter shipped.
 
