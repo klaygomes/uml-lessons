@@ -158,7 +158,7 @@ EM’s idea is a chicken-and-egg loop. If we knew the kinds, finding \(\theta\) 
 \[ F(Q, \theta) = \sum_{i=1}^{m}\sum_{y=1}^{k} Q_{i,y}\log\left(\mathbb P_\theta[X = x_i, Y = y]\right). \]
 
 - For each message \(i\) and kind \(y\), \(\log\mathbb P_\theta[X = x_i, Y = y]\) is what the log-likelihood would be if we knew that message \(i\) has kind \(y\).
-- \(Q_{i,y}\) weights it by how much we currently believe that. So \(F\) is the expected log-likelihood of a labelled data set whose labels are drawn from the rows of \(Q\).
+- \(Q_{i,y}\) weights it by how much we currently believe that. So \(F\) is the expected log-likelihood of a labelled training sequence whose labels are drawn from the rows of \(Q\).
 - The sum over kinds is now *outside* the log.
 
 In one sentence: **\(F\) is the log-likelihood we would have if the hidden kinds were known, averaged over our current beliefs about them.** With one message \(x = 1\), the belief \(Q = (0.9, 0.1)\), and the mixture above: \(0.9\log(0.7 \cdot 0.399) + 0.1\log(0.3 \cdot 0.0044) \approx -1.81\).
@@ -613,4 +613,4 @@ Write your answers down before moving on to the next lesson, with your reasoning
 
 Once the concept check is done, try this one. Hints come one at a time in the chat, and no full solution.
 
-- **Problem 1 (the shares of soft k-means).** For nonnegative weights \(\nu_1, \dots, \nu_k\), not all zero, consider maximizing \(\sum_{y=1}^k \nu_y\log c_y\) over probability vectors \(c\) with every \(c_y > 0\). (i) Check that the share part of the soft k-means M step has this form, with \(\nu_y = \sum_i Q_{i,y}\). (ii) Show that \(c^\star = \nu/\sum_y \nu_y\) is a probability vector. (iii) Show that the problem is equivalent to minimizing the relative entropy \(D_{\mathrm{RE}}(c^\star\|c)\) over the same \(c\). (iv) Conclude, using a property of the relative entropy proved in lesson 24a, that \(c^\star\) is the solution.
+- **Problem 1 (the shares of soft k-means).** For nonnegative weights \(\nu_1, \dots, \nu_k\), not all zero, consider maximizing \(\sum_{y=1}^k \nu_y\log c_y\) over probability vectors \(c\) with every \(c_y > 0\). (i) Check that the share part of the soft k-means M step has this form, with \(\nu_y = \sum_i Q_{i,y}\). (ii) Show that \(c^\star = \nu/\sum_y \nu_y\) is a probability vector. (iii) Show that the problem is equivalent to minimizing the relative entropy \(D_{\mathrm{RE}}(c^\star\|c)\) over the same \(c\). (iv) Conclude, using a property of the relative entropy proved in lesson 24a, that \(c^\star\) is the solution when every \(\nu_y > 0\) (as in soft k-means, where every soft count is positive). What goes wrong if some \(\nu_y = 0\)?
