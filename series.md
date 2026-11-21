@@ -54,7 +54,8 @@ Every lesson of the course, delivered or not. `_kit/index.py` reads this table f
 | 21a | Online mistake bounds | If an adversary picks every message but some rule in the class is perfect, how few mistakes can a filter promise? |
 | 21b | Online regret | When no rule is perfect and the adversary reads every decision, how can a filter promise to be nearly as good as the best rule? |
 | 22 | Clustering | How do you group messages when nobody has labelled any of them? |
-| 23 | Dimensionality reduction | How do you squeeze thousands of features into a few without losing what matters? |
+| 23a | PCA and random projections | How do you squeeze thousands of word counts into a few hundred, once by PCA and once by a random projection that keeps every distance with a promise? |
+| 23b | Compressed sensing | A matrix can never undo a squeeze, so how can a decoder that knows the message is mostly zeros read its words back exactly, with a certificate? |
 | 24a | Generative models and maximum likelihood | Why does a filter that estimates each word's frequency by counting become certain of nonsense, and how do you count so the estimate carries a guarantee? |
 | 24b | Discriminant analysis and EM | Why does a loop that guesses each message's hidden kind and refits make the archive's log-likelihood fall every round, and what makes the safe loop never fall? |
 | 25 | Feature selection and generation | Which features should the filter keep, and which new ones should it build? |

@@ -8,7 +8,7 @@ To resume: read **Session handoff** near the end first (every skill, tool, refer
 
 Last updated 2026-11-20. Tick here and in **Status** as each lands; commit and push after every step (user: "commit and push as you go").
 
-- [ ] Split lesson 23 (`scratchpad/brief-split-23.md`, regenerate from `docs/split-brief.md` with the split point under Open items), then `python3 -I _kit/split_apply.py 23 ...`
+- [x] Split lesson 23: done 2026-11-21 (23a, 23b)
 - [ ] Split lesson 24 the same way (done 2026-11-21: 24a, 24b)
 - [ ] Repoint "lesson N" references in every prose and sheet to the right half for the split lessons 6, 7, 9, 10, 12, 13, 14, 15, 17, 21, 23, 24 (one agent with the list)
 - [ ] Book check and sheet resync (`docs/bookcheck-brief.md`) for lessons 11, 16, 18, 19, 20, 22, 25, 26, 27, 28, 29, 30, 31
@@ -590,12 +590,27 @@ Folder: `22-clustering/`
 - [ ] 9 concept check: mastery confirmed
 - [ ] 10 end-of-chapter problems done
 
-### 23. Ch. 23 dimensionality reduction
+### 23a. PCA and random projections
 
-Folder: `23-dimensionality-reduction/`
+Folder: `23a-pca-random-projections/`
 
-- [x] 1 prose and sheet (about 17,400 words with code, 31 snippets run by the lead; the 3 failing fences are build-it stubs; no book references; written with both rules; 2026-11-20). Split candidate. Writer's claims to verify: the chi-squared upper tail is false for large ε (lesson proves ε ≤ 1/2); RIP theorem constant 216 instead of the book's 100; covering lemma by packing. Page builder must ship the act-2 table (0.243 at n = 500) or update the prose
-- [ ] 2 gates: writer's PDF self-check, scripts and greps done; book-check agents, read-aloud and fresh reader deferred
+- [x] 1 prose and sheet (split from lesson 23 on 2026-11-21; original in `_archive/23-dimensionality-reduction`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
+- [ ] 3 review stop: user approved the prose
+- [ ] 4 figures
+- [ ] 5 page
+- [ ] 6 learner judge: ready
+- [ ] 7 verification
+- [ ] 8 delivery: series.md, index.html
+- [ ] 9 concept check: mastery confirmed
+- [ ] 10 end-of-chapter problems done
+
+### 23b. Compressed sensing
+
+Folder: `23b-compressed-sensing/`
+
+- [x] 1 prose and sheet (split from lesson 23 on 2026-11-21; original in `_archive/23-dimensionality-reduction`; clean-context review carried over)
+- [ ] 2 gates: book check (PDF agents), sheet resync, greps
 - [ ] 3 review stop: user approved the prose
 - [ ] 4 figures
 - [ ] 5 page
