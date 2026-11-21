@@ -15,7 +15,7 @@ Last updated 2026-11-20. Tick here and in **Status** as each lands; commit and p
 - [ ] Book check and sheet resync for every split half: 6a, 6b, 7a, 7b, 9a, 9b, 10a, 10b, 12a, 12b, 13a, 13b, 14a, 14b, 15a, 15b, 17a, 17b, 21a, 21b, then 23a, 23b, 24a, 24b
 - [ ] After each edit: `python3 -I _kit/read.py <folder>` then `python3 -I _kit/index.py`, commit, push
 - [ ] Figures (diagram-design) and labs (named iwrzwr studies) lesson by lesson from lesson 2: `2-figures/`, `3-page/`, `build.py`, `fit.mjs`, impeccable pass
-- [ ] Commit the `klay-learning-ladder` skill changes in ~/dotfiles (KaTeX `math.mjs`, `shot.mjs`, `prose.py` fixes, writing rules, index template) when the user says so
+- [x] Commit the `klay-learning-ladder` skill changes in ~/dotfiles: done 2026-11-21 as dd6d3e4 (KaTeX `math.mjs`, `shot.mjs`, `prose.py` fixes, phases and rules in SKILL.md, series template synced with the kit)
 - [ ] Waiting on the user: review of the prose (live index), lesson 1 concept-check answers
 
 ## Source rule
